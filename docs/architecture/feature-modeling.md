@@ -148,5 +148,6 @@ Holes may target a face by `face_ref` instead of only `target_feature`. When `se
 
 ## Further reading
 
+- [Pattern examples](../examples/patterns.md)
 - [Geometry kernel boundary](./geometry-kernel.md)
 - [Design graph](./design-graph.md)

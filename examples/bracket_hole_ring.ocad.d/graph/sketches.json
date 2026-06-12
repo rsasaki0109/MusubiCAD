@@ -1,0 +1,142 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:base",
+      "name": "Base Sketch",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:c0",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:c1",
+          "construction": false,
+          "x": 0.08,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:c2",
+          "construction": false,
+          "x": 0.08,
+          "y": 0.06
+        },
+        {
+          "type": "point",
+          "id": "ent:c3",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.06
+        },
+        {
+          "type": "line",
+          "id": "ent:e0",
+          "construction": false,
+          "start": "ent:c0",
+          "end": "ent:c1"
+        },
+        {
+          "type": "line",
+          "id": "ent:e1",
+          "construction": false,
+          "start": "ent:c1",
+          "end": "ent:c2"
+        },
+        {
+          "type": "line",
+          "id": "ent:e2",
+          "construction": false,
+          "start": "ent:c2",
+          "end": "ent:c3"
+        },
+        {
+          "type": "line",
+          "id": "ent:e3",
+          "construction": false,
+          "start": "ent:c3",
+          "end": "ent:c0"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "distance",
+          "id": "con:width",
+          "target": {
+            "line": "ent:e0"
+          },
+          "expr": "width"
+        },
+        {
+          "type": "distance",
+          "id": "con:height",
+          "target": {
+            "line": "ent:e1"
+          },
+          "expr": "height"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "under_constrained",
+        "dof": 4
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:e0",
+            "ent:e1",
+            "ent:e2",
+            "ent:e3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:base/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:pin",
+      "name": "Pin Sketch",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:pin_center",
+          "construction": false,
+          "x": 0.01,
+          "y": 0.01
+        },
+        {
+          "type": "circle",
+          "id": "ent:pin_circle",
+          "construction": false,
+          "center": "ent:pin_center",
+          "radius": 0.002
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:pin_radius",
+          "target": "ent:pin_circle",
+          "expr": "2 mm"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    }
+  ]
+}
