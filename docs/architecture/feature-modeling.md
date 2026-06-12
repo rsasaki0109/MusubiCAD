@@ -55,8 +55,20 @@ Features run in topological order from `FeatureGraph::recompute_order()`. Suppre
 
 - `operation`: `union` (default) or `cut`
 - `target_feature`: required for `cut` — body to subtract from
-- `target_feature`: optional for mirror `union` — fuse mirrored copies onto an existing body
+- `target_feature`: optional for `union` — fuse patterned copies onto an existing body
 - `spacing_expr`: linear pattern only — parametric spacing resolved before regen
+
+```json
+{
+  "type": "linear_pattern",
+  "source_feature": "feature:pin_tool",
+  "target_feature": "feature:extrude_base",
+  "operation": "union",
+  "direction_m": [1.0, 0.0, 0.0],
+  "spacing": { "type": "distance", "length": { "m": 0.02 } },
+  "count": 2
+}
+```
 
 ```json
 {
@@ -68,6 +80,18 @@ Features run in topological order from `FeatureGraph::recompute_order()`. Suppre
   "spacing": { "type": "distance", "length": { "m": 0.02 } },
   "spacing_expr": "hole_pitch",
   "count": 3
+}
+```
+
+```json
+{
+  "type": "circular_pattern",
+  "source_feature": "feature:boss",
+  "target_feature": "feature:extrude_base",
+  "operation": "union",
+  "axis_origin_m": [0.04, 0.03, 0.0],
+  "axis_direction_m": [0.0, 0.0, 1.0],
+  "count": 4
 }
 ```
 

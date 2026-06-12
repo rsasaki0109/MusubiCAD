@@ -172,12 +172,13 @@ impl Feature for MirrorPatternFeatureExecutor {
 
         match def.operation {
             PatternOperation::Union => {
-                let mirrored_pair = kernel.boolean(source, mirrored, BooleanOp::Union)?;
                 let body = if let Some(target_id) = def.target_feature.as_deref() {
-                    let target = ctx.body_for_feature(target_id)?;
-                    kernel.boolean(target, mirrored_pair, BooleanOp::Union)?
+                    let mut result = ctx.body_for_feature(target_id)?;
+                    result = kernel.boolean(result, source, BooleanOp::Union)?;
+                    result = kernel.boolean(result, mirrored, BooleanOp::Union)?;
+                    result
                 } else {
-                    mirrored_pair
+                    kernel.boolean(source, mirrored, BooleanOp::Union)?
                 };
                 Ok(FeatureOutput { body: Some(body) })
             }
@@ -217,16 +218,29 @@ fn execute_pattern(
 
     match run.operation {
         PatternOperation::Union => {
-            if run.count == 1 {
-                return Ok(FeatureOutput { body: Some(source) });
-            }
-            let mut result = source.clone();
-            for index in 1..run.count {
-                let instance =
-                    instance_at(run.ctx, source.clone(), index, run.spacing_m, run.direction)?;
-                result = kernel.boolean(result, instance, BooleanOp::Union)?;
-            }
-            Ok(FeatureOutput { body: Some(result) })
+            let body = if let Some(target_id) = run.target_feature {
+                let mut result = run.ctx.body_for_feature(target_id)?;
+                for index in 0..run.count {
+                    let instance = if index == 0 {
+                        source.clone()
+                    } else {
+                        instance_at(run.ctx, source.clone(), index, run.spacing_m, run.direction)?
+                    };
+                    result = kernel.boolean(result, instance, BooleanOp::Union)?;
+                }
+                result
+            } else if run.count == 1 {
+                source.clone()
+            } else {
+                let mut result = source.clone();
+                for index in 1..run.count {
+                    let instance =
+                        instance_at(run.ctx, source.clone(), index, run.spacing_m, run.direction)?;
+                    result = kernel.boolean(result, instance, BooleanOp::Union)?;
+                }
+                result
+            };
+            Ok(FeatureOutput { body: Some(body) })
         }
         PatternOperation::Cut => {
             let target_id = run
@@ -283,6 +297,24 @@ impl LinearPatternFeature {
             target_feature: Some(target_feature.into()),
         }
     }
+
+    pub fn union_on(
+        source_feature: impl Into<String>,
+        target_feature: impl Into<String>,
+        direction_m: [f64; 3],
+        spacing: Length,
+        count: u32,
+    ) -> Self {
+        Self {
+            source_feature: source_feature.into(),
+            direction_m,
+            spacing,
+            spacing_expr: None,
+            count,
+            operation: PatternOperation::Union,
+            target_feature: Some(target_feature.into()),
+        }
+    }
 }
 
 impl CircularPatternFeature {
@@ -299,6 +331,40 @@ impl CircularPatternFeature {
             count,
             operation: PatternOperation::Union,
             target_feature: None,
+        }
+    }
+
+    pub fn cut(
+        source_feature: impl Into<String>,
+        target_feature: impl Into<String>,
+        axis_origin_m: [f64; 3],
+        axis_direction_m: [f64; 3],
+        count: u32,
+    ) -> Self {
+        Self {
+            source_feature: source_feature.into(),
+            axis_origin_m,
+            axis_direction_m,
+            count,
+            operation: PatternOperation::Cut,
+            target_feature: Some(target_feature.into()),
+        }
+    }
+
+    pub fn union_on(
+        source_feature: impl Into<String>,
+        target_feature: impl Into<String>,
+        axis_origin_m: [f64; 3],
+        axis_direction_m: [f64; 3],
+        count: u32,
+    ) -> Self {
+        Self {
+            source_feature: source_feature.into(),
+            axis_origin_m,
+            axis_direction_m,
+            count,
+            operation: PatternOperation::Union,
+            target_feature: Some(target_feature.into()),
         }
     }
 }
@@ -553,6 +619,58 @@ mod tests {
         let output = MirrorPatternFeatureExecutor
             .execute(&node, &ctx)
             .expect("mirror face ref");
+        assert!(output.body.is_some());
+    }
+
+    #[test]
+    fn linear_union_pattern_fuses_with_target() {
+        let mut ctx = TestRegenContext::with_body("feature:tool", KernelBody::new(10));
+        ctx.outputs.insert(
+            "feature:base".into(),
+            FeatureOutput {
+                body: Some(KernelBody::new(20)),
+            },
+        );
+        let node = FeatureNode::new(
+            "feature:tool_row",
+            "Tool Row",
+            FeatureDefinition::LinearPattern(LinearPatternFeature::union_on(
+                "feature:tool",
+                "feature:base",
+                [1.0, 0.0, 0.0],
+                Length::from_meters(0.01),
+                2,
+            )),
+        );
+        let output = LinearPatternFeatureExecutor
+            .execute(&node, &ctx)
+            .expect("linear union with target");
+        assert!(output.body.is_some());
+    }
+
+    #[test]
+    fn circular_union_pattern_fuses_with_target() {
+        let mut ctx = TestRegenContext::with_body("feature:boss", KernelBody::new(10));
+        ctx.outputs.insert(
+            "feature:base".into(),
+            FeatureOutput {
+                body: Some(KernelBody::new(20)),
+            },
+        );
+        let node = FeatureNode::new(
+            "feature:boss_ring",
+            "Boss Ring",
+            FeatureDefinition::CircularPattern(CircularPatternFeature::union_on(
+                "feature:boss",
+                "feature:base",
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+                4,
+            )),
+        );
+        let output = CircularPatternFeatureExecutor
+            .execute(&node, &ctx)
+            .expect("circular union with target");
         assert!(output.body.is_some());
     }
 

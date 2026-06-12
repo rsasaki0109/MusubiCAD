@@ -239,7 +239,7 @@ See `examples/agent/plane_face_ref_patch.json`.
 
 ### Pattern features
 
-Linear and circular patterns support `operation`: `union` (default) or `cut`. Cut patterns require `target_feature`.
+Linear and circular patterns support `operation`: `union` (default) or `cut`. Cut patterns require `target_feature`. Union patterns may set `target_feature` to fuse copies onto an existing body.
 
 ```json
 {

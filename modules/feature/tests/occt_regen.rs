@@ -281,6 +281,57 @@ fn occt_linear_pattern_unions_translated_bodies() {
     );
 }
 
+#[test]
+fn occt_linear_union_pattern_fuses_onto_target() {
+    use opencad_feature::{FeatureDefinition, FeatureNode, LinearPatternFeature};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut plate = pin_tool_plate();
+    plate
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let plate_mass = kernel
+        .mass_properties(plate.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut fused = pin_tool_plate();
+    fused
+        .add_node(FeatureNode::new(
+            "feature:pin_pair",
+            "Pin Pair",
+            FeatureDefinition::LinearPattern(LinearPatternFeature::union_on(
+                "feature:pin_tool",
+                "feature:extrude_base",
+                [1.0, 0.0, 0.0],
+                Length::from_meters(0.02),
+                2,
+            )),
+        ))
+        .expect("pattern");
+    fused
+        .add_dependency("feature:extrude_base", "feature:pin_pair")
+        .expect("dep");
+    fused
+        .add_dependency("feature:pin_tool", "feature:pin_pair")
+        .expect("dep");
+    fused
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let fused_mass = kernel
+        .mass_properties(fused.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        fused_mass.volume_m3 > plate_mass.volume_m3,
+        "linear union should fuse patterned tools onto plate: {} vs {}",
+        fused_mass.volume_m3,
+        plate_mass.volume_m3
+    );
+}
+
 fn pin_tool_plate() -> opencad_feature::PartModel {
     pin_tool_plate_at(0.01, 0.01)
 }
