@@ -18,11 +18,21 @@ fn example_bracket_document_is_valid() {
     validate_expanded_dir(&path).expect("validate");
     let doc = read_expanded_dir(&path).expect("read");
     let params = doc.parameters.clone();
+    let semantic_refs = doc.semantic_refs.clone();
     let mut model = doc.into_part_model();
     let kernel = MockGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     model
-        .regenerate(&kernel, &registry, Some(&params), None)
+        .regenerate(
+            &kernel,
+            &registry,
+            Some(&params),
+            if semantic_refs.is_empty() {
+                None
+            } else {
+                Some(&semantic_refs)
+            },
+        )
         .expect("regen");
     assert!(model.active_body().is_some());
 }

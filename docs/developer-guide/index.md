@@ -19,6 +19,7 @@ cargo run -p opencad-cli -- help
 # Use committed samples
 cargo run -p opencad-cli -- regen examples/bracket.ocad.d
 cargo run -p opencad-cli -- new my_part.ocad.d hole-row
+cargo run -p opencad-cli -- new my_mirror.ocad.d pin-mirror
 ```
 
 ## Workspace layout

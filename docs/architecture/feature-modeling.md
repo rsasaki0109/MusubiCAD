@@ -91,6 +91,29 @@ Features run in topological order from `FeatureGraph::recompute_order()`. Suppre
 }
 ```
 
+`plane_face_ref` resolves the mirror plane from a persisted `TopoRef` during regeneration (centroid + normal from `face_discoveries`). When set, `plane_origin_m` / `plane_normal_m` are ignored.
+
+```json
+{
+  "type": "mirror_pattern",
+  "source_feature": "feature:pin_tool",
+  "plane_face_ref": "ref:face:bracket_top",
+  "operation": "union"
+}
+```
+
+Holes may target a face by `face_ref` instead of only `target_feature`. When `semantic_refs` are present, the kernel face is resolved from discovery data; otherwise `target_feature` is used as a fallback.
+
+```json
+{
+  "type": "hole",
+  "face_ref": "ref:face:bracket_top",
+  "target_feature": "feature:extrude_base",
+  "sketch_feature": "feature:sketch_hole",
+  "profile_ref": "sketch:hole/profile:outer"
+}
+```
+
 ## Rules
 
 - OCCT types stay in `opencad-kernel-occt`.

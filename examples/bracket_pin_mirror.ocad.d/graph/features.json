@@ -3,8 +3,9 @@
     "order": [
       "feature:sketch_base",
       "feature:extrude_base",
-      "feature:sketch_hole",
-      "feature:hole_mount"
+      "feature:sketch_pin",
+      "feature:pin_tool",
+      "feature:pin_mirror"
     ],
     "features": {
       "feature:sketch_base": {
@@ -21,17 +22,24 @@
         "suppressed": false,
         "dirty": false
       },
-      "feature:sketch_hole": {
-        "id": "feature:sketch_hole",
-        "name": "Hole Sketch",
+      "feature:sketch_pin": {
+        "id": "feature:sketch_pin",
+        "name": "Pin Sketch",
         "feature_type": "sketch",
         "suppressed": false,
         "dirty": false
       },
-      "feature:hole_mount": {
-        "id": "feature:hole_mount",
-        "name": "Mounting Hole",
-        "feature_type": "hole",
+      "feature:pin_tool": {
+        "id": "feature:pin_tool",
+        "name": "Pin Tool",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:pin_mirror": {
+        "id": "feature:pin_mirror",
+        "name": "Pin Mirror",
+        "feature_type": "mirror_pattern",
         "suppressed": false,
         "dirty": false
       }
@@ -43,13 +51,18 @@
         "kind": "depends_on"
       },
       {
-        "source": "feature:sketch_hole",
-        "target": "feature:hole_mount",
+        "source": "feature:sketch_pin",
+        "target": "feature:pin_tool",
         "kind": "depends_on"
       },
       {
         "source": "feature:extrude_base",
-        "target": "feature:hole_mount",
+        "target": "feature:pin_mirror",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:pin_tool",
+        "target": "feature:pin_mirror",
         "kind": "depends_on"
       }
     ]
@@ -74,21 +87,41 @@
       "suppressed": false
     },
     {
-      "id": "feature:hole_mount",
-      "name": "Mounting Hole",
+      "id": "feature:pin_mirror",
+      "name": "Pin Mirror",
       "definition": {
-        "type": "hole",
-        "sketch_feature": "feature:sketch_hole",
-        "profile_ref": "sketch:hole/profile:outer",
-        "depth": {
+        "type": "mirror_pattern",
+        "source_feature": "feature:pin_tool",
+        "plane_origin_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "plane_normal_m": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "plane_face_ref": "ref:face:bracket_top",
+        "operation": "union"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:pin_tool",
+      "name": "Pin Tool",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_pin",
+        "profile_ref": "sketch:pin/profile:outer",
+        "extent": {
           "type": "distance",
           "length": {
             "value_si": 0.006
           }
         },
-        "target_feature": "feature:extrude_base",
-        "face_ref": "ref:face:bracket_top",
-        "depth_expr": "thickness"
+        "operation": "new_body",
+        "length_expr": "thickness"
       },
       "suppressed": false
     },
@@ -102,11 +135,11 @@
       "suppressed": false
     },
     {
-      "id": "feature:sketch_hole",
-      "name": "Hole Sketch",
+      "id": "feature:sketch_pin",
+      "name": "Pin Sketch",
       "definition": {
         "type": "sketch",
-        "sketch_id": "sketch:hole"
+        "sketch_id": "sketch:pin"
       },
       "suppressed": false
     }

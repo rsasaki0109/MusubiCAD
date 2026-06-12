@@ -294,6 +294,17 @@ pub fn bracket_base_plate() -> Result<PartModel> {
     Ok(model)
 }
 
+/// Default semantic face refs for the bracket sample.
+pub fn bracket_semantic_refs() -> Vec<TopoRef> {
+    use opencad_core::TopoRefId;
+
+    vec![TopoRef::face(
+        TopoRefId::new("ref:face:bracket_top").expect("id"),
+        "feature:extrude_base",
+        "top",
+    )]
+}
+
 /// Bracket base plate with a centered mounting hole.
 pub fn bracket_with_hole() -> Result<PartModel> {
     use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
@@ -346,13 +357,14 @@ pub fn bracket_with_hole() -> Result<PartModel> {
             sketch_id: "sketch:hole".into(),
         }),
     ))?;
-    let mut hole = HoleFeature::through(
+    let mut hole = HoleFeature::on_face_ref(
         "feature:sketch_hole",
         "sketch:hole/profile:outer",
         ExtrudeExtent::Distance {
             length: Length::from_meters(0.006),
         },
         "feature:extrude_base",
+        "ref:face:bracket_top",
     );
     hole.depth_expr = Some("thickness".into());
     model.add_node(FeatureNode::new(
@@ -487,6 +499,89 @@ pub fn bracket_hole_row() -> Result<PartModel> {
     model.add_dependency("feature:sketch_pin", "feature:pin_tool")?;
     model.add_dependency("feature:extrude_base", "feature:pin_holes")?;
     model.add_dependency("feature:pin_tool", "feature:pin_holes")?;
+    Ok(model)
+}
+
+/// Pin tool mirrored across the bracket top face using `plane_face_ref`.
+pub fn bracket_pin_mirror() -> Result<PartModel> {
+    use crate::pattern::MirrorPatternFeature;
+    use opencad_graph::bracket_parameters;
+
+    let mut model = bracket_base_plate()?;
+    apply_parameters(&mut model, &bracket_parameters())?;
+
+    let pin_sketch = {
+        use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+        use opencad_sketch::{
+            constraint::Constraint,
+            entity::{CircleEntity, Coord, EntityBase, PointEntity, SketchEntity},
+            workplane::Workplane,
+            Sketch,
+        };
+
+        let mut pin_sketch =
+            Sketch::new(SketchId::new("sketch:pin")?, "Pin Sketch", Workplane::xy());
+        pin_sketch.add_entity(SketchEntity::Point(PointEntity {
+            base: EntityBase {
+                id: EntityId::new("ent:pin_center")?,
+                construction: false,
+            },
+            x: Coord::literal(0.05),
+            y: Coord::literal(0.03),
+        }))?;
+        pin_sketch.add_entity(SketchEntity::Circle(CircleEntity {
+            base: EntityBase {
+                id: EntityId::new("ent:pin_circle")?,
+                construction: false,
+            },
+            center: EntityId::new("ent:pin_center")?,
+            radius: Coord::literal(0.002),
+        }))?;
+        pin_sketch.add_constraint(Constraint::Radius {
+            id: ConstraintId::new("con:pin_radius")?,
+            target: EntityId::new("ent:pin_circle")?,
+            expr: Expression::new("2 mm")?,
+        })?;
+        pin_sketch
+    };
+
+    model
+        .sketches
+        .insert(pin_sketch.id.as_str().to_string(), pin_sketch);
+
+    model.add_node(FeatureNode::new(
+        "feature:sketch_pin",
+        "Pin Sketch",
+        FeatureDefinition::Sketch(SketchFeatureDef {
+            sketch_id: "sketch:pin".into(),
+        }),
+    ))?;
+    model.add_node(FeatureNode::new(
+        "feature:pin_tool",
+        "Pin Tool",
+        FeatureDefinition::Extrude(ExtrudeFeature {
+            sketch_feature: "feature:sketch_pin".into(),
+            profile_ref: "sketch:pin/profile:outer".into(),
+            extent: ExtrudeExtent::Distance {
+                length: Length::from_meters(0.006),
+            },
+            operation: opencad_geometry::ExtrudeOperation::NewBody,
+            length_expr: Some("thickness".into()),
+            target_feature: None,
+        }),
+    ))?;
+    model.add_node(FeatureNode::new(
+        "feature:pin_mirror",
+        "Pin Mirror",
+        FeatureDefinition::MirrorPattern(MirrorPatternFeature::across_face_ref(
+            "feature:pin_tool",
+            "ref:face:bracket_top",
+        )),
+    ))?;
+
+    model.add_dependency("feature:sketch_pin", "feature:pin_tool")?;
+    model.add_dependency("feature:extrude_base", "feature:pin_mirror")?;
+    model.add_dependency("feature:pin_tool", "feature:pin_mirror")?;
     Ok(model)
 }
 

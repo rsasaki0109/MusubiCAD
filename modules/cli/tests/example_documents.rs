@@ -19,11 +19,21 @@ fn example_bracket_hole_row_regenerates_with_occt() {
     validate_expanded_dir(&path).expect("validate");
     let doc = read_expanded_dir(&path).expect("read");
     let params = doc.parameters.clone();
+    let semantic_refs = doc.semantic_refs.clone();
     let mut model = doc.into_part_model();
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     model
-        .regenerate(&kernel, &registry, Some(&params), None)
+        .regenerate(
+            &kernel,
+            &registry,
+            Some(&params),
+            if semantic_refs.is_empty() {
+                None
+            } else {
+                Some(&semantic_refs)
+            },
+        )
         .expect("regen");
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
@@ -37,16 +47,64 @@ fn example_bracket_hole_row_regenerates_with_occt() {
 }
 
 #[test]
+fn example_bracket_pin_mirror_regenerates_with_occt() {
+    let path = workspace_root().join("examples/bracket_pin_mirror.ocad.d");
+    validate_expanded_dir(&path).expect("validate");
+    let doc = read_expanded_dir(&path).expect("read");
+    let params = doc.parameters.clone();
+    let semantic_refs = doc.semantic_refs.clone();
+    let mut model = doc.into_part_model();
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    model
+        .regenerate(
+            &kernel,
+            &registry,
+            Some(&params),
+            if semantic_refs.is_empty() {
+                None
+            } else {
+                Some(&semantic_refs)
+            },
+        )
+        .expect("regen");
+    let body = model.active_body().expect("body");
+    let mass = kernel.mass_properties(body, 2700.0).expect("mass");
+    let pin_tool = model
+        .outputs
+        .get("feature:pin_tool")
+        .and_then(|output| output.body.as_ref())
+        .expect("pin tool");
+    let pin_mass = kernel.mass_properties(pin_tool, 2700.0).expect("mass");
+    assert!(
+        mass.volume_m3 > pin_mass.volume_m3 * 1.5,
+        "pin mirror example should union source and reflection: {} vs {}",
+        mass.volume_m3,
+        pin_mass.volume_m3
+    );
+}
+
+#[test]
 fn example_bracket_regenerates_with_occt() {
     let path = workspace_root().join("examples/bracket.ocad.d");
     validate_expanded_dir(&path).expect("validate");
     let doc = read_expanded_dir(&path).expect("read");
     let params = doc.parameters.clone();
+    let semantic_refs = doc.semantic_refs.clone();
     let mut model = doc.into_part_model();
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     model
-        .regenerate(&kernel, &registry, Some(&params), None)
+        .regenerate(
+            &kernel,
+            &registry,
+            Some(&params),
+            if semantic_refs.is_empty() {
+                None
+            } else {
+                Some(&semantic_refs)
+            },
+        )
         .expect("regen");
     assert!(model.active_body().is_some());
 }

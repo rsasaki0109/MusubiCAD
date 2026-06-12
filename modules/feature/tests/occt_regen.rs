@@ -2,8 +2,8 @@
 
 use opencad_core::Length;
 use opencad_feature::{
-    bracket_base_plate, bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet,
-    profile_to_solved, FeatureRegistry,
+    bracket_base_plate, bracket_pin_mirror, bracket_semantic_refs, bracket_with_hole,
+    bracket_with_top_chamfer, bracket_with_top_fillet, profile_to_solved, FeatureRegistry,
 };
 use opencad_geometry::{build_src_to_post_map, ExtrudeExtent, ExtrudeOperation, GeometryKernel};
 use opencad_graph::bracket_parameters;
@@ -64,8 +64,9 @@ fn occt_regenerates_bracket_with_hole_reduces_volume() {
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     let params = bracket_parameters();
+    let semantic_refs = bracket_semantic_refs();
     model
-        .regenerate(&kernel, &registry, Some(&params), None)
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
         .expect("regen");
 
     let body = model.active_body().expect("body");
@@ -728,5 +729,70 @@ fn occt_mirror_cut_pattern_reduces_plate_volume() {
         "mirror cut should reduce plate volume: {} vs {}",
         cut_mass.volume_m3,
         plate_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_hole_with_face_ref_matches_without_when_refs_present() {
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+    let semantic_refs = bracket_semantic_refs();
+
+    let mut with_refs = bracket_with_hole().expect("model");
+    with_refs
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
+        .expect("regen");
+    let with_refs_mass = kernel
+        .mass_properties(with_refs.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut without_refs = bracket_with_hole().expect("model");
+    without_refs
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let without_refs_mass = kernel
+        .mass_properties(without_refs.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        (with_refs_mass.volume_m3 - without_refs_mass.volume_m3).abs() < 1e-8,
+        "face_ref hole should match fallback target: {} vs {}",
+        with_refs_mass.volume_m3,
+        without_refs_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_mirror_pattern_uses_plane_face_ref() {
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+    let semantic_refs = bracket_semantic_refs();
+
+    let mut single = bracket_pin_mirror().expect("model");
+    single
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
+        .expect("regen");
+    let single_mass = kernel
+        .mass_properties(
+            single
+                .outputs
+                .get("feature:pin_tool")
+                .and_then(|output| output.body.as_ref())
+                .expect("pin tool"),
+            2700.0,
+        )
+        .expect("mass");
+
+    let mirrored_mass = kernel
+        .mass_properties(single.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        mirrored_mass.volume_m3 > single_mass.volume_m3 * 1.5,
+        "plane_face_ref mirror should union source and reflection: {} vs {}",
+        mirrored_mass.volume_m3,
+        single_mass.volume_m3
     );
 }

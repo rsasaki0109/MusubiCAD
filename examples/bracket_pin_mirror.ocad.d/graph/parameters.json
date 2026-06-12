@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "param:width": {
+      "id": "param:width",
+      "name": "width",
+      "expr": "80 mm",
+      "dirty": false
+    },
+    "param:height": {
+      "id": "param:height",
+      "name": "height",
+      "expr": "60 mm",
+      "dirty": false
+    },
+    "param:thickness": {
+      "id": "param:thickness",
+      "name": "thickness",
+      "expr": "6 mm",
+      "dirty": false
+    },
+    "param:hole_diameter": {
+      "id": "param:hole_diameter",
+      "name": "hole_diameter",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:fillet_radius": {
+      "id": "param:fillet_radius",
+      "name": "fillet_radius",
+      "expr": "1 mm",
+      "dirty": false
+    },
+    "param:chamfer_distance": {
+      "id": "param:chamfer_distance",
+      "name": "chamfer_distance",
+      "expr": "0.5 mm",
+      "dirty": false
+    },
+    "param:hole_pitch": {
+      "id": "param:hole_pitch",
+      "name": "hole_pitch",
+      "expr": "20 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

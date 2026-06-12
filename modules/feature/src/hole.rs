@@ -42,7 +42,11 @@ impl Feature for HoleFeatureExecutor {
         };
 
         let target_feature = if let Some(ref face_ref) = def.face_ref {
-            target_feature_for_face_ref(ctx, face_ref, def.target_feature.as_str())?
+            if ctx.semantic_refs().is_empty() {
+                def.target_feature.clone()
+            } else {
+                target_feature_for_face_ref(ctx, face_ref, def.target_feature.as_str())?
+            }
         } else {
             def.target_feature.clone()
         };

@@ -6,8 +6,9 @@ Ready-to-use ForgeCAD documents and Agent API requests.
 
 | Directory | Template | Features |
 |---|---|---|
-| `bracket.ocad.d` | `opencad new <path>` | Sketch, extrude, hole |
+| `bracket.ocad.d` | `opencad new <path>` | Sketch, extrude, hole (`face_ref`) |
 | `bracket_hole_row.ocad.d` | `opencad new <path> hole-row` | + linear cut pattern, `hole_pitch` param |
+| `bracket_pin_mirror.ocad.d` | `opencad new <path> pin-mirror` | + mirror pattern, `plane_face_ref` |
 
 ```bash
 cargo run -p opencad-cli -- regen examples/bracket_hole_row.ocad.d

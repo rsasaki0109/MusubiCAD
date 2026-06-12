@@ -44,7 +44,9 @@ pub fn run() -> Result<()> {
 
 fn cmd_new(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let path = path.ok_or_else(|| {
-        opencad_core::OpenCadError::validation("usage: opencad new <path> [bracket|hole-row]")
+        opencad_core::OpenCadError::validation(
+            "usage: opencad new <path> [bracket|hole-row|pin-mirror]",
+        )
     })?;
     let template = extra_args
         .first()
@@ -328,6 +330,7 @@ OPTIONS (patch):
 EXAMPLES:
     opencad new bracket.ocad.d
     opencad new bracket_hole_row.ocad.d hole-row
+    opencad new bracket_pin_mirror.ocad.d pin-mirror
     opencad validate bracket.ocad
     opencad inspect bracket.ocad.d
     opencad regen bracket.ocad

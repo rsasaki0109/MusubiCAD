@@ -31,7 +31,7 @@ ForgeCAD treats the **Design Graph** as the source of truth — not the GUI and 
 | Parametric sketches | Distance, radius, horizontal/vertical constraints |
 | Features | Extrude, hole, fillet, chamfer |
 | Patterns | Linear, circular, mirror (`union` / `cut`, `spacing_expr`) |
-| TopoRef | Semantic face refs, fingerprint fallback, `assign_face_ref` patch |
+| TopoRef | Semantic face refs, `plane_face_ref` / hole `face_ref`, fingerprint fallback |
 | Agent API | JSON-RPC over stdio (`opencad agent`) — patch, query, diff, regen, pick |
 | Kernel | OCCT 8.0 via cadrum (auto-download on first build) |
 | Headless | CLI regen, mesh render, STL export, golden regression tests |
@@ -66,6 +66,7 @@ cargo run -p opencad-cli -- --help
 # Sample documents (also in examples/)
 cargo run -p opencad-cli -- new examples/bracket.ocad.d
 cargo run -p opencad-cli -- new examples/bracket_hole_row.ocad.d hole-row
+cargo run -p opencad-cli -- new examples/bracket_pin_mirror.ocad.d pin-mirror
 cargo run -p opencad-cli -- regen examples/bracket.ocad.d
 
 # Agent API (JSON-RPC on stdio)
@@ -77,8 +78,9 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"examp
 
 | Path | Description |
 |---|---|
-| `examples/bracket.ocad.d` | Bracket plate with centered mounting hole |
+| `examples/bracket.ocad.d` | Bracket plate with centered mounting hole (`face_ref`) |
 | `examples/bracket_hole_row.ocad.d` | Linear cut pattern with `spacing_expr: hole_pitch` |
+| `examples/bracket_pin_mirror.ocad.d` | Mirror pattern via `plane_face_ref` |
 | `examples/agent/` | JSON-RPC request samples for `opencad agent` |
 
 Regenerate and export:

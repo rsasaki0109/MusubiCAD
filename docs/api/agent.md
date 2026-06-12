@@ -259,6 +259,36 @@ Linear and circular patterns support `operation`: `union` (default) or `cut`. Cu
 }
 ```
 
+Mirror patterns may also use `plane_face_ref` to derive the plane from a persisted face ref (see `bracket_pin_mirror()` in `opencad-feature`):
+
+```json
+{
+  "id": "feature:pin_mirror",
+  "name": "Pin Mirror",
+  "definition": {
+    "type": "mirror_pattern",
+    "source_feature": "feature:pin_tool",
+    "plane_face_ref": "ref:face:bracket_top",
+    "operation": "union"
+  }
+}
+```
+
+Holes accept `face_ref` for semantic targeting; pass `semantic_refs` during regen so the face resolves from discovery data:
+
+```json
+{
+  "id": "feature:hole_mount",
+  "definition": {
+    "type": "hole",
+    "face_ref": "ref:face:bracket_top",
+    "target_feature": "feature:extrude_base",
+    "sketch_feature": "feature:sketch_hole",
+    "profile_ref": "sketch:hole/profile:outer"
+  }
+}
+```
+
 `spacing_expr` is evaluated during regeneration (same timing as `length_expr` on extrude). Use `set_feature_expr` with `field: "spacing_expr"` to patch it parametrically.
 
 ## Errors

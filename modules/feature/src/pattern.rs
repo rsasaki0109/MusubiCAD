@@ -8,6 +8,7 @@ use opencad_core::{Length, OpenCadError, Result};
 use opencad_geometry::BooleanOp;
 
 use crate::feature::{Feature, FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
+use crate::topo_resolve::plane_for_face_ref;
 
 /// How patterned instances combine with the target body.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -57,6 +58,9 @@ pub struct MirrorPatternFeature {
     pub source_feature: String,
     pub plane_origin_m: [f64; 3],
     pub plane_normal_m: [f64; 3],
+    /// Optional persisted face ref that defines the mirror plane at regen time.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plane_face_ref: Option<String>,
     #[serde(default)]
     pub operation: PatternOperation,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -157,10 +161,14 @@ impl Feature for MirrorPatternFeatureExecutor {
                 node.definition.feature_type()
             )));
         };
-        let plane_normal = normalize_direction(def.plane_normal_m)?;
+        let (plane_origin, plane_normal) = if let Some(ref face_ref) = def.plane_face_ref {
+            plane_for_face_ref(ctx, face_ref)?
+        } else {
+            (def.plane_origin_m, normalize_direction(def.plane_normal_m)?)
+        };
         let source = ctx.body_for_feature(def.source_feature.as_str())?;
         let kernel = ctx.kernel();
-        let mirrored = kernel.mirror_body(source.clone(), def.plane_origin_m, plane_normal)?;
+        let mirrored = kernel.mirror_body(source.clone(), plane_origin, plane_normal)?;
 
         match def.operation {
             PatternOperation::Union => {
@@ -299,6 +307,21 @@ impl MirrorPatternFeature {
             source_feature: source_feature.into(),
             plane_origin_m,
             plane_normal_m,
+            plane_face_ref: None,
+            operation: PatternOperation::Union,
+            target_feature: None,
+        }
+    }
+
+    pub fn across_face_ref(
+        source_feature: impl Into<String>,
+        plane_face_ref: impl Into<String>,
+    ) -> Self {
+        Self {
+            source_feature: source_feature.into(),
+            plane_origin_m: [0.0, 0.0, 0.0],
+            plane_normal_m: [0.0, 0.0, 1.0],
+            plane_face_ref: Some(plane_face_ref.into()),
             operation: PatternOperation::Union,
             target_feature: None,
         }
@@ -314,6 +337,7 @@ impl MirrorPatternFeature {
             source_feature: source_feature.into(),
             plane_origin_m,
             plane_normal_m,
+            plane_face_ref: None,
             operation: PatternOperation::Cut,
             target_feature: Some(target_feature.into()),
         }
@@ -442,6 +466,72 @@ mod tests {
         let output = MirrorPatternFeatureExecutor
             .execute(&node, &ctx)
             .expect("mirror pattern");
+        assert!(output.body.is_some());
+    }
+
+    #[test]
+    fn mirror_pattern_uses_plane_face_ref() {
+        use crate::feature::RegenContext;
+        use opencad_core::{Result, TopoRefId};
+        use opencad_geometry::{FaceRefDiscovery, TopoRef};
+
+        struct RefContext {
+            inner: TestRegenContext,
+            semantic_refs: Vec<TopoRef>,
+            face_discoveries: Vec<FaceRefDiscovery>,
+        }
+
+        impl RegenContext for RefContext {
+            fn kernel(&self) -> &dyn opencad_geometry::GeometryKernel {
+                self.inner.kernel()
+            }
+
+            fn sketch_for_feature(
+                &self,
+                sketch_feature_id: &str,
+            ) -> Result<&opencad_sketch::Sketch> {
+                self.inner.sketch_for_feature(sketch_feature_id)
+            }
+
+            fn body_for_feature(&self, feature_id: &str) -> Result<KernelBody> {
+                self.inner.body_for_feature(feature_id)
+            }
+
+            fn semantic_refs(&self) -> &[TopoRef] {
+                &self.semantic_refs
+            }
+
+            fn face_discoveries(&self) -> &[FaceRefDiscovery] {
+                &self.face_discoveries
+            }
+        }
+
+        let ctx = RefContext {
+            inner: TestRegenContext::with_body("feature:boss", KernelBody::new(42)),
+            semantic_refs: vec![TopoRef::face(
+                TopoRefId::new("ref:face:bracket_top").expect("id"),
+                "feature:extrude_base",
+                "top",
+            )],
+            face_discoveries: vec![FaceRefDiscovery {
+                kernel_face_id: 1,
+                role: "top".into(),
+                normal_m: [0.0, 0.0, 1.0],
+                centroid_m: [0.04, 0.03, 0.006],
+                feature_id: Some("feature:extrude_base".into()),
+            }],
+        };
+        let node = FeatureNode::new(
+            "feature:boss_pair",
+            "Boss Pair",
+            FeatureDefinition::MirrorPattern(MirrorPatternFeature::across_face_ref(
+                "feature:boss",
+                "ref:face:bracket_top",
+            )),
+        );
+        let output = MirrorPatternFeatureExecutor
+            .execute(&node, &ctx)
+            .expect("mirror face ref");
         assert!(output.body.is_some());
     }
 
