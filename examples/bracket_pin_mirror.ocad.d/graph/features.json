@@ -103,7 +103,8 @@
           1.0
         ],
         "plane_face_ref": "ref:face:bracket_top",
-        "operation": "union"
+        "operation": "union",
+        "target_feature": "feature:extrude_base"
       },
       "suppressed": false
     },

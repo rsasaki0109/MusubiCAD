@@ -70,17 +70,12 @@ fn example_bracket_pin_mirror_regenerates_with_occt() {
         .expect("regen");
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
-    let pin_tool = model
-        .outputs
-        .get("feature:pin_tool")
-        .and_then(|output| output.body.as_ref())
-        .expect("pin tool");
-    let pin_mass = kernel.mass_properties(pin_tool, 2700.0).expect("mass");
+    let plate_volume = 0.08 * 0.06 * 0.006;
     assert!(
-        mass.volume_m3 > pin_mass.volume_m3 * 1.5,
-        "pin mirror example should union source and reflection: {} vs {}",
+        mass.volume_m3 > plate_volume,
+        "pin mirror example should fuse mirrored pins onto plate: {} vs {}",
         mass.volume_m3,
-        pin_mass.volume_m3
+        plate_volume
     );
 }
 

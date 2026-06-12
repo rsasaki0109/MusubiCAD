@@ -209,6 +209,34 @@ opencad regen bracket.ocad.d --sync-topo-refs
 | `distance_expr` | `chamfer` | `distance` |
 | `spacing_expr` | `linear_pattern` | `spacing` |
 
+### `set_feature_ref` fields
+
+| field | Feature type | Patched field |
+|---|---|---|
+| `plane_face_ref` | `mirror_pattern` | mirror plane face ref |
+| `face_ref` | `hole` | target face ref |
+
+```json
+{
+  "operations": [
+    {
+      "type": "assign_face_ref",
+      "ref_id": "ref:face:bracket_top",
+      "created_by": "feature:extrude_base",
+      "role": "top"
+    },
+    {
+      "type": "set_feature_ref",
+      "feature_id": "feature:pin_mirror",
+      "field": "plane_face_ref",
+      "ref_id": "ref:face:bracket_top"
+    }
+  ]
+}
+```
+
+See `examples/agent/plane_face_ref_patch.json`.
+
 ### Pattern features
 
 Linear and circular patterns support `operation`: `union` (default) or `cut`. Cut patterns require `target_feature`.
@@ -269,6 +297,7 @@ Mirror patterns may also use `plane_face_ref` to derive the plane from a persist
     "type": "mirror_pattern",
     "source_feature": "feature:pin_tool",
     "plane_face_ref": "ref:face:bracket_top",
+    "target_feature": "feature:extrude_base",
     "operation": "union"
   }
 }
@@ -305,4 +334,4 @@ Standard JSON-RPC error codes:
 
 ## Example
 
-See `examples/agent/inspect_request.json`, `examples/agent/query_request.json`, `examples/agent/query_sketch_constraints_request.json`, `examples/agent/query_overlay_lines_request.json`, `examples/agent/query_face_groups_request.json`, `examples/agent/query_semantic_ref_request.json`, `examples/agent/pick_document_request.json`, `examples/agent/explain_request.json`, `examples/agent/export_request.json`, `examples/agent/diff_document_request.json`, `examples/agent/assign_face_ref_patch.json`, and `examples/agent/spacing_expr_patch.json`.
+See `examples/agent/inspect_request.json`, `examples/agent/query_request.json`, `examples/agent/query_sketch_constraints_request.json`, `examples/agent/query_overlay_lines_request.json`, `examples/agent/query_face_groups_request.json`, `examples/agent/query_semantic_ref_request.json`, `examples/agent/pick_document_request.json`, `examples/agent/explain_request.json`, `examples/agent/export_request.json`, `examples/agent/diff_document_request.json`, `examples/agent/assign_face_ref_patch.json`, `examples/agent/plane_face_ref_patch.json`, and `examples/agent/spacing_expr_patch.json`.

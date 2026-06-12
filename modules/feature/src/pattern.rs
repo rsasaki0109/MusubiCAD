@@ -172,7 +172,13 @@ impl Feature for MirrorPatternFeatureExecutor {
 
         match def.operation {
             PatternOperation::Union => {
-                let body = kernel.boolean(source, mirrored, BooleanOp::Union)?;
+                let mirrored_pair = kernel.boolean(source, mirrored, BooleanOp::Union)?;
+                let body = if let Some(target_id) = def.target_feature.as_deref() {
+                    let target = ctx.body_for_feature(target_id)?;
+                    kernel.boolean(target, mirrored_pair, BooleanOp::Union)?
+                } else {
+                    mirrored_pair
+                };
                 Ok(FeatureOutput { body: Some(body) })
             }
             PatternOperation::Cut => {
@@ -324,6 +330,21 @@ impl MirrorPatternFeature {
             plane_face_ref: Some(plane_face_ref.into()),
             operation: PatternOperation::Union,
             target_feature: None,
+        }
+    }
+
+    pub fn union_across_face_ref(
+        source_feature: impl Into<String>,
+        target_feature: impl Into<String>,
+        plane_face_ref: impl Into<String>,
+    ) -> Self {
+        Self {
+            source_feature: source_feature.into(),
+            plane_origin_m: [0.0, 0.0, 0.0],
+            plane_normal_m: [0.0, 0.0, 1.0],
+            plane_face_ref: Some(plane_face_ref.into()),
+            operation: PatternOperation::Union,
+            target_feature: Some(target_feature.into()),
         }
     }
 
@@ -532,6 +553,31 @@ mod tests {
         let output = MirrorPatternFeatureExecutor
             .execute(&node, &ctx)
             .expect("mirror face ref");
+        assert!(output.body.is_some());
+    }
+
+    #[test]
+    fn mirror_union_pattern_fuses_with_target() {
+        let mut ctx = TestRegenContext::with_body("feature:tool", KernelBody::new(10));
+        ctx.outputs.insert(
+            "feature:base".into(),
+            FeatureOutput {
+                body: Some(KernelBody::new(20)),
+            },
+        );
+        let node = FeatureNode::new(
+            "feature:tool_pair",
+            "Tool Pair",
+            FeatureDefinition::MirrorPattern({
+                let mut pattern =
+                    MirrorPatternFeature::new("feature:tool", [0.04, 0.0, 0.0], [1.0, 0.0, 0.0]);
+                pattern.target_feature = Some("feature:base".into());
+                pattern
+            }),
+        );
+        let output = MirrorPatternFeatureExecutor
+            .execute(&node, &ctx)
+            .expect("mirror union with target");
         assert!(output.body.is_some());
     }
 

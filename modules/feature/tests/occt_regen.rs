@@ -789,6 +789,23 @@ fn occt_mirror_pattern_uses_plane_face_ref() {
         .mass_properties(single.active_body().expect("body"), 2700.0)
         .expect("mass");
 
+    let plate_mass = kernel
+        .mass_properties(
+            single
+                .outputs
+                .get("feature:extrude_base")
+                .and_then(|output| output.body.as_ref())
+                .expect("plate"),
+            2700.0,
+        )
+        .expect("mass");
+
+    assert!(
+        mirrored_mass.volume_m3 > plate_mass.volume_m3,
+        "plane_face_ref mirror should fuse pins onto plate: {} vs {}",
+        mirrored_mass.volume_m3,
+        plate_mass.volume_m3
+    );
     assert!(
         mirrored_mass.volume_m3 > single_mass.volume_m3 * 1.5,
         "plane_face_ref mirror should union source and reflection: {} vs {}",

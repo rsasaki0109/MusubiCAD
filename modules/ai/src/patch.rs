@@ -17,6 +17,33 @@ pub enum FeatureExprField {
     SpacingExpr,
 }
 
+/// Supported semantic ref fields for patch operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FeatureRefField {
+    PlaneFaceRef,
+    FaceRef,
+}
+
+impl FeatureRefField {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::PlaneFaceRef => "plane_face_ref",
+            Self::FaceRef => "face_ref",
+        }
+    }
+
+    pub fn parse(field: &str) -> Result<Self> {
+        match field {
+            "plane_face_ref" => Ok(Self::PlaneFaceRef),
+            "face_ref" => Ok(Self::FaceRef),
+            _ => Err(OpenCadError::validation(format!(
+                "unsupported feature ref field '{field}'; expected 'plane_face_ref' or 'face_ref'"
+            ))),
+        }
+    }
+}
+
 impl FeatureExprField {
     pub fn as_str(self) -> &'static str {
         match self {
@@ -54,6 +81,11 @@ pub enum PatchOperation {
         feature_id: String,
         field: String,
         expr: String,
+    },
+    SetFeatureRef {
+        feature_id: String,
+        field: String,
+        ref_id: String,
     },
     AssignFaceRef {
         ref_id: String,
@@ -118,6 +150,20 @@ impl DesignPatch {
         }
     }
 
+    pub fn set_feature_ref(
+        feature_id: impl Into<String>,
+        field: FeatureRefField,
+        ref_id: impl Into<String>,
+    ) -> Self {
+        Self {
+            operations: vec![PatchOperation::SetFeatureRef {
+                feature_id: feature_id.into(),
+                field: field.as_str().to_string(),
+                ref_id: ref_id.into(),
+            }],
+        }
+    }
+
     pub fn assign_face_ref(
         ref_id: impl Into<String>,
         created_by: impl Into<String>,
@@ -143,6 +189,7 @@ impl DesignPatch {
                     })?;
                 }
                 PatchOperation::SetFeatureExpr { .. } => {}
+                PatchOperation::SetFeatureRef { .. } => {}
                 PatchOperation::AssignFaceRef { .. } => {}
             }
         }
@@ -177,22 +224,37 @@ impl DesignPatch {
 
     pub fn apply_to_features(&self, feature_nodes: &mut [FeatureNode]) -> Result<()> {
         for operation in &self.operations {
-            let PatchOperation::SetFeatureExpr {
-                feature_id,
-                field,
-                expr,
-            } = operation
-            else {
-                continue;
-            };
-            let field = FeatureExprField::parse(field)?;
-            let node = feature_nodes
-                .iter_mut()
-                .find(|node| node.id == *feature_id)
-                .ok_or_else(|| {
-                    OpenCadError::validation(format!("unknown feature '{feature_id}'"))
-                })?;
-            apply_feature_expr(node, field, expr)?;
+            match operation {
+                PatchOperation::SetFeatureExpr {
+                    feature_id,
+                    field,
+                    expr,
+                } => {
+                    let field = FeatureExprField::parse(field)?;
+                    let node = feature_nodes
+                        .iter_mut()
+                        .find(|node| node.id == *feature_id)
+                        .ok_or_else(|| {
+                            OpenCadError::validation(format!("unknown feature '{feature_id}'"))
+                        })?;
+                    apply_feature_expr(node, field, expr)?;
+                }
+                PatchOperation::SetFeatureRef {
+                    feature_id,
+                    field,
+                    ref_id,
+                } => {
+                    let field = FeatureRefField::parse(field)?;
+                    let node = feature_nodes
+                        .iter_mut()
+                        .find(|node| node.id == *feature_id)
+                        .ok_or_else(|| {
+                            OpenCadError::validation(format!("unknown feature '{feature_id}'"))
+                        })?;
+                    apply_feature_ref(node, field, ref_id)?;
+                }
+                _ => {}
+            }
         }
         Ok(())
     }
@@ -212,6 +274,25 @@ impl DesignPatch {
         self.operations
             .iter()
             .any(|op| matches!(op, PatchOperation::AssignFaceRef { .. }))
+    }
+}
+
+fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &str) -> Result<()> {
+    match (&mut node.definition, field) {
+        (FeatureDefinition::MirrorPattern(pattern), FeatureRefField::PlaneFaceRef) => {
+            pattern.plane_face_ref = Some(ref_id.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::Hole(hole), FeatureRefField::FaceRef) => {
+            hole.face_ref = Some(ref_id.to_string());
+            Ok(())
+        }
+        (definition, field) => Err(OpenCadError::validation(format!(
+            "feature '{}' ({}) does not support '{}'",
+            node.id,
+            definition.feature_type(),
+            field.as_str()
+        ))),
     }
 }
 
@@ -251,7 +332,7 @@ mod tests {
     use super::*;
     use opencad_feature::{
         bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet, FeatureDefinition,
-        FeatureNode, LinearPatternFeature,
+        FeatureNode, LinearPatternFeature, MirrorPatternFeature,
     };
     use opencad_graph::{bracket_parameters, evaluate_param_graph};
 
@@ -373,6 +454,32 @@ mod tests {
             panic!("expected linear pattern");
         };
         assert_eq!(pattern.spacing_expr.as_deref(), Some("hole_pitch"));
+    }
+
+    #[test]
+    fn set_feature_ref_updates_mirror_plane_face_ref() {
+        let mut nodes = vec![FeatureNode::new(
+            "feature:pin_mirror",
+            "Pin Mirror",
+            FeatureDefinition::MirrorPattern(MirrorPatternFeature::new(
+                "feature:pin_tool",
+                [0.04, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+            )),
+        )];
+        let patch = DesignPatch::set_feature_ref(
+            "feature:pin_mirror",
+            FeatureRefField::PlaneFaceRef,
+            "ref:face:bracket_top",
+        );
+        patch.apply_to_features(&mut nodes).expect("patch");
+        let FeatureDefinition::MirrorPattern(pattern) = &nodes[0].definition else {
+            panic!("expected mirror pattern");
+        };
+        assert_eq!(
+            pattern.plane_face_ref.as_deref(),
+            Some("ref:face:bracket_top")
+        );
     }
 
     #[test]

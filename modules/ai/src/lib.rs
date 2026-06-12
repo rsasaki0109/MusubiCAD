@@ -13,7 +13,7 @@ pub use agent_api::{
     JsonRpcResponse, PatchApplyParams, PatchApplyResult, PatchDryRunParams,
 };
 pub use explain::{explain_design, DesignExplanation, ExplainParams};
-pub use patch::{DesignPatch, FeatureExprField, PatchOperation};
+pub use patch::{DesignPatch, FeatureExprField, FeatureRefField, PatchOperation};
 pub use query::{
     get_semantic_ref, list_semantic_refs, query_needs_scene, run_query, DesignQuery, FaceGroupInfo,
     OverlayLineInfo, ParameterInfo, QueryParams, QueryResult, SceneQueryContext, SemanticRefInfo,

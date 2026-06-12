@@ -573,8 +573,9 @@ pub fn bracket_pin_mirror() -> Result<PartModel> {
     model.add_node(FeatureNode::new(
         "feature:pin_mirror",
         "Pin Mirror",
-        FeatureDefinition::MirrorPattern(MirrorPatternFeature::across_face_ref(
+        FeatureDefinition::MirrorPattern(MirrorPatternFeature::union_across_face_ref(
             "feature:pin_tool",
+            "feature:extrude_base",
             "ref:face:bracket_top",
         )),
     ))?;

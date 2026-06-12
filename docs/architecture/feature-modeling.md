@@ -55,6 +55,7 @@ Features run in topological order from `FeatureGraph::recompute_order()`. Suppre
 
 - `operation`: `union` (default) or `cut`
 - `target_feature`: required for `cut` — body to subtract from
+- `target_feature`: optional for mirror `union` — fuse mirrored copies onto an existing body
 - `spacing_expr`: linear pattern only — parametric spacing resolved before regen
 
 ```json
@@ -98,6 +99,7 @@ Features run in topological order from `FeatureGraph::recompute_order()`. Suppre
   "type": "mirror_pattern",
   "source_feature": "feature:pin_tool",
   "plane_face_ref": "ref:face:bracket_top",
+  "target_feature": "feature:extrude_base",
   "operation": "union"
 }
 ```
