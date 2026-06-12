@@ -1,5 +1,13 @@
 # ForgeCAD
 
+<p align="center">
+  <img src="docs/assets/preview.gif" alt="ForgeCAD — parametric bracket with sketch overlay, extruded plate, mounting hole, and width patch regen" width="960">
+</p>
+
+<p align="center">
+  <sub>OCCT solid + wgpu viewport from <code>examples/bracket.ocad.d</code> (80 mm → 100 mm parameter patch)</sub>
+</p>
+
 ![CI](https://github.com/rsasaki0109/ForgeCAD/actions/workflows/ci.yml/badge.svg)
 
 AI-native, open-source, parametric 3D CAD engine.
