@@ -1,6 +1,6 @@
 # Developer Guide
 
-Welcome to OpenCAD development.
+Welcome to ForgeCAD development.
 
 ## Prerequisites
 

@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-OpenCAD needs a core language that supports:
+ForgeCAD needs a core language that supports:
 
 - Deterministic regeneration
 - Safe concurrent access patterns

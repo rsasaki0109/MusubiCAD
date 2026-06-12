@@ -1,6 +1,6 @@
 # Architecture Overview
 
-OpenCAD is an AI-native, open-source parametric 3D CAD engine.
+ForgeCAD is an AI-native, open-source parametric 3D CAD engine.
 
 ## Core equation
 
@@ -17,7 +17,7 @@ Human UI / AI Agents / CLI / Plugins
 Command Layer (transactions, undo, dry-run, design patch)
         │
         ▼
-OpenCAD Design Graph
+ForgeCAD Design Graph
         │
         ▼
 Regeneration Engine

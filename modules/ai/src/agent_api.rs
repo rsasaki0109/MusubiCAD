@@ -2,6 +2,7 @@
 
 use opencad_core::{OpenCadError, Result};
 use opencad_feature::FeatureNode;
+use opencad_geometry::TopoRef;
 use opencad_graph::{evaluate_param_graph, DesignDiff, ParamGraph};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -89,6 +90,8 @@ impl JsonRpcError {
 pub struct PatchDryRunParams {
     pub parameters: ParamGraph,
     pub feature_nodes: Vec<FeatureNode>,
+    #[serde(default)]
+    pub semantic_refs: Vec<TopoRef>,
     pub patch: DesignPatch,
 }
 
@@ -97,6 +100,8 @@ pub struct PatchDryRunParams {
 pub struct PatchApplyParams {
     pub parameters: ParamGraph,
     pub feature_nodes: Vec<FeatureNode>,
+    #[serde(default)]
+    pub semantic_refs: Vec<TopoRef>,
     pub patch: DesignPatch,
 }
 
@@ -105,6 +110,7 @@ pub struct PatchApplyParams {
 pub struct PatchApplyResult {
     pub parameters: ParamGraph,
     pub feature_nodes: Vec<FeatureNode>,
+    pub semantic_refs: Vec<TopoRef>,
     pub diff: DesignDiff,
 }
 
@@ -120,6 +126,8 @@ pub struct DiffParams {
 pub struct DesignStateSnapshot {
     pub parameters: ParamGraph,
     pub feature_nodes: Vec<FeatureNode>,
+    #[serde(default)]
+    pub semantic_refs: Vec<TopoRef>,
 }
 
 impl From<DesignState> for DesignStateSnapshot {
@@ -127,13 +135,18 @@ impl From<DesignState> for DesignStateSnapshot {
         Self {
             parameters: state.parameters,
             feature_nodes: state.feature_nodes,
+            semantic_refs: state.semantic_refs,
         }
     }
 }
 
 impl From<DesignStateSnapshot> for DesignState {
     fn from(snapshot: DesignStateSnapshot) -> Self {
-        DesignState::new(snapshot.parameters, snapshot.feature_nodes)
+        DesignState::with_semantic_refs(
+            snapshot.parameters,
+            snapshot.feature_nodes,
+            snapshot.semantic_refs,
+        )
     }
 }
 
@@ -164,19 +177,32 @@ impl AgentApi {
     }
 
     pub fn patch_dry_run(&self, params: PatchDryRunParams) -> PatchDryRunReport {
-        let state = DesignState::new(params.parameters, params.feature_nodes);
+        let state = DesignState::with_semantic_refs(
+            params.parameters,
+            params.feature_nodes,
+            params.semantic_refs,
+        );
         dry_run_patch_state(&state, &params.patch)
     }
 
     pub fn patch_apply(&self, params: PatchApplyParams) -> Result<PatchApplyResult> {
-        let before = DesignState::new(params.parameters, params.feature_nodes);
+        let before = DesignState::with_semantic_refs(
+            params.parameters,
+            params.feature_nodes,
+            params.semantic_refs,
+        );
         let mut after = before.clone();
-        params.patch.apply_to_document(&mut after.parameters, &mut after.feature_nodes)?;
+        params.patch.apply_to_document(
+            &mut after.parameters,
+            &mut after.feature_nodes,
+            &mut after.semantic_refs,
+        )?;
         evaluate_param_graph(&after.parameters)?;
         let diff = diff_design_state(&before, &after);
         Ok(PatchApplyResult {
             parameters: after.parameters,
             feature_nodes: after.feature_nodes,
+            semantic_refs: after.semantic_refs,
             diff,
         })
     }

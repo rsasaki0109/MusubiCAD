@@ -1,0 +1,12 @@
+{
+  "operations": [
+    {
+      "type": "assign_face_ref",
+      "ref_id": "ref:face:bracket_top",
+      "kernel_face_id": 0,
+      "created_by": "feature:extrude_base",
+      "role": "top",
+      "normal_m": [0.0, 0.0, 1.0]
+    }
+  ]
+}

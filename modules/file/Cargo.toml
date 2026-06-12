@@ -6,6 +6,10 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+[features]
+default = []
+occt = ["dep:opencad-kernel-occt", "dep:opencad-render"]
+
 [dependencies]
 opencad-core = { workspace = true }
 opencad-ai = { workspace = true }
@@ -13,6 +17,8 @@ opencad-feature = { workspace = true }
 opencad-geometry = { workspace = true }
 opencad-graph = { workspace = true }
 opencad-sketch = { workspace = true }
+opencad-kernel-occt = { workspace = true, optional = true }
+opencad-render = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 zip = { version = "2", default-features = false, features = ["deflate"] }

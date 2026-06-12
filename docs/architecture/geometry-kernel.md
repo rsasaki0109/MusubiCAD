@@ -1,6 +1,6 @@
 # Geometry Kernel Boundary
 
-OpenCAD separates **design intent** from **kernel B-Rep cache**.
+ForgeCAD separates **design intent** from **kernel B-Rep cache**.
 
 ## Rule
 

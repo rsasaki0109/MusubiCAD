@@ -28,6 +28,7 @@ pub enum DesignQuery {
     ListOverlayLines,
     ListFaceGroups,
     ListSemanticRefs,
+    GetSemanticRef { ref_id: String },
 }
 
 /// In-memory query parameters.
@@ -167,6 +168,7 @@ pub enum QueryResult {
     OverlayLines { items: Vec<OverlayLineInfo> },
     FaceGroups { items: Vec<FaceGroupInfo> },
     SemanticRefs { items: Vec<SemanticRefInfo> },
+    SemanticRef { item: SemanticRefInfo },
 }
 
 pub fn query_needs_scene(query: &DesignQuery) -> bool {
@@ -247,7 +249,30 @@ pub fn run_query(params: &QueryParams) -> Result<QueryResult> {
         DesignQuery::ListSemanticRefs => Ok(QueryResult::SemanticRefs {
             items: list_semantic_refs(&params.semantic_refs),
         }),
+        DesignQuery::GetSemanticRef { ref_id } => {
+            let item = get_semantic_ref(&params.semantic_refs, ref_id)?;
+            Ok(QueryResult::SemanticRef { item })
+        }
     }
+}
+
+pub fn get_semantic_ref(semantic_refs: &[TopoRef], ref_id: &str) -> Result<SemanticRefInfo> {
+    semantic_refs
+        .iter()
+        .find(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
+        .map(|topo_ref| SemanticRefInfo {
+            ref_id: topo_ref.ref_id.as_str().to_string(),
+            kind: match topo_ref.kind {
+                opencad_geometry::TopoRefKind::Face => "face".into(),
+                opencad_geometry::TopoRefKind::Edge => "edge".into(),
+                opencad_geometry::TopoRefKind::Vertex => "vertex".into(),
+            },
+            created_by: topo_ref.semantic.created_by.clone(),
+            role: topo_ref.semantic.role.clone(),
+            kernel_face_id: topo_ref.kernel_face_id(),
+            intent: topo_ref.semantic.intent.clone(),
+        })
+        .ok_or_else(|| OpenCadError::not_found(format!("semantic ref '{ref_id}'")))
 }
 
 pub fn list_semantic_refs(semantic_refs: &[TopoRef]) -> Vec<SemanticRefInfo> {
@@ -480,7 +505,7 @@ mod tests {
         let QueryResult::Parameters { items } = result else {
             panic!("expected parameters list");
         };
-        assert_eq!(items.len(), 6);
+        assert_eq!(items.len(), 7);
         let width = items.iter().find(|item| item.name == "width").expect("width");
         assert!((width.value_m.expect("value") - 0.08).abs() < 1e-9);
     }
@@ -673,5 +698,37 @@ mod tests {
         assert_eq!(items[0].ref_id, "ref:face:bracket_top");
         assert_eq!(items[0].kernel_face_id, Some(42));
         assert_eq!(items[0].role.as_deref(), Some("top"));
+    }
+
+    #[test]
+    fn gets_semantic_ref_by_id() {
+        use opencad_core::TopoRefId;
+        use opencad_geometry::TopoRef;
+
+        let mut params = bracket_query(DesignQuery::GetSemanticRef {
+            ref_id: "ref:face:bracket_top".into(),
+        });
+        params.semantic_refs = vec![TopoRef::kernel_face(
+            TopoRefId::new("ref:face:bracket_top").expect("id"),
+            "feature:extrude_base",
+            "top",
+            42,
+            [0.0, 0.0, 1.0],
+        )];
+        let result = run_query(&params).expect("query");
+        let QueryResult::SemanticRef { item } = result else {
+            panic!("expected semantic ref");
+        };
+        assert_eq!(item.ref_id, "ref:face:bracket_top");
+        assert_eq!(item.created_by, "feature:extrude_base");
+    }
+
+    #[test]
+    fn missing_semantic_ref_returns_error() {
+        let err = run_query(&bracket_query(DesignQuery::GetSemanticRef {
+            ref_id: "ref:face:missing".into(),
+        }))
+        .expect_err("missing");
+        assert!(err.to_string().contains("semantic ref"));
     }
 }

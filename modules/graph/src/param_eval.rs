@@ -239,6 +239,13 @@ pub fn bracket_parameters() -> ParamGraph {
         ))
         .expect("chamfer_distance");
     graph
+        .add_parameter(ParameterEntry::new(
+            "param:hole_pitch",
+            "hole_pitch",
+            "20 mm",
+        ))
+        .expect("hole_pitch");
+    graph
 }
 
 #[cfg(test)]

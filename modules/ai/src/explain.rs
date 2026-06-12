@@ -141,7 +141,7 @@ mod tests {
         })
         .expect("explain");
 
-        assert_eq!(explanation.parameter_count, 6);
+        assert_eq!(explanation.parameter_count, 7);
         assert_eq!(explanation.feature_count, 4);
         assert_eq!(explanation.sketch_count, 2);
         assert!(explanation.summary.contains("Bracket with Hole"));

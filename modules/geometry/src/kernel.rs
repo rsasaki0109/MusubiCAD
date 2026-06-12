@@ -115,6 +115,23 @@ pub trait GeometryKernel {
         distance_m: f64,
         selector: FilletEdgeSelector,
     ) -> Result<KernelBody>;
+
+    fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody>;
+
+    fn rotate_body(
+        &self,
+        body: KernelBody,
+        axis_origin_m: [f64; 3],
+        axis_direction_m: [f64; 3],
+        angle_rad: f64,
+    ) -> Result<KernelBody>;
+
+    fn mirror_body(
+        &self,
+        body: KernelBody,
+        plane_origin_m: [f64; 3],
+        plane_normal_m: [f64; 3],
+    ) -> Result<KernelBody>;
 }
 
 /// In-memory mock kernel for tests and headless pipelines without OCCT.
@@ -228,6 +245,43 @@ impl GeometryKernel for MockGeometryKernel {
             return Err(OpenCadError::validation("chamfer distance must be positive"));
         }
         Ok(body)
+    }
+
+    fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
+        if translation_m[0] == 0.0 && translation_m[1] == 0.0 && translation_m[2] == 0.0 {
+            return Ok(body);
+        }
+        let delta = ((translation_m[0].abs() + translation_m[1].abs() + translation_m[2].abs())
+            * 1000.0) as u64;
+        Ok(KernelBody::new(body.0.wrapping_add(delta.max(1))))
+    }
+
+    fn rotate_body(
+        &self,
+        body: KernelBody,
+        _axis_origin_m: [f64; 3],
+        _axis_direction_m: [f64; 3],
+        angle_rad: f64,
+    ) -> Result<KernelBody> {
+        let delta = (angle_rad.abs() * 1000.0) as u64;
+        Ok(KernelBody::new(body.0.wrapping_add(delta.max(1))))
+    }
+
+    fn mirror_body(
+        &self,
+        body: KernelBody,
+        plane_origin_m: [f64; 3],
+        plane_normal_m: [f64; 3],
+    ) -> Result<KernelBody> {
+        let flip = plane_normal_m[0].abs() + plane_normal_m[1].abs() + plane_normal_m[2].abs();
+        if flip <= 1e-12 {
+            return Err(OpenCadError::validation(
+                "mirror plane normal must be a non-zero vector",
+            ));
+        }
+        let delta = ((plane_origin_m[0].abs() + plane_origin_m[1].abs() + plane_origin_m[2].abs())
+            * 1000.0) as u64;
+        Ok(KernelBody::new(body.0.wrapping_add(delta.max(1))))
     }
 }
 

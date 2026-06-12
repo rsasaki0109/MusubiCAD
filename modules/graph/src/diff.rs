@@ -1,4 +1,7 @@
+use std::collections::BTreeMap;
+
 use indexmap::IndexMap;
+use opencad_geometry::TopoRef;
 use serde::{Deserialize, Serialize};
 
 use crate::ParamGraph;
@@ -35,6 +38,21 @@ pub enum SemanticChange {
         after: String,
     },
     BboxChanged {
+        before: String,
+        after: String,
+    },
+    TopoRefAdded {
+        ref_id: String,
+        created_by: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        role: Option<String>,
+    },
+    TopoRefRemoved {
+        ref_id: String,
+    },
+    TopoRefModified {
+        ref_id: String,
+        field: String,
         before: String,
         after: String,
     },
@@ -138,6 +156,79 @@ pub fn diff_param_graphs(before: &ParamGraph, after: &ParamGraph) -> Vec<Semanti
     changes
 }
 
+/// Compare persisted semantic topology references.
+pub fn diff_semantic_refs(before: &[TopoRef], after: &[TopoRef]) -> Vec<SemanticChange> {
+    let before_map: BTreeMap<&str, &TopoRef> = before
+        .iter()
+        .map(|topo_ref| (topo_ref.ref_id.as_str(), topo_ref))
+        .collect();
+    let after_map: BTreeMap<&str, &TopoRef> = after
+        .iter()
+        .map(|topo_ref| (topo_ref.ref_id.as_str(), topo_ref))
+        .collect();
+
+    let mut ids = BTreeMap::new();
+    for id in before_map.keys() {
+        ids.insert(*id, ());
+    }
+    for id in after_map.keys() {
+        ids.insert(*id, ());
+    }
+
+    let mut changes = Vec::new();
+    for id in ids.keys() {
+        match (before_map.get(id), after_map.get(id)) {
+            (Some(_), None) => changes.push(SemanticChange::TopoRefRemoved {
+                ref_id: (*id).to_string(),
+            }),
+            (None, Some(after_ref)) => changes.push(SemanticChange::TopoRefAdded {
+                ref_id: (*id).to_string(),
+                created_by: after_ref.semantic.created_by.clone(),
+                role: after_ref.semantic.role.clone(),
+            }),
+            (Some(before_ref), Some(after_ref)) if before_ref != after_ref => {
+                if before_ref.semantic.created_by != after_ref.semantic.created_by {
+                    changes.push(SemanticChange::TopoRefModified {
+                        ref_id: (*id).to_string(),
+                        field: "created_by".into(),
+                        before: before_ref.semantic.created_by.clone(),
+                        after: after_ref.semantic.created_by.clone(),
+                    });
+                }
+                if before_ref.semantic.role != after_ref.semantic.role {
+                    changes.push(SemanticChange::TopoRefModified {
+                        ref_id: (*id).to_string(),
+                        field: "role".into(),
+                        before: before_ref
+                            .semantic
+                            .role
+                            .clone()
+                            .unwrap_or_default(),
+                        after: after_ref.semantic.role.clone().unwrap_or_default(),
+                    });
+                }
+                if before_ref.kernel_face_id() != after_ref.kernel_face_id() {
+                    changes.push(SemanticChange::TopoRefModified {
+                        ref_id: (*id).to_string(),
+                        field: "kernel_face_id".into(),
+                        before: before_ref
+                            .kernel_face_id()
+                            .map(|id| id.to_string())
+                            .unwrap_or_default(),
+                        after: after_ref
+                            .kernel_face_id()
+                            .map(|id| id.to_string())
+                            .unwrap_or_default(),
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+
+    changes
+}
+
 /// Build a short human-readable summary from semantic changes.
 pub fn build_summary(changes: &[SemanticChange]) -> String {
     if changes.is_empty() {
@@ -155,6 +246,32 @@ pub fn build_summary(changes: &[SemanticChange]) -> String {
         .collect();
     if !param_changes.is_empty() && param_changes.len() == changes.len() {
         return param_changes.join(", ");
+    }
+
+    let topo_changes: Vec<String> = changes
+        .iter()
+        .filter_map(|change| match change {
+            SemanticChange::TopoRefAdded {
+                ref_id,
+                created_by,
+                role,
+            } => Some(format!(
+                "topo ref {ref_id} added ({created_by}{})",
+                role.as_deref()
+                    .map(|value| format!(", {value}"))
+                    .unwrap_or_default()
+            )),
+            SemanticChange::TopoRefRemoved { ref_id } => {
+                Some(format!("topo ref {ref_id} removed"))
+            }
+            SemanticChange::TopoRefModified {
+                ref_id, field, before, after,
+            } => Some(format!("topo ref {ref_id}.{field}: {before} -> {after}")),
+            _ => None,
+        })
+        .collect();
+    if !topo_changes.is_empty() && topo_changes.len() == changes.len() {
+        return topo_changes.join(", ");
     }
 
     format!("{} change(s)", changes.len())

@@ -2,6 +2,7 @@
 
 pub mod chamfer;
 pub mod extrude;
+pub mod face_discover;
 pub mod feature;
 pub mod fillet;
 pub mod hole;
@@ -20,6 +21,11 @@ pub use feature::{
 };
 pub use fillet::{FilletFeature, FilletFeatureExecutor};
 pub use hole::{HoleFeature, HoleFeatureExecutor};
+pub use pattern::{
+    CircularPatternFeature, CircularPatternFeatureExecutor, LinearPatternFeature,
+    LinearPatternFeatureExecutor, MirrorPatternFeature, MirrorPatternFeatureExecutor,
+    PatternOperation,
+};
 pub use param_apply::apply_parameters;
 pub use regenerate::{
     bracket_base_plate, bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet,

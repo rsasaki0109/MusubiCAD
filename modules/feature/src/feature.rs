@@ -10,6 +10,7 @@ use crate::chamfer::ChamferFeature;
 use crate::extrude::ExtrudeFeature;
 use crate::fillet::FilletFeature;
 use crate::hole::HoleFeature;
+use crate::pattern::{CircularPatternFeature, LinearPatternFeature, MirrorPatternFeature};
 use crate::sketch_feature::SketchFeatureDef;
 
 /// Serializable feature definition stored in the design graph.
@@ -21,6 +22,9 @@ pub enum FeatureDefinition {
     Hole(HoleFeature),
     Fillet(FilletFeature),
     Chamfer(ChamferFeature),
+    LinearPattern(LinearPatternFeature),
+    CircularPattern(CircularPatternFeature),
+    MirrorPattern(MirrorPatternFeature),
 }
 
 impl FeatureDefinition {
@@ -31,6 +35,9 @@ impl FeatureDefinition {
             Self::Hole(_) => "hole",
             Self::Fillet(_) => "fillet",
             Self::Chamfer(_) => "chamfer",
+            Self::LinearPattern(_) => "linear_pattern",
+            Self::CircularPattern(_) => "circular_pattern",
+            Self::MirrorPattern(_) => "mirror_pattern",
         }
     }
 }
@@ -76,6 +83,10 @@ pub trait RegenContext {
     }
 
     fn face_history(&self) -> &[FaceDerivation] {
+        &[]
+    }
+
+    fn face_discoveries(&self) -> &[opencad_geometry::FaceRefDiscovery] {
         &[]
     }
 }

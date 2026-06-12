@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://opencad.dev/schemas/ocad.document.v0.1.json",
-  "title": "OpenCAD Document",
+  "title": "ForgeCAD Document",
   "type": "object",
   "required": ["schema", "document"],
   "properties": {

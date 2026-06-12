@@ -1,14 +1,30 @@
-# OpenCAD
+# ForgeCAD
 
 AI-native, open-source, parametric 3D CAD engine.
 
-OpenCAD treats the **Design Graph** as the source of truth — not the GUI and not a cached B-Rep shape. Human operators, AI agents, and CI pipelines all work against the same deterministic, Git-friendly design data.
+ForgeCAD treats the **Design Graph** as the source of truth — not the GUI and not a cached B-Rep shape. Human operators, AI agents, and CI pipelines all work against the same deterministic, Git-friendly design data.
+
+> **Note:** The CLI binary and Rust crates still use the `opencad` prefix (`opencad agent`, `opencad-cli`, etc.) while the project is branded ForgeCAD.
+
+**Repository:** [github.com/rsasaki0109/ForgeCAD](https://github.com/rsasaki0109/ForgeCAD)
 
 ## Vision
 
 - Operate like SOLIDWORKS for humans
 - Editable by AI agents via semantic patches
 - Testable, reviewable design data in `.ocad` format
+
+## Current capabilities
+
+| Area | Status |
+|---|---|
+| Parametric sketches | Distance, radius, horizontal/vertical constraints |
+| Features | Extrude, hole, fillet, chamfer |
+| Patterns | Linear, circular, mirror (`union` / `cut`, `spacing_expr`) |
+| TopoRef | Semantic face refs, fingerprint fallback, `assign_face_ref` patch |
+| Agent API | JSON-RPC over stdio (`opencad agent`) — patch, query, diff, regen, pick |
+| Kernel | OCCT 8.0 via cadrum (auto-download on first build) |
+| Headless | CLI regen, mesh render, STL export, golden regression tests |
 
 ## Stack
 
@@ -36,7 +52,15 @@ Optional system install: see [docs/developer-guide/occt-install.md](docs/develop
 ```bash
 cargo test --workspace
 cargo run -p opencad-cli -- --help
+
+# Agent API (JSON-RPC on stdio)
+echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"bracket.ocad.d"}}' \
+  | opencad agent
 ```
+
+## Agent API
+
+See [docs/api/agent.md](docs/api/agent.md) and `examples/agent/` for JSON-RPC request samples (`patch`, `query`, `diff`, `regen`, `pick`, `assign_face_ref`).
 
 ## Repository layout
 

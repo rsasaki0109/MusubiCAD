@@ -15,8 +15,8 @@ pub use agent_api::{
 pub use explain::{explain_design, DesignExplanation, ExplainParams};
 pub use patch::{DesignPatch, FeatureExprField, PatchOperation};
 pub use query::{
-    list_semantic_refs, run_query, DesignQuery, FaceGroupInfo, OverlayLineInfo, ParameterInfo,
-    QueryParams, QueryResult, SceneQueryContext, SemanticRefInfo, query_needs_scene,
+    get_semantic_ref, list_semantic_refs, run_query, DesignQuery, FaceGroupInfo, OverlayLineInfo,
+    ParameterInfo, QueryParams, QueryResult, SceneQueryContext, SemanticRefInfo, query_needs_scene,
 };
 pub use state::{diff_design_state, DesignState};
 pub use validation::{dry_run_patch, dry_run_patch_state, ensure_patch_valid, PatchDryRunReport};

@@ -3,13 +3,17 @@
 use std::collections::BTreeMap;
 
 use opencad_feature::FeatureNode;
-use opencad_graph::{build_summary, diff_param_graphs, DesignDiff, ParamGraph};
+use opencad_geometry::TopoRef;
+use opencad_graph::{
+    build_summary, diff_param_graphs, diff_semantic_refs, DesignDiff, ParamGraph,
+};
 
-/// Parameter and feature slice of a design document.
+/// Parameter, feature, and semantic-ref slice of a design document.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DesignState {
     pub parameters: ParamGraph,
     pub feature_nodes: Vec<FeatureNode>,
+    pub semantic_refs: Vec<TopoRef>,
 }
 
 impl DesignState {
@@ -17,6 +21,19 @@ impl DesignState {
         Self {
             parameters,
             feature_nodes,
+            semantic_refs: Vec::new(),
+        }
+    }
+
+    pub fn with_semantic_refs(
+        parameters: ParamGraph,
+        feature_nodes: Vec<FeatureNode>,
+        semantic_refs: Vec<TopoRef>,
+    ) -> Self {
+        Self {
+            parameters,
+            feature_nodes,
+            semantic_refs,
         }
     }
 }
@@ -25,6 +42,10 @@ impl DesignState {
 pub fn diff_design_state(before: &DesignState, after: &DesignState) -> DesignDiff {
     let mut changes = diff_param_graphs(&before.parameters, &after.parameters);
     changes.extend(diff_feature_nodes(&before.feature_nodes, &after.feature_nodes));
+    changes.extend(diff_semantic_refs(
+        &before.semantic_refs,
+        &after.semantic_refs,
+    ));
     DesignDiff::semantic(build_summary(&changes), changes)
 }
 

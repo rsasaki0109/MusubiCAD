@@ -3,14 +3,15 @@
 use indexmap::IndexMap;
 
 use opencad_core::{Length, OpenCadError, Result};
-use opencad_geometry::{ExtrudeExtent, FaceDerivation, GeometryKernel, KernelBody, TopoRef};
+use opencad_geometry::{ExtrudeExtent, FaceDerivation, FaceRefDiscovery, GeometryKernel, KernelBody, TopoRef};
 use opencad_graph::FeatureGraph;
 use opencad_sketch::Sketch;
 
 use opencad_graph::ParamGraph;
 
-use crate::chamfer::ChamferFeature;
+use crate::face_discover::discover_face_refs_from_body;
 use crate::extrude::ExtrudeFeature;
+use crate::chamfer::ChamferFeature;
 use crate::feature::{FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
 use crate::fillet::FilletFeature;
 use crate::hole::HoleFeature;
@@ -45,6 +46,7 @@ pub struct RegenSession<'a, K: GeometryKernel> {
     pub outputs: &'a IndexMap<String, FeatureOutput>,
     pub semantic_refs: &'a [TopoRef],
     pub face_history: &'a [FaceDerivation],
+    pub face_discoveries: &'a [FaceRefDiscovery],
 }
 
 impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
@@ -80,6 +82,10 @@ impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
 
     fn face_history(&self) -> &[FaceDerivation] {
         self.face_history
+    }
+
+    fn face_discoveries(&self) -> &[opencad_geometry::FaceRefDiscovery] {
+        self.face_discoveries
     }
 }
 
@@ -143,6 +149,8 @@ impl PartModel {
         let order = self.graph.recompute_order()?;
         let mut report = RegenReport::default();
         let refs = semantic_refs.unwrap_or(&[]);
+        let mut face_discoveries: Vec<FaceRefDiscovery> = Vec::new();
+        let node_list: Vec<FeatureNode> = self.nodes.values().cloned().collect();
 
         for feature_id in order {
             let Some(node) = self.nodes.get(&feature_id) else {
@@ -160,6 +168,7 @@ impl PartModel {
                 outputs: &self.outputs,
                 semantic_refs: refs,
                 face_history: &report.face_history,
+                face_discoveries: &face_discoveries,
             };
 
             let output = registry.execute(node, &session)?;
@@ -167,6 +176,10 @@ impl PartModel {
                 report
                     .face_history
                     .extend(kernel.face_derivation_history(body));
+                if !refs.is_empty() {
+                    face_discoveries =
+                        discover_face_refs_from_body(kernel, body, &node_list).unwrap_or_default();
+                }
             }
             self.outputs.insert(feature_id.clone(), output);
             report.regenerated.push(feature_id);
@@ -392,7 +405,7 @@ pub fn bracket_with_top_chamfer() -> Result<PartModel> {
 pub(crate) struct TestRegenContext {
     kernel: opencad_geometry::MockGeometryKernel,
     sketches: IndexMap<String, Sketch>,
-    outputs: IndexMap<String, FeatureOutput>,
+    pub(crate) outputs: IndexMap<String, FeatureOutput>,
     nodes: IndexMap<String, FeatureNode>,
 }
 

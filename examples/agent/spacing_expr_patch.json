@@ -1,0 +1,10 @@
+{
+  "operations": [
+    {
+      "type": "set_feature_expr",
+      "feature_id": "feature:hole_row",
+      "field": "spacing_expr",
+      "expr": "hole_pitch"
+    }
+  ]
+}

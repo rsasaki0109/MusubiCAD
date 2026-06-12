@@ -1,18 +1,46 @@
 //! Apply DesignPatch operations to `.ocad` documents.
 
-use opencad_ai::{dry_run_patch_state, DesignPatch, DesignState, PatchDryRunReport};
+use opencad_ai::{dry_run_patch_state, DesignPatch, DesignState, PatchDryRunReport, PatchOperation};
 
+use crate::topo_assign::{apply_assign_face_ref, AssignFaceRefOp};
 use crate::OcadDocument;
 
 /// Apply all patch operations to a document in memory.
 pub fn apply_patch_to_document(doc: &mut OcadDocument, patch: &DesignPatch) -> opencad_core::Result<()> {
-    patch.apply_to_document(&mut doc.parameters, &mut doc.feature_nodes)
+    patch.apply_to_document(
+        &mut doc.parameters,
+        &mut doc.feature_nodes,
+        &mut doc.semantic_refs,
+    )?;
+
+    for operation in &patch.operations {
+        let PatchOperation::AssignFaceRef {
+            ref_id,
+            kernel_face_id,
+            created_by,
+            role,
+            normal_m,
+        } = operation
+        else {
+            continue;
+        };
+        apply_assign_face_ref(
+            doc,
+            &AssignFaceRefOp::new(ref_id, *kernel_face_id, created_by, role, *normal_m),
+        )?;
+    }
+
+    Ok(())
 }
 
 /// Validate and preview a patch against a document without persisting changes.
 pub fn dry_run_patch_document(before: &OcadDocument, patch: &DesignPatch) -> PatchDryRunReport {
     dry_run_patch_state(
-        &DesignState::new(before.parameters.clone(), before.feature_nodes.clone()),
+        &DesignState::with_semantic_refs(
+            before.parameters.clone(),
+            before.feature_nodes.clone(),
+            before.semantic_refs.clone(),
+        ),
         patch,
     )
 }
@@ -21,11 +49,11 @@ pub fn dry_run_patch_document(before: &OcadDocument, patch: &DesignPatch) -> Pat
 mod tests {
     use super::*;
     use opencad_ai::FeatureExprField;
-    use opencad_core::{DocumentId, DocumentMetadata};
+    use opencad_core::{DocumentId, DocumentMetadata, TopoRefId};
     use opencad_feature::{
         bracket_with_hole, bracket_with_top_fillet, FeatureDefinition, FeatureRegistry,
     };
-    use opencad_geometry::GeometryKernel;
+    use opencad_geometry::{assign_named_face_ref, GeometryKernel};
     use opencad_graph::{bracket_parameters, SemanticChange};
     use opencad_kernel_occt::OcctGeometryKernel;
 
@@ -89,6 +117,79 @@ mod tests {
                     change,
                     SemanticChange::FeatureModified { id, field, .. }
                         if id == "feature:extrude_base" && field == "definition"
+                ))
+        );
+    }
+
+    #[test]
+    fn assign_face_ref_patch_adds_semantic_ref() {
+        let mut doc = bracket_document();
+        let patch = DesignPatch::assign_face_ref(
+            "ref:face:bracket_top",
+            "feature:extrude_base",
+            "top",
+        );
+        apply_patch_to_document(&mut doc, &patch).expect("patch");
+        assert!(doc
+            .semantic_refs
+            .iter()
+            .any(|topo_ref| topo_ref.ref_id.as_str() == "ref:face:bracket_top"));
+    }
+
+    #[test]
+    fn dry_run_reports_assign_face_ref_change() {
+        let before = bracket_document();
+        let patch = DesignPatch::assign_face_ref(
+            "ref:face:bracket_top",
+            "feature:extrude_base",
+            "top",
+        );
+        let report = dry_run_patch_document(&before, &patch);
+        assert!(report.validation.is_ok());
+        assert!(
+            report
+                .diff
+                .changes
+                .iter()
+                .any(|change| matches!(
+                    change,
+                    SemanticChange::TopoRefAdded { ref_id, .. }
+                        if ref_id == "ref:face:bracket_top"
+                ))
+        );
+    }
+
+    #[test]
+    fn diff_documents_reports_topo_ref_assignment() {
+        let mut before = bracket_document();
+        assign_named_face_ref(
+            &mut before.semantic_refs,
+            TopoRefId::new("ref:face:bracket_top").expect("id"),
+            "feature:extrude_base",
+            "top",
+            None,
+            [0.0, 0.0, 1.0],
+        )
+        .expect("assign");
+        let mut after = before.clone();
+        assign_named_face_ref(
+            &mut after.semantic_refs,
+            TopoRefId::new("ref:face:mount_face").expect("id"),
+            "feature:extrude_base",
+            "top",
+            None,
+            [0.0, 0.0, 1.0],
+        )
+        .expect("assign");
+
+        let diff = crate::diff::diff_documents(&before, &after);
+        assert!(
+            diff.changes
+                .iter()
+                .any(|change| matches!(
+                    change,
+                    SemanticChange::TopoRefAdded { ref_id, .. }
+                        if ref_id == "ref:face:mount_face"
                 ))
         );
     }

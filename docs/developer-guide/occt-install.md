@@ -1,6 +1,6 @@
 # OCCT Installation
 
-OpenCAD uses OpenCASCADE (OCCT) for B-Rep solid modeling.
+ForgeCAD uses OpenCASCADE (OCCT) for B-Rep solid modeling.
 
 ## Default: static OCCT (no system install)
 
@@ -28,7 +28,7 @@ No `sudo`, no `apt`, no `LD_LIBRARY_PATH`.
 For developers who also want distro headers/libs (future direct C++ bridge):
 
 ```bash
-OpenCAD/tools/install_occt.sh
+ForgeCAD/tools/install_occt.sh
 ```
 
 Or manually:
@@ -59,4 +59,4 @@ Integration test `occt_extrude_plate_volume` checks volume ≈ 80×60×6 mm³.
 
 ## Units
 
-OpenCAD internal units are **SI meters**. OCCT operations receive meter-scale coordinates.
+ForgeCAD internal units are **SI meters**. OCCT operations receive meter-scale coordinates.

@@ -1,11 +1,8 @@
 //! Document semantic topology reference sync and assignment.
 
-use opencad_core::{OpenCadError, Result, TopoRefId};
-use opencad_file::{read_ocad, write_expanded_dir, OcadDocument};
-use opencad_geometry::{
-    assign_face_ref_to_refs, sync_semantic_refs_with_history, FaceRefDiscovery, GeometryKernel,
-    TopoRef,
-};
+use opencad_core::{OpenCadError, Result};
+use opencad_file::{apply_assign_face_ref, read_ocad, write_expanded_dir, AssignFaceRefOp, OcadDocument};
+use opencad_geometry::{sync_semantic_refs_with_history, FaceRefDiscovery, TopoRef};
 use opencad_render::RenderScene;
 
 use crate::export::tessellate_active_body_detailed;
@@ -73,90 +70,16 @@ pub fn assign_face_ref_document(
     normal_m: [f32; 3],
 ) -> Result<TopoRef> {
     let mut doc = read_ocad(path)?;
-
-    #[cfg(feature = "occt")]
-    {
-        use opencad_feature::FeatureRegistry;
-        use opencad_kernel_occt::OcctGeometryKernel;
-        let kernel = OcctGeometryKernel::new();
-        let registry = FeatureRegistry::with_defaults();
-        let mut model = doc.clone().into_part_model();
-        model.regenerate(
-            &kernel,
-            &registry,
-            Some(&doc.parameters),
-            Some(&doc.semantic_refs),
-        )?;
-        let body = model.active_body().ok_or_else(|| {
-            OpenCadError::validation("document has no solid body for face assignment")
-        })?;
-        let mesh_set = kernel.tessellate(body, &opencad_geometry::TessellationSettings::default())?;
-        let effective_face_id =
-            resolve_kernel_face_id(&mesh_set, kernel_face_id, role, created_by, &doc.feature_nodes)?;
-        let topo_ref_id = TopoRefId::new(ref_id)?;
-        kernel.assign_face_ref(body, effective_face_id, topo_ref_id.clone())?;
-        assign_face_ref_to_refs(
-            &mut doc.semantic_refs,
-            effective_face_id,
-            topo_ref_id.clone(),
-            created_by,
-            role,
-            normal_m,
-        )?;
-        write_expanded_dir(path, &doc)?;
-        let assigned = doc
-            .semantic_refs
-            .iter()
-            .find(|topo_ref| topo_ref.kernel_face_id() == Some(effective_face_id))
-            .cloned()
-            .ok_or_else(|| OpenCadError::validation("assigned topo ref not found after write"))?;
-        Ok(assigned)
-    }
-
-    #[cfg(not(feature = "occt"))]
-    {
-        let _ = (
-            path,
-            kernel_face_id,
-            ref_id,
-            created_by,
-            role,
-            normal_m,
-        );
-        Err(OpenCadError::Other(
-            "assign_face_ref requires OCCT backend".into(),
-        ))
-    }
-}
-
-fn resolve_kernel_face_id(
-    mesh_set: &opencad_geometry::MeshSet,
-    kernel_face_id: u64,
-    role: &str,
-    created_by: &str,
-    feature_nodes: &[opencad_feature::FeatureNode],
-) -> Result<u64> {
-    if kernel_face_id != 0
-        && opencad_geometry::topo_sync::validate_kernel_face_on_mesh(mesh_set, kernel_face_id).is_ok()
-    {
-        return Ok(kernel_face_id);
-    }
-
-    let scene = RenderScene::from_mesh_set(mesh_set)?;
-    let discoveries = discover_face_refs(&scene, feature_nodes);
-    discoveries
+    apply_assign_face_ref(
+        &mut doc,
+        &AssignFaceRefOp::new(ref_id, kernel_face_id, created_by, role, normal_m),
+    )?;
+    write_expanded_dir(path, &doc)?;
+    doc.semantic_refs
         .iter()
-        .find(|discovery| {
-            discovery.role == role
-                && discovery.feature_id.as_deref() == Some(created_by)
-        })
-        .or_else(|| discoveries.iter().find(|discovery| discovery.role == role))
-        .map(|discovery| discovery.kernel_face_id)
-        .ok_or_else(|| {
-            OpenCadError::not_found(format!(
-                "no face matching role '{role}' for feature '{created_by}'"
-            ))
-        })
+        .find(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
+        .cloned()
+        .ok_or_else(|| OpenCadError::validation("assigned topo ref not found after write"))
 }
 
 #[cfg(test)]

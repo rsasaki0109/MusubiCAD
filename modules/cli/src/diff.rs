@@ -164,6 +164,28 @@ fn print_change(change: &SemanticChange) {
         SemanticChange::BboxChanged { before, after } => {
             println!("  bbox: {before} -> {after}");
         }
+        SemanticChange::TopoRefAdded {
+            ref_id,
+            created_by,
+            role,
+        } => {
+            let role_suffix = role
+                .as_deref()
+                .map(|value| format!(", role={value}"))
+                .unwrap_or_default();
+            println!("  topo ref added {ref_id} ({created_by}{role_suffix})");
+        }
+        SemanticChange::TopoRefRemoved { ref_id } => {
+            println!("  topo ref removed {ref_id}");
+        }
+        SemanticChange::TopoRefModified {
+            ref_id,
+            field,
+            before,
+            after,
+        } => {
+            println!("  topo ref {ref_id}.{field}: {before} -> {after}");
+        }
     }
 }
 

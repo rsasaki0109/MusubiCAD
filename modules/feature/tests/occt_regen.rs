@@ -227,3 +227,508 @@ fn occt_fillet_on_face_ref_matches_top_perimeter() {
         baseline_mass.volume_m3
     );
 }
+
+#[test]
+fn occt_linear_pattern_unions_translated_bodies() {
+    use opencad_feature::{
+        apply_parameters, FeatureDefinition, FeatureNode, LinearPatternFeature,
+    };
+
+    let mut model = bracket_base_plate().expect("model");
+    let params = bracket_parameters();
+    apply_parameters(&mut model, &params).expect("apply");
+    model
+        .add_node(FeatureNode::new(
+            "feature:plate_row",
+            "Plate Row",
+            FeatureDefinition::LinearPattern(LinearPatternFeature::new(
+                "feature:extrude_base",
+                [0.0, 0.0, 1.0],
+                Length::from_meters(0.006),
+                2,
+            )),
+        ))
+        .expect("pattern");
+    model
+        .add_dependency("feature:extrude_base", "feature:plate_row")
+        .expect("dep");
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    model
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let patterned_mass = kernel
+        .mass_properties(model.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut single_model = bracket_base_plate().expect("model");
+    apply_parameters(&mut single_model, &params).expect("apply");
+    single_model
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let single_mass = kernel
+        .mass_properties(single_model.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        patterned_mass.volume_m3 > single_mass.volume_m3,
+        "patterned plates should increase volume: {} vs {}",
+        patterned_mass.volume_m3,
+        single_mass.volume_m3
+    );
+}
+
+fn pin_tool_plate() -> opencad_feature::PartModel {
+    pin_tool_plate_at(0.01, 0.01)
+}
+
+fn pin_tool_plate_at(center_x: f64, center_y: f64) -> opencad_feature::PartModel {
+    use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+    use opencad_feature::{
+        apply_parameters, ExtrudeFeature, FeatureDefinition, FeatureNode,
+        SketchFeatureDef,
+    };
+    use opencad_geometry::{ExtrudeExtent, ExtrudeOperation};
+    use opencad_sketch::{
+        constraint::Constraint,
+        entity::{Coord, EntityBase, CircleEntity, PointEntity, SketchEntity},
+        workplane::Workplane,
+        Sketch,
+    };
+
+    let mut model = bracket_base_plate().expect("plate");
+    apply_parameters(&mut model, &bracket_parameters()).expect("apply");
+
+    let mut pin_sketch = Sketch::new(
+        SketchId::new("sketch:pin").expect("id"),
+        "Pin Sketch",
+        Workplane::xy(),
+    );
+    pin_sketch
+        .add_entity(SketchEntity::Point(PointEntity {
+            base: EntityBase {
+                id: EntityId::new("ent:pin_center").expect("id"),
+                construction: false,
+            },
+            x: Coord::literal(center_x),
+            y: Coord::literal(center_y),
+        }))
+        .expect("point");
+    pin_sketch
+        .add_entity(SketchEntity::Circle(CircleEntity {
+            base: EntityBase {
+                id: EntityId::new("ent:pin_circle").expect("id"),
+                construction: false,
+            },
+            center: EntityId::new("ent:pin_center").expect("id"),
+            radius: Coord::literal(0.002),
+        }))
+        .expect("circle");
+    pin_sketch
+        .add_constraint(Constraint::Radius {
+            id: ConstraintId::new("con:pin_radius").expect("id"),
+            target: EntityId::new("ent:pin_circle").expect("id"),
+            expr: Expression::new("2 mm").expect("expr"),
+        })
+        .expect("radius");
+    model
+        .sketches
+        .insert(pin_sketch.id.as_str().to_string(), pin_sketch);
+
+    model
+        .add_node(FeatureNode::new(
+            "feature:sketch_pin",
+            "Pin Sketch",
+            FeatureDefinition::Sketch(SketchFeatureDef {
+                sketch_id: "sketch:pin".into(),
+            }),
+        ))
+        .expect("sketch feature");
+    model
+        .add_node(FeatureNode::new(
+            "feature:pin_tool",
+            "Pin Tool",
+            FeatureDefinition::Extrude(ExtrudeFeature {
+                sketch_feature: "feature:sketch_pin".into(),
+                profile_ref: "sketch:pin/profile:outer".into(),
+                extent: ExtrudeExtent::Distance {
+                    length: Length::from_meters(0.006),
+                },
+                operation: ExtrudeOperation::NewBody,
+                length_expr: Some("thickness".into()),
+                target_feature: None,
+            }),
+        ))
+        .expect("pin tool");
+    model
+        .add_dependency("feature:sketch_pin", "feature:pin_tool")
+        .expect("dep");
+    model
+}
+
+#[test]
+fn occt_linear_cut_pattern_subtracts_more_than_single_cut() {
+    use opencad_feature::{FeatureDefinition, FeatureNode, LinearPatternFeature};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut single_cut = pin_tool_plate();
+    single_cut
+        .add_node(FeatureNode::new(
+            "feature:pin_hole",
+            "Single Pin Hole",
+            FeatureDefinition::LinearPattern(LinearPatternFeature::cut(
+                "feature:pin_tool",
+                "feature:extrude_base",
+                [1.0, 0.0, 0.0],
+                Length::from_meters(0.02),
+                1,
+            )),
+        ))
+        .expect("pattern");
+    single_cut
+        .add_dependency("feature:extrude_base", "feature:pin_hole")
+        .expect("dep");
+    single_cut
+        .add_dependency("feature:pin_tool", "feature:pin_hole")
+        .expect("dep");
+    single_cut
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let single_mass = kernel
+        .mass_properties(single_cut.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut double_cut = pin_tool_plate();
+    double_cut
+        .add_node(FeatureNode::new(
+            "feature:pin_holes",
+            "Double Pin Holes",
+            FeatureDefinition::LinearPattern(LinearPatternFeature::cut(
+                "feature:pin_tool",
+                "feature:extrude_base",
+                [1.0, 0.0, 0.0],
+                Length::from_meters(0.02),
+                2,
+            )),
+        ))
+        .expect("pattern");
+    double_cut
+        .add_dependency("feature:extrude_base", "feature:pin_holes")
+        .expect("dep");
+    double_cut
+        .add_dependency("feature:pin_tool", "feature:pin_holes")
+        .expect("dep");
+    double_cut
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let double_mass = kernel
+        .mass_properties(double_cut.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let plate_volume = 0.08 * 0.06 * 0.006;
+    assert!(
+        single_mass.volume_m3 < plate_volume,
+        "single cut should reduce plate volume: {} vs {}",
+        single_mass.volume_m3,
+        plate_volume
+    );
+    assert!(
+        double_mass.volume_m3 < single_mass.volume_m3,
+        "double cut should remove more material: {} vs {}",
+        double_mass.volume_m3,
+        single_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_circular_pattern_unions_rotated_bodies() {
+    use opencad_feature::{
+        CircularPatternFeature, FeatureDefinition, FeatureNode,
+    };
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut single = pin_tool_plate_at(0.042, 0.03);
+    single
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let single_mass = kernel
+        .mass_properties(
+            single
+                .outputs
+                .get("feature:pin_tool")
+                .and_then(|output| output.body.as_ref())
+                .expect("pin tool"),
+            2700.0,
+        )
+        .expect("mass");
+
+    let mut ring = pin_tool_plate_at(0.042, 0.03);
+    ring.add_node(FeatureNode::new(
+        "feature:pin_ring",
+        "Pin Ring",
+        FeatureDefinition::CircularPattern(CircularPatternFeature::new(
+            "feature:pin_tool",
+            [0.04, 0.03, 0.0],
+            [0.0, 0.0, 1.0],
+            4,
+        )),
+    ))
+    .expect("pattern");
+    ring.add_dependency("feature:pin_tool", "feature:pin_ring")
+        .expect("dep");
+    ring.regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let ring_mass = kernel
+        .mass_properties(ring.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        ring_mass.volume_m3 > single_mass.volume_m3 * 3.0,
+        "circular union should combine multiple pins: {} vs {}",
+        ring_mass.volume_m3,
+        single_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_circular_cut_pattern_reduces_plate_volume() {
+    use opencad_feature::{CircularPatternFeature, FeatureDefinition, FeatureNode};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut plate = pin_tool_plate();
+    plate
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let plate_mass = kernel
+        .mass_properties(
+            plate
+                .outputs
+                .get("feature:extrude_base")
+                .and_then(|output| output.body.as_ref())
+                .expect("plate"),
+            2700.0,
+        )
+        .expect("mass");
+
+    let mut cut = pin_tool_plate();
+    cut.add_node(FeatureNode::new(
+        "feature:pin_hole_ring",
+        "Pin Hole Ring",
+        FeatureDefinition::CircularPattern({
+            let mut pattern = CircularPatternFeature::new(
+                "feature:pin_tool",
+                [0.04, 0.03, 0.0],
+                [0.0, 0.0, 1.0],
+                4,
+            );
+            pattern.operation = opencad_feature::PatternOperation::Cut;
+            pattern.target_feature = Some("feature:extrude_base".into());
+            pattern
+        }),
+    ))
+    .expect("pattern");
+    cut.add_dependency("feature:extrude_base", "feature:pin_hole_ring")
+        .expect("dep");
+    cut.add_dependency("feature:pin_tool", "feature:pin_hole_ring")
+        .expect("dep");
+    cut.regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let cut_mass = kernel
+        .mass_properties(cut.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        cut_mass.volume_m3 < plate_mass.volume_m3,
+        "circular cut should reduce plate volume: {} vs {}",
+        cut_mass.volume_m3,
+        plate_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_linear_pattern_spacing_expr_resolves_before_regen() {
+    use opencad_feature::{FeatureDefinition, FeatureNode, LinearPatternFeature};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut explicit = pin_tool_plate();
+    explicit
+        .add_node(FeatureNode::new(
+            "feature:pin_holes",
+            "Explicit Pitch Holes",
+            FeatureDefinition::LinearPattern(LinearPatternFeature::cut(
+                "feature:pin_tool",
+                "feature:extrude_base",
+                [1.0, 0.0, 0.0],
+                Length::from_meters(0.02),
+                2,
+            )),
+        ))
+        .expect("pattern");
+    explicit
+        .add_dependency("feature:extrude_base", "feature:pin_holes")
+        .expect("dep");
+    explicit
+        .add_dependency("feature:pin_tool", "feature:pin_holes")
+        .expect("dep");
+    explicit
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let explicit_mass = kernel
+        .mass_properties(explicit.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut expr_model = pin_tool_plate();
+    let mut pattern = LinearPatternFeature::cut(
+        "feature:pin_tool",
+        "feature:extrude_base",
+        [1.0, 0.0, 0.0],
+        Length::from_meters(0.01),
+        2,
+    );
+    pattern.spacing_expr = Some("hole_pitch".into());
+    expr_model
+        .add_node(FeatureNode::new(
+            "feature:pin_holes",
+            "Parametric Pitch Holes",
+            FeatureDefinition::LinearPattern(pattern),
+        ))
+        .expect("pattern");
+    expr_model
+        .add_dependency("feature:extrude_base", "feature:pin_holes")
+        .expect("dep");
+    expr_model
+        .add_dependency("feature:pin_tool", "feature:pin_holes")
+        .expect("dep");
+    expr_model
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let expr_mass = kernel
+        .mass_properties(expr_model.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        (expr_mass.volume_m3 - explicit_mass.volume_m3).abs() < 1e-8,
+        "spacing_expr should match explicit spacing: {} vs {}",
+        expr_mass.volume_m3,
+        explicit_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_mirror_pattern_unions_reflected_bodies() {
+    use opencad_feature::{FeatureDefinition, FeatureNode, MirrorPatternFeature};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut single = pin_tool_plate_at(0.041, 0.03);
+    single
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let single_mass = kernel
+        .mass_properties(
+            single
+                .outputs
+                .get("feature:pin_tool")
+                .and_then(|output| output.body.as_ref())
+                .expect("pin tool"),
+            2700.0,
+        )
+        .expect("mass");
+
+    let mut mirrored = pin_tool_plate_at(0.041, 0.03);
+    mirrored
+        .add_node(FeatureNode::new(
+            "feature:pin_pair",
+            "Pin Pair",
+            FeatureDefinition::MirrorPattern(MirrorPatternFeature::new(
+                "feature:pin_tool",
+                [0.04, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+            )),
+        ))
+        .expect("pattern");
+    mirrored
+        .add_dependency("feature:pin_tool", "feature:pin_pair")
+        .expect("dep");
+    mirrored
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let pair_mass = kernel
+        .mass_properties(mirrored.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        pair_mass.volume_m3 > single_mass.volume_m3 * 1.5,
+        "mirror union should combine source and reflection: {} vs {}",
+        pair_mass.volume_m3,
+        single_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_mirror_cut_pattern_reduces_plate_volume() {
+    use opencad_feature::{FeatureDefinition, FeatureNode, MirrorPatternFeature};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut plate = pin_tool_plate();
+    plate
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let plate_mass = kernel
+        .mass_properties(
+            plate
+                .outputs
+                .get("feature:extrude_base")
+                .and_then(|output| output.body.as_ref())
+                .expect("plate"),
+            2700.0,
+        )
+        .expect("mass");
+
+    let mut cut = pin_tool_plate();
+    cut.add_node(FeatureNode::new(
+        "feature:pin_hole_pair",
+        "Pin Hole Pair",
+        FeatureDefinition::MirrorPattern(MirrorPatternFeature::cut(
+            "feature:pin_tool",
+            "feature:extrude_base",
+            [0.04, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+        )),
+    ))
+    .expect("pattern");
+    cut.add_dependency("feature:extrude_base", "feature:pin_hole_pair")
+        .expect("dep");
+    cut.add_dependency("feature:pin_tool", "feature:pin_hole_pair")
+        .expect("dep");
+    cut.regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let cut_mass = kernel
+        .mass_properties(cut.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        cut_mass.volume_m3 < plate_mass.volume_m3,
+        "mirror cut should reduce plate volume: {} vs {}",
+        cut_mass.volume_m3,
+        plate_mass.volume_m3
+    );
+}

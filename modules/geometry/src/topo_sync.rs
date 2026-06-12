@@ -61,19 +61,122 @@ pub fn resolve_kernel_face_id_for_topo_ref(
     face_history: &[FaceDerivation],
     ref_id: &str,
 ) -> Result<u64> {
+    resolve_kernel_face_id_for_topo_ref_with_discoveries(
+        semantic_refs,
+        face_history,
+        ref_id,
+        None,
+    )
+}
+
+/// Resolve a topo ref id, optionally matching tessellated faces by geometric fingerprint.
+pub fn resolve_kernel_face_id_for_topo_ref_with_discoveries(
+    semantic_refs: &[TopoRef],
+    face_history: &[FaceDerivation],
+    ref_id: &str,
+    discoveries: Option<&[FaceRefDiscovery]>,
+) -> Result<u64> {
     let topo_ref = semantic_refs
         .iter()
         .find(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
         .ok_or_else(|| OpenCadError::not_found(format!("topo ref '{ref_id}'")))?;
 
-    let stored_id = topo_ref.kernel_face_id().ok_or_else(|| {
-        OpenCadError::validation(format!(
-            "topo ref '{ref_id}' has no kernel_face_id; run sync_topo_refs first"
-        ))
-    })?;
+    if let Some(stored_id) = topo_ref.kernel_face_id() {
+        let remap = build_src_to_post_map(face_history);
+        return Ok(remap.get(&stored_id).copied().unwrap_or(stored_id));
+    }
 
-    let remap = build_src_to_post_map(face_history);
-    Ok(remap.get(&stored_id).copied().unwrap_or(stored_id))
+    if let Some(discoveries) = discoveries {
+        if let Some(kernel_face_id) = match_face_discovery_for_topo_ref(topo_ref, discoveries) {
+            return Ok(kernel_face_id);
+        }
+    }
+
+    Err(OpenCadError::validation(format!(
+        "topo ref '{ref_id}' has no kernel_face_id{}",
+        if discoveries.is_some() {
+            " and fingerprint fallback did not match a face"
+        } else {
+            "; run sync_topo_refs first or provide tessellated face discoveries"
+        }
+    )))
+}
+
+/// Match a tessellated face to a persisted topo ref using role, feature, and normal hints.
+pub fn match_face_discovery_for_topo_ref(
+    topo_ref: &TopoRef,
+    discoveries: &[FaceRefDiscovery],
+) -> Option<u64> {
+    discoveries
+        .iter()
+        .filter(|discovery| discovery_matches_topo_ref(topo_ref, discovery))
+        .max_by(|left, right| {
+            fingerprint_match_score(topo_ref, left)
+                .partial_cmp(&fingerprint_match_score(topo_ref, right))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .filter(|discovery| fingerprint_match_score(topo_ref, discovery) > 0.0)
+        .map(|discovery| discovery.kernel_face_id)
+}
+
+fn discovery_matches_topo_ref(topo_ref: &TopoRef, discovery: &FaceRefDiscovery) -> bool {
+    let created_by = topo_ref.semantic.created_by.as_str();
+    let role_matches = topo_ref
+        .semantic
+        .role
+        .as_deref()
+        .map(|role| discovery.role == role)
+        .unwrap_or(true);
+    if !role_matches {
+        return false;
+    }
+
+    if discovery.feature_id.as_deref() == Some(created_by) {
+        return true;
+    }
+
+    topo_ref
+        .geometric_fingerprint
+        .as_ref()
+        .map(|fingerprint| {
+            fingerprint
+                .adjacent_feature_ids
+                .iter()
+                .any(|feature_id| discovery.feature_id.as_deref() == Some(feature_id.as_str()))
+        })
+        .unwrap_or(false)
+}
+
+fn fingerprint_match_score(topo_ref: &TopoRef, discovery: &FaceRefDiscovery) -> f64 {
+    let mut score = 0.0;
+    if discovery.feature_id.as_deref() == Some(topo_ref.semantic.created_by.as_str()) {
+        score += 2.0;
+    }
+    if topo_ref.semantic.role.as_deref() == Some(discovery.role.as_str()) {
+        score += 2.0;
+    }
+    score += normal_alignment_score(topo_ref.semantic.normal_hint, discovery.normal_m) * 3.0;
+    if topo_ref.kernel_face_id() == Some(discovery.kernel_face_id) {
+        score += 5.0;
+    }
+    score
+}
+
+fn normal_alignment_score(normal_hint: Option<[f64; 3]>, normal_m: [f32; 3]) -> f64 {
+    let Some(hint) = normal_hint else {
+        return 0.0;
+    };
+    let hx = hint[0] as f32;
+    let hy = hint[1] as f32;
+    let hz = hint[2] as f32;
+    let hint_len = (hx * hx + hy * hy + hz * hz).sqrt();
+    let normal_len =
+        (normal_m[0] * normal_m[0] + normal_m[1] * normal_m[1] + normal_m[2] * normal_m[2]).sqrt();
+    if hint_len < 1e-9 || normal_len < 1e-9 {
+        return 0.0;
+    }
+    let dot = (hx * normal_m[0] + hy * normal_m[1] + hz * normal_m[2]) / (hint_len * normal_len);
+    f64::from(dot.abs())
 }
 
 /// Map source face ids to their latest post ids using kernel derivation history.
@@ -165,9 +268,30 @@ pub fn sync_semantic_refs(
         }
 
         if let Some(feature_id) = discovery.feature_id.as_deref() {
-            if let Some(index) = refs.iter().position(|topo_ref| {
-                topo_ref.semantic.created_by == feature_id
-                    && topo_ref.semantic.role.as_deref() == Some(discovery.role.as_str())
+            let candidate_indexes: Vec<usize> = refs
+                .iter()
+                .enumerate()
+                .filter(|(_, topo_ref)| {
+                    topo_ref.semantic.created_by == feature_id
+                        && topo_ref.semantic.role.as_deref() == Some(discovery.role.as_str())
+                })
+                .map(|(index, _)| index)
+                .collect();
+            if let Some(index) = candidate_indexes.iter().copied().find(|&index| {
+                refs[index].kernel_face_id().is_none()
+            }) {
+                refs[index].geometric_fingerprint = Some(fingerprint_from(discovery));
+                refs[index].semantic.normal_hint = Some([
+                    discovery.normal_m[0] as f64,
+                    discovery.normal_m[1] as f64,
+                    discovery.normal_m[2] as f64,
+                ]);
+                continue;
+            }
+            if let Some(index) = candidate_indexes.into_iter().max_by(|left, right| {
+                fingerprint_match_score(&refs[*left], discovery)
+                    .partial_cmp(&fingerprint_match_score(&refs[*right], discovery))
+                    .unwrap_or(std::cmp::Ordering::Equal)
             }) {
                 refs[index].geometric_fingerprint = Some(fingerprint_from(discovery));
                 refs[index].semantic.normal_hint = Some([
@@ -240,6 +364,51 @@ pub fn assign_face_ref_to_refs(
     Ok(())
 }
 
+/// Assign or update a named face ref, with optional kernel face id.
+pub fn assign_named_face_ref(
+    semantic_refs: &mut Vec<TopoRef>,
+    ref_id: TopoRefId,
+    created_by: impl Into<String>,
+    role: impl Into<String>,
+    kernel_face_id: Option<u64>,
+    normal_m: [f32; 3],
+) -> Result<()> {
+    if let Some(kernel_face_id) = kernel_face_id.filter(|&id| id != 0) {
+        return assign_face_ref_to_refs(
+            semantic_refs,
+            kernel_face_id,
+            ref_id,
+            created_by,
+            role,
+            normal_m,
+        );
+    }
+
+    if let Some(index) = semantic_refs
+        .iter()
+        .position(|topo_ref| topo_ref.ref_id.as_str() == ref_id.as_str())
+    {
+        semantic_refs[index].semantic.created_by = created_by.into();
+        semantic_refs[index].semantic.role = Some(role.into());
+        semantic_refs[index].semantic.normal_hint = Some([
+            normal_m[0] as f64,
+            normal_m[1] as f64,
+            normal_m[2] as f64,
+        ]);
+        return Ok(());
+    }
+
+    let mut topo_ref = TopoRef::face(ref_id, created_by, role);
+    topo_ref.semantic.normal_hint = Some([
+        normal_m[0] as f64,
+        normal_m[1] as f64,
+        normal_m[2] as f64,
+    ]);
+    semantic_refs.push(topo_ref);
+    semantic_refs.sort_by(|left, right| left.ref_id.as_str().cmp(right.ref_id.as_str()));
+    Ok(())
+}
+
 pub fn validate_kernel_face_on_mesh(mesh: &crate::tessellation::MeshSet, kernel_face_id: u64) -> Result<()> {
     if !mesh.has_triangle_face_ids() {
         return Err(OpenCadError::validation(
@@ -260,7 +429,18 @@ fn fingerprint_from(discovery: &FaceRefDiscovery) -> GeometricFingerprint {
         surface_type: "brep_face".into(),
         kernel_face_id: Some(discovery.kernel_face_id),
         area_range: None,
-        bbox_hint: None,
+        bbox_hint: Some([
+            [
+                discovery.centroid_m[0] as f64,
+                discovery.centroid_m[1] as f64,
+                discovery.centroid_m[2] as f64,
+            ],
+            [
+                discovery.centroid_m[0] as f64,
+                discovery.centroid_m[1] as f64,
+                discovery.centroid_m[2] as f64,
+            ],
+        ]),
         adjacent_feature_ids: discovery
             .feature_id
             .clone()
@@ -407,5 +587,62 @@ mod tests {
             resolve_kernel_face_id_for_topo_ref(&refs, &history, "ref:face:bracket_top")
                 .expect("resolve");
         assert_eq!(resolved, 30);
+    }
+
+    #[test]
+    fn fingerprint_fallback_resolves_named_ref_without_kernel_face_id() {
+        use opencad_core::TopoRefId;
+
+        let refs = vec![TopoRef::face(
+            TopoRefId::new("ref:face:bracket_top").expect("id"),
+            "feature:extrude_base",
+            "top",
+        )];
+        let discoveries = vec![FaceRefDiscovery {
+            kernel_face_id: 77,
+            role: "top".into(),
+            normal_m: [0.0, 0.0, 1.0],
+            centroid_m: [0.0, 0.0, 0.006],
+            feature_id: Some("feature:extrude_base".into()),
+        }];
+        let resolved = resolve_kernel_face_id_for_topo_ref_with_discoveries(
+            &refs,
+            &[],
+            "ref:face:bracket_top",
+            Some(&discoveries),
+        )
+        .expect("resolve");
+        assert_eq!(resolved, 77);
+    }
+
+    #[test]
+    fn fingerprint_match_prefers_normal_aligned_discovery() {
+        let topo_ref = TopoRef::face(
+            TopoRefId::new("ref:face:bracket_top").expect("id"),
+            "feature:extrude_base",
+            "top",
+        );
+        let discoveries = vec![
+            FaceRefDiscovery {
+                kernel_face_id: 10,
+                role: "top".into(),
+                normal_m: [0.0, 1.0, 0.0],
+                centroid_m: [0.0, 0.0, 0.006],
+                feature_id: Some("feature:extrude_base".into()),
+            },
+            FaceRefDiscovery {
+                kernel_face_id: 11,
+                role: "top".into(),
+                normal_m: [0.0, 0.0, 1.0],
+                centroid_m: [0.0, 0.0, 0.006],
+                feature_id: Some("feature:extrude_base".into()),
+            },
+        ];
+        let mut topo_ref = topo_ref;
+        topo_ref.semantic.normal_hint = Some([0.0, 0.0, 1.0]);
+        assert_eq!(
+            match_face_discovery_for_topo_ref(&topo_ref, &discoveries),
+            Some(11)
+        );
     }
 }

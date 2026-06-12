@@ -367,6 +367,97 @@ impl GeometryKernel for OcctGeometryKernel {
             Err(OpenCadError::Other("OCCT backend disabled".into()))
         }
     }
+
+    fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let solid = self
+                .store
+                .borrow()
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+            let translated = solid.translate(DVec3::new(
+                translation_m[0],
+                translation_m[1],
+                translation_m[2],
+            ));
+            let id = self.store.borrow_mut().insert_body(translated);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, translation_m);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
+    fn rotate_body(
+        &self,
+        body: KernelBody,
+        axis_origin_m: [f64; 3],
+        axis_direction_m: [f64; 3],
+        angle_rad: f64,
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let solid = self
+                .store
+                .borrow()
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+            let axis_direction = DVec3::new(
+                axis_direction_m[0],
+                axis_direction_m[1],
+                axis_direction_m[2],
+            );
+            let axis_origin = DVec3::new(axis_origin_m[0], axis_origin_m[1], axis_origin_m[2]);
+            let rotated = solid.rotate(axis_origin, axis_direction, angle_rad);
+            let id = self.store.borrow_mut().insert_body(rotated);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, axis_origin_m, axis_direction_m, angle_rad);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
+    fn mirror_body(
+        &self,
+        body: KernelBody,
+        plane_origin_m: [f64; 3],
+        plane_normal_m: [f64; 3],
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let solid = self
+                .store
+                .borrow()
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+            let plane_origin = DVec3::new(
+                plane_origin_m[0],
+                plane_origin_m[1],
+                plane_origin_m[2],
+            );
+            let plane_normal = DVec3::new(
+                plane_normal_m[0],
+                plane_normal_m[1],
+                plane_normal_m[2],
+            );
+            let mirrored = solid.mirror(plane_origin, plane_normal);
+            let id = self.store.borrow_mut().insert_body(mirrored);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, plane_origin_m, plane_normal_m);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
 }
 
 #[cfg(all(test, feature = "occt"))]
@@ -514,6 +605,87 @@ mod tests {
         assert!(
             after.volume_m3 < before.volume_m3,
             "chamfer should reduce volume: {} vs {}",
+            after.volume_m3,
+            before.volume_m3
+        );
+    }
+
+    #[test]
+    fn occt_translate_body_offsets_solid() {
+        let kernel = OcctGeometryKernel::new();
+        let wire = kernel
+            .make_wire_from_sketch(&rectangle_sketch())
+            .expect("wire");
+        let body = kernel
+            .extrude(
+                wire,
+                ExtrudeExtent::Distance {
+                    length: Length::from_meters(0.006),
+                },
+                ExtrudeOperation::NewBody,
+                None,
+            )
+            .expect("extrude");
+        let translated = kernel
+            .translate_body(body, [0.1, 0.0, 0.0])
+            .expect("translate");
+        let mass = kernel.mass_properties(&translated, 2700.0).expect("mass");
+        assert!(mass.volume_m3 > 0.0);
+    }
+
+    #[test]
+    fn occt_rotate_body_preserves_volume() {
+        let kernel = OcctGeometryKernel::new();
+        let wire = kernel
+            .make_wire_from_sketch(&rectangle_sketch())
+            .expect("wire");
+        let body = kernel
+            .extrude(
+                wire,
+                ExtrudeExtent::Distance {
+                    length: Length::from_meters(0.006),
+                },
+                ExtrudeOperation::NewBody,
+                None,
+            )
+            .expect("extrude");
+        let before = kernel.mass_properties(&body, 2700.0).expect("before");
+        let rotated = kernel
+            .rotate_body(body, [0.04, 0.03, 0.0], [0.0, 0.0, 1.0], std::f64::consts::FRAC_PI_2)
+            .expect("rotate");
+        let after = kernel.mass_properties(&rotated, 2700.0).expect("after");
+        assert!(
+            (after.volume_m3 - before.volume_m3).abs() < 1e-9,
+            "rotation should preserve volume: {} vs {}",
+            after.volume_m3,
+            before.volume_m3
+        );
+    }
+
+    #[test]
+    fn occt_mirror_body_preserves_volume() {
+        let kernel = OcctGeometryKernel::new();
+        let wire = kernel
+            .make_wire_from_sketch(&rectangle_sketch())
+            .expect("wire");
+        let body = kernel
+            .extrude(
+                wire,
+                ExtrudeExtent::Distance {
+                    length: Length::from_meters(0.006),
+                },
+                ExtrudeOperation::NewBody,
+                None,
+            )
+            .expect("extrude");
+        let before = kernel.mass_properties(&body, 2700.0).expect("before");
+        let mirrored = kernel
+            .mirror_body(body, [0.04, 0.0, 0.0], [1.0, 0.0, 0.0])
+            .expect("mirror");
+        let after = kernel.mass_properties(&mirrored, 2700.0).expect("after");
+        assert!(
+            (after.volume_m3 - before.volume_m3).abs() < 1e-9,
+            "mirror should preserve volume: {} vs {}",
             after.volume_m3,
             before.volume_m3
         );

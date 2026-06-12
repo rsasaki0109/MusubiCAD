@@ -70,6 +70,12 @@ fn resolve_feature_node(
                 chamfer.distance = Length::from_meters(meters);
             }
         }
+        FeatureDefinition::LinearPattern(pattern) => {
+            if let Some(expr) = &pattern.spacing_expr {
+                let meters = eval_length_expr(expr, values)?;
+                pattern.spacing = Length::from_meters(meters);
+            }
+        }
         _ => {}
     }
     Ok(())

@@ -1,6 +1,6 @@
 # Constraint Solver
 
-OpenCAD uses a numeric 2D geometric constraint solver in `opencad-solver`.
+ForgeCAD uses a numeric 2D geometric constraint solver in `opencad-solver`.
 
 ## Algorithm
 

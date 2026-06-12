@@ -19,7 +19,11 @@ pub fn dry_run_patch_state(before: &DesignState, patch: &DesignPatch) -> PatchDr
     let mut validation = ValidationReport::new();
     let mut after = before.clone();
 
-    if let Err(err) = patch.apply_to_document(&mut after.parameters, &mut after.feature_nodes) {
+    if let Err(err) = patch.apply_to_document(
+        &mut after.parameters,
+        &mut after.feature_nodes,
+        &mut after.semantic_refs,
+    ) {
         validation.push(
             ValidationMessage::error("patch_apply_failed", err.to_string()).with_target("patch"),
         );

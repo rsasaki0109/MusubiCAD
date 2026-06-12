@@ -1424,6 +1424,7 @@ dependencies = [
  "opencad-geometry",
  "opencad-graph",
  "opencad-kernel-occt",
+ "opencad-render",
  "opencad-sketch",
  "opencad-solver",
  "serde",
@@ -1448,6 +1449,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap",
  "opencad-core",
+ "opencad-geometry",
  "serde",
  "serde_json",
 ]

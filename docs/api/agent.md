@@ -1,6 +1,6 @@
 # Agent API
 
-OpenCAD exposes a JSON-RPC 2.0 API for AI agents and automation tools.
+ForgeCAD exposes a JSON-RPC 2.0 API for AI agents and automation tools.
 
 Transport: **stdio** via `opencad agent`. No network server is started by default.
 
@@ -17,9 +17,9 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 
 | Method | Params | Result |
 |---|---|---|
-| `opencad.patch_dry_run` | `{ parameters, feature_nodes, patch }` | `{ validation, diff }` |
-| `opencad.patch_apply` | `{ parameters, feature_nodes, patch }` | `{ parameters, feature_nodes, diff }` |
-| `opencad.diff` | `{ before, after }` | `DesignDiff` |
+| `opencad.patch_dry_run` | `{ parameters, feature_nodes, semantic_refs?, patch }` | `{ validation, diff }` |
+| `opencad.patch_apply` | `{ parameters, feature_nodes, semantic_refs?, patch }` | `{ parameters, feature_nodes, semantic_refs, diff }` |
+| `opencad.diff` | `{ before, after }` (each may include `semantic_refs`) | `DesignDiff` |
 | `opencad.regen` | `{ parameters, sketches, feature_graph, feature_nodes }` | `RegenResult` |
 | `opencad.query` | `{ parameters, feature_nodes, feature_graph?, query }` | `QueryResult` |
 | `opencad.explain` | `{ parameters, feature_nodes, feature_graph?, sketch_count?, document_name? }` | `DesignExplanation` |
@@ -59,6 +59,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 | `list_overlay_lines` | Pickable sketch overlay segments (`line_index`, `sketch_id`, `entity_id`) |
 | `list_face_groups` | Tessellated solid face groups with inferred feature/topo refs |
 | `list_semantic_refs` | Persisted `TopoRef` entries from `semantic_refs.json` |
+| `get_semantic_ref` | Single persisted `TopoRef` (`ref_id`) |
 
 `list_overlay_lines` and `list_face_groups` require document tessellation. Use `opencad.query_document` (or pass a `scene` context to in-memory `opencad.query`).
 
@@ -124,9 +125,9 @@ opencad regen bracket.ocad.d --sync-topo-refs
 
 ```json
 {
-  "summary": "Bracket with Hole: 6 parameters, 4 features, 2 sketches. ...",
+  "summary": "Bracket with Hole: 7 parameters, 4 features, 2 sketches. ...",
   "document_name": "Bracket with Hole",
-  "parameter_count": 6,
+  "parameter_count": 7,
   "feature_count": 4,
   "sketch_count": 2,
   "parameters": [{ "id": "param:width", "name": "width", "expr": "80 mm", "value_m": 0.08 }],
@@ -177,10 +178,88 @@ opencad regen bracket.ocad.d --sync-topo-refs
       "feature_id": "feature:fillet_top",
       "field": "radius_expr",
       "expr": "fillet_radius * 2"
+    },
+    {
+      "type": "set_feature_expr",
+      "feature_id": "feature:hole_row",
+      "field": "spacing_expr",
+      "expr": "hole_pitch"
+    },
+    {
+      "type": "assign_face_ref",
+      "ref_id": "ref:face:bracket_top",
+      "kernel_face_id": 0,
+      "created_by": "feature:extrude_base",
+      "role": "top",
+      "normal_m": [0.0, 0.0, 1.0]
     }
   ]
 }
 ```
+
+`assign_face_ref` adds or updates an entry in `semantic_refs.json`. When `kernel_face_id` is `0`, the OCCT backend resolves the face by `role` and `created_by` after regeneration. Semantic diffs report `topo_ref_added`, `topo_ref_removed`, or `topo_ref_modified` changes.
+
+### `set_feature_expr` fields
+
+| field | Feature type | Resolved field |
+|---|---|---|
+| `length_expr` | `extrude` | `extent.length` |
+| `depth_expr` | `hole` | `depth` |
+| `radius_expr` | `fillet` | `radius` |
+| `distance_expr` | `chamfer` | `distance` |
+| `spacing_expr` | `linear_pattern` | `spacing` |
+
+### Pattern features
+
+Linear and circular patterns support `operation`: `union` (default) or `cut`. Cut patterns require `target_feature`.
+
+```json
+{
+  "id": "feature:hole_row",
+  "name": "Hole Row",
+  "definition": {
+    "type": "linear_pattern",
+    "source_feature": "feature:hole_mount",
+    "target_feature": "feature:extrude_base",
+    "operation": "cut",
+    "direction_m": [1.0, 0.0, 0.0],
+    "spacing": { "type": "distance", "length": { "m": 0.02 } },
+    "spacing_expr": "hole_pitch",
+    "count": 3
+  }
+}
+```
+
+```json
+{
+  "id": "feature:boss_ring",
+  "name": "Boss Ring",
+  "definition": {
+    "type": "circular_pattern",
+    "source_feature": "feature:boss",
+    "axis_origin_m": [0.04, 0.03, 0.0],
+    "axis_direction_m": [0.0, 0.0, 1.0],
+    "count": 4,
+    "operation": "union"
+  }
+}
+```
+
+```json
+{
+  "id": "feature:boss_pair",
+  "name": "Boss Pair",
+  "definition": {
+    "type": "mirror_pattern",
+    "source_feature": "feature:boss",
+    "plane_origin_m": [0.04, 0.03, 0.0],
+    "plane_normal_m": [1.0, 0.0, 0.0],
+    "operation": "union"
+  }
+}
+```
+
+`spacing_expr` is evaluated during regeneration (same timing as `length_expr` on extrude). Use `set_feature_expr` with `field: "spacing_expr"` to patch it parametrically.
 
 ## Errors
 
@@ -196,4 +275,4 @@ Standard JSON-RPC error codes:
 
 ## Example
 
-See `examples/agent/inspect_request.json`, `examples/agent/query_request.json`, `examples/agent/query_sketch_constraints_request.json`, `examples/agent/query_overlay_lines_request.json`, `examples/agent/query_face_groups_request.json`, `examples/agent/pick_document_request.json`, `examples/agent/explain_request.json`, `examples/agent/export_request.json`, and `examples/agent/diff_document_request.json`.
+See `examples/agent/inspect_request.json`, `examples/agent/query_request.json`, `examples/agent/query_sketch_constraints_request.json`, `examples/agent/query_overlay_lines_request.json`, `examples/agent/query_face_groups_request.json`, `examples/agent/query_semantic_ref_request.json`, `examples/agent/pick_document_request.json`, `examples/agent/explain_request.json`, `examples/agent/export_request.json`, `examples/agent/diff_document_request.json`, `examples/agent/assign_face_ref_patch.json`, and `examples/agent/spacing_expr_patch.json`.

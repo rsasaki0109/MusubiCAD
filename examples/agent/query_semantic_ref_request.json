@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "opencad.query_document",
+  "params": {
+    "path": "bracket.ocad.d",
+    "query": {
+      "kind": "get_semantic_ref",
+      "ref_id": "ref:face:bracket_top"
+    }
+  }
+}

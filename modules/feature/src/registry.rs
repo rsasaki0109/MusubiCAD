@@ -9,6 +9,9 @@ use crate::extrude::ExtrudeFeatureExecutor;
 use crate::feature::{Feature, FeatureNode, FeatureOutput, RegenContext};
 use crate::fillet::FilletFeatureExecutor;
 use crate::hole::HoleFeatureExecutor;
+use crate::pattern::{
+    CircularPatternFeatureExecutor, LinearPatternFeatureExecutor, MirrorPatternFeatureExecutor,
+};
 use crate::sketch_feature::SketchFeature;
 
 /// Maps feature type names to executors.
@@ -29,6 +32,9 @@ impl FeatureRegistry {
         registry.register(Box::new(HoleFeatureExecutor));
         registry.register(Box::new(FilletFeatureExecutor));
         registry.register(Box::new(ChamferFeatureExecutor));
+        registry.register(Box::new(LinearPatternFeatureExecutor));
+        registry.register(Box::new(CircularPatternFeatureExecutor));
+        registry.register(Box::new(MirrorPatternFeatureExecutor));
         registry
     }
 

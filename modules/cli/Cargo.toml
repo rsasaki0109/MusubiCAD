@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [features]
 default = ["occt"]
-occt = ["opencad-kernel-occt/occt"]
+occt = ["opencad-kernel-occt/occt", "opencad-file/occt"]
 
 [dependencies]
 opencad-ai = { workspace = true }
