@@ -1,0 +1,35 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:boss",
+      "constraint": {
+        "type": "radius",
+        "id": "con:boss_radius",
+        "target": "ent:boss_circle",
+        "expr": "4 mm"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:height",
+        "target": {
+          "line": "ent:e1"
+        },
+        "expr": "height"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:width",
+        "target": {
+          "line": "ent:e0"
+        },
+        "expr": "width"
+      }
+    }
+  ]
+}

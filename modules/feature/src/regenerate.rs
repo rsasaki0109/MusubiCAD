@@ -417,6 +417,80 @@ pub fn bracket_with_top_chamfer() -> Result<PartModel> {
     Ok(model)
 }
 
+/// Bracket plate with a cylindrical boss joined via extrude `join`.
+pub fn bracket_boss_join() -> Result<PartModel> {
+    use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+    use opencad_sketch::{
+        constraint::Constraint,
+        entity::{CircleEntity, Coord, EntityBase, PointEntity, SketchEntity},
+        workplane::Workplane,
+        Sketch,
+    };
+
+    use crate::extrude::ExtrudeFeature;
+    use crate::sketch_feature::SketchFeatureDef;
+    use opencad_graph::bracket_parameters;
+
+    let mut model = bracket_base_plate()?;
+    apply_parameters(&mut model, &bracket_parameters())?;
+
+    let mut boss_sketch = Sketch::new(
+        SketchId::new("sketch:boss")?,
+        "Boss Sketch",
+        Workplane::xy(),
+    );
+    boss_sketch.add_entity(SketchEntity::Point(PointEntity {
+        base: EntityBase {
+            id: EntityId::new("ent:boss_center")?,
+            construction: false,
+        },
+        x: Coord::literal(0.05),
+        y: Coord::literal(0.03),
+    }))?;
+    boss_sketch.add_entity(SketchEntity::Circle(CircleEntity {
+        base: EntityBase {
+            id: EntityId::new("ent:boss_circle")?,
+            construction: false,
+        },
+        center: EntityId::new("ent:boss_center")?,
+        radius: Coord::literal(0.004),
+    }))?;
+    boss_sketch.add_constraint(Constraint::Radius {
+        id: ConstraintId::new("con:boss_radius")?,
+        target: EntityId::new("ent:boss_circle")?,
+        expr: Expression::new("4 mm")?,
+    })?;
+    model
+        .sketches
+        .insert(boss_sketch.id.as_str().to_string(), boss_sketch);
+
+    model.add_node(FeatureNode::new(
+        "feature:sketch_boss",
+        "Boss Sketch",
+        FeatureDefinition::Sketch(SketchFeatureDef {
+            sketch_id: "sketch:boss".into(),
+        }),
+    ))?;
+    let mut boss = ExtrudeFeature::join(
+        "feature:sketch_boss",
+        "sketch:boss/profile:outer",
+        "feature:extrude_base",
+        ExtrudeExtent::Distance {
+            length: Length::from_meters(0.012),
+        },
+    );
+    boss.length_expr = Some("thickness * 2".into());
+    model.add_node(FeatureNode::new(
+        "feature:boss_join",
+        "Boss Join",
+        FeatureDefinition::Extrude(boss),
+    ))?;
+
+    model.add_dependency("feature:sketch_boss", "feature:boss_join")?;
+    model.add_dependency("feature:extrude_base", "feature:boss_join")?;
+    Ok(model)
+}
+
 /// Bracket base plate with a linear cut pattern of pin holes (`spacing_expr: hole_pitch`).
 pub fn bracket_hole_row() -> Result<PartModel> {
     use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
@@ -1015,6 +1089,19 @@ mod tests {
             .regenerate(&kernel, &registry, Some(&params), None)
             .expect("regen");
         assert_eq!(report.regenerated.len(), 5);
+        assert!(model.active_body().is_some());
+    }
+
+    #[test]
+    fn regenerates_bracket_boss_join() {
+        let mut model = bracket_boss_join().expect("model");
+        let kernel = MockGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+        let params = opencad_graph::bracket_parameters();
+        let report = model
+            .regenerate(&kernel, &registry, Some(&params), None)
+            .expect("regen");
+        assert_eq!(report.regenerated.len(), 4);
         assert!(model.active_body().is_some());
     }
 

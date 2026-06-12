@@ -14,6 +14,29 @@ fn workspace_root() -> std::path::PathBuf {
 }
 
 #[test]
+fn example_bracket_boss_join_regenerates_with_occt() {
+    let path = workspace_root().join("examples/bracket_boss_join.ocad.d");
+    validate_expanded_dir(&path).expect("validate");
+    let doc = read_expanded_dir(&path).expect("read");
+    let params = doc.parameters.clone();
+    let mut model = doc.into_part_model();
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    model
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let body = model.active_body().expect("body");
+    let mass = kernel.mass_properties(body, 2700.0).expect("mass");
+    let plate_volume = 0.08 * 0.06 * 0.006;
+    assert!(
+        mass.volume_m3 > plate_volume,
+        "boss join example should fuse boss onto plate: {} vs {}",
+        mass.volume_m3,
+        plate_volume
+    );
+}
+
+#[test]
 fn example_bracket_hole_row_regenerates_with_occt() {
     let path = workspace_root().join("examples/bracket_hole_row.ocad.d");
     validate_expanded_dir(&path).expect("validate");

@@ -7,6 +7,7 @@ Ready-to-use ForgeCAD documents and Agent API requests.
 | Directory | Template | Features |
 |---|---|---|
 | `bracket.ocad.d` | `opencad new <path>` | Sketch, extrude, hole (`face_ref`) |
+| `bracket_boss_join.ocad.d` | `opencad new <path> boss-join` | + extrude join onto plate |
 | `bracket_hole_row.ocad.d` | `opencad new <path> hole-row` | + linear cut pattern, `hole_pitch` param |
 | `bracket_hole_ring.ocad.d` | `opencad new <path> hole-ring` | + circular cut pattern |
 | `bracket_pin_row.ocad.d` | `opencad new <path> pin-row` | + linear union pattern on plate |

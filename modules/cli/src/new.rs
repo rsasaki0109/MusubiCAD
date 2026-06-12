@@ -2,8 +2,8 @@
 
 use opencad_core::{DocumentId, DocumentMetadata, Result};
 use opencad_feature::{
-    bracket_hole_ring, bracket_hole_row, bracket_pin_mirror, bracket_pin_ring, bracket_pin_row,
-    bracket_semantic_refs, bracket_with_hole,
+    bracket_boss_join, bracket_hole_ring, bracket_hole_row, bracket_pin_mirror, bracket_pin_ring,
+    bracket_pin_row, bracket_semantic_refs, bracket_with_hole,
 };
 use opencad_file::{write_ocad, OcadDocument};
 use opencad_graph::bracket_parameters;
@@ -13,6 +13,7 @@ use opencad_graph::bracket_parameters;
 pub enum DocumentTemplate {
     #[default]
     Bracket,
+    BossJoin,
     HoleRow,
     HoleRing,
     PinRow,
@@ -24,13 +25,14 @@ impl DocumentTemplate {
     pub fn parse(name: &str) -> Result<Self> {
         match name {
             "bracket" => Ok(Self::Bracket),
+            "boss-join" => Ok(Self::BossJoin),
             "hole-row" => Ok(Self::HoleRow),
             "hole-ring" => Ok(Self::HoleRing),
             "pin-row" => Ok(Self::PinRow),
             "pin-ring" => Ok(Self::PinRing),
             "pin-mirror" => Ok(Self::PinMirror),
             _ => Err(opencad_core::OpenCadError::validation(format!(
-                "unknown template '{name}'; expected 'bracket', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', or 'pin-mirror'"
+                "unknown template '{name}'; expected 'bracket', 'boss-join', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', or 'pin-mirror'"
             ))),
         }
     }
@@ -38,6 +40,7 @@ impl DocumentTemplate {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Bracket => "bracket",
+            Self::BossJoin => "boss-join",
             Self::HoleRow => "hole-row",
             Self::HoleRing => "hole-ring",
             Self::PinRow => "pin-row",
@@ -50,6 +53,7 @@ impl DocumentTemplate {
 pub fn create_document(path: &str, template: DocumentTemplate) -> Result<()> {
     match template {
         DocumentTemplate::Bracket => create_bracket_document(path),
+        DocumentTemplate::BossJoin => create_bracket_boss_join_document(path),
         DocumentTemplate::HoleRow => create_bracket_hole_row_document(path),
         DocumentTemplate::HoleRing => create_bracket_hole_ring_document(path),
         DocumentTemplate::PinRow => create_bracket_pin_row_document(path),
@@ -67,6 +71,17 @@ pub fn create_bracket_document(path: &str) -> Result<()> {
     let mut doc = OcadDocument::from_part_model(metadata, &part);
     doc.parameters = bracket_parameters();
     doc.semantic_refs = bracket_semantic_refs();
+    write_ocad(path, &doc)
+}
+
+pub fn create_bracket_boss_join_document(path: &str) -> Result<()> {
+    let part = bracket_boss_join()?;
+    let metadata = DocumentMetadata::new(
+        DocumentId::new("doc:bracket_boss_join_001")?,
+        "Bracket with Joined Boss",
+    );
+    let mut doc = OcadDocument::from_part_model(metadata, &part);
+    doc.parameters = bracket_parameters();
     write_ocad(path, &doc)
 }
 

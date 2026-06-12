@@ -51,6 +51,26 @@ Features run in topological order from `FeatureGraph::recompute_order()`. Suppre
 | `circular_pattern` | Rotate + union/cut repeated copies around an axis |
 | `mirror_pattern` | Mirror + union/cut a source body across a plane |
 
+### Extrude operations
+
+| `operation` | Description |
+|---|---|
+| `new_body` | Create a standalone solid (default) |
+| `cut` | Subtract extruded volume from `target_feature` |
+| `join` | Fuse extruded volume onto `target_feature` |
+
+```json
+{
+  "type": "extrude",
+  "sketch_feature": "feature:sketch_boss",
+  "profile_ref": "sketch:boss/profile:outer",
+  "extent": { "type": "distance", "length": { "m": 0.006 } },
+  "operation": "join",
+  "target_feature": "feature:extrude_base",
+  "length_expr": "thickness * 2"
+}
+```
+
 ### Pattern options
 
 - `operation`: `union` (default) or `cut`

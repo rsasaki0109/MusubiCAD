@@ -101,4 +101,20 @@ impl ExtrudeFeature {
             target_feature: None,
         }
     }
+
+    pub fn join(
+        sketch_feature: impl Into<String>,
+        profile_ref: impl Into<String>,
+        target_feature: impl Into<String>,
+        extent: ExtrudeExtent,
+    ) -> Self {
+        Self {
+            sketch_feature: sketch_feature.into(),
+            profile_ref: profile_ref.into(),
+            extent,
+            operation: ExtrudeOperation::Join,
+            length_expr: None,
+            target_feature: Some(target_feature.into()),
+        }
+    }
 }

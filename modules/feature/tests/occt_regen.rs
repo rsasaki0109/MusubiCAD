@@ -233,6 +233,39 @@ fn occt_fillet_on_face_ref_matches_top_perimeter() {
 }
 
 #[test]
+fn occt_join_extrude_fuses_onto_plate() {
+    use opencad_feature::{bracket_base_plate, bracket_boss_join, apply_parameters};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut plate = bracket_base_plate().expect("plate");
+    apply_parameters(&mut plate, &params).expect("apply");
+    plate
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let plate_mass = kernel
+        .mass_properties(plate.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut joined = bracket_boss_join().expect("model");
+    joined
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let joined_mass = kernel
+        .mass_properties(joined.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        joined_mass.volume_m3 > plate_mass.volume_m3,
+        "join extrude should fuse boss onto plate: {} vs {}",
+        joined_mass.volume_m3,
+        plate_mass.volume_m3
+    );
+}
+
+#[test]
 fn occt_linear_pattern_unions_translated_bodies() {
     use opencad_feature::{apply_parameters, FeatureDefinition, FeatureNode, LinearPatternFeature};
 
