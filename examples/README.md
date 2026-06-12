@@ -8,6 +8,7 @@ Ready-to-use ForgeCAD documents and Agent API requests.
 |---|---|---|
 | `bracket.ocad.d` | `opencad new <path>` | Sketch, extrude, hole (`face_ref`) |
 | `bracket_hole_row.ocad.d` | `opencad new <path> hole-row` | + linear cut pattern, `hole_pitch` param |
+| `bracket_pin_row.ocad.d` | `opencad new <path> pin-row` | + linear union pattern on plate |
 | `bracket_pin_mirror.ocad.d` | `opencad new <path> pin-mirror` | + mirror pattern, `plane_face_ref` |
 
 ```bash

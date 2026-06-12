@@ -332,6 +332,57 @@ fn occt_linear_union_pattern_fuses_onto_target() {
     );
 }
 
+#[test]
+fn occt_circular_union_pattern_fuses_onto_target() {
+    use opencad_feature::{CircularPatternFeature, FeatureDefinition, FeatureNode};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+
+    let mut plate = pin_tool_plate_at(0.04, 0.03);
+    plate
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let plate_mass = kernel
+        .mass_properties(plate.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut fused = pin_tool_plate_at(0.04, 0.03);
+    fused
+        .add_node(FeatureNode::new(
+            "feature:pin_ring",
+            "Pin Ring",
+            FeatureDefinition::CircularPattern(CircularPatternFeature::union_on(
+                "feature:pin_tool",
+                "feature:extrude_base",
+                [0.04, 0.03, 0.0],
+                [0.0, 0.0, 1.0],
+                4,
+            )),
+        ))
+        .expect("pattern");
+    fused
+        .add_dependency("feature:extrude_base", "feature:pin_ring")
+        .expect("dep");
+    fused
+        .add_dependency("feature:pin_tool", "feature:pin_ring")
+        .expect("dep");
+    fused
+        .regenerate(&kernel, &registry, Some(&params), None)
+        .expect("regen");
+    let fused_mass = kernel
+        .mass_properties(fused.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        fused_mass.volume_m3 > plate_mass.volume_m3,
+        "circular union should fuse patterned tools onto plate: {} vs {}",
+        fused_mass.volume_m3,
+        plate_mass.volume_m3
+    );
+}
+
 fn pin_tool_plate() -> opencad_feature::PartModel {
     pin_tool_plate_at(0.01, 0.01)
 }

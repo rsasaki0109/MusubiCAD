@@ -74,6 +74,7 @@ cargo run -p opencad-cli -- --help
 # Sample documents (also in examples/)
 cargo run -p opencad-cli -- new examples/bracket.ocad.d
 cargo run -p opencad-cli -- new examples/bracket_hole_row.ocad.d hole-row
+cargo run -p opencad-cli -- new examples/bracket_pin_row.ocad.d pin-row
 cargo run -p opencad-cli -- new examples/bracket_pin_mirror.ocad.d pin-mirror
 cargo run -p opencad-cli -- regen examples/bracket.ocad.d
 
@@ -88,6 +89,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"examp
 |---|---|
 | `examples/bracket.ocad.d` | Bracket plate with centered mounting hole (`face_ref`) |
 | `examples/bracket_hole_row.ocad.d` | Linear cut pattern with `spacing_expr: hole_pitch` |
+| `examples/bracket_pin_row.ocad.d` | Linear union pattern fused onto plate (`pin-row`) |
 | `examples/bracket_pin_mirror.ocad.d` | Mirror pattern via `plane_face_ref`, fused onto plate |
 | `examples/agent/` | JSON-RPC request samples for `opencad agent` |
 
