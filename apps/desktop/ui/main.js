@@ -11,11 +11,16 @@ const parametersPanel = document.getElementById("parameters");
 const templateSelect = document.getElementById("template-select");
 const openBtn = document.getElementById("open-btn");
 const refreshBtn = document.getElementById("refresh-btn");
+const undoBtn = document.getElementById("undo-btn");
+const redoBtn = document.getElementById("redo-btn");
 const viewportBtn = document.getElementById("viewport-btn");
 const createBtn = document.getElementById("create-btn");
 
 let currentPath = null;
 let parameterRows = [];
+let applyingParamHistory = false;
+const paramUndoStack = [];
+const paramRedoStack = [];
 
 const PREVIEW_WIDTH = 960;
 const PREVIEW_HEIGHT = 540;
@@ -146,6 +151,26 @@ function formatValueMm(valueMm) {
   return `${valueMm.toFixed(2)} mm`;
 }
 
+function updateUndoRedoButtons() {
+  undoBtn.disabled = paramUndoStack.length === 0;
+  redoBtn.disabled = paramRedoStack.length === 0;
+}
+
+function resetParamHistory() {
+  paramUndoStack.length = 0;
+  paramRedoStack.length = 0;
+  updateUndoRedoButtons();
+}
+
+async function applyParameterChange(id, expr) {
+  await invoke("set_document_parameter_cmd", {
+    path: currentPath,
+    id,
+    expr,
+  });
+  await loadDocument(currentPath, { keepParamHistory: true });
+}
+
 async function applyParameter(row, input) {
   const nextExpr = input.value.trim();
   if (!nextExpr || nextExpr === row.expr) {
@@ -155,16 +180,63 @@ async function applyParameter(row, input) {
 
   setStatus(`Updating ${row.name}…`);
   try {
-    await invoke("set_document_parameter_cmd", {
-      path: currentPath,
-      id: row.id,
-      expr: nextExpr,
-    });
-    await loadDocument(currentPath);
+    await applyParameterChange(row.id, nextExpr);
+    if (!applyingParamHistory) {
+      paramUndoStack.push({
+        id: row.id,
+        name: row.name,
+        before: row.expr,
+        after: nextExpr,
+      });
+      paramRedoStack.length = 0;
+      updateUndoRedoButtons();
+    }
     setStatus(`Updated ${row.name}`);
   } catch (error) {
     input.value = row.expr;
     setStatus(`Error: ${error}`);
+  }
+}
+
+async function undoParameterChange() {
+  if (!currentPath || paramUndoStack.length === 0) {
+    return;
+  }
+
+  const entry = paramUndoStack.pop();
+  applyingParamHistory = true;
+  setStatus(`Undoing ${entry.name}…`);
+  try {
+    await applyParameterChange(entry.id, entry.before);
+    paramRedoStack.push(entry);
+    setStatus(`Undid ${entry.name}`);
+  } catch (error) {
+    paramUndoStack.push(entry);
+    setStatus(`Error: ${error}`);
+  } finally {
+    applyingParamHistory = false;
+    updateUndoRedoButtons();
+  }
+}
+
+async function redoParameterChange() {
+  if (!currentPath || paramRedoStack.length === 0) {
+    return;
+  }
+
+  const entry = paramRedoStack.pop();
+  applyingParamHistory = true;
+  setStatus(`Redoing ${entry.name}…`);
+  try {
+    await applyParameterChange(entry.id, entry.after);
+    paramUndoStack.push(entry);
+    setStatus(`Redid ${entry.name}`);
+  } catch (error) {
+    paramRedoStack.push(entry);
+    setStatus(`Error: ${error}`);
+  } finally {
+    applyingParamHistory = false;
+    updateUndoRedoButtons();
   }
 }
 
@@ -239,6 +311,9 @@ async function loadDocument(path, options = {}) {
   }
 
   currentPath = path;
+  if (!options.keepParamHistory) {
+    resetParamHistory();
+  }
   setStatus(`Regenerating ${path}…`);
 
   const requests = [
@@ -336,6 +411,7 @@ async function boot() {
       setStatus("Open a .ocad.d directory to preview.");
       renderParameters([]);
       clearSelection();
+      resetParamHistory();
     }
   } catch (error) {
     setStatus(`Error: ${error}`);
@@ -351,7 +427,33 @@ preview.addEventListener("click", (event) => {
 });
 
 refreshBtn.addEventListener("click", () => {
-  loadDocument(currentPath).catch((error) => setStatus(`Error: ${error}`));
+  loadDocument(currentPath, { keepParamHistory: true }).catch((error) =>
+    setStatus(`Error: ${error}`),
+  );
+});
+
+undoBtn.addEventListener("click", () => {
+  undoParameterChange().catch((error) => setStatus(`Error: ${error}`));
+});
+
+redoBtn.addEventListener("click", () => {
+  redoParameterChange().catch((error) => setStatus(`Error: ${error}`));
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!(event.ctrlKey || event.metaKey)) {
+    return;
+  }
+  const key = event.key.toLowerCase();
+  if (key === "z" && !event.shiftKey) {
+    event.preventDefault();
+    undoParameterChange().catch((error) => setStatus(`Error: ${error}`));
+    return;
+  }
+  if ((key === "z" && event.shiftKey) || key === "y") {
+    event.preventDefault();
+    redoParameterChange().catch((error) => setStatus(`Error: ${error}`));
+  }
 });
 
 viewportBtn.addEventListener("click", () => {

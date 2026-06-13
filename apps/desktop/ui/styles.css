@@ -50,8 +50,17 @@ select {
   padding: 0.45rem 0.75rem;
 }
 
-button:hover {
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
   background: #2f3d56;
+}
+
+button:disabled:hover {
+  background: #243044;
 }
 
 .layout {
