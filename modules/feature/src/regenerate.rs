@@ -6,6 +6,7 @@ use opencad_core::{Length, OpenCadError, Result};
 use opencad_geometry::{
     ExtrudeExtent, FaceDerivation, FaceRefDiscovery, GeometryKernel, KernelBody, TopoRef,
 };
+use opencad_geometry::EdgeRefDiscovery;
 use opencad_graph::FeatureGraph;
 use opencad_sketch::Sketch;
 
@@ -13,6 +14,7 @@ use opencad_graph::ParamGraph;
 
 use crate::chamfer::ChamferFeature;
 use crate::extrude::ExtrudeFeature;
+use crate::edge_discover::discover_edge_refs_from_body;
 use crate::face_discover::discover_face_refs_from_body;
 use crate::feature::{FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
 use crate::fillet::FilletFeature;
@@ -49,6 +51,7 @@ pub struct RegenSession<'a, K: GeometryKernel> {
     pub semantic_refs: &'a [TopoRef],
     pub face_history: &'a [FaceDerivation],
     pub face_discoveries: &'a [FaceRefDiscovery],
+    pub edge_discoveries: &'a [EdgeRefDiscovery],
 }
 
 impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
@@ -88,6 +91,10 @@ impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
 
     fn face_discoveries(&self) -> &[opencad_geometry::FaceRefDiscovery] {
         self.face_discoveries
+    }
+
+    fn edge_discoveries(&self) -> &[opencad_geometry::EdgeRefDiscovery] {
+        self.edge_discoveries
     }
 }
 
@@ -152,6 +159,7 @@ impl PartModel {
         let mut report = RegenReport::default();
         let refs = semantic_refs.unwrap_or(&[]);
         let mut face_discoveries: Vec<FaceRefDiscovery> = Vec::new();
+        let mut edge_discoveries: Vec<EdgeRefDiscovery> = Vec::new();
         let node_list: Vec<FeatureNode> = self.nodes.values().cloned().collect();
 
         for feature_id in order {
@@ -171,6 +179,7 @@ impl PartModel {
                 semantic_refs: refs,
                 face_history: &report.face_history,
                 face_discoveries: &face_discoveries,
+                edge_discoveries: &edge_discoveries,
             };
 
             let output = registry.execute(node, &session)?;
@@ -181,6 +190,8 @@ impl PartModel {
                 if !refs.is_empty() {
                     face_discoveries =
                         discover_face_refs_from_body(kernel, body, &node_list).unwrap_or_default();
+                    edge_discoveries =
+                        discover_edge_refs_from_body(kernel, body, &node_list).unwrap_or_default();
                 }
             }
             self.outputs.insert(feature_id.clone(), output);
@@ -298,11 +309,18 @@ pub fn bracket_base_plate() -> Result<PartModel> {
 pub fn bracket_semantic_refs() -> Vec<TopoRef> {
     use opencad_core::TopoRefId;
 
-    vec![TopoRef::face(
-        TopoRefId::new("ref:face:bracket_top").expect("id"),
-        "feature:extrude_base",
-        "top",
-    )]
+    vec![
+        TopoRef::face(
+            TopoRefId::new("ref:face:bracket_top").expect("id"),
+            "feature:extrude_base",
+            "top",
+        ),
+        TopoRef::edge(
+            TopoRefId::new("ref:edge:bracket_top_front").expect("id"),
+            "feature:extrude_base",
+            "top@+y",
+        ),
+    ]
 }
 
 /// Bracket base plate with a centered mounting hole.
@@ -394,6 +412,27 @@ pub fn bracket_with_top_fillet() -> Result<PartModel> {
         )),
     ))?;
     model.add_dependency("feature:hole_mount", "feature:fillet_top")?;
+    Ok(model)
+}
+
+/// Bracket with mounting hole and a single top-front edge fillet.
+pub fn bracket_edge_fillet() -> Result<PartModel> {
+    use opencad_graph::bracket_parameters;
+
+    let mut model = bracket_with_hole()?;
+    apply_parameters(&mut model, &bracket_parameters())?;
+
+    model.add_node(FeatureNode::new(
+        "feature:fillet_front_edge",
+        "Front Edge Fillet",
+        FeatureDefinition::Fillet(FilletFeature::on_edge_ref(
+            "feature:hole_mount",
+            "ref:edge:bracket_top_front",
+            Length::from_meters(0.001),
+            Some("fillet_radius".into()),
+        )),
+    ))?;
+    model.add_dependency("feature:hole_mount", "feature:fillet_front_edge")?;
     Ok(model)
 }
 

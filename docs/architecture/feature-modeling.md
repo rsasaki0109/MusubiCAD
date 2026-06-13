@@ -191,6 +191,22 @@ Sketches may use a `face_ref` workplane so profile coordinates are local to a re
 }
 ```
 
+### Edge ref for fillet / chamfer
+
+Fillet and chamfer features may target a single persisted edge via `edge_ref`. During regeneration, edge discoveries match the semantic role (e.g. `top@+y` for the front top perimeter edge on the bracket plate).
+
+```json
+{
+  "type": "fillet",
+  "target_feature": "feature:hole_mount",
+  "edge_ref": "ref:edge:bracket_top_front",
+  "radius": { "m": 0.001 },
+  "radius_expr": "fillet_radius"
+}
+```
+
+`face_ref` still selects all edges on a resolved face perimeter. `edge_ref` selects one edge only.
+
 ## Rules
 
 - OCCT types stay in `opencad-kernel-occt`.

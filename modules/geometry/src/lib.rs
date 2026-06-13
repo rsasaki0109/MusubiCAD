@@ -28,5 +28,6 @@ pub use topo_sync::{
     rebind_kernel_face_ids, resolve_kernel_face_id_for_topo_ref,
     resolve_kernel_face_id_for_topo_ref_with_discoveries, resolve_topo_ref_id,
     resolve_topo_ref_id_with_history, sync_semantic_refs, sync_semantic_refs_with_history,
-    validate_kernel_face_on_mesh, FaceDerivation, FaceRefDiscovery,
+    validate_kernel_face_on_mesh, EdgeRefDiscovery, FaceDerivation, FaceRefDiscovery,
+    match_edge_discovery_for_topo_ref, resolve_kernel_edge_id_for_topo_ref,
 };

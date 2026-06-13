@@ -96,6 +96,10 @@ pub trait RegenContext {
     fn face_discoveries(&self) -> &[opencad_geometry::FaceRefDiscovery] {
         &[]
     }
+
+    fn edge_discoveries(&self) -> &[opencad_geometry::EdgeRefDiscovery] {
+        &[]
+    }
 }
 
 /// Executable feature interface (Task-086).

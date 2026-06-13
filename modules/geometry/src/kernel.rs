@@ -78,7 +78,7 @@ pub enum ExtrudeExtent {
 }
 
 /// Which edges to fillet on a solid body.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FilletEdgeSelector {
     /// Every edge on the body.
@@ -88,6 +88,10 @@ pub enum FilletEdgeSelector {
     TopPerimeter,
     /// Edges on the face with the given kernel B-Rep face id.
     FacePerimeter { kernel_face_id: u64 },
+    /// Specific kernel B-Rep edges by id.
+    KernelEdges { kernel_edge_ids: Vec<u64> },
+    /// Edges matched by semantic role on the current body (longest match wins).
+    EdgeRole { role: String },
 }
 
 /// Local UV placement for a sketch profile in world coordinates.
@@ -184,6 +188,11 @@ pub trait GeometryKernel {
         kernel_face_id: u64,
         ref_id: TopoRefId,
     ) -> Result<()>;
+
+    fn discover_body_edges(
+        &self,
+        body: &KernelBody,
+    ) -> Result<Vec<crate::topo_sync::EdgeRefDiscovery>>;
 
     fn fillet_edges(
         &self,
@@ -353,6 +362,13 @@ impl GeometryKernel for MockGeometryKernel {
         crate::topo_sync::validate_kernel_face_on_mesh(&mesh, kernel_face_id)?;
         let _ = ref_id;
         Ok(())
+    }
+
+    fn discover_body_edges(
+        &self,
+        _body: &KernelBody,
+    ) -> Result<Vec<crate::topo_sync::EdgeRefDiscovery>> {
+        Ok(Vec::new())
     }
 
     fn fillet_edges(

@@ -2,6 +2,7 @@
 
 pub mod chamfer;
 pub mod extrude;
+pub mod edge_discover;
 pub mod face_discover;
 pub mod feature;
 pub mod fillet;
@@ -30,7 +31,8 @@ pub use revolve::{RevolveFeature, RevolveFeatureExecutor};
 pub use regenerate::{
     bracket_base_plate, bracket_boss_join, bracket_face_pin, bracket_hole_ring, bracket_hole_row,
     bracket_pin_mirror, bracket_pin_ring, bracket_pin_row, bracket_semantic_refs,
-    bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet, revolve_bushing,
+    bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet, bracket_edge_fillet,
+    revolve_bushing,
     PartModel, RegenReport,
 };
 pub use registry::FeatureRegistry;

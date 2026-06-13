@@ -72,6 +72,37 @@ pub fn edge_selector_for_face_ref(
     }
 }
 
+pub fn edge_selector_for_edge_ref(
+    ctx: &dyn RegenContext,
+    edge_ref: &str,
+    _target_feature: &str,
+    _fallback: FilletEdgeSelector,
+) -> Result<FilletEdgeSelector> {
+    if edge_ref.trim().is_empty() {
+        return Err(OpenCadError::validation("edge_ref must not be empty"));
+    }
+
+    let topo_ref = ctx
+        .semantic_refs()
+        .iter()
+        .find(|topo_ref| topo_ref.ref_id.as_str() == edge_ref)
+        .ok_or_else(|| OpenCadError::not_found(format!("topo ref '{edge_ref}'")))?;
+
+    if let Some(stored_id) = topo_ref.kernel_edge_id() {
+        return Ok(FilletEdgeSelector::KernelEdges {
+            kernel_edge_ids: vec![stored_id],
+        });
+    }
+
+    let role = topo_ref
+        .semantic
+        .role
+        .clone()
+        .ok_or_else(|| OpenCadError::validation(format!("edge_ref '{edge_ref}' has no role")))?;
+
+    Ok(FilletEdgeSelector::EdgeRole { role })
+}
+
 /// Resolve a sketch workplane from a persisted face ref and regen discoveries.
 pub fn workplane_for_face_ref(ctx: &dyn RegenContext, face_ref: &str) -> Result<Workplane> {
     let topo_ref = ctx
@@ -385,6 +416,72 @@ mod tests {
             edge_selector_for_face_ref(&ctx, "ref:face:bracket_top", FilletEdgeSelector::All)
                 .expect("selector");
         assert_eq!(selector, FilletEdgeSelector::TopPerimeter);
+    }
+
+    #[test]
+    fn edge_ref_resolves_via_role_discoveries() {
+        use opencad_geometry::EdgeRefDiscovery;
+
+        struct RefContext {
+            inner: TestRegenContext,
+            semantic_refs: Vec<TopoRef>,
+            edge_discoveries: Vec<EdgeRefDiscovery>,
+        }
+
+        impl RegenContext for RefContext {
+            fn kernel(&self) -> &dyn opencad_geometry::GeometryKernel {
+                self.inner.kernel()
+            }
+
+            fn sketch_for_feature(
+                &self,
+                sketch_feature_id: &str,
+            ) -> Result<&opencad_sketch::Sketch> {
+                self.inner.sketch_for_feature(sketch_feature_id)
+            }
+
+            fn body_for_feature(&self, feature_id: &str) -> Result<KernelBody> {
+                self.inner.body_for_feature(feature_id)
+            }
+
+            fn semantic_refs(&self) -> &[TopoRef] {
+                &self.semantic_refs
+            }
+
+            fn edge_discoveries(&self) -> &[EdgeRefDiscovery] {
+                &self.edge_discoveries
+            }
+        }
+
+        let ctx = RefContext {
+            inner: TestRegenContext::with_body("feature:base", KernelBody::new(42)),
+            semantic_refs: vec![TopoRef::edge(
+                TopoRefId::new("ref:edge:bracket_top_front").expect("id"),
+                "feature:extrude_base",
+                "top@+y",
+            )],
+            edge_discoveries: vec![EdgeRefDiscovery {
+                kernel_edge_id: 55,
+                role: "top@+y".into(),
+                midpoint_m: [0.04, 0.06, 0.006],
+                tangent_m: [1.0, 0.0, 0.0],
+                length_m: 0.08,
+                feature_id: Some("feature:extrude_base".into()),
+            }],
+        };
+        let selector = edge_selector_for_edge_ref(
+            &ctx,
+            "ref:edge:bracket_top_front",
+            "feature:base",
+            FilletEdgeSelector::All,
+        )
+        .expect("selector");
+        assert_eq!(
+            selector,
+            FilletEdgeSelector::EdgeRole {
+                role: "top@+y".into()
+            }
+        );
     }
 
     #[test]

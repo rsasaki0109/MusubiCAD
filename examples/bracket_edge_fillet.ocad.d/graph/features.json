@@ -1,0 +1,142 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_base",
+      "feature:extrude_base",
+      "feature:sketch_hole",
+      "feature:hole_mount",
+      "feature:fillet_front_edge"
+    ],
+    "features": {
+      "feature:sketch_base": {
+        "id": "feature:sketch_base",
+        "name": "Base Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude_base": {
+        "id": "feature:extrude_base",
+        "name": "Extrude Base",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_hole": {
+        "id": "feature:sketch_hole",
+        "name": "Hole Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:hole_mount": {
+        "id": "feature:hole_mount",
+        "name": "Mounting Hole",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:fillet_front_edge": {
+        "id": "feature:fillet_front_edge",
+        "name": "Front Edge Fillet",
+        "feature_type": "fillet",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_base",
+        "target": "feature:extrude_base",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_hole",
+        "target": "feature:hole_mount",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:extrude_base",
+        "target": "feature:hole_mount",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:hole_mount",
+        "target": "feature:fillet_front_edge",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:extrude_base",
+      "name": "Extrude Base",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_base",
+        "profile_ref": "sketch:base/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:fillet_front_edge",
+      "name": "Front Edge Fillet",
+      "definition": {
+        "type": "fillet",
+        "target_feature": "feature:hole_mount",
+        "radius": {
+          "value_si": 0.001
+        },
+        "radius_expr": "fillet_radius",
+        "edge_ref": "ref:edge:bracket_top_front",
+        "edge_selector": "top_perimeter"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:hole_mount",
+      "name": "Mounting Hole",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_hole",
+        "profile_ref": "sketch:hole/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "target_feature": "feature:extrude_base",
+        "face_ref": "ref:face:bracket_top",
+        "depth_expr": "thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_base",
+      "name": "Base Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:base"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_hole",
+      "name": "Hole Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:hole"
+      },
+      "suppressed": false
+    }
+  ]
+}

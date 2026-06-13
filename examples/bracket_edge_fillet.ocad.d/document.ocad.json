@@ -1,0 +1,10 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:bracket_edge_fillet_001",
+    "name": "Bracket with Edge Fillet",
+    "units": "mm",
+    "created_with": "OpenCAD 0.1.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

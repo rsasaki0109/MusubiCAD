@@ -6,6 +6,7 @@ use opencad_geometry::{
     KernelBody, KernelWire, MassProperties, MeshSet, RevolveInput, RevolveOperation,
     SolvedSketch, TessellationSettings,
 };
+use opencad_geometry::topo_sync::EdgeRefDiscovery;
 
 use crate::convert::{map_occt_error, sketch_to_edges, sketch_to_edges_on_plane};
 use crate::store::KernelStore;
@@ -35,6 +36,132 @@ fn collect_edges(solid: &Solid, selector: FilletEdgeSelector) -> Vec<&Edge> {
             .find(|face| face.id() == kernel_face_id)
             .map(|face| face.iter_edge().collect())
             .unwrap_or_default(),
+        FilletEdgeSelector::KernelEdges { kernel_edge_ids } => solid
+            .iter_edge()
+            .filter(|edge| kernel_edge_ids.contains(&edge.id()))
+            .collect(),
+        FilletEdgeSelector::EdgeRole { role } => {
+            let bb = solid.bounding_box();
+            let bbox = [
+                [bb[0].x, bb[0].y, bb[0].z],
+                [bb[1].x, bb[1].y, bb[1].z],
+            ];
+            let mut matches: Vec<(&Edge, f64)> = solid
+                .iter_edge()
+                .filter_map(|edge| {
+                    let start = edge.start_point();
+                    let end = edge.end_point();
+                    let midpoint = [
+                        (start.x + end.x) * 0.5,
+                        (start.y + end.y) * 0.5,
+                        (start.z + end.z) * 0.5,
+                    ];
+                    let tangent = normalize_vec3([
+                        end.x - start.x,
+                        end.y - start.y,
+                        end.z - start.z,
+                    ]);
+                    let edge_role = top_edge_role(&midpoint, &tangent, &bbox);
+                    if edge_role != role {
+                        return None;
+                    }
+                    let length = ((end.x - start.x).powi(2)
+                        + (end.y - start.y).powi(2)
+                        + (end.z - start.z).powi(2))
+                    .sqrt();
+                    Some((edge, length))
+                })
+                .collect();
+            matches.sort_by(|left, right| {
+                right
+                    .1
+                    .partial_cmp(&left.1)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            matches.into_iter().take(1).map(|(edge, _)| edge).collect()
+        }
+    }
+}
+
+#[cfg(feature = "occt")]
+fn discover_edges_from_solid(solid: &Solid) -> Vec<EdgeRefDiscovery> {
+    let bb = solid.bounding_box();
+    let z_max = bb[1].z;
+    let eps = 1e-6;
+    let bbox = [
+        [bb[0].x, bb[0].y, bb[0].z],
+        [bb[1].x, bb[1].y, bb[1].z],
+    ];
+    solid
+        .iter_edge()
+        .filter_map(|edge| {
+            let start = edge.start_point();
+            let end = edge.end_point();
+            let midpoint = [
+                (start.x + end.x) * 0.5,
+                (start.y + end.y) * 0.5,
+                (start.z + end.z) * 0.5,
+            ];
+            if (midpoint[2] - z_max).abs() > eps {
+                return None;
+            }
+            let tangent = normalize_vec3([
+                end.x - start.x,
+                end.y - start.y,
+                end.z - start.z,
+            ]);
+            let length_m = [
+                end.x - start.x,
+                end.y - start.y,
+                end.z - start.z,
+            ];
+            let length = (length_m[0] * length_m[0]
+                + length_m[1] * length_m[1]
+                + length_m[2] * length_m[2])
+                .sqrt();
+            let role = top_edge_role(&midpoint, &tangent, &bbox);
+            Some(EdgeRefDiscovery {
+                kernel_edge_id: edge.id(),
+                role,
+                midpoint_m: [
+                    midpoint[0] as f32,
+                    midpoint[1] as f32,
+                    midpoint[2] as f32,
+                ],
+                tangent_m: [
+                    tangent[0] as f32,
+                    tangent[1] as f32,
+                    tangent[2] as f32,
+                ],
+                length_m: length as f32,
+                feature_id: None,
+            })
+        })
+        .collect()
+}
+
+#[cfg(feature = "occt")]
+fn normalize_vec3(vector: [f64; 3]) -> [f64; 3] {
+    let len =
+        (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]).sqrt();
+    if len <= 1e-12 {
+        return [1.0, 0.0, 0.0];
+    }
+    [vector[0] / len, vector[1] / len, vector[2] / len]
+}
+
+#[cfg(feature = "occt")]
+fn top_edge_role(midpoint: &[f64; 3], tangent: &[f64; 3], bb: &[[f64; 3]; 2]) -> String {
+    if tangent[0].abs() >= tangent[1].abs() {
+        if midpoint[1] > (bb[0][1] + bb[1][1]) * 0.5 {
+            "top@+y".into()
+        } else {
+            "top@-y".into()
+        }
+    } else if midpoint[0] > (bb[0][0] + bb[1][0]) * 0.5 {
+        "top@+x".into()
+    } else {
+        "top@-x".into()
     }
 }
 
@@ -385,6 +512,24 @@ impl GeometryKernel for OcctGeometryKernel {
         #[cfg(not(feature = "occt"))]
         {
             let _ = (body, kernel_face_id, ref_id);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
+    fn discover_body_edges(&self, body: &KernelBody) -> Result<Vec<EdgeRefDiscovery>> {
+        #[cfg(feature = "occt")]
+        {
+            let solid = self
+                .store
+                .borrow()
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+            Ok(discover_edges_from_solid(&solid))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = body;
             Err(OpenCadError::Other("OCCT backend disabled".into()))
         }
     }

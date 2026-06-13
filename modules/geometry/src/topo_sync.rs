@@ -14,6 +14,17 @@ pub struct FaceRefDiscovery {
     pub feature_id: Option<String>,
 }
 
+/// Discovered B-Rep edge from kernel topology inspection.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EdgeRefDiscovery {
+    pub kernel_edge_id: u64,
+    pub role: String,
+    pub midpoint_m: [f32; 3],
+    pub tangent_m: [f32; 3],
+    pub length_m: f32,
+    pub feature_id: Option<String>,
+}
+
 /// A face derivation pair from the kernel: `(post_id, src_id)`.
 pub type FaceDerivation = (u64, u64);
 
@@ -95,6 +106,119 @@ pub fn resolve_kernel_face_id_for_topo_ref_with_discoveries(
             "; run sync_topo_refs first or provide tessellated face discoveries"
         }
     )))
+}
+
+/// Resolve a persisted `ref:edge:...` id to the current kernel edge id for regeneration.
+pub fn resolve_kernel_edge_id_for_topo_ref(
+    semantic_refs: &[TopoRef],
+    ref_id: &str,
+    discoveries: Option<&[EdgeRefDiscovery]>,
+) -> Result<u64> {
+    let topo_ref = semantic_refs
+        .iter()
+        .find(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
+        .ok_or_else(|| OpenCadError::not_found(format!("topo ref '{ref_id}'")))?;
+
+    if let Some(stored_id) = topo_ref.kernel_edge_id() {
+        return Ok(stored_id);
+    }
+
+    if let Some(discoveries) = discoveries {
+        if let Some(kernel_edge_id) = match_edge_discovery_for_topo_ref(topo_ref, discoveries) {
+            return Ok(kernel_edge_id);
+        }
+    }
+
+    Err(OpenCadError::validation(format!(
+        "topo ref '{ref_id}' has no kernel_edge_id{}",
+        if discoveries.is_some() {
+            " and fingerprint fallback did not match an edge"
+        } else {
+            "; provide edge discoveries during regeneration"
+        }
+    )))
+}
+
+/// Match a discovered edge to a persisted topo ref using role and midpoint/tangent hints.
+pub fn match_edge_discovery_for_topo_ref(
+    topo_ref: &TopoRef,
+    discoveries: &[EdgeRefDiscovery],
+) -> Option<u64> {
+    discoveries
+        .iter()
+        .filter(|discovery| edge_discovery_matches_topo_ref(topo_ref, discovery))
+        .max_by(|left, right| {
+            edge_fingerprint_match_score(topo_ref, left)
+                .partial_cmp(&edge_fingerprint_match_score(topo_ref, right))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .filter(|discovery| edge_fingerprint_match_score(topo_ref, discovery) > 0.0)
+        .map(|discovery| discovery.kernel_edge_id)
+}
+
+fn edge_discovery_matches_topo_ref(topo_ref: &TopoRef, discovery: &EdgeRefDiscovery) -> bool {
+    let created_by = topo_ref.semantic.created_by.as_str();
+    let role_matches = topo_ref
+        .semantic
+        .role
+        .as_deref()
+        .map(|role| discovery.role == role)
+        .unwrap_or(true);
+    if !role_matches {
+        return false;
+    }
+
+    if discovery.feature_id.as_deref() == Some(created_by) {
+        return true;
+    }
+
+    topo_ref.geometric_fingerprint.is_none()
+        || topo_ref
+            .geometric_fingerprint
+            .as_ref()
+            .and_then(|fingerprint| fingerprint.bbox_hint.as_ref())
+            .is_some()
+}
+
+fn edge_fingerprint_match_score(topo_ref: &TopoRef, discovery: &EdgeRefDiscovery) -> f64 {
+    let mut score = 0.0;
+    if topo_ref
+        .semantic
+        .role
+        .as_deref()
+        .is_some_and(|role| discovery.role == role)
+    {
+        score += 2.0;
+    }
+    if topo_ref.semantic.created_by == discovery.feature_id.as_deref().unwrap_or("") {
+        score += 1.0;
+    }
+    score += discovery.length_m as f64;
+    if let Some(fingerprint) = topo_ref.geometric_fingerprint.as_ref() {
+        if let Some(hint) = fingerprint.bbox_hint.as_ref() {
+            let midpoint_hint = hint[0];
+            let tangent_hint = hint[1];
+            let midpoint_dist = [
+                discovery.midpoint_m[0] as f64 - midpoint_hint[0],
+                discovery.midpoint_m[1] as f64 - midpoint_hint[1],
+                discovery.midpoint_m[2] as f64 - midpoint_hint[2],
+            ];
+            let midpoint_len = (midpoint_dist[0] * midpoint_dist[0]
+                + midpoint_dist[1] * midpoint_dist[1]
+                + midpoint_dist[2] * midpoint_dist[2])
+                .sqrt();
+            if midpoint_len < 0.002 {
+                score += 3.0 - midpoint_len * 1000.0;
+            }
+            let tangent_dot = discovery.tangent_m[0] as f64 * tangent_hint[0]
+                + discovery.tangent_m[1] as f64 * tangent_hint[1]
+                + discovery.tangent_m[2] as f64 * tangent_hint[2];
+            if tangent_dot.abs() > 0.99 {
+                score += 2.0;
+            }
+        }
+    }
+    score
 }
 
 /// Match a tessellated face to a persisted topo ref using role, feature, and normal hints.
@@ -336,6 +460,7 @@ pub fn assign_face_ref_to_refs(
         semantic_refs[index].geometric_fingerprint = Some(GeometricFingerprint {
             surface_type: "brep_face".into(),
             kernel_face_id: Some(kernel_face_id),
+            kernel_edge_id: None,
             area_range: None,
             bbox_hint: None,
             adjacent_feature_ids: Vec::new(),
@@ -417,6 +542,7 @@ fn fingerprint_from(discovery: &FaceRefDiscovery) -> GeometricFingerprint {
     GeometricFingerprint {
         surface_type: "brep_face".into(),
         kernel_face_id: Some(discovery.kernel_face_id),
+        kernel_edge_id: None,
         area_range: None,
         bbox_hint: Some([
             [

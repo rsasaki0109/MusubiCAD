@@ -45,7 +45,7 @@ pub fn run() -> Result<()> {
 fn cmd_new(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let path = path.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad new <path> [bracket|boss-join|face-pin|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing]",
+            "usage: opencad new <path> [bracket|boss-join|face-pin|edge-fillet|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing]",
         )
     })?;
     let template = extra_args

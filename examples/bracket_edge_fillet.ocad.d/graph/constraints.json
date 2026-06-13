@@ -1,0 +1,35 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:height",
+        "target": {
+          "line": "ent:e1"
+        },
+        "expr": "height"
+      }
+    },
+    {
+      "sketch_id": "sketch:hole",
+      "constraint": {
+        "type": "radius",
+        "id": "con:hole_radius",
+        "target": "ent:hole_circle",
+        "expr": "hole_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:width",
+        "target": {
+          "line": "ent:e0"
+        },
+        "expr": "width"
+      }
+    }
+  ]
+}

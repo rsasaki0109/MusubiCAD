@@ -43,6 +43,35 @@ fn example_bracket_face_pin_regenerates_with_occt() {
 }
 
 #[test]
+fn example_bracket_edge_fillet_regenerates_with_occt() {
+    let path = workspace_root().join("examples/bracket_edge_fillet.ocad.d");
+    validate_expanded_dir(&path).expect("validate");
+    let doc = read_expanded_dir(&path).expect("read");
+    let params = doc.parameters.clone();
+    let semantic_refs = doc.semantic_refs.clone();
+    let mut model = doc.into_part_model();
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    model
+        .regenerate(
+            &kernel,
+            &registry,
+            Some(&params),
+            Some(&semantic_refs),
+        )
+        .expect("regen");
+    let body = model.active_body().expect("body");
+    let mass = kernel.mass_properties(body, 2700.0).expect("mass");
+    let plate_volume = 0.08 * 0.06 * 0.006;
+    assert!(
+        mass.volume_m3 < plate_volume,
+        "edge fillet example should round one edge and reduce volume: {} vs {}",
+        mass.volume_m3,
+        plate_volume
+    );
+}
+
+#[test]
 fn example_revolve_bushing_regenerates_with_occt() {
     let path = workspace_root().join("examples/revolve_bushing.ocad.d");
     validate_expanded_dir(&path).expect("validate");

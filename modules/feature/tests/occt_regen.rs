@@ -2,8 +2,9 @@
 
 use opencad_core::Length;
 use opencad_feature::{
-    bracket_base_plate, bracket_pin_mirror, bracket_semantic_refs, bracket_with_hole,
-    bracket_with_top_chamfer, bracket_with_top_fillet, profile_to_solved, FeatureRegistry,
+    bracket_base_plate, bracket_edge_fillet, bracket_pin_mirror, bracket_semantic_refs,
+    bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet, profile_to_solved,
+    FeatureRegistry,
 };
 use opencad_geometry::{build_src_to_post_map, ExtrudeExtent, ExtrudeOperation, GeometryKernel};
 use opencad_graph::bracket_parameters;
@@ -230,6 +231,51 @@ fn occt_fillet_on_face_ref_matches_top_perimeter() {
         "face_ref fillet volume {} should match top perimeter {}",
         face_ref_mass.volume_m3,
         baseline_mass.volume_m3
+    );
+}
+
+#[test]
+fn occt_edge_ref_fillet_affects_less_volume_than_top_perimeter() {
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let params = bracket_parameters();
+    let semantic_refs = opencad_feature::bracket_semantic_refs();
+
+    let mut without_fillet = bracket_with_hole().expect("model");
+    without_fillet
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
+        .expect("regen");
+    let base_mass = kernel
+        .mass_properties(without_fillet.active_body().expect("body"), 2700.0)
+        .expect("base mass");
+
+    let mut edge_model = bracket_edge_fillet().expect("model");
+    edge_model
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
+        .expect("regen");
+    let edge_mass = kernel
+        .mass_properties(edge_model.active_body().expect("body"), 2700.0)
+        .expect("edge mass");
+
+    let mut full_model = bracket_with_top_fillet().expect("model");
+    full_model
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
+        .expect("regen");
+    let full_mass = kernel
+        .mass_properties(full_model.active_body().expect("body"), 2700.0)
+        .expect("full mass");
+
+    assert!(
+        edge_mass.volume_m3 < base_mass.volume_m3,
+        "edge fillet should reduce volume: {} vs {}",
+        edge_mass.volume_m3,
+        base_mass.volume_m3
+    );
+    assert!(
+        edge_mass.volume_m3 > full_mass.volume_m3,
+        "single-edge fillet {} should remove less material than top perimeter {}",
+        edge_mass.volume_m3,
+        full_mass.volume_m3
     );
 }
 
