@@ -56,7 +56,7 @@ button:hover {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 1rem;
   padding: 1rem;
   min-height: calc(100vh - 72px);
@@ -112,6 +112,54 @@ button:hover {
   margin: 0;
   text-align: right;
   word-break: break-all;
+}
+
+.parameters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.param-row {
+  display: grid;
+  grid-template-columns: 1fr 72px;
+  gap: 0.35rem 0.5rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.param-row label {
+  color: #9aa8bd;
+  grid-column: 1 / -1;
+}
+
+.param-row input {
+  background: #0d1117;
+  color: inherit;
+  border: 1px solid #3a4a63;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+}
+
+.param-row input:focus {
+  outline: 1px solid #5b8def;
+  border-color: #5b8def;
+}
+
+.param-value {
+  text-align: right;
+  color: #c5d0e0;
+  font-variant-numeric: tabular-nums;
+}
+
+.parameters-empty {
+  color: #9aa8bd;
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 @media (max-width: 960px) {

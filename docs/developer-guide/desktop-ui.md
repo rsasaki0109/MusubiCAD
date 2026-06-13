@@ -12,6 +12,8 @@ See [apps/desktop/README.md](../../apps/desktop/README.md).
 |---|---|
 | `preview_document(path)` | Regenerate, tessellate, render PNG (base64) |
 | `inspect_document(path)` | Document metadata summary |
+| `list_document_parameters(path)` | Parameter expressions + evaluated mm values |
+| `set_document_parameter(path, id, expr)` | Update one parameter and persist |
 | `create_document(path, template)` | Built-in sample templates |
 | `load_view_data(path)` | Scene + sketch overlay for advanced viewers |
 

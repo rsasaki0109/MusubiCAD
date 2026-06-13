@@ -1,9 +1,11 @@
 use std::path::{Path, PathBuf};
 
 use opencad_desktop::{
-    create_document, inspect_document, preview_document, DocumentInspect, DocumentPreview,
-    DocumentTemplate,
+    create_document, inspect_document, list_document_parameters, load_view_data,
+    preview_document, set_document_parameter, DocumentInspect, DocumentPreview,
+    DocumentTemplate, ParameterRow,
 };
+use opencad_render::run_viewport;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -65,6 +67,35 @@ fn create_template_document(path: String, template_id: String) -> Result<(), Str
     create_document(&path, template).map_err(map_error)
 }
 
+#[tauri::command]
+fn list_document_parameters_cmd(path: String) -> Result<Vec<ParameterRow>, String> {
+    list_document_parameters(&path).map_err(map_error)
+}
+
+#[tauri::command]
+fn set_document_parameter_cmd(path: String, id: String, expr: String) -> Result<(), String> {
+    set_document_parameter(&path, &id, &expr).map_err(map_error)
+}
+
+#[tauri::command]
+fn open_viewport_cmd(path: String) -> Result<(), String> {
+    let data = load_view_data(&path).map_err(map_error)?;
+    let overlay = if data.overlay.is_empty() {
+        None
+    } else {
+        Some(data.overlay)
+    };
+    let scene = data.scene;
+    let title = data.name;
+    std::thread::spawn(move || {
+        let overlay_ref = overlay.as_ref();
+        if let Err(err) = run_viewport(&scene, overlay_ref, &title) {
+            eprintln!("viewport error: {err}");
+        }
+    });
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -75,6 +106,9 @@ pub fn run() {
             inspect_document_cmd,
             preview_document_cmd,
             create_template_document,
+            list_document_parameters_cmd,
+            set_document_parameter_cmd,
+            open_viewport_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running ForgeCAD desktop");

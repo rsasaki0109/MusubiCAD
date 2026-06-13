@@ -31,6 +31,8 @@ The app loads `examples/bracket.ocad.d` automatically when launched from the wor
 
 - Open `.ocad.d` directory
 - Regenerate + PNG preview (sketch overlay included)
+- Edit parameters inline (persist + live preview refresh)
+- Open interactive wgpu 3D viewport (separate window)
 - Create built-in sample templates
 - Document inspect panel (features, sketches, bounds)
 

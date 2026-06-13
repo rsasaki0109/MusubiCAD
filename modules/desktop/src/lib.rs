@@ -2,11 +2,15 @@
 
 pub mod fixture;
 pub mod inspect;
+pub mod parameters;
 pub mod preview;
 pub mod regen;
 pub mod template;
 
 pub use inspect::{inspect_document, DocumentInspect};
+pub use parameters::{
+    list_document_parameters, set_document_parameter, ParameterRow,
+};
 pub use preview::{
     load_view_data, preview_document, DocumentPreview, ViewData, PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
