@@ -1,27 +1,15 @@
 //! `opencad mesh` command — tessellate and summarize viewport scene data.
 
 use opencad_core::Result;
-use opencad_feature::{apply_parameters, FeatureNode};
+use opencad_desktop::tessellate_active_body;
 use opencad_file::read_ocad;
-use opencad_geometry::{FaceDerivation, TopoRef};
-use opencad_graph::evaluate_param_graph;
-use opencad_render::{build_sketch_overlay, OffscreenRenderer, RenderScene, SketchOverlay};
+use opencad_render::{OffscreenRenderer, RenderScene, SketchOverlay};
 use serde::{Deserialize, Serialize};
 
-use crate::export::{tessellate_active_body, tessellate_active_body_detailed};
+pub use opencad_desktop::{load_view_data, ViewData};
 
 pub const PREVIEW_WIDTH: u32 = 512;
 pub const PREVIEW_HEIGHT: u32 = 512;
-
-/// Document data prepared for viewport or PNG preview.
-pub struct ViewData {
-    pub scene: RenderScene,
-    pub overlay: SketchOverlay,
-    pub name: String,
-    pub feature_nodes: Vec<FeatureNode>,
-    pub semantic_refs: Vec<TopoRef>,
-    pub face_history: Vec<FaceDerivation>,
-}
 
 /// Options for `opencad mesh`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -46,30 +34,6 @@ pub struct MeshSummary {
     pub overlay_lines: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub overlay_labels: Option<usize>,
-}
-
-pub fn load_view_data(input: &str) -> Result<ViewData> {
-    let doc = read_ocad(input)?;
-    let name = doc.metadata.name.clone();
-    let parameters = doc.parameters.clone();
-    let feature_nodes = doc.feature_nodes.clone();
-    let semantic_refs = doc.semantic_refs.clone();
-    let mut model = doc.into_part_model();
-    apply_parameters(&mut model, &parameters)?;
-    let values = evaluate_param_graph(&parameters)?;
-    let sketches: Vec<_> = model.sketches.values().cloned().collect();
-    let overlay = build_sketch_overlay(&sketches, &values)?;
-    let tessellated =
-        tessellate_active_body_detailed(&mut model, Some(&parameters), Some(&semantic_refs))?;
-    let scene = RenderScene::from_mesh_set(&tessellated.mesh_set)?;
-    Ok(ViewData {
-        scene,
-        overlay,
-        name,
-        feature_nodes,
-        semantic_refs,
-        face_history: tessellated.face_history,
-    })
 }
 
 pub fn mesh_document(input: &str, options: &MeshOptions) -> Result<MeshSummary> {
@@ -180,17 +144,7 @@ pub fn print_summary(summary: &MeshSummary) {
 
 #[cfg(test)]
 pub(crate) fn write_bracket_fixture_at(path: &std::path::Path) {
-    use opencad_core::{DocumentId, DocumentMetadata};
-    use opencad_feature::bracket_base_plate;
-    use opencad_file::{write_expanded_dir, OcadDocument};
-    use opencad_graph::bracket_parameters;
-
-    let part = bracket_base_plate().expect("model");
-    let metadata =
-        DocumentMetadata::new(DocumentId::new("doc:bracket_001").expect("id"), "Bracket");
-    let mut doc = OcadDocument::from_part_model(metadata, &part);
-    doc.parameters = bracket_parameters();
-    write_expanded_dir(path, &doc).expect("write");
+    opencad_desktop::fixture::write_bracket_fixture_at(path);
 }
 
 #[cfg(test)]

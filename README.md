@@ -122,7 +122,7 @@ See [docs/api/agent.md](docs/api/agent.md) and `examples/agent/` for JSON-RPC re
 
 ```
 modules/     Rust crates (core, graph, sketch, feature, …)
-apps/        Desktop and web applications (future)
+apps/        Desktop shell (`apps/desktop` — Tauri + Web UI)
 schemas/     .ocad JSON schemas
 docs/        Architecture, ADRs, API reference
 examples/    Parametric model examples

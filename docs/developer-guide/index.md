@@ -39,6 +39,7 @@ cargo run -p opencad-cli -- new my_mirror.ocad.d pin-mirror
 | `opencad-file` | `.ocad` serialization |
 | `opencad-ai` | DesignPatch and Agent API |
 | `opencad-cli` | Command-line interface |
+| `opencad-desktop` | Shared preview + template helpers for desktop UI |
 | `opencad-render` | wgpu viewport |
 | `opencad-assembly` | Assembly model (Phase 3) |
 | `opencad-drawing` | Drawing model (Phase 4) |
@@ -90,3 +91,4 @@ Up next (recommended):
 - Mirror plane from semantic face refs
 - CI green + committed `examples/*.ocad.d` fixtures
 - Optional `forgecad` CLI crate rename
+- Desktop UI: [desktop-ui.md](desktop-ui.md)

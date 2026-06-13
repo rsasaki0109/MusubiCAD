@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ForgeCAD</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="brand">
+        <strong>ForgeCAD</strong>
+        <span class="subtitle">Desktop preview</span>
+      </div>
+      <div class="actions">
+        <button id="open-btn" type="button">Open…</button>
+        <button id="refresh-btn" type="button">Regenerate</button>
+        <select id="template-select" aria-label="Template"></select>
+        <button id="create-btn" type="button">Create sample</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="preview-panel">
+        <img id="preview" alt="Model preview" />
+        <p id="status" class="status">Loading…</p>
+      </section>
+      <aside class="info-panel">
+        <h2>Document</h2>
+        <dl id="doc-info"></dl>
+        <h2>Preview</h2>
+        <dl id="preview-info"></dl>
+      </aside>
+    </main>
+
+    <script src="main.js"></script>
+  </body>
+</html>

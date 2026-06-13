@@ -14,6 +14,7 @@ members = [
     "modules/file",
     "modules/ai",
     "modules/cli",
+    "modules/desktop",
     "modules/plugin-api",
 ]
 
@@ -37,6 +38,7 @@ opencad-drawing = { path = "modules/drawing" }
 opencad-render = { path = "modules/render" }
 opencad-file = { path = "modules/file" }
 opencad-ai = { path = "modules/ai" }
+opencad-desktop = { path = "modules/desktop" }
 opencad-plugin-api = { path = "modules/plugin-api" }
 
 serde = { version = "1", features = ["derive"] }

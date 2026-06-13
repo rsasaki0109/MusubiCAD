@@ -1,23 +1,17 @@
 [package]
-name = "opencad-cli"
-description = "OpenCAD command-line interface"
+name = "opencad-desktop"
+description = "Shared document preview and template helpers for ForgeCAD desktop UI"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
-
-[[bin]]
-name = "opencad"
-path = "src/main.rs"
 
 [features]
 default = ["occt"]
 occt = ["opencad-kernel-occt/occt", "opencad-file/occt"]
 
 [dependencies]
-opencad-ai = { workspace = true }
 opencad-core = { workspace = true }
-opencad-desktop = { workspace = true, features = ["occt"] }
 opencad-feature = { workspace = true }
 opencad-file = { workspace = true }
 opencad-geometry = { workspace = true }
@@ -25,16 +19,12 @@ opencad-graph = { workspace = true }
 opencad-kernel-occt = { workspace = true }
 opencad-render = { workspace = true }
 opencad-sketch = { workspace = true }
+base64 = "0.22"
+image = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
-opencad-ai = { workspace = true }
-opencad-feature = { workspace = true }
-opencad-file = { workspace = true }
-opencad-kernel-occt = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
 tempfile = "3"
 
 [lints]

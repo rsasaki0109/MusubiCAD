@@ -3,15 +3,12 @@
 use std::path::Path;
 
 use opencad_core::{OpenCadError, Result};
-use opencad_feature::{FeatureRegistry, PartModel};
+use opencad_desktop::tessellate_active_body;
 use opencad_file::read_ocad;
-use opencad_geometry::{
-    write_binary_stl, FaceDerivation, GeometryKernel, MeshSet, TessellationSettings, TopoRef,
-};
+use opencad_geometry::write_binary_stl;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "occt")]
-use opencad_kernel_occt::OcctGeometryKernel;
+pub use opencad_desktop::tessellate_active_body_detailed;
 
 /// Summary printed by `opencad export`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -40,67 +37,6 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
         triangles: mesh.triangle_count(),
         output: output.to_string(),
     })
-}
-
-/// Tessellated active body with kernel face derivation history.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct TessellatedBody {
-    pub mesh_set: MeshSet,
-    pub face_history: Vec<FaceDerivation>,
-}
-
-pub(crate) fn tessellate_active_body(
-    model: &mut PartModel,
-    parameters: Option<&opencad_graph::ParamGraph>,
-    semantic_refs: Option<&[TopoRef]>,
-) -> Result<MeshSet> {
-    Ok(tessellate_active_body_detailed(model, parameters, semantic_refs)?.mesh_set)
-}
-
-pub(crate) fn tessellate_active_body_detailed(
-    model: &mut PartModel,
-    parameters: Option<&opencad_graph::ParamGraph>,
-    semantic_refs: Option<&[TopoRef]>,
-) -> Result<TessellatedBody> {
-    let registry = FeatureRegistry::with_defaults();
-
-    #[cfg(feature = "occt")]
-    {
-        let kernel = OcctGeometryKernel::new();
-        let report = model.regenerate(&kernel, &registry, parameters, semantic_refs)?;
-        let body = model
-            .active_body()
-            .ok_or_else(|| OpenCadError::validation("document has no solid body to export"))?;
-        let mesh_set = kernel.tessellate(body, &TessellationSettings::default())?;
-        let face_history = if report.face_history.is_empty() {
-            kernel.face_derivation_history(body)
-        } else {
-            report.face_history
-        };
-        Ok(TessellatedBody {
-            mesh_set,
-            face_history,
-        })
-    }
-
-    #[cfg(not(feature = "occt"))]
-    {
-        let kernel = opencad_geometry::MockGeometryKernel::new();
-        let report = model.regenerate(&kernel, &registry, parameters, semantic_refs)?;
-        let body = model
-            .active_body()
-            .ok_or_else(|| OpenCadError::validation("document has no solid body to export"))?;
-        let mesh_set = kernel.tessellate(body, &TessellationSettings::default())?;
-        let face_history = if report.face_history.is_empty() {
-            kernel.face_derivation_history(body)
-        } else {
-            report.face_history
-        };
-        Ok(TessellatedBody {
-            mesh_set,
-            face_history,
-        })
-    }
 }
 
 pub fn print_summary(summary: &ExportSummary) {
