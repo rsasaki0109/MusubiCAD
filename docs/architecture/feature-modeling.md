@@ -74,7 +74,7 @@ Features run in topological order from `FeatureGraph::recompute_order()`. Suppre
 
 ### Revolve
 
-Full 360° revolve around an axis. Profile sketches use a global workplane (`XY`, `YZ`, or `XZ`).
+Revolve sweeps a closed profile around an axis. `angle_rad` may be any value from 0 to 2π (360°). Omit or set to `6.283185307179586` for a full revolution.
 
 ```json
 {
@@ -83,10 +83,14 @@ Full 360° revolve around an axis. Profile sketches use a global workplane (`XY`
   "profile_ref": "sketch:profile/profile:outer",
   "axis_origin_m": [0.0, 0.0, 0.0],
   "axis_direction_m": [0.0, 1.0, 0.0],
-  "angle_rad": 6.283185307179586,
+  "angle_rad": 3.141592653589793,
   "operation": "new_body"
 }
 ```
+
+Optional `angle_expr` resolves a parametric angle in radians before regeneration (e.g. `"revolve_angle_rad"`).
+
+Profile sketches use a global workplane (`XY`, `YZ`, or `XZ`).
 
 ### Pattern options
 

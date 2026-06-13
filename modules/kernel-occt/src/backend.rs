@@ -165,6 +165,25 @@ fn top_edge_role(midpoint: &[f64; 3], tangent: &[f64; 3], bb: &[[f64; 3]; 2]) ->
     }
 }
 
+#[cfg(feature = "occt")]
+fn revolve_spine_edge(axis: DVec3, angle_rad: f64) -> opencad_core::Result<Edge> {
+    if angle_rad >= std::f64::consts::TAU - 1e-6 {
+        return Edge::circle(1.0, axis).map_err(map_occt_error);
+    }
+
+    let helper = if axis.z.abs() < 0.9 {
+        DVec3::Z
+    } else {
+        DVec3::X
+    };
+    let u = axis.cross(helper).normalize();
+    let v = axis.cross(u).normalize();
+    let start = u;
+    let end = u * angle_rad.cos() + v * angle_rad.sin();
+    let mid = u * (angle_rad * 0.5).cos() + v * (angle_rad * 0.5).sin();
+    Edge::arc_3pts(start, mid, end).map_err(map_occt_error)
+}
+
 /// OpenCASCADE backend via statically linked OCCT (cadrum).
 pub struct OcctGeometryKernel {
     store: RefCell<KernelStore>,
@@ -283,9 +302,9 @@ impl GeometryKernel for OcctGeometryKernel {
             if angle_rad <= 0.0 {
                 return Err(OpenCadError::validation("revolve angle must be positive"));
             }
-            if (angle_rad - std::f64::consts::TAU).abs() > 1e-6 {
+            if angle_rad > std::f64::consts::TAU + 1e-6 {
                 return Err(OpenCadError::validation(
-                    "revolve MVP supports full 360° sweeps only",
+                    "revolve angle must not exceed 360° (2π rad)",
                 ));
             }
 
@@ -305,7 +324,7 @@ impl GeometryKernel for OcctGeometryKernel {
             );
 
             let edges = sketch_to_edges_on_plane(sketch, profile_plane)?;
-            let spine = Edge::circle(1.0, axis).map_err(map_occt_error)?;
+            let spine = revolve_spine_edge(axis, angle_rad)?;
             let mut solid = Solid::sweep(&edges, std::slice::from_ref(&spine), ProfileOrient::Up(axis))
                 .map_err(map_occt_error)?;
 

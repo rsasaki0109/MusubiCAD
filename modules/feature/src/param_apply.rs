@@ -76,6 +76,12 @@ fn resolve_feature_node(
                 pattern.spacing = Length::from_meters(meters);
             }
         }
+        FeatureDefinition::Revolve(revolve) => {
+            if let Some(expr) = &revolve.angle_expr {
+                let radians = eval_length_expr(expr, values)?;
+                revolve.angle_rad = radians;
+            }
+        }
         _ => {}
     }
     Ok(())

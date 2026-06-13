@@ -94,6 +94,29 @@ fn example_revolve_bushing_regenerates_with_occt() {
 }
 
 #[test]
+fn example_revolve_sector_regenerates_with_occt() {
+    let path = workspace_root().join("examples/revolve_sector.ocad.d");
+    validate_expanded_dir(&path).expect("validate");
+    let doc = read_expanded_dir(&path).expect("read");
+    let mut model = doc.into_part_model();
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    model
+        .regenerate(&kernel, &registry, None, None)
+        .expect("regen");
+    let body = model.active_body().expect("body");
+    let mass = kernel.mass_properties(body, 2700.0).expect("mass");
+    let expected_full = std::f64::consts::PI * (0.025_f64.powi(2) - 0.015_f64.powi(2)) * 0.02;
+    let expected = expected_full * 0.5;
+    assert!(
+        (mass.volume_m3 - expected).abs() < 1e-8,
+        "revolve sector example volume {} vs {}",
+        mass.volume_m3,
+        expected
+    );
+}
+
+#[test]
 fn example_bracket_boss_join_regenerates_with_occt() {
     let path = workspace_root().join("examples/bracket_boss_join.ocad.d");
     validate_expanded_dir(&path).expect("validate");

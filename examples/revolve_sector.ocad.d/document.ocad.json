@@ -1,0 +1,10 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:revolve_sector_001",
+    "name": "Revolved Sector (180°)",
+    "units": "mm",
+    "created_with": "OpenCAD 0.1.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

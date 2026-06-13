@@ -279,6 +279,11 @@ impl GeometryKernel for MockGeometryKernel {
         if angle_rad <= 0.0 {
             return Err(OpenCadError::validation("revolve angle must be positive"));
         }
+        if angle_rad > std::f64::consts::TAU + 1e-6 {
+            return Err(OpenCadError::validation(
+                "revolve angle must not exceed 360° (2π rad)",
+            ));
+        }
         let axis_sum = axis_direction_m[0].abs()
             + axis_direction_m[1].abs()
             + axis_direction_m[2].abs();

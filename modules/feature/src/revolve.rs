@@ -17,6 +17,9 @@ pub struct RevolveFeature {
     pub axis_origin_m: [f64; 3],
     pub axis_direction_m: [f64; 3],
     pub angle_rad: f64,
+    /// Parametric angle expression resolved before regeneration (radians, e.g. `revolve_angle_rad`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub angle_expr: Option<String>,
     pub operation: RevolveOperation,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub target_feature: Option<String>,
@@ -122,12 +125,31 @@ impl RevolveFeature {
         axis_origin_m: [f64; 3],
         axis_direction_m: [f64; 3],
     ) -> Self {
+        Self::with_angle(
+            sketch_feature,
+            profile_ref,
+            axis_origin_m,
+            axis_direction_m,
+            std::f64::consts::TAU,
+            None,
+        )
+    }
+
+    pub fn with_angle(
+        sketch_feature: impl Into<String>,
+        profile_ref: impl Into<String>,
+        axis_origin_m: [f64; 3],
+        axis_direction_m: [f64; 3],
+        angle_rad: f64,
+        angle_expr: Option<String>,
+    ) -> Self {
         Self {
             sketch_feature: sketch_feature.into(),
             profile_ref: profile_ref.into(),
             axis_origin_m,
             axis_direction_m,
-            angle_rad: std::f64::consts::TAU,
+            angle_rad,
+            angle_expr,
             operation: RevolveOperation::NewBody,
             target_feature: None,
         }

@@ -1,0 +1,64 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_profile",
+      "feature:revolve_sector"
+    ],
+    "features": {
+      "feature:sketch_profile": {
+        "id": "feature:sketch_profile",
+        "name": "Sector Profile",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:revolve_sector": {
+        "id": "feature:revolve_sector",
+        "name": "Revolve Sector",
+        "feature_type": "revolve",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_profile",
+        "target": "feature:revolve_sector",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:revolve_sector",
+      "name": "Revolve Sector",
+      "definition": {
+        "type": "revolve",
+        "sketch_feature": "feature:sketch_profile",
+        "profile_ref": "sketch:profile/profile:outer",
+        "axis_origin_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "axis_direction_m": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "angle_rad": 3.141592653589793,
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_profile",
+      "name": "Sector Profile",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:profile"
+      },
+      "suppressed": false
+    }
+  ]
+}

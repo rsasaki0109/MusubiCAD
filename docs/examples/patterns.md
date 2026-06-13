@@ -15,7 +15,8 @@ Committed samples under `examples/` demonstrate every pattern type with both **c
 | `pin-row` | `bracket_pin_row.ocad.d` | linear | union | `feature:extrude_base` | `spacing_expr: hole_pitch` |
 | `pin-ring` | `bracket_pin_ring.ocad.d` | circular | union | `feature:extrude_base` | — |
 | `pin-mirror` | `bracket_pin_mirror.ocad.d` | mirror | union | `feature:extrude_base` | `plane_face_ref` |
-| `revolve-bushing` | `revolve_bushing.ocad.d` | — | revolve | — | XY profile / Y axis |
+| `revolve-bushing` | `revolve_bushing.ocad.d` | — | revolve (360°) | — | XY profile / Y axis |
+| `revolve-sector` | `revolve_sector.ocad.d` | — | revolve (180°) | — | XY profile / Y axis |
 
 ## Create samples
 
@@ -30,6 +31,7 @@ cargo run -p opencad-cli -- new examples/bracket_pin_row.ocad.d pin-row
 cargo run -p opencad-cli -- new examples/bracket_pin_ring.ocad.d pin-ring
 cargo run -p opencad-cli -- new examples/bracket_pin_mirror.ocad.d pin-mirror
 cargo run -p opencad-cli -- new examples/revolve_bushing.ocad.d revolve-bushing
+cargo run -p opencad-cli -- new examples/revolve_sector.ocad.d revolve-sector
 ```
 
 ## Cut vs union

@@ -4,7 +4,7 @@ use opencad_core::{DocumentId, DocumentMetadata, Result};
 use opencad_feature::{
     bracket_boss_join, bracket_face_pin, bracket_edge_fillet, bracket_hole_ring, bracket_hole_row,
     bracket_pin_mirror, bracket_pin_ring, bracket_pin_row, bracket_semantic_refs,
-    bracket_with_hole, revolve_bushing,
+    bracket_with_hole, revolve_bushing, revolve_sector,
 };
 use opencad_file::{write_ocad, OcadDocument};
 use opencad_graph::bracket_parameters;
@@ -23,6 +23,7 @@ pub enum DocumentTemplate {
     PinRing,
     PinMirror,
     RevolveBushing,
+    RevolveSector,
 }
 
 impl DocumentTemplate {
@@ -38,8 +39,9 @@ impl DocumentTemplate {
             "pin-ring" => Ok(Self::PinRing),
             "pin-mirror" => Ok(Self::PinMirror),
             "revolve-bushing" => Ok(Self::RevolveBushing),
+            "revolve-sector" => Ok(Self::RevolveSector),
             _ => Err(opencad_core::OpenCadError::validation(format!(
-                "unknown template '{name}'; expected 'bracket', 'boss-join', 'face-pin', 'edge-fillet', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', 'pin-mirror', or 'revolve-bushing'"
+                "unknown template '{name}'; expected 'bracket', 'boss-join', 'face-pin', 'edge-fillet', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', 'pin-mirror', 'revolve-bushing', or 'revolve-sector'"
             ))),
         }
     }
@@ -56,6 +58,7 @@ impl DocumentTemplate {
             Self::PinRing => "pin-ring",
             Self::PinMirror => "pin-mirror",
             Self::RevolveBushing => "revolve-bushing",
+            Self::RevolveSector => "revolve-sector",
         }
     }
 }
@@ -72,6 +75,7 @@ pub fn create_document(path: &str, template: DocumentTemplate) -> Result<()> {
         DocumentTemplate::PinRing => create_bracket_pin_ring_document(path),
         DocumentTemplate::PinMirror => create_bracket_pin_mirror_document(path),
         DocumentTemplate::RevolveBushing => create_revolve_bushing_document(path),
+        DocumentTemplate::RevolveSector => create_revolve_sector_document(path),
     }
 }
 
@@ -127,6 +131,16 @@ pub fn create_revolve_bushing_document(path: &str) -> Result<()> {
     let metadata = DocumentMetadata::new(
         DocumentId::new("doc:revolve_bushing_001")?,
         "Revolved Bushing",
+    );
+    let doc = OcadDocument::from_part_model(metadata, &part);
+    write_ocad(path, &doc)
+}
+
+pub fn create_revolve_sector_document(path: &str) -> Result<()> {
+    let part = revolve_sector()?;
+    let metadata = DocumentMetadata::new(
+        DocumentId::new("doc:revolve_sector_001")?,
+        "Revolved Sector (180°)",
     );
     let doc = OcadDocument::from_part_model(metadata, &part);
     write_ocad(path, &doc)

@@ -340,6 +340,49 @@ fn occt_revolve_bushing_has_annulus_volume() {
 }
 
 #[test]
+fn occt_revolve_sector_is_half_bushing_volume() {
+    use opencad_feature::{revolve_bushing, revolve_sector};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+
+    let mut full = revolve_bushing().expect("model");
+    full
+        .regenerate(&kernel, &registry, None, None)
+        .expect("regen");
+    let full_mass = kernel
+        .mass_properties(full.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut sector = revolve_sector().expect("model");
+    sector
+        .regenerate(&kernel, &registry, None, None)
+        .expect("regen");
+    let sector_mass = kernel
+        .mass_properties(sector.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let outer = 0.025_f64;
+    let inner = 0.015_f64;
+    let height = 0.02_f64;
+    let expected_full = std::f64::consts::PI * (outer.powi(2) - inner.powi(2)) * height;
+    let expected_sector = expected_full * 0.5;
+
+    assert!(
+        (sector_mass.volume_m3 - expected_sector).abs() < 1e-8,
+        "180° sector volume {} should match half annulus {}",
+        sector_mass.volume_m3,
+        expected_sector
+    );
+    assert!(
+        sector_mass.volume_m3 < full_mass.volume_m3,
+        "sector {} should be smaller than full revolve {}",
+        sector_mass.volume_m3,
+        full_mass.volume_m3
+    );
+}
+
+#[test]
 fn occt_join_extrude_fuses_onto_plate() {
     use opencad_feature::{bracket_base_plate, bracket_boss_join, apply_parameters};
 
