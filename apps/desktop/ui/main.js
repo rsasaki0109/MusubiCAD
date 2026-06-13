@@ -1,5 +1,6 @@
 const { invoke } = window.__TAURI__.core;
 const { open, save } = window.__TAURI__.dialog;
+const { listen } = window.__TAURI__.event;
 
 const preview = document.getElementById("preview");
 const highlightOverlay = document.getElementById("highlight-overlay");
@@ -116,6 +117,25 @@ function renderHighlight(segments) {
   }
 }
 
+function handlePickSummary(summary, sourceLabel) {
+  renderSelection(summary);
+  if (sourceLabel === "preview") {
+    renderHighlight(summary.highlight_segments_px ?? []);
+  }
+  if (summary.selection.kind === "none") {
+    setStatus(
+      sourceLabel === "preview"
+        ? "No geometry at click point."
+        : "No geometry picked in 3D viewport.",
+    );
+    return;
+  }
+  const label = summary.selection.kind.replaceAll("_", " ");
+  setStatus(
+    sourceLabel === "preview" ? `Selected ${label}` : `3D viewport: ${label}`,
+  );
+}
+
 async function pickAtPreview(event) {
   if (!currentPath) {
     return;
@@ -132,13 +152,7 @@ async function pickAtPreview(event) {
       x: coords.x,
       y: coords.y,
     });
-    renderSelection(summary);
-    renderHighlight(summary.highlight_segments_px ?? []);
-    if (summary.selection.kind === "none") {
-      setStatus("No geometry at click point.");
-    } else {
-      setStatus(`Selected ${summary.selection.kind.replaceAll("_", " ")}`);
-    }
+    handlePickSummary(summary, "preview");
   } catch (error) {
     setStatus(`Error: ${error}`);
   }
@@ -380,7 +394,13 @@ async function openViewport() {
   }
   setStatus("Opening 3D viewport…");
   await invoke("open_viewport_cmd", { path: currentPath });
-  setStatus("3D viewport running in a separate window.");
+  setStatus("3D viewport open — click geometry to update Selection.");
+}
+
+async function listenViewportPicks() {
+  await listen("viewport-pick", (event) => {
+    handlePickSummary(event.payload, "viewport");
+  });
 }
 
 async function createSample() {
@@ -403,6 +423,7 @@ highlightOverlay.setAttribute("viewBox", `0 0 ${PREVIEW_WIDTH} ${PREVIEW_HEIGHT}
 
 async function boot() {
   try {
+    await listenViewportPicks();
     await loadTemplates();
     const defaultPath = await invoke("default_example_path");
     if (defaultPath) {

@@ -8,6 +8,7 @@ pub mod preview;
 pub mod regen;
 pub mod scene_query;
 pub mod template;
+pub mod viewport;
 
 pub use inspect::{inspect_document, DocumentInspect};
 pub use parameters::{
@@ -23,6 +24,7 @@ pub use regen::{
     tessellate_active_body, tessellate_active_body_detailed, TessellatedBody,
 };
 pub use template::{create_document, DocumentTemplate};
+pub use viewport::run_document_viewport;
 
 pub use scene_query::{infer_face_refs, topo_ref_for_group};
 

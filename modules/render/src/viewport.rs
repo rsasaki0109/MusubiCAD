@@ -16,9 +16,9 @@ use crate::overlay::{
 };
 use crate::scene::RenderScene;
 use crate::selection::{
-    create_pick_buffers, create_pick_line_pipeline, create_pick_mesh_pipeline, mesh_pick_vertices,
-    overlay_pick_vertices, pick_scene, triangle_edge_vertices, PickDrawBuffers, PickResult,
-    ScenePickContext, SelectionCatalog,
+    create_pick_buffers, create_pick_line_pipeline, create_pick_mesh_pipeline,
+    face_group_boundary_edges, mesh_pick_vertices, overlay_pick_vertices, pick_scene,
+    triangle_edge_vertices, PickDrawBuffers, PickResult, ScenePickContext, SelectionCatalog,
 };
 use crate::solid::{
     create_depth_texture, create_label_line_pipeline, create_line_buffers, create_line_pipeline,
@@ -29,11 +29,24 @@ use crate::solid::{
 
 const CLICK_THRESHOLD_PX: f64 = 5.0;
 
+/// Callback invoked after a click-pick in the interactive viewport.
+pub type ViewportPickCallback = Box<dyn Fn(f64, f64, u32, u32, PickResult) + Send>;
+
 /// Open an interactive viewport window for the given scene.
 pub fn run_viewport(
     scene: &RenderScene,
     overlay: Option<&SketchOverlay>,
     title: &str,
+) -> Result<()> {
+    run_viewport_with_pick(scene, overlay, title, None)
+}
+
+/// Open an interactive viewport and optionally report click-picks.
+pub fn run_viewport_with_pick(
+    scene: &RenderScene,
+    overlay: Option<&SketchOverlay>,
+    title: &str,
+    on_pick: Option<ViewportPickCallback>,
 ) -> Result<()> {
     let (vertices, indices) = pack_scene(scene)?;
     let overlay_lines = overlay
@@ -118,19 +131,35 @@ pub fn run_viewport(
                                                     <= CLICK_THRESHOLD_PX * CLICK_THRESHOLD_PX
                                                 {
                                                     match app.pick_at(cursor.0, cursor.1) {
-                                                        Ok(PickResult::SketchLine(line_index)) => {
-                                                            app.set_selected_line(line_index);
+                                                        Ok(result) => {
+                                                            match result {
+                                                                PickResult::SketchLine(
+                                                                    line_index,
+                                                                ) => {
+                                                                    app.set_selected_line(
+                                                                        line_index,
+                                                                    );
+                                                                }
+                                                                PickResult::SolidTriangle(
+                                                                    triangle_index,
+                                                                ) => {
+                                                                    app.set_selected_triangle(
+                                                                        triangle_index,
+                                                                    );
+                                                                }
+                                                                PickResult::None => {}
+                                                            }
                                                             app.window.request_redraw();
+                                                            if let Some(ref handler) = on_pick {
+                                                                handler(
+                                                                    cursor.0,
+                                                                    cursor.1,
+                                                                    app.config.width,
+                                                                    app.config.height,
+                                                                    result,
+                                                                );
+                                                            }
                                                         }
-                                                        Ok(PickResult::SolidTriangle(
-                                                            triangle_index,
-                                                        )) => {
-                                                            app.set_selected_triangle(
-                                                                triangle_index,
-                                                            );
-                                                            app.window.request_redraw();
-                                                        }
-                                                        Ok(PickResult::None) => {}
                                                         Err(err) => eprintln!("pick error: {err}"),
                                                     }
                                                 }
@@ -209,6 +238,7 @@ struct ViewportInit {
 
 struct ViewportApp {
     window: Arc<Window>,
+    scene: RenderScene,
     camera: OrbitCamera,
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
@@ -343,6 +373,7 @@ impl ViewportApp {
 
         Ok(Self {
             window,
+            scene,
             camera,
             surface,
             device,
@@ -419,9 +450,15 @@ impl ViewportApp {
     fn set_selected_triangle(&mut self, triangle_index: usize) {
         self.selected_triangle = Some(triangle_index);
         self.selected_line = None;
-        let vertices =
+        let vertices = if let Some(face) = self.scene.face_group_at(triangle_index) {
+            face_group_boundary_edges(&self.scene, face.index)
+                .into_iter()
+                .flat_map(|(start, end)| [start, end])
+                .collect()
+        } else {
             triangle_edge_vertices(&self.cpu_vertices, &self.cpu_indices, triangle_index)
-                .unwrap_or_default();
+                .unwrap_or_default()
+        };
         self.highlight_line_buffers = create_line_buffers(&self.device, &vertices);
     }
 

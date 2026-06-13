@@ -2,10 +2,11 @@ use std::path::{Path, PathBuf};
 
 use opencad_desktop::{
     create_document, inspect_document, list_document_parameters, load_view_data,
-    pick_document, preview_document, set_document_parameter, DocumentInspect, DocumentPreview,
-    DocumentTemplate, ParameterRow, PickOptions, PickSummary, PREVIEW_HEIGHT, PREVIEW_WIDTH,
+    pick_document, preview_document, run_document_viewport, set_document_parameter,
+    DocumentInspect, DocumentPreview, DocumentTemplate, ParameterRow, PickOptions, PickSummary,
+    PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
-use opencad_render::run_viewport;
+use tauri::{AppHandle, Emitter};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -78,18 +79,17 @@ fn set_document_parameter_cmd(path: String, id: String, expr: String) -> Result<
 }
 
 #[tauri::command]
-fn open_viewport_cmd(path: String) -> Result<(), String> {
+fn open_viewport_cmd(app: AppHandle, path: String) -> Result<(), String> {
     let data = load_view_data(&path).map_err(map_error)?;
-    let overlay = if data.overlay.is_empty() {
-        None
-    } else {
-        Some(data.overlay)
-    };
-    let scene = data.scene;
-    let title = data.name;
+    let title = data.name.clone();
+    let app_handle = app.clone();
     std::thread::spawn(move || {
-        let overlay_ref = overlay.as_ref();
-        if let Err(err) = run_viewport(&scene, overlay_ref, &title) {
+        let on_pick = move |summary: PickSummary| {
+            if let Err(err) = app_handle.emit("viewport-pick", &summary) {
+                eprintln!("failed to emit viewport pick: {err}");
+            }
+        };
+        if let Err(err) = run_document_viewport(data, &title, Some(on_pick)) {
             eprintln!("viewport error: {err}");
         }
     });

@@ -23,5 +23,5 @@ pub use scene::{BoundingBox, RenderScene};
 pub use selection::{
     face_group_boundary_edges, triangle_world_positions, PickResult, SelectionCatalog, SelectionId,
 };
-pub use viewport::run_viewport;
+pub use viewport::{run_viewport, run_viewport_with_pick, ViewportPickCallback};
 pub use wgpu_renderer::{OffscreenRenderer, RenderImage, RenderOutput};
