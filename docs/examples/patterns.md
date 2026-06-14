@@ -7,14 +7,14 @@ Committed samples under `examples/` demonstrate every pattern type with both **c
 | Template | Example path | Pattern | Operation | `target_feature` | Parametric field |
 |---|---|---|---|---|---|
 | `bracket` | `bracket.ocad.d` | — | hole cut | `face_ref` | `hole_diameter` |
-| `boss-join` | `bracket_boss_join.ocad.d` | — | extrude join | `feature:extrude_base` | `length_expr: thickness * 2` |
-| `face-pin` | `bracket_face_pin.ocad.d` | — | sketch-on-face + join | `feature:extrude_base` | `face_ref` workplane |
+| `boss-join` | `bracket_boss_join.ocad.d` | — | extrude join | `feature:extrude_base` | `hole_diameter`, `length_expr: thickness * 2` |
+| `face-pin` | `bracket_face_pin.ocad.d` | — | sketch-on-face + join | `feature:extrude_base` | `hole_diameter`, `face_ref` workplane |
 | `edge-fillet` | `bracket_edge_fillet.ocad.d` | — | single-edge fillet | `feature:hole_mount` | `edge_ref` |
-| `hole-row` | `bracket_hole_row.ocad.d` | linear | cut | `feature:extrude_base` | `spacing_expr: hole_pitch` |
-| `hole-ring` | `bracket_hole_ring.ocad.d` | circular | cut | `feature:extrude_base` | — |
-| `pin-row` | `bracket_pin_row.ocad.d` | linear | union | `feature:extrude_base` | `spacing_expr: hole_pitch` |
-| `pin-ring` | `bracket_pin_ring.ocad.d` | circular | union | `feature:extrude_base` | — |
-| `pin-mirror` | `bracket_pin_mirror.ocad.d` | mirror | union | `feature:extrude_base` | `plane_face_ref` |
+| `hole-row` | `bracket_hole_row.ocad.d` | linear | cut | `feature:extrude_base` | `hole_diameter`, `spacing_expr: hole_pitch` |
+| `hole-ring` | `bracket_hole_ring.ocad.d` | circular | cut | `feature:extrude_base` | `hole_diameter` |
+| `pin-row` | `bracket_pin_row.ocad.d` | linear | union | `feature:extrude_base` | `hole_diameter`, `spacing_expr: hole_pitch` |
+| `pin-ring` | `bracket_pin_ring.ocad.d` | circular | union | `feature:extrude_base` | `hole_diameter` |
+| `pin-mirror` | `bracket_pin_mirror.ocad.d` | mirror | union | `feature:extrude_base` | `hole_diameter`, `plane_face_ref` |
 | `revolve-bushing` | `revolve_bushing.ocad.d` | — | revolve (360°) | — | XY profile / Y axis |
 | `revolve-sector` | `revolve_sector.ocad.d` | — | revolve (180°) | — | XY profile / Y axis |
 

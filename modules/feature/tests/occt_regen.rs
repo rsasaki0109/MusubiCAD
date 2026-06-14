@@ -421,6 +421,44 @@ fn occt_join_extrude_fuses_onto_plate() {
 }
 
 #[test]
+fn occt_boss_join_radius_follows_hole_diameter() {
+    use opencad_feature::{apply_parameters, bracket_boss_join};
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+
+    let default_params = bracket_parameters();
+    let mut large_params = bracket_parameters();
+    large_params
+        .set_expr("param:hole_diameter", "20 mm")
+        .expect("hole_diameter");
+
+    let mut default_model = bracket_boss_join().expect("model");
+    default_model
+        .regenerate(&kernel, &registry, Some(&default_params), None)
+        .expect("regen");
+    let default_mass = kernel
+        .mass_properties(default_model.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    let mut large_model = bracket_boss_join().expect("model");
+    apply_parameters(&mut large_model, &large_params).expect("apply");
+    large_model
+        .regenerate(&kernel, &registry, Some(&large_params), None)
+        .expect("regen");
+    let large_mass = kernel
+        .mass_properties(large_model.active_body().expect("body"), 2700.0)
+        .expect("mass");
+
+    assert!(
+        large_mass.volume_m3 > default_mass.volume_m3,
+        "larger hole_diameter should grow boss join volume: {} vs {}",
+        large_mass.volume_m3,
+        default_mass.volume_m3
+    );
+}
+
+#[test]
 fn occt_linear_pattern_unions_translated_bodies() {
     use opencad_feature::{apply_parameters, FeatureDefinition, FeatureNode, LinearPatternFeature};
 

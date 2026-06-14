@@ -226,4 +226,33 @@ mod tests {
         };
         assert!((length.meters() - 0.008).abs() < 1e-9);
     }
+
+    #[test]
+    fn applies_hole_diameter_to_boss_sketch() {
+        let mut model = crate::regenerate::bracket_boss_join().expect("model");
+        let mut params = opencad_graph::bracket_parameters();
+        params
+            .set_expr("param:hole_diameter", "16 mm")
+            .expect("hole_diameter");
+
+        apply_parameters(&mut model, &params).expect("apply");
+        let sketch = model.sketches.get("sketch:boss").expect("sketch");
+        let radius_expr = match &sketch.constraints[0] {
+            Constraint::Radius { expr, .. } => expr.as_str(),
+            _ => panic!("radius"),
+        };
+        assert_eq!(radius_expr, "hole_diameter / 2");
+        let circle = sketch
+            .find_entity("ent:boss_circle")
+            .and_then(|e| match e {
+                opencad_sketch::SketchEntity::Circle(c) => Some(c),
+                _ => None,
+            })
+            .expect("boss circle");
+        let radius_m = match circle.radius {
+            opencad_sketch::Coord::Literal(v) => v,
+            _ => panic!("literal radius"),
+        };
+        assert!((radius_m - 0.008).abs() < 1e-4);
+    }
 }

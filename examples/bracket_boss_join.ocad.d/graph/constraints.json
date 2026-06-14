@@ -6,7 +6,7 @@
         "type": "radius",
         "id": "con:boss_radius",
         "target": "ent:boss_circle",
-        "expr": "4 mm"
+        "expr": "hole_diameter / 2"
       }
     },
     {

@@ -650,12 +650,12 @@ pub fn bracket_boss_join() -> Result<PartModel> {
             construction: false,
         },
         center: EntityId::new("ent:boss_center")?,
-        radius: Coord::literal(0.004),
+        radius: Coord::expr("hole_diameter / 2")?,
     }))?;
     boss_sketch.add_constraint(Constraint::Radius {
         id: ConstraintId::new("con:boss_radius")?,
         target: EntityId::new("ent:boss_circle")?,
-        expr: Expression::new("4 mm")?,
+        expr: Expression::new("hole_diameter / 2")?,
     })?;
     model
         .sketches
@@ -724,12 +724,12 @@ pub fn bracket_face_pin() -> Result<PartModel> {
             construction: false,
         },
         center: EntityId::new("ent:face_pin_center")?,
-        radius: Coord::literal(0.003),
+        radius: Coord::expr("hole_diameter / 2")?,
     }))?;
     pin_sketch.add_constraint(Constraint::Radius {
         id: ConstraintId::new("con:face_pin_radius")?,
         target: EntityId::new("ent:face_pin_circle")?,
-        expr: Expression::new("3 mm")?,
+        expr: Expression::new("hole_diameter / 2")?,
     })?;
     model
         .sketches
@@ -795,12 +795,12 @@ pub fn bracket_hole_row() -> Result<PartModel> {
             construction: false,
         },
         center: EntityId::new("ent:pin_center")?,
-        radius: Coord::literal(0.002),
+        radius: Coord::expr("hole_diameter / 2")?,
     }))?;
     pin_sketch.add_constraint(Constraint::Radius {
         id: ConstraintId::new("con:pin_radius")?,
         target: EntityId::new("ent:pin_circle")?,
-        expr: Expression::new("2 mm")?,
+        expr: Expression::new("hole_diameter / 2")?,
     })?;
     model
         .sketches
@@ -880,12 +880,12 @@ pub fn bracket_hole_ring() -> Result<PartModel> {
             construction: false,
         },
         center: EntityId::new("ent:pin_center")?,
-        radius: Coord::literal(0.002),
+        radius: Coord::expr("hole_diameter / 2")?,
     }))?;
     pin_sketch.add_constraint(Constraint::Radius {
         id: ConstraintId::new("con:pin_radius")?,
         target: EntityId::new("ent:pin_circle")?,
-        expr: Expression::new("2 mm")?,
+        expr: Expression::new("hole_diameter / 2")?,
     })?;
     model
         .sketches
@@ -963,12 +963,12 @@ pub fn bracket_pin_row() -> Result<PartModel> {
             construction: false,
         },
         center: EntityId::new("ent:pin_center")?,
-        radius: Coord::literal(0.002),
+        radius: Coord::expr("hole_diameter / 2")?,
     }))?;
     pin_sketch.add_constraint(Constraint::Radius {
         id: ConstraintId::new("con:pin_radius")?,
         target: EntityId::new("ent:pin_circle")?,
-        expr: Expression::new("2 mm")?,
+        expr: Expression::new("hole_diameter / 2")?,
     })?;
     model
         .sketches
@@ -1048,12 +1048,12 @@ pub fn bracket_pin_ring() -> Result<PartModel> {
             construction: false,
         },
         center: EntityId::new("ent:pin_center")?,
-        radius: Coord::literal(0.002),
+        radius: Coord::expr("hole_diameter / 2")?,
     }))?;
     pin_sketch.add_constraint(Constraint::Radius {
         id: ConstraintId::new("con:pin_radius")?,
         target: EntityId::new("ent:pin_circle")?,
-        expr: Expression::new("2 mm")?,
+        expr: Expression::new("hole_diameter / 2")?,
     })?;
     model
         .sketches
@@ -1131,12 +1131,12 @@ pub fn bracket_pin_mirror() -> Result<PartModel> {
                 construction: false,
             },
             center: EntityId::new("ent:pin_center")?,
-            radius: Coord::literal(0.002),
+            radius: Coord::expr("hole_diameter / 2")?,
         }))?;
         pin_sketch.add_constraint(Constraint::Radius {
             id: ConstraintId::new("con:pin_radius")?,
             target: EntityId::new("ent:pin_circle")?,
-            expr: Expression::new("2 mm")?,
+            expr: Expression::new("hole_diameter / 2")?,
         })?;
         pin_sketch
     };

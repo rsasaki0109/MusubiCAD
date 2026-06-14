@@ -6,7 +6,7 @@
         "type": "radius",
         "id": "con:face_pin_radius",
         "target": "ent:face_pin_circle",
-        "expr": "3 mm"
+        "expr": "hole_diameter / 2"
       }
     },
     {

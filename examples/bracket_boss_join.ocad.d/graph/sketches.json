@@ -122,7 +122,7 @@
           "id": "ent:boss_circle",
           "construction": false,
           "center": "ent:boss_center",
-          "radius": 0.004
+          "radius": "hole_diameter / 2"
         }
       ],
       "constraints": [
@@ -130,7 +130,7 @@
           "type": "radius",
           "id": "con:boss_radius",
           "target": "ent:boss_circle",
-          "expr": "4 mm"
+          "expr": "hole_diameter / 2"
         }
       ],
       "dimensions": [],

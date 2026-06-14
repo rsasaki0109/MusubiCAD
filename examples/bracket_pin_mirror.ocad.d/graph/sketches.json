@@ -122,7 +122,7 @@
           "id": "ent:pin_circle",
           "construction": false,
           "center": "ent:pin_center",
-          "radius": 0.002
+          "radius": "hole_diameter / 2"
         }
       ],
       "constraints": [
@@ -130,7 +130,7 @@
           "type": "radius",
           "id": "con:pin_radius",
           "target": "ent:pin_circle",
-          "expr": "2 mm"
+          "expr": "hole_diameter / 2"
         }
       ],
       "dimensions": [],

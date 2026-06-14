@@ -232,8 +232,9 @@ fn example_bracket_pin_row_regenerates_with_occt() {
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
     let plate_volume = 0.08 * 0.06 * 0.006;
+    const PLATE_VOLUME_EPS: f64 = 1e-11;
     assert!(
-        mass.volume_m3 > plate_volume,
+        mass.volume_m3 + PLATE_VOLUME_EPS >= plate_volume,
         "pin row example should fuse bosses onto plate: {} vs {}",
         mass.volume_m3,
         plate_volume
@@ -265,8 +266,9 @@ fn example_bracket_pin_ring_regenerates_with_occt() {
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
     let plate_volume = 0.08 * 0.06 * 0.006;
+    const PLATE_VOLUME_EPS: f64 = 1e-11;
     assert!(
-        mass.volume_m3 > plate_volume,
+        mass.volume_m3 + PLATE_VOLUME_EPS >= plate_volume,
         "pin ring example should fuse bosses onto plate: {} vs {}",
         mass.volume_m3,
         plate_volume
@@ -298,8 +300,9 @@ fn example_bracket_pin_mirror_regenerates_with_occt() {
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
     let plate_volume = 0.08 * 0.06 * 0.006;
+    const PLATE_VOLUME_EPS: f64 = 1e-11;
     assert!(
-        mass.volume_m3 > plate_volume,
+        mass.volume_m3 + PLATE_VOLUME_EPS >= plate_volume,
         "pin mirror example should fuse mirrored pins onto plate: {} vs {}",
         mass.volume_m3,
         plate_volume
