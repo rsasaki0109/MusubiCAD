@@ -74,6 +74,14 @@ function relatedParameterCandidates(selection) {
     return [];
   }
   if (selection.kind === "sketch_line") {
+    if (selection.sketch_id === "sketch:profile") {
+      return [
+        "param:inner_radius",
+        "param:outer_radius",
+        "param:height",
+        "param:revolve_angle",
+      ];
+    }
     return ["param:width", "param:height"];
   }
 

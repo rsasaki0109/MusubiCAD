@@ -7,7 +7,7 @@ use opencad_feature::{
     FilletFeature, HoleFeature, LinearPatternFeature, MirrorPatternFeature, RevolveFeature,
 };
 use opencad_graph::parameter_names_in_expr;
-use opencad_sketch::{Constraint, Sketch};
+use opencad_sketch::{Constraint, DistanceTarget, Sketch, SketchEntity};
 
 use crate::pick::PickTarget;
 
@@ -73,11 +73,24 @@ fn graph_related_parameter_ids(
 
     let exprs = match selection {
         PickTarget::None => return Vec::new(),
-        PickTarget::SketchLine { sketch_id, .. } => sketch_id
-            .as_deref()
-            .and_then(|id| sketches.get(id))
-            .map(exprs_from_sketch)
-            .unwrap_or_default(),
+        PickTarget::SketchLine {
+            sketch_id,
+            entity_id,
+            ..
+        } => {
+            let mut exprs = sketch_id
+                .as_deref()
+                .and_then(|id| {
+                    sketches
+                        .get(id)
+                        .map(|sketch| exprs_for_sketch_line(sketch, entity_id.as_deref()))
+                })
+                .unwrap_or_default();
+            if sketch_id.as_deref() == Some("sketch:profile") {
+                exprs.extend(revolve_feature_exprs(feature_nodes));
+            }
+            exprs
+        }
         PickTarget::SolidTriangle {
             inferred_feature_id,
             ..
@@ -200,6 +213,103 @@ fn exprs_from_sketch(sketch: &Sketch) -> Vec<String> {
         .collect()
 }
 
+fn exprs_for_sketch_line(sketch: &Sketch, entity_id: Option<&str>) -> Vec<String> {
+    let Some(entity_id) = entity_id else {
+        return exprs_from_sketch(sketch);
+    };
+
+    let mut direct = Vec::new();
+    let mut adjacent = Vec::new();
+
+    for constraint in &sketch.constraints {
+        match constraint {
+            Constraint::Distance {
+                target: DistanceTarget::LineLength { line },
+                expr,
+                ..
+            } if line.as_str() == entity_id => direct.push(expr.as_str().to_string()),
+            Constraint::Radius { target, expr, .. } | Constraint::Diameter { target, expr, .. }
+                if target.as_str() == entity_id =>
+            {
+                direct.push(expr.as_str().to_string());
+            }
+            Constraint::Distance {
+                target:
+                    DistanceTarget::PointToPoint {
+                        a,
+                        b,
+                    },
+                expr,
+                ..
+            } => {
+                if line_touches_point(sketch, entity_id, a.as_str()) {
+                    push_unique(&mut adjacent, expr.as_str());
+                }
+                if line_touches_point(sketch, entity_id, b.as_str()) {
+                    push_unique(&mut adjacent, expr.as_str());
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut exprs = if !direct.is_empty() {
+        direct
+    } else if !adjacent.is_empty() {
+        adjacent
+    } else {
+        exprs_from_sketch(sketch)
+    };
+
+    if let Some(height) = shared_vertical_height_expr(sketch, entity_id) {
+        push_unique(&mut exprs, &height);
+    }
+
+    exprs
+}
+
+fn push_unique(exprs: &mut Vec<String>, expr: &str) {
+    if !exprs.iter().any(|existing| existing == expr) {
+        exprs.push(expr.to_string());
+    }
+}
+
+fn line_touches_point(sketch: &Sketch, line_id: &str, point_id: &str) -> bool {
+    let Some(SketchEntity::Line(line)) = sketch.find_entity(line_id) else {
+        return false;
+    };
+    line.start.as_str() == point_id || line.end.as_str() == point_id
+}
+
+fn shared_vertical_height_expr(sketch: &Sketch, line_id: &str) -> Option<String> {
+    let is_vertical = sketch.constraints.iter().any(
+        |constraint| matches!(constraint, Constraint::Vertical { line, .. } if line.as_str() == line_id),
+    );
+    if !is_vertical {
+        return None;
+    }
+    sketch.constraints.iter().find_map(|constraint| match constraint {
+        Constraint::Distance {
+            target: DistanceTarget::LineLength { .. },
+            expr,
+            ..
+        } if expr.as_str() == "height" => Some(expr.as_str().to_string()),
+        _ => None,
+    })
+}
+
+fn revolve_feature_exprs(feature_nodes: &[FeatureNode]) -> Vec<String> {
+    feature_nodes
+        .iter()
+        .find_map(|node| match &node.definition {
+            FeatureDefinition::Revolve(RevolveFeature { angle_expr, .. }) => {
+                angle_expr.as_ref().map(|expr| vec![expr.clone()])
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
+}
+
 fn push_expr_option(exprs: &mut Vec<String>, value: &Option<String>) {
     if let Some(expr) = value {
         exprs.push(expr.clone());
@@ -319,7 +429,7 @@ fn related_parameter_candidates_heuristic(selection: &PickTarget) -> Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use opencad_feature::{bracket_boss_join, bracket_hole_row, revolve_bushing};
+    use opencad_feature::{bracket_base_plate, bracket_boss_join, bracket_hole_row, revolve_bushing};
     use opencad_graph::{bracket_parameters, revolve_parameters};
 
     fn model_context(
@@ -454,7 +564,7 @@ mod tests {
     }
 
     #[test]
-    fn base_sketch_line_prefers_width_and_height_from_graph() {
+    fn base_sketch_width_line_targets_width_only() {
         let selection = PickTarget::SketchLine {
             line_index: 0,
             sketch_id: Some("sketch:base".into()),
@@ -465,7 +575,7 @@ mod tests {
             start_m: [0.0; 3],
             end_m: [1.0, 0.0, 0.0],
         };
-        let model = opencad_feature::bracket_base_plate().expect("model");
+        let model = bracket_base_plate().expect("model");
         let params = bracket_parameters();
         let (nodes, sketches, name_map) = model_context(model, params);
         let available = vec![
@@ -481,9 +591,145 @@ mod tests {
             &sketches,
             &name_map,
         );
+        assert_eq!(ids, vec!["param:width".to_string()]);
+    }
+
+    #[test]
+    fn base_sketch_height_line_targets_height_only() {
+        let selection = PickTarget::SketchLine {
+            line_index: 0,
+            sketch_id: Some("sketch:base".into()),
+            entity_id: Some("ent:e1".into()),
+            entity_kind: Some("line".into()),
+            segment_index: None,
+            construction: false,
+            start_m: [0.0; 3],
+            end_m: [0.0, 1.0, 0.0],
+        };
+        let model = bracket_base_plate().expect("model");
+        let params = bracket_parameters();
+        let (nodes, sketches, name_map) = model_context(model, params);
+        let available = vec!["param:width".into(), "param:height".into()];
+        let ids = related_parameter_ids_for_features(
+            &selection,
+            &available,
+            &nodes,
+            &sketches,
+            &name_map,
+        );
+        assert_eq!(ids, vec!["param:height".to_string()]);
+    }
+
+    #[test]
+    fn revolve_profile_outer_vertical_targets_height_and_angle() {
+        let selection = PickTarget::SketchLine {
+            line_index: 0,
+            sketch_id: Some("sketch:profile".into()),
+            entity_id: Some("ent:e1".into()),
+            entity_kind: Some("line".into()),
+            segment_index: None,
+            construction: false,
+            start_m: [0.0; 3],
+            end_m: [0.0, 1.0, 0.0],
+        };
+        let model = revolve_bushing().expect("model");
+        let params = revolve_parameters("360 deg");
+        let (nodes, sketches, name_map) = model_context(model, params);
+        let available = vec![
+            "param:height".into(),
+            "param:inner_radius".into(),
+            "param:outer_radius".into(),
+            "param:revolve_angle".into(),
+        ];
+        let ids = related_parameter_ids_for_features(
+            &selection,
+            &available,
+            &nodes,
+            &sketches,
+            &name_map,
+        );
         assert_eq!(
             ids,
-            vec!["param:width".to_string(), "param:height".to_string()]
+            vec![
+                "param:height".to_string(),
+                "param:revolve_angle".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn revolve_profile_bottom_line_targets_radii_and_angle() {
+        let selection = PickTarget::SketchLine {
+            line_index: 0,
+            sketch_id: Some("sketch:profile".into()),
+            entity_id: Some("ent:e0".into()),
+            entity_kind: Some("line".into()),
+            segment_index: None,
+            construction: false,
+            start_m: [0.0; 3],
+            end_m: [1.0, 0.0, 0.0],
+        };
+        let model = revolve_bushing().expect("model");
+        let params = revolve_parameters("360 deg");
+        let (nodes, sketches, name_map) = model_context(model, params);
+        let available = vec![
+            "param:height".into(),
+            "param:inner_radius".into(),
+            "param:outer_radius".into(),
+            "param:revolve_angle".into(),
+        ];
+        let ids = related_parameter_ids_for_features(
+            &selection,
+            &available,
+            &nodes,
+            &sketches,
+            &name_map,
+        );
+        assert_eq!(
+            ids,
+            vec![
+                "param:inner_radius".to_string(),
+                "param:outer_radius".to_string(),
+                "param:revolve_angle".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn revolve_profile_inner_vertical_targets_inner_radius_height_and_angle() {
+        let selection = PickTarget::SketchLine {
+            line_index: 0,
+            sketch_id: Some("sketch:profile".into()),
+            entity_id: Some("ent:e3".into()),
+            entity_kind: Some("line".into()),
+            segment_index: None,
+            construction: false,
+            start_m: [0.0; 3],
+            end_m: [0.0, 1.0, 0.0],
+        };
+        let model = revolve_bushing().expect("model");
+        let params = revolve_parameters("360 deg");
+        let (nodes, sketches, name_map) = model_context(model, params);
+        let available = vec![
+            "param:height".into(),
+            "param:inner_radius".into(),
+            "param:outer_radius".into(),
+            "param:revolve_angle".into(),
+        ];
+        let ids = related_parameter_ids_for_features(
+            &selection,
+            &available,
+            &nodes,
+            &sketches,
+            &name_map,
+        );
+        assert_eq!(
+            ids,
+            vec![
+                "param:inner_radius".to_string(),
+                "param:height".to_string(),
+                "param:revolve_angle".to_string(),
+            ]
         );
     }
 
