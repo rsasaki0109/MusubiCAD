@@ -41,6 +41,12 @@
       "name": "hole_pitch",
       "expr": "20 mm",
       "dirty": false
+    },
+    "param:boss_height": {
+      "id": "param:boss_height",
+      "name": "boss_height",
+      "expr": "12 mm",
+      "dirty": false
     }
   },
   "edges": []

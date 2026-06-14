@@ -100,7 +100,7 @@ function relatedParameterCandidates(selection) {
     return ["param:hole_diameter", "param:hole_pitch", "param:thickness"];
   }
   if (feature.includes("boss")) {
-    return ["param:boss_diameter", "param:boss_height", "param:thickness"];
+    return ["param:hole_diameter", "param:boss_height", "param:thickness"];
   }
   if (feature.includes("pattern") || feature.includes("pin_row") || feature.includes("hole_row")) {
     return ["param:hole_pitch", "param:hole_diameter"];

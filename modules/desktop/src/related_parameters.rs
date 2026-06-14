@@ -38,18 +38,10 @@ pub fn related_parameter_ids_for_features(
         sketches,
         parameter_name_to_id,
     );
-    let merged = match selection {
-        PickTarget::SketchLine { .. } if !graph_ids.is_empty() => graph_ids,
-        _ if graph_ids.is_empty() => related_parameter_candidates_heuristic(selection),
-        _ => {
-            let mut ids = graph_ids;
-            for id in related_parameter_candidates_heuristic(selection) {
-                if !ids.iter().any(|existing| existing == &id) {
-                    ids.push(id);
-                }
-            }
-            ids
-        }
+    let merged = if graph_ids.is_empty() {
+        related_parameter_candidates_heuristic(selection)
+    } else {
+        graph_ids
     };
     merged
         .into_iter()
@@ -376,8 +368,9 @@ fn related_parameter_candidates_heuristic(selection: &PickTarget) -> Vec<String>
                 || feature.contains("pin_boss")
             {
                 return vec![
-                    "param:thickness".into(),
+                    "param:boss_height".into(),
                     "param:hole_diameter".into(),
+                    "param:thickness".into(),
                 ];
             }
             if feature.contains("pin_holes")
@@ -544,8 +537,9 @@ mod tests {
         let params = bracket_parameters();
         let (nodes, sketches, name_map) = model_context(model, params);
         let available = vec![
-            "param:thickness".into(),
+            "param:boss_height".into(),
             "param:hole_diameter".into(),
+            "param:thickness".into(),
         ];
         let ids = related_parameter_ids_for_features(
             &selection,
@@ -557,7 +551,7 @@ mod tests {
         assert_eq!(
             ids,
             vec![
-                "param:thickness".to_string(),
+                "param:boss_height".to_string(),
                 "param:hole_diameter".to_string(),
             ]
         );

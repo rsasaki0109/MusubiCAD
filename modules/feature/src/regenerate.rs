@@ -676,7 +676,7 @@ pub fn bracket_boss_join() -> Result<PartModel> {
             length: Length::from_meters(0.012),
         },
     );
-    boss.length_expr = Some("thickness * 2".into());
+    boss.length_expr = Some("boss_height".into());
     model.add_node(FeatureNode::new(
         "feature:boss_join",
         "Boss Join",
@@ -991,7 +991,7 @@ pub fn bracket_pin_row() -> Result<PartModel> {
                 length: Length::from_meters(0.006),
             },
             operation: opencad_geometry::ExtrudeOperation::NewBody,
-            length_expr: Some("thickness * 2".into()),
+            length_expr: Some("boss_height".into()),
             target_feature: None,
         }),
     ))?;
@@ -1076,7 +1076,7 @@ pub fn bracket_pin_ring() -> Result<PartModel> {
                 length: Length::from_meters(0.006),
             },
             operation: opencad_geometry::ExtrudeOperation::NewBody,
-            length_expr: Some("thickness * 2".into()),
+            length_expr: Some("boss_height".into()),
             target_feature: None,
         }),
     ))?;
@@ -1162,7 +1162,7 @@ pub fn bracket_pin_mirror() -> Result<PartModel> {
                 length: Length::from_meters(0.006),
             },
             operation: opencad_geometry::ExtrudeOperation::NewBody,
-            length_expr: Some("thickness * 2".into()),
+            length_expr: Some("boss_height".into()),
             target_feature: None,
         }),
     ))?;

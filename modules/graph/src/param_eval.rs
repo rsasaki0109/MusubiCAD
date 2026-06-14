@@ -304,6 +304,13 @@ pub fn bracket_parameters() -> ParamGraph {
         ))
         .expect("hole_pitch");
     graph
+        .add_parameter(ParameterEntry::new(
+            "param:boss_height",
+            "boss_height",
+            "12 mm",
+        ))
+        .expect("boss_height");
+    graph
 }
 
 /// Default revolve bushing/sector parameters (lengths in mm, angle in degrees).

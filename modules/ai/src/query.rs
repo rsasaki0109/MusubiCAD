@@ -537,7 +537,7 @@ mod tests {
         let QueryResult::Parameters { items } = result else {
             panic!("expected parameters list");
         };
-        assert_eq!(items.len(), 7);
+        assert_eq!(items.len(), 8);
         let width = items
             .iter()
             .find(|item| item.name == "width")

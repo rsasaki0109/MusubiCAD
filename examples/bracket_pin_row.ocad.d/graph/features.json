@@ -121,7 +121,7 @@
           }
         },
         "operation": "new_body",
-        "length_expr": "thickness * 2"
+        "length_expr": "boss_height"
       },
       "suppressed": false
     },

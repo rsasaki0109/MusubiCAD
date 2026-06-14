@@ -255,4 +255,24 @@ mod tests {
         };
         assert!((radius_m - 0.008).abs() < 1e-4);
     }
+
+    #[test]
+    fn applies_boss_height_to_boss_join_extrude() {
+        let mut model = crate::regenerate::bracket_boss_join().expect("model");
+        let mut params = opencad_graph::bracket_parameters();
+        params
+            .set_expr("param:boss_height", "16 mm")
+            .expect("boss_height");
+
+        apply_parameters(&mut model, &params).expect("apply");
+        let node = model.nodes.get("feature:boss_join").expect("boss");
+        let FeatureDefinition::Extrude(extrude) = &node.definition else {
+            panic!("extrude");
+        };
+        assert_eq!(extrude.length_expr.as_deref(), Some("boss_height"));
+        let ExtrudeExtent::Distance { length } = extrude.extent else {
+            panic!("distance");
+        };
+        assert!((length.meters() - 0.016).abs() < 1e-9);
+    }
 }

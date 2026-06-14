@@ -69,7 +69,7 @@
           }
         },
         "operation": "join",
-        "length_expr": "thickness * 2",
+        "length_expr": "boss_height",
         "target_feature": "feature:extrude_base"
       },
       "suppressed": false
