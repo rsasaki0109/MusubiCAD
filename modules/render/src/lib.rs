@@ -24,5 +24,8 @@ pub use selection::{
     face_group_boundary_edges, face_group_highlight_edges, triangle_world_positions, PickResult,
     SelectionCatalog, SelectionId,
 };
-pub use viewport::{run_viewport, run_viewport_with_pick, ViewportPickCallback};
+pub use viewport::{
+    run_viewport, run_viewport_with_callbacks, run_viewport_with_pick, ViewportCameraCallback,
+    ViewportPickCallback,
+};
 pub use wgpu_renderer::{OffscreenRenderer, RenderImage, RenderOutput};

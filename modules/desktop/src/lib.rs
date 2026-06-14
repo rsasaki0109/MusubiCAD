@@ -15,17 +15,18 @@ pub use parameters::{
     list_document_parameters, set_document_parameter, ParameterRow,
 };
 pub use pick::{
-    build_pick_summary, pick_document, preview_highlight_segments, PickOptions, PickSummary,
-    PickTarget, ScreenSegment,
+    build_pick_summary, highlight_segments_for_camera, pick_document, preview_highlight_segments,
+    PickOptions, PickSummary, PickTarget, ScreenSegment,
 };
 pub use preview::{
-    load_view_data, preview_document, DocumentPreview, ViewData, PREVIEW_HEIGHT, PREVIEW_WIDTH,
+    load_view_data, preview_document, render_preview_png, CameraState, DocumentPreview, ViewData,
+    PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
 pub use regen::{
     tessellate_active_body, tessellate_active_body_detailed, TessellatedBody,
 };
 pub use template::{create_document, DocumentTemplate};
-pub use viewport::run_document_viewport;
+pub use viewport::{run_document_viewport, run_document_viewport_with_sync, PreviewSynced};
 
 pub use scene_query::{infer_face_refs, topo_ref_for_group};
 

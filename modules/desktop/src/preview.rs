@@ -10,7 +10,7 @@ use opencad_file::read_ocad;
 use opencad_geometry::{FaceDerivation, TopoRef};
 use opencad_graph::evaluate_param_graph;
 use opencad_render::{
-    build_sketch_overlay, OffscreenRenderer, RenderImage, RenderScene, SketchOverlay,
+    build_sketch_overlay, OffscreenRenderer, OrbitCamera, RenderImage, RenderScene, SketchOverlay,
 };
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +18,41 @@ use crate::regen::tessellate_active_body_detailed;
 
 pub const PREVIEW_WIDTH: u32 = 960;
 pub const PREVIEW_HEIGHT: u32 = 540;
+
+/// Serializable orbit camera pose (aspect is chosen at render time).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct CameraState {
+    pub target: [f32; 3],
+    pub distance: f32,
+    pub yaw_rad: f32,
+    pub pitch_rad: f32,
+    pub fov_y_deg: f32,
+}
+
+impl From<OrbitCamera> for CameraState {
+    fn from(camera: OrbitCamera) -> Self {
+        Self {
+            target: camera.target,
+            distance: camera.distance,
+            yaw_rad: camera.yaw_rad,
+            pitch_rad: camera.pitch_rad,
+            fov_y_deg: camera.fov_y_deg,
+        }
+    }
+}
+
+impl CameraState {
+    pub fn to_orbit_camera(&self, aspect: f32) -> OrbitCamera {
+        OrbitCamera {
+            target: self.target,
+            distance: self.distance,
+            yaw_rad: self.yaw_rad,
+            pitch_rad: self.pitch_rad,
+            fov_y_deg: self.fov_y_deg,
+            aspect: aspect.max(0.1),
+        }
+    }
+}
 
 /// Document data prepared for viewport or PNG preview.
 #[derive(Debug, Clone)]
@@ -69,19 +104,7 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
 
 pub fn preview_document(path: &str) -> Result<DocumentPreview> {
     let data = load_view_data(path)?;
-    let renderer = OffscreenRenderer::new()?;
-    let overlay = if data.overlay.is_empty() {
-        None
-    } else {
-        Some(&data.overlay)
-    };
-    let image = renderer.render_scene_image(
-        &data.scene,
-        overlay,
-        PREVIEW_WIDTH,
-        PREVIEW_HEIGHT,
-    )?;
-    let png_base64 = encode_png_base64(&image)?;
+    let png_base64 = render_preview_png(&data, None)?;
     let vertices = data
         .scene
         .meshes
@@ -103,6 +126,28 @@ pub fn preview_document(path: &str) -> Result<DocumentPreview> {
         feature_count: data.feature_nodes.len(),
         png_base64,
     })
+}
+
+/// Render a PNG preview using the default or supplied camera pose.
+pub fn render_preview_png(data: &ViewData, camera: Option<CameraState>) -> Result<String> {
+    let renderer = OffscreenRenderer::new()?;
+    let overlay = if data.overlay.is_empty() {
+        None
+    } else {
+        Some(&data.overlay)
+    };
+    let aspect = PREVIEW_WIDTH as f32 / PREVIEW_HEIGHT as f32;
+    let orbit = camera
+        .map(|state| state.to_orbit_camera(aspect))
+        .unwrap_or_else(|| data.scene.default_camera(aspect));
+    let image = renderer.render_scene_image_with_camera(
+        &data.scene,
+        overlay,
+        PREVIEW_WIDTH,
+        PREVIEW_HEIGHT,
+        &orbit,
+    )?;
+    encode_png_base64(&image)
 }
 
 fn encode_png_base64(image: &RenderImage) -> Result<String> {

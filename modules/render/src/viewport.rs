@@ -32,13 +32,16 @@ const CLICK_THRESHOLD_PX: f64 = 5.0;
 /// Callback invoked after a click-pick in the interactive viewport.
 pub type ViewportPickCallback = Box<dyn Fn(f64, f64, u32, u32, PickResult) + Send>;
 
+/// Callback invoked when the orbit camera changes in the interactive viewport.
+pub type ViewportCameraCallback = Box<dyn Fn(OrbitCamera) + Send>;
+
 /// Open an interactive viewport window for the given scene.
 pub fn run_viewport(
     scene: &RenderScene,
     overlay: Option<&SketchOverlay>,
     title: &str,
 ) -> Result<()> {
-    run_viewport_with_pick(scene, overlay, title, None)
+    run_viewport_with_callbacks(scene, overlay, title, None, None)
 }
 
 /// Open an interactive viewport and optionally report click-picks.
@@ -47,6 +50,17 @@ pub fn run_viewport_with_pick(
     overlay: Option<&SketchOverlay>,
     title: &str,
     on_pick: Option<ViewportPickCallback>,
+) -> Result<()> {
+    run_viewport_with_callbacks(scene, overlay, title, on_pick, None)
+}
+
+/// Open an interactive viewport with optional pick and camera callbacks.
+pub fn run_viewport_with_callbacks(
+    scene: &RenderScene,
+    overlay: Option<&SketchOverlay>,
+    title: &str,
+    on_pick: Option<ViewportPickCallback>,
+    on_camera: Option<ViewportCameraCallback>,
 ) -> Result<()> {
     let (vertices, indices) = pack_scene(scene)?;
     let overlay_lines = overlay
@@ -121,8 +135,15 @@ pub fn run_viewport_with_pick(
                                     ElementState::Pressed => {
                                         app.dragging = true;
                                         app.press_origin = app.cursor_position;
+                                        app.drag_origin = app.cursor_position;
                                     }
                                     ElementState::Released => {
+                                        if app.did_orbit {
+                                            if let Some(ref handler) = on_camera {
+                                                handler(app.camera);
+                                            }
+                                            app.did_orbit = false;
+                                        }
                                         if let Some(origin) = app.press_origin.take() {
                                             if let Some(cursor) = app.cursor_position {
                                                 let dx = cursor.0 - origin.0;
@@ -180,6 +201,7 @@ pub fn run_viewport_with_pick(
                                     app.camera.yaw_rad += dx as f32 * 0.01;
                                     app.camera.pitch_rad =
                                         (app.camera.pitch_rad + dy as f32 * 0.01).clamp(-1.4, 1.4);
+                                    app.did_orbit = true;
                                     app.window.request_redraw();
                                 }
                                 app.drag_origin = Some((position.x, position.y));
@@ -197,6 +219,10 @@ pub fn run_viewport_with_pick(
                             let max_distance = radius.max(0.01) * 8.0;
                             app.camera.distance = (app.camera.distance * (1.0 - scroll * 0.1))
                                 .clamp(min_distance, max_distance);
+                            app.did_orbit = true;
+                            if let Some(ref handler) = on_camera {
+                                handler(app.camera);
+                            }
                             app.window.request_redraw();
                         }
                         WindowEvent::KeyboardInput { event, .. }
@@ -277,6 +303,7 @@ struct ViewportApp {
     cursor_position: Option<(f64, f64)>,
     press_origin: Option<(f64, f64)>,
     drag_origin: Option<(f64, f64)>,
+    did_orbit: bool,
 }
 
 impl ViewportApp {
@@ -412,6 +439,7 @@ impl ViewportApp {
             cursor_position: None,
             press_origin: None,
             drag_origin: None,
+            did_orbit: false,
         })
     }
 

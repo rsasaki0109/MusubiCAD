@@ -8,7 +8,7 @@ use opencad_render::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::preview::{load_view_data, PREVIEW_HEIGHT, PREVIEW_WIDTH};
+use crate::preview::{load_view_data, CameraState, PREVIEW_HEIGHT, PREVIEW_WIDTH};
 use crate::scene_query::{infer_face_refs, topo_ref_for_group};
 
 /// Options for a pick query against the default preview viewport.
@@ -188,6 +188,19 @@ pub fn preview_highlight_segments(
     highlight_segments_for_selection(scene, selection, PREVIEW_WIDTH, PREVIEW_HEIGHT)
 }
 
+/// Screen-space highlight segments projected with a synced camera pose.
+pub fn highlight_segments_for_camera(
+    scene: &RenderScene,
+    selection: &PickTarget,
+    camera: &CameraState,
+    width: u32,
+    height: u32,
+) -> Vec<ScreenSegment> {
+    let aspect = width as f32 / height.max(1) as f32;
+    let orbit = camera.to_orbit_camera(aspect);
+    highlight_segments_with_camera(scene, selection, &orbit, width, height)
+}
+
 fn highlight_segments_for_selection(
     scene: &RenderScene,
     selection: &PickTarget,
@@ -196,7 +209,16 @@ fn highlight_segments_for_selection(
 ) -> Vec<ScreenSegment> {
     let aspect = width as f32 / height.max(1) as f32;
     let camera = scene.default_camera(aspect);
+    highlight_segments_with_camera(scene, selection, &camera, width, height)
+}
 
+fn highlight_segments_with_camera(
+    scene: &RenderScene,
+    selection: &PickTarget,
+    camera: &opencad_render::OrbitCamera,
+    width: u32,
+    height: u32,
+) -> Vec<ScreenSegment> {
     let project_segment = |start: [f32; 3], end: [f32; 3]| -> Option<ScreenSegment> {
         let start_px = camera.project_to_screen(width, height, start)?;
         let end_px = camera.project_to_screen(width, height, end)?;

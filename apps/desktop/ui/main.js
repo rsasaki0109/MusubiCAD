@@ -496,6 +496,14 @@ async function listenViewportPicks() {
   });
 }
 
+async function listenPreviewSync() {
+  await listen("preview-synced", (event) => {
+    const synced = event.payload;
+    preview.src = `data:image/png;base64,${synced.png_base64}`;
+    renderHighlight(synced.highlight_segments_px ?? []);
+  });
+}
+
 async function createSample() {
   const selected = await save({
     title: "Create sample document",
@@ -517,6 +525,7 @@ highlightOverlay.setAttribute("viewBox", `0 0 ${PREVIEW_WIDTH} ${PREVIEW_HEIGHT}
 async function boot() {
   try {
     await listenViewportPicks();
+    await listenPreviewSync();
     await loadTemplates();
     const defaultPath = await invoke("default_example_path");
     if (defaultPath) {

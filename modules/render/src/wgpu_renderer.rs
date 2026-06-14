@@ -130,10 +130,29 @@ impl OffscreenRenderer {
         width: u32,
         height: u32,
     ) -> Result<RenderImage> {
+        let aspect = width as f32 / height.max(1) as f32;
+        self.render_scene_image_with_camera(
+            scene,
+            overlay,
+            width,
+            height,
+            &scene.default_camera(aspect),
+        )
+    }
+
+    pub fn render_scene_image_with_camera(
+        &self,
+        scene: &RenderScene,
+        overlay: Option<&SketchOverlay>,
+        width: u32,
+        height: u32,
+        camera: &crate::camera::OrbitCamera,
+    ) -> Result<RenderImage> {
         let (vertices, indices) = pack_scene(scene)?;
 
-        let aspect = width as f32 / height.max(1) as f32;
-        let view_proj = scene.default_camera(aspect).view_projection_matrix();
+        let mut camera = *camera;
+        camera.aspect = width as f32 / height.max(1) as f32;
+        let view_proj = camera.view_projection_matrix();
         let bind_group =
             create_uniform_bind_group(&self.device, &self.uniform_layout, &Uniforms { view_proj });
         let mesh_buffers = create_mesh_buffers(&self.device, &vertices, &indices);
@@ -145,8 +164,7 @@ impl OffscreenRenderer {
             .unwrap_or_else(|| create_line_buffers(&self.device, &[]));
         let label_scale = label_scale_for_bounds(scene.bounds.diagonal());
         let label_depth_offset = label_depth_offset_for_bounds(scene.bounds.diagonal());
-        let (right, up) = scene.default_camera(aspect).billboard_basis();
-        let camera = scene.default_camera(aspect);
+        let (right, up) = camera.billboard_basis();
         let depth_bias = Some((camera.eye_position(), label_depth_offset));
         let label_lines = overlay
             .map(|overlay| {

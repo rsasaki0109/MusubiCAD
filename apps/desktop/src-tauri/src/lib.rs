@@ -2,9 +2,9 @@ use std::path::{Path, PathBuf};
 
 use opencad_desktop::{
     create_document, inspect_document, list_document_parameters, load_view_data,
-    pick_document, preview_document, run_document_viewport, set_document_parameter,
+    pick_document, preview_document, run_document_viewport_with_sync, set_document_parameter,
     DocumentInspect, DocumentPreview, DocumentTemplate, ParameterRow, PickOptions, PickSummary,
-    PREVIEW_HEIGHT, PREVIEW_WIDTH,
+    PreviewSynced, PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
 use tauri::{AppHandle, Emitter};
 use serde::Serialize;
@@ -83,13 +83,20 @@ fn open_viewport_cmd(app: AppHandle, path: String) -> Result<(), String> {
     let data = load_view_data(&path).map_err(map_error)?;
     let title = data.name.clone();
     let app_handle = app.clone();
+    let app_sync = app.clone();
     std::thread::spawn(move || {
         let on_pick = move |summary: PickSummary| {
             if let Err(err) = app_handle.emit("viewport-pick", &summary) {
                 eprintln!("failed to emit viewport pick: {err}");
             }
         };
-        if let Err(err) = run_document_viewport(data, &title, Some(on_pick)) {
+        let on_camera_sync = move |synced: PreviewSynced| {
+            if let Err(err) = app_sync.emit("preview-synced", &synced) {
+                eprintln!("failed to emit preview sync: {err}");
+            }
+        };
+        if let Err(err) = run_document_viewport_with_sync(data, &title, Some(on_pick), Some(on_camera_sync))
+        {
             eprintln!("viewport error: {err}");
         }
     });
