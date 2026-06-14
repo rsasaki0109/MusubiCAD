@@ -48,7 +48,7 @@ render_still() {
   rm -rf "$WORK/still"
 }
 render_still "$ROOT/examples/bracket_pin_row.ocad.d"    "$ASSETS/preview_pin_row.png"    24 26
-render_still "$ROOT/examples/bracket_pin_ring.ocad.d"   "$ASSETS/preview_pin_ring.png"   26 32
+render_still "$ROOT/examples/bracket_pin_ring.ocad.d"   "$ASSETS/preview_pin_ring.png"   30 6
 render_still "$ROOT/examples/bracket_pin_mirror.ocad.d" "$ASSETS/preview_pin_mirror.png" 24 30
 
 # --- Hero GIF: 360° turntable orbit ----------------------------------------

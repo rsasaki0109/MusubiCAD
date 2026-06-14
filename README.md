@@ -25,6 +25,14 @@
 </p>
 
 <p align="center">
+  <img src="docs/assets/preview_pin_ring.png" alt="ForgeCAD — bracket with a circular ring of pin bosses around the central hole" width="960">
+</p>
+
+<p align="center">
+  <sub><code>examples/bracket_pin_ring.ocad.d</code> — circular union pattern: 4 bosses revolved around the plate centre</sub>
+</p>
+
+<p align="center">
   <img src="docs/assets/preview_pin_mirror.png" alt="ForgeCAD — bracket with mirrored pins fused onto plate via plane_face_ref" width="960">
 </p>
 
