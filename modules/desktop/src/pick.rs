@@ -4,7 +4,7 @@ use opencad_core::Result;
 use opencad_feature::FeatureNode;
 use opencad_geometry::{FaceDerivation, TopoRef};
 use opencad_render::{
-    face_group_boundary_edges, triangle_world_positions, OffscreenRenderer, PickResult, RenderScene,
+    face_group_highlight_edges, triangle_world_positions, OffscreenRenderer, PickResult, RenderScene,
 };
 use serde::{Deserialize, Serialize};
 
@@ -206,7 +206,7 @@ fn highlight_segments_for_selection(
             ..
         } => {
             if let Some(group_index) = face_group_index {
-                let edges = face_group_boundary_edges(scene, *group_index);
+                let edges = face_group_highlight_edges(scene, *group_index);
                 if !edges.is_empty() {
                     return edges
                         .into_iter()
@@ -267,6 +267,54 @@ mod tests {
                 summary.highlight_segments_px.len() >= 4,
                 "expected face-group boundary highlight, got {}",
                 summary.highlight_segments_px.len()
+            );
+        }
+    }
+
+    #[test]
+    fn cylindrical_highlight_edges_form_two_rings_on_bracket() {
+        use opencad_core::{DocumentId, DocumentMetadata};
+        use opencad_feature::bracket_with_hole;
+        use opencad_file::{write_expanded_dir, OcadDocument};
+        use opencad_graph::bracket_parameters;
+        use opencad_render::{face_group_highlight_edges, FaceRole};
+
+        let dir = tempdir().expect("tempdir");
+        let path = dir.path().join("bracket_hole.ocad.d");
+        let part = bracket_with_hole().expect("model");
+        let metadata = DocumentMetadata::new(
+            DocumentId::new("doc:bracket_hole").expect("id"),
+            "Bracket hole",
+        );
+        let mut doc = OcadDocument::from_part_model(metadata, &part);
+        doc.parameters = bracket_parameters();
+        write_expanded_dir(&path, &doc).expect("write");
+
+        let data = load_view_data(path.to_str().expect("path")).expect("view");
+        let cylindrical = data
+            .scene
+            .face_catalog
+            .groups
+            .iter()
+            .find(|group| group.role == FaceRole::Cylindrical)
+            .expect("cylindrical");
+        let triangle_count = data
+            .scene
+            .face_catalog
+            .triangle_indices_in_group(cylindrical.index)
+            .len();
+        let edges = face_group_highlight_edges(&data.scene, cylindrical.index);
+        assert!(
+            edges.len() >= 4,
+            "expected cylindrical highlight edges, got {} ({} triangles)",
+            edges.len(),
+            triangle_count
+        );
+        if triangle_count >= 12 {
+            assert!(
+                edges.len() >= 8,
+                "expected ring outlines for dense cylinder, got {}",
+                edges.len()
             );
         }
     }

@@ -17,7 +17,7 @@ use crate::overlay::{
 use crate::scene::RenderScene;
 use crate::selection::{
     create_pick_buffers, create_pick_line_pipeline, create_pick_mesh_pipeline,
-    face_group_boundary_edges, mesh_pick_vertices, overlay_pick_vertices, pick_scene,
+    face_group_highlight_edges, mesh_pick_vertices, overlay_pick_vertices, pick_scene,
     triangle_edge_vertices, PickDrawBuffers, PickResult, ScenePickContext, SelectionCatalog,
 };
 use crate::solid::{
@@ -451,7 +451,7 @@ impl ViewportApp {
         self.selected_triangle = Some(triangle_index);
         self.selected_line = None;
         let vertices = if let Some(face) = self.scene.face_group_at(triangle_index) {
-            face_group_boundary_edges(&self.scene, face.index)
+            face_group_highlight_edges(&self.scene, face.index)
                 .into_iter()
                 .flat_map(|(start, end)| [start, end])
                 .collect()

@@ -35,7 +35,7 @@ The app loads `examples/bracket.ocad.d` automatically when launched from the wor
 - Undo/redo parameter edits (toolbar buttons or Ctrl+Z / Ctrl+Shift+Z)
 - Click preview to pick faces/sketch lines (topo ref + feature inference)
 - Picking geometry highlights related parameters in the panel
-- Selected geometry is highlighted on the preview image (face-group boundary edges)
+- Selected geometry is highlighted on the preview image (face-group boundary edges; cylindrical faces use ring outlines)
 - Open interactive wgpu 3D viewport (separate window; picks sync to Selection panel)
 - Create built-in sample templates
 - Document inspect panel (features, sketches, bounds)

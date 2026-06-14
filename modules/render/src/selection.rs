@@ -250,6 +250,218 @@ pub fn face_group_boundary_edges(
         .collect()
 }
 
+/// Highlight edges for a picked face group, using ring outlines for cylindrical faces.
+pub fn face_group_highlight_edges(
+    scene: &crate::scene::RenderScene,
+    group_index: usize,
+) -> Vec<([f32; 3], [f32; 3])> {
+    let role = scene
+        .face_catalog
+        .groups
+        .get(group_index)
+        .map(|group| group.role);
+    match role {
+        Some(crate::face_catalog::FaceRole::Cylindrical) => {
+            cylindrical_ring_highlight_edges(scene, group_index)
+        }
+        _ => face_group_boundary_edges(scene, group_index),
+    }
+}
+
+fn cylindrical_ring_highlight_edges(
+    scene: &crate::scene::RenderScene,
+    group_index: usize,
+) -> Vec<([f32; 3], [f32; 3])> {
+    const POINT_EPS_M: f32 = 0.00005;
+
+    let mut vertices = Vec::new();
+    for triangle_index in scene
+        .face_catalog
+        .triangle_indices_in_group(group_index)
+    {
+        if let Some(triangle) = triangle_world_positions(scene, triangle_index) {
+            vertices.extend_from_slice(&triangle);
+        }
+    }
+    if vertices.is_empty() {
+        return Vec::new();
+    }
+
+    let axis = dominant_axis(&vertices);
+    let min_level = extremal_coord(&vertices, axis, false);
+    let max_level = extremal_coord(&vertices, axis, true);
+    let mid_level = (min_level + max_level) * 0.5;
+    let mut top_ring = split_ring_points(&vertices, axis, mid_level, true, POINT_EPS_M);
+    let mut bottom_ring = split_ring_points(&vertices, axis, mid_level, false, POINT_EPS_M);
+    if top_ring.len() < 3 {
+        top_ring = extremal_ring_points(&vertices, axis, max_level, POINT_EPS_M);
+    }
+    if bottom_ring.len() < 3 {
+        bottom_ring = extremal_ring_points(&vertices, axis, min_level, POINT_EPS_M);
+    }
+
+    let mut edges = ring_edges(&top_ring);
+    edges.extend(ring_edges(&bottom_ring));
+
+    if let (Some(bottom), Some(top)) = (bottom_ring.first(), top_ring.first()) {
+        edges.push((*bottom, *top));
+    }
+
+    if edges.len() < 8 {
+        return face_group_boundary_edges(scene, group_index);
+    }
+    edges
+}
+
+fn split_ring_points(
+    vertices: &[[f32; 3]],
+    axis: usize,
+    mid_level: f32,
+    top: bool,
+    point_eps: f32,
+) -> Vec<[f32; 3]> {
+    let mut points = Vec::new();
+    for vertex in vertices {
+        let keep = if top {
+            vertex[axis] >= mid_level
+        } else {
+            vertex[axis] <= mid_level
+        };
+        if !keep {
+            continue;
+        }
+        if points
+            .iter()
+            .any(|point| distance3(*point, *vertex) <= point_eps)
+        {
+            continue;
+        }
+        points.push(*vertex);
+    }
+    sort_ring_points(&mut points, axis);
+    points
+}
+
+fn extremal_ring_points(
+    vertices: &[[f32; 3]],
+    axis: usize,
+    level: f32,
+    point_eps: f32,
+) -> Vec<[f32; 3]> {
+    let tolerance = ((extremal_coord(vertices, axis, true) - extremal_coord(vertices, axis, false))
+        * 0.15)
+        .max(0.0001);
+    let mut points = Vec::new();
+    for vertex in vertices {
+        if (vertex[axis] - level).abs() > tolerance {
+            continue;
+        }
+        if points
+            .iter()
+            .any(|point| distance3(*point, *vertex) <= point_eps)
+        {
+            continue;
+        }
+        points.push(*vertex);
+    }
+    sort_ring_points(&mut points, axis);
+    points
+}
+
+fn sort_ring_points(points: &mut [[f32; 3]], axis: usize) {
+    if points.len() < 2 {
+        return;
+    }
+    let center = ring_center(points, axis);
+    points.sort_by(|left, right| {
+        ring_angle(left, center, axis)
+            .partial_cmp(&ring_angle(right, center, axis))
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+}
+
+fn dominant_axis(vertices: &[[f32; 3]]) -> usize {
+    let mut min = [f32::INFINITY; 3];
+    let mut max = [f32::NEG_INFINITY; 3];
+    for vertex in vertices {
+        for axis in 0..3 {
+            min[axis] = min[axis].min(vertex[axis]);
+            max[axis] = max[axis].max(vertex[axis]);
+        }
+    }
+    let mut best_axis = 2_usize;
+    let mut best_span = 0.0_f32;
+    for axis in 0..3 {
+        let span = max[axis] - min[axis];
+        if span > best_span {
+            best_span = span;
+            best_axis = axis;
+        }
+    }
+    best_axis
+}
+
+fn extremal_coord(vertices: &[[f32; 3]], axis: usize, max: bool) -> f32 {
+    if max {
+        vertices
+            .iter()
+            .map(|vertex| vertex[axis])
+            .fold(f32::NEG_INFINITY, f32::max)
+    } else {
+        vertices
+            .iter()
+            .map(|vertex| vertex[axis])
+            .fold(f32::INFINITY, f32::min)
+    }
+}
+
+fn ring_center(points: &[[f32; 3]], axis: usize) -> [f32; 3] {
+    let mut center = [0.0_f32; 3];
+    for point in points {
+        center[0] += point[0];
+        center[1] += point[1];
+        center[2] += point[2];
+    }
+    let count = points.len() as f32;
+    center[0] /= count;
+    center[1] /= count;
+    center[2] /= count;
+    center[axis] = points[0][axis];
+    center
+}
+
+fn ring_angle(point: &[f32; 3], center: [f32; 3], axis: usize) -> f32 {
+    let (u, v) = ring_plane_coords(point, center, axis);
+    u.atan2(v)
+}
+
+fn ring_plane_coords(point: &[f32; 3], center: [f32; 3], axis: usize) -> (f32, f32) {
+    match axis {
+        0 => (point[1] - center[1], point[2] - center[2]),
+        1 => (point[0] - center[0], point[2] - center[2]),
+        _ => (point[0] - center[0], point[1] - center[1]),
+    }
+}
+
+fn ring_edges(ring: &[[f32; 3]]) -> Vec<([f32; 3], [f32; 3])> {
+    if ring.len() < 2 {
+        return Vec::new();
+    }
+    let mut edges = Vec::with_capacity(ring.len());
+    for index in 0..ring.len() {
+        let next = (index + 1) % ring.len();
+        edges.push((ring[index], ring[next]));
+    }
+    edges
+}
+
+fn distance3(a: [f32; 3], b: [f32; 3]) -> f32 {
+    let dx = a[0] - b[0];
+    let dy = a[1] - b[1];
+    let dz = a[2] - b[2];
+    (dx * dx + dy * dy + dz * dz).sqrt()
+}
+
 pub(crate) fn triangle_edge_vertices(
     vertices: &[GpuVertex],
     indices: &[u32],
@@ -673,7 +885,7 @@ mod tests {
             .iter()
             .find(|group| group.role == crate::face_catalog::FaceRole::Top)
             .expect("top");
-        let edges = face_group_boundary_edges(&scene, top_group.index);
+        let edges = face_group_highlight_edges(&scene, top_group.index);
         assert_eq!(edges.len(), 4);
     }
 
