@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <sub>360° turntable of <code>examples/bracket.ocad.d</code> — OCCT solid rendered headless via wgpu (studio lighting, feature edges, gradient backdrop, <code>opencad turntable</code>)</sub>
+  <sub>360° turntable of <code>examples/bracket.ocad.d</code> — OCCT solid rendered headless via wgpu (studio lighting, feature edges, baked ambient occlusion, <code>opencad turntable</code>)</sub>
 </p>
 
 <p align="center">

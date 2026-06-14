@@ -11,6 +11,7 @@ Lighting and backdrop are defined in `modules/render/src/solid.rs`:
 - **Solids:** studio three-point lighting (key, fill, rim) on a brushed-steel base.
 - **Background:** a vertical gradient backdrop drawn before the mesh passes.
 - **Feature edges:** boundary edges and sharp creases (`modules/render/src/edges.rs`) are drawn over the shaded solid in graphite, so holes, bosses, fillets, and chamfers read as a CAD outline at any camera angle. The crease threshold defaults to 25°.
+- **Ambient occlusion:** a per-vertex occlusion term is baked from the mesh (`modules/render/src/ao.rs`) and multiplied into the ambient/fill lighting, so concave junctions (bores, pockets, boss bases) pick up soft contact shading. It is computed on the CPU, so it is deterministic and resolution independent.
 
 ## CLI commands
 

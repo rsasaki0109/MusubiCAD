@@ -26,9 +26,9 @@ RW=1600
 RH=900
 # Output width in the README.
 OUT_W=1280
-GIF_W=960
-FPS=24
-FRAMES=48
+GIF_W=900
+FPS=20
+FRAMES=40
 
 # --- Hero still: clean studio solid (matches the turntable GIF) -------------
 "${CLI[@]}" turntable "$ROOT/examples/bracket.ocad.d" "$WORK/hero" \
@@ -55,7 +55,7 @@ render_still "$ROOT/examples/bracket_pin_mirror.ocad.d" "$ASSETS/preview_pin_mir
 "${CLI[@]}" turntable "$ROOT/examples/bracket.ocad.d" "$WORK/orbit" \
   --frames "$FRAMES" --width "$RW" --height "$RH"
 ffmpeg -y -loglevel error -framerate "$FPS" -i "$WORK/orbit/frame_%04d.png" \
-  -vf "scale=${GIF_W}:-1:flags=lanczos,palettegen=stats_mode=full" "$WORK/palette.png"
+  -vf "scale=${GIF_W}:-1:flags=lanczos,palettegen=max_colors=192:stats_mode=full" "$WORK/palette.png"
 ffmpeg -y -loglevel error -framerate "$FPS" -i "$WORK/orbit/frame_%04d.png" -i "$WORK/palette.png" \
   -lavfi "scale=${GIF_W}:-1:flags=lanczos[s];[s][1:v]paletteuse=dither=bayer:bayer_scale=4" \
   -loop 0 "$ASSETS/preview.gif"

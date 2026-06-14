@@ -17,11 +17,13 @@ struct Uniforms {
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
+    @location(2) ao: f32,
 }
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) normal: vec3<f32>,
+    @location(1) ao: f32,
 }
 
 @vertex
@@ -29,10 +31,12 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
     output.position = uniforms.view_proj * vec4<f32>(input.position, 1.0);
     output.normal = input.normal;
+    output.ao = input.ao;
     return output;
 }
 
-// Studio three-point lighting (key + fill + rim) on a brushed-steel base.
+// Studio three-point lighting (key + fill + rim) on a brushed-steel base, with
+// baked ambient occlusion darkening concave junctions (boss bases, bores).
 // Output is linear; the sRGB color target applies gamma encoding on store.
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
@@ -41,13 +45,17 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let fill_dir = normalize(vec3<f32>(-0.65, 0.25, 0.35));
     let rim_dir = normalize(vec3<f32>(-0.25, 0.45, -0.85));
 
+    let ao = clamp(input.ao, 0.0, 1.0);
     let key = max(dot(n, key_dir), 0.0);
     let fill = max(dot(n, fill_dir), 0.0) * 0.38;
     let rim = pow(max(dot(n, rim_dir), 0.0), 2.5) * 0.55;
 
     let base = vec3<f32>(0.52, 0.57, 0.66);
     let ambient = 0.24;
-    let lit = base * (ambient + key * 0.95 + fill) + vec3<f32>(0.55, 0.68, 0.92) * rim;
+    // AO attenuates ambient and fill (the directionless terms) most strongly,
+    // and the key light a little, so creases stay readable without going black.
+    let diffuse = ambient * ao + key * 0.95 * (0.35 + 0.65 * ao) + fill * ao;
+    let lit = base * diffuse + vec3<f32>(0.55, 0.68, 0.92) * rim;
     return vec4<f32>(clamp(lit, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
 }
 "#;
@@ -200,6 +208,7 @@ pub(crate) fn encode_background_pass(
 pub(crate) struct GpuVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
+    pub ao: f32,
 }
 
 #[repr(C)]
@@ -230,23 +239,56 @@ pub(crate) fn pack_scene(scene: &RenderScene) -> Result<(Vec<GpuVertex>, Vec<u32
     Ok((vertices, indices))
 }
 
+/// Hemisphere samples per vertex for the baked AO term.
+const AO_SAMPLES: usize = 24;
+/// Occlusion search radius as a fraction of the mesh bounding diagonal.
+const AO_RADIUS_FRACTION: f32 = 0.16;
+/// How dark a fully occluded vertex becomes (0 = off, 1 = full).
+const AO_STRENGTH: f32 = 0.85;
+
 fn append_mesh(
     mesh: &RenderMesh,
     vertices: &mut Vec<GpuVertex>,
     indices: &mut Vec<u32>,
     base: &mut u32,
 ) {
+    let normals: Vec<[f32; 3]> = (0..mesh.positions.len())
+        .map(|index| mesh.normals.get(index).copied().unwrap_or([0.0, 0.0, 1.0]))
+        .collect();
+    let radius = mesh_diagonal(&mesh.positions) * AO_RADIUS_FRACTION;
+    let ao = crate::ao::compute_vertex_ao(
+        &mesh.positions,
+        &normals,
+        &mesh.indices,
+        radius,
+        AO_SAMPLES,
+        AO_STRENGTH,
+    );
+
     for (index, position) in mesh.positions.iter().enumerate() {
-        let normal = mesh.normals.get(index).copied().unwrap_or([0.0, 0.0, 1.0]);
         vertices.push(GpuVertex {
             position: *position,
-            normal,
+            normal: normals[index],
+            ao: ao.get(index).copied().unwrap_or(1.0),
         });
     }
     for index in &mesh.indices {
         indices.push(*base + index);
     }
     *base += mesh.positions.len() as u32;
+}
+
+fn mesh_diagonal(positions: &[[f32; 3]]) -> f32 {
+    let mut min = [f32::INFINITY; 3];
+    let mut max = [f32::NEG_INFINITY; 3];
+    for p in positions {
+        for axis in 0..3 {
+            min[axis] = min[axis].min(p[axis]);
+            max[axis] = max[axis].max(p[axis]);
+        }
+    }
+    let d = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
+    (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt()
 }
 
 pub(crate) fn create_solid_pipeline(
@@ -287,7 +329,7 @@ pub(crate) fn create_solid_pipeline(
             buffers: &[wgpu::VertexBufferLayout {
                 array_stride: std::mem::size_of::<GpuVertex>() as wgpu::BufferAddress,
                 step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
+                attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32],
             }],
             compilation_options: Default::default(),
         },

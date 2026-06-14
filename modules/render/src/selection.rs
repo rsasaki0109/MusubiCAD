@@ -941,14 +941,17 @@ mod tests {
             GpuVertex {
                 position: [0.0, 0.0, 0.0],
                 normal: [0.0, 0.0, 1.0],
+                ao: 1.0,
             },
             GpuVertex {
                 position: [1.0, 0.0, 0.0],
                 normal: [0.0, 0.0, 1.0],
+                ao: 1.0,
             },
             GpuVertex {
                 position: [0.0, 1.0, 0.0],
                 normal: [0.0, 0.0, 1.0],
+                ao: 1.0,
             },
         ];
         let indices = vec![0, 1, 2];
