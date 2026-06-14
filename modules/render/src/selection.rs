@@ -287,17 +287,19 @@ fn cylindrical_ring_highlight_edges(
         return Vec::new();
     }
 
-    let axis = dominant_axis(&vertices);
-    let min_level = extremal_coord(&vertices, axis, false);
-    let max_level = extremal_coord(&vertices, axis, true);
+    let frame = CylinderAxisFrame::from_vertices(&vertices);
+    let min_level = extremal_coord_along_axis(&vertices, &frame, false);
+    let max_level = extremal_coord_along_axis(&vertices, &frame, true);
     let mid_level = (min_level + max_level) * 0.5;
-    let mut top_ring = split_ring_points(&vertices, axis, mid_level, true, POINT_EPS_M);
-    let mut bottom_ring = split_ring_points(&vertices, axis, mid_level, false, POINT_EPS_M);
+    let mut top_ring =
+        split_ring_points_oblique(&vertices, &frame, mid_level, true, POINT_EPS_M);
+    let mut bottom_ring =
+        split_ring_points_oblique(&vertices, &frame, mid_level, false, POINT_EPS_M);
     if top_ring.len() < 3 {
-        top_ring = extremal_ring_points(&vertices, axis, max_level, POINT_EPS_M);
+        top_ring = extremal_ring_points_oblique(&vertices, &frame, max_level, POINT_EPS_M);
     }
     if bottom_ring.len() < 3 {
-        bottom_ring = extremal_ring_points(&vertices, axis, min_level, POINT_EPS_M);
+        bottom_ring = extremal_ring_points_oblique(&vertices, &frame, min_level, POINT_EPS_M);
     }
 
     let mut edges = ring_edges(&top_ring);
@@ -313,19 +315,46 @@ fn cylindrical_ring_highlight_edges(
     edges
 }
 
-fn split_ring_points(
+struct CylinderAxisFrame {
+    origin: [f32; 3],
+    axis: [f32; 3],
+    u: [f32; 3],
+    v: [f32; 3],
+}
+
+impl CylinderAxisFrame {
+    fn from_vertices(vertices: &[[f32; 3]]) -> Self {
+        let origin = vertex_mean(vertices);
+        let axis = cylinder_axis_from_vertices(vertices, origin);
+        let (u, v) = ring_basis(axis);
+        Self { origin, axis, u, v }
+    }
+
+    fn coord_along_axis(&self, point: [f32; 3]) -> f32 {
+        vec3_dot(vec3_sub(point, self.origin), self.axis)
+    }
+
+    fn ring_coords(&self, point: [f32; 3], center_along: f32) -> (f32, f32) {
+        let center = vec3_add(self.origin, vec3_scale(self.axis, center_along));
+        let delta = vec3_sub(point, center);
+        (vec3_dot(delta, self.u), vec3_dot(delta, self.v))
+    }
+}
+
+fn split_ring_points_oblique(
     vertices: &[[f32; 3]],
-    axis: usize,
+    frame: &CylinderAxisFrame,
     mid_level: f32,
     top: bool,
     point_eps: f32,
 ) -> Vec<[f32; 3]> {
     let mut points = Vec::new();
     for vertex in vertices {
+        let coord = frame.coord_along_axis(*vertex);
         let keep = if top {
-            vertex[axis] >= mid_level
+            coord >= mid_level
         } else {
-            vertex[axis] <= mid_level
+            coord <= mid_level
         };
         if !keep {
             continue;
@@ -338,22 +367,23 @@ fn split_ring_points(
         }
         points.push(*vertex);
     }
-    sort_ring_points(&mut points, axis);
+    sort_ring_points_oblique(&mut points, frame, mid_level);
     points
 }
 
-fn extremal_ring_points(
+fn extremal_ring_points_oblique(
     vertices: &[[f32; 3]],
-    axis: usize,
+    frame: &CylinderAxisFrame,
     level: f32,
     point_eps: f32,
 ) -> Vec<[f32; 3]> {
-    let tolerance = ((extremal_coord(vertices, axis, true) - extremal_coord(vertices, axis, false))
+    let tolerance = ((extremal_coord_along_axis(vertices, frame, true)
+        - extremal_coord_along_axis(vertices, frame, false))
         * 0.15)
         .max(0.0001);
     let mut points = Vec::new();
     for vertex in vertices {
-        if (vertex[axis] - level).abs() > tolerance {
+        if (frame.coord_along_axis(*vertex) - level).abs() > tolerance {
             continue;
         }
         if points
@@ -364,83 +394,136 @@ fn extremal_ring_points(
         }
         points.push(*vertex);
     }
-    sort_ring_points(&mut points, axis);
+    sort_ring_points_oblique(&mut points, frame, level);
     points
 }
 
-fn sort_ring_points(points: &mut [[f32; 3]], axis: usize) {
+fn sort_ring_points_oblique(
+    points: &mut [[f32; 3]],
+    frame: &CylinderAxisFrame,
+    center_along: f32,
+) {
     if points.len() < 2 {
         return;
     }
-    let center = ring_center(points, axis);
     points.sort_by(|left, right| {
-        ring_angle(left, center, axis)
-            .partial_cmp(&ring_angle(right, center, axis))
+        let (lu, lv) = frame.ring_coords(*left, center_along);
+        let (ru, rv) = frame.ring_coords(*right, center_along);
+        lu.atan2(lv)
+            .partial_cmp(&ru.atan2(rv))
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 }
 
-fn dominant_axis(vertices: &[[f32; 3]]) -> usize {
-    let mut min = [f32::INFINITY; 3];
-    let mut max = [f32::NEG_INFINITY; 3];
-    for vertex in vertices {
-        for axis in 0..3 {
-            min[axis] = min[axis].min(vertex[axis]);
-            max[axis] = max[axis].max(vertex[axis]);
-        }
-    }
-    let mut best_axis = 2_usize;
-    let mut best_span = 0.0_f32;
-    for axis in 0..3 {
-        let span = max[axis] - min[axis];
-        if span > best_span {
-            best_span = span;
-            best_axis = axis;
-        }
-    }
-    best_axis
-}
-
-fn extremal_coord(vertices: &[[f32; 3]], axis: usize, max: bool) -> f32 {
+fn extremal_coord_along_axis(
+    vertices: &[[f32; 3]],
+    frame: &CylinderAxisFrame,
+    max: bool,
+) -> f32 {
     if max {
         vertices
             .iter()
-            .map(|vertex| vertex[axis])
+            .map(|vertex| frame.coord_along_axis(*vertex))
             .fold(f32::NEG_INFINITY, f32::max)
     } else {
         vertices
             .iter()
-            .map(|vertex| vertex[axis])
+            .map(|vertex| frame.coord_along_axis(*vertex))
             .fold(f32::INFINITY, f32::min)
     }
 }
 
-fn ring_center(points: &[[f32; 3]], axis: usize) -> [f32; 3] {
-    let mut center = [0.0_f32; 3];
-    for point in points {
-        center[0] += point[0];
-        center[1] += point[1];
-        center[2] += point[2];
+fn vertex_mean(vertices: &[[f32; 3]]) -> [f32; 3] {
+    let mut sum = [0.0_f32; 3];
+    for vertex in vertices {
+        sum[0] += vertex[0];
+        sum[1] += vertex[1];
+        sum[2] += vertex[2];
     }
-    let count = points.len() as f32;
-    center[0] /= count;
-    center[1] /= count;
-    center[2] /= count;
-    center[axis] = points[0][axis];
-    center
+    let count = vertices.len().max(1) as f32;
+    [sum[0] / count, sum[1] / count, sum[2] / count]
 }
 
-fn ring_angle(point: &[f32; 3], center: [f32; 3], axis: usize) -> f32 {
-    let (u, v) = ring_plane_coords(point, center, axis);
-    u.atan2(v)
+fn cylinder_axis_from_vertices(vertices: &[[f32; 3]], center: [f32; 3]) -> [f32; 3] {
+    if vertices.len() < 3 {
+        return [0.0, 0.0, 1.0];
+    }
+    let mut cov = [[0.0_f32; 3]; 3];
+    for vertex in vertices {
+        let delta = vec3_sub(*vertex, center);
+        for (row, row_values) in cov.iter_mut().enumerate() {
+            for (col, value) in row_values.iter_mut().enumerate() {
+                *value += delta[row] * delta[col];
+            }
+        }
+    }
+    let count = vertices.len() as f32;
+    for row in &mut cov {
+        for value in row {
+            *value /= count;
+        }
+    }
+    smallest_eigenvector(&cov)
 }
 
-fn ring_plane_coords(point: &[f32; 3], center: [f32; 3], axis: usize) -> (f32, f32) {
-    match axis {
-        0 => (point[1] - center[1], point[2] - center[2]),
-        1 => (point[0] - center[0], point[2] - center[2]),
-        _ => (point[0] - center[0], point[1] - center[1]),
+fn smallest_eigenvector(cov: &[[f32; 3]; 3]) -> [f32; 3] {
+    let trace = cov[0][0] + cov[1][1] + cov[2][2];
+    let mut vector = [1.0_f32, 0.0, 0.0];
+    for _ in 0..48 {
+        let next = [
+            trace * vector[0]
+                - (cov[0][0] * vector[0] + cov[0][1] * vector[1] + cov[0][2] * vector[2]),
+            trace * vector[1]
+                - (cov[1][0] * vector[0] + cov[1][1] * vector[1] + cov[1][2] * vector[2]),
+            trace * vector[2]
+                - (cov[2][0] * vector[0] + cov[2][1] * vector[1] + cov[2][2] * vector[2]),
+        ];
+        vector = normalize3(next);
     }
+    vector
+}
+
+fn ring_basis(axis: [f32; 3]) -> ([f32; 3], [f32; 3]) {
+    let reference = if axis[1].abs() < 0.9 {
+        [0.0, 1.0, 0.0]
+    } else {
+        [1.0, 0.0, 0.0]
+    };
+    let u = normalize3(vec3_cross(reference, axis));
+    let v = vec3_cross(axis, u);
+    (u, v)
+}
+
+fn vec3_add(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+}
+
+fn vec3_sub(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+
+fn vec3_scale(v: [f32; 3], scalar: f32) -> [f32; 3] {
+    [v[0] * scalar, v[1] * scalar, v[2] * scalar]
+}
+
+fn vec3_dot(a: [f32; 3], b: [f32; 3]) -> f32 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+
+fn vec3_cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
+}
+
+fn normalize3(v: [f32; 3]) -> [f32; 3] {
+    let len = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+    if len <= f32::EPSILON {
+        return [0.0, 0.0, 1.0];
+    }
+    [v[0] / len, v[1] / len, v[2] / len]
 }
 
 fn ring_edges(ring: &[[f32; 3]]) -> Vec<([f32; 3], [f32; 3])> {
@@ -887,6 +970,48 @@ mod tests {
             .expect("top");
         let edges = face_group_highlight_edges(&scene, top_group.index);
         assert_eq!(edges.len(), 4);
+    }
+
+    #[test]
+    fn oblique_cylinder_ring_highlight_forms_two_rings() {
+        let axis = normalize3([1.0, 1.0, 1.0]);
+        let (u, v) = ring_basis(axis);
+        let radius = 0.01_f32;
+        let height = 0.02_f32;
+        let segments = 16_usize;
+        let mut vertices = Vec::new();
+        for ring in [0.0_f32, height] {
+            for index in 0..segments {
+                let angle = (index as f32 / segments as f32) * std::f32::consts::TAU;
+                let offset = vec3_add(
+                    vec3_scale(u, radius * angle.cos()),
+                    vec3_scale(v, radius * angle.sin()),
+                );
+                let point = vec3_add(vec3_scale(axis, ring), offset);
+                vertices.push(point);
+            }
+        }
+
+        let frame = CylinderAxisFrame::from_vertices(&vertices);
+        let min_level = extremal_coord_along_axis(&vertices, &frame, false);
+        let max_level = extremal_coord_along_axis(&vertices, &frame, true);
+        let mid_level = (min_level + max_level) * 0.5;
+        let top_ring =
+            split_ring_points_oblique(&vertices, &frame, mid_level, true, 0.00005);
+        let bottom_ring =
+            split_ring_points_oblique(&vertices, &frame, mid_level, false, 0.00005);
+
+        assert!(top_ring.len() >= 8, "top ring points: {}", top_ring.len());
+        assert!(
+            bottom_ring.len() >= 8,
+            "bottom ring points: {}",
+            bottom_ring.len()
+        );
+        assert!(
+            ring_edges(&top_ring).len() >= 8,
+            "top ring edges: {}",
+            ring_edges(&top_ring).len()
+        );
     }
 
     #[test]

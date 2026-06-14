@@ -62,7 +62,12 @@ function previewImageCoords(event) {
   return { x, y };
 }
 
-function relatedParameterIds(selection) {
+function filterExistingParameterIds(ids) {
+  const available = new Set(parameterRows.map((row) => row.id));
+  return ids.filter((id) => available.has(id));
+}
+
+function relatedParameterCandidates(selection) {
   if (selection.kind === "none") {
     return [];
   }
@@ -72,8 +77,26 @@ function relatedParameterIds(selection) {
 
   const feature = selection.inferred_feature_id ?? "";
   const role = selection.face_role ?? "";
+
+  if (feature.includes("revolve")) {
+    return [
+      "param:revolve_angle",
+      "param:outer_radius",
+      "param:inner_radius",
+      "param:height",
+    ];
+  }
   if (feature.includes("hole") || role === "cylindrical") {
-    return ["param:hole_diameter", "param:hole_pitch"];
+    return ["param:hole_diameter", "param:hole_pitch", "param:thickness"];
+  }
+  if (feature.includes("boss")) {
+    return ["param:boss_diameter", "param:boss_height", "param:thickness"];
+  }
+  if (feature.includes("pattern") || feature.includes("pin_row") || feature.includes("hole_row")) {
+    return ["param:hole_pitch", "param:hole_diameter"];
+  }
+  if (feature.includes("mirror")) {
+    return ["param:hole_pitch", "param:width"];
   }
   if (feature.includes("fillet")) {
     return ["param:fillet_radius"];
@@ -94,6 +117,10 @@ function relatedParameterIds(selection) {
     return ["param:width", "param:height", "param:thickness"];
   }
   return [];
+}
+
+function relatedParameterIds(selection) {
+  return filterExistingParameterIds(relatedParameterCandidates(selection));
 }
 
 let paramFocusTimer = null;

@@ -39,14 +39,17 @@ pub fn infer_face_refs(
     face: &FaceGroup,
 ) -> (Option<String>, Option<String>) {
     let feature_id = match face.role {
-        FaceRole::Cylindrical => find_feature_by_type(features, "hole"),
+        FaceRole::Cylindrical => find_feature_by_type(features, "hole")
+            .or_else(|| find_feature_by_type(features, "revolve")),
         FaceRole::Top => find_feature_by_type(features, "fillet")
             .or_else(|| find_feature_by_type(features, "chamfer"))
-            .or_else(|| find_feature_by_type(features, "extrude")),
+            .or_else(|| find_feature_by_type(features, "extrude"))
+            .or_else(|| find_feature_by_type(features, "revolve")),
         FaceRole::Bottom | FaceRole::PosX | FaceRole::NegX | FaceRole::PosY | FaceRole::NegY => {
             find_feature_by_type(features, "extrude")
+                .or_else(|| find_feature_by_type(features, "revolve"))
         }
-        FaceRole::Other => None,
+        FaceRole::Other => find_feature_by_type(features, "revolve"),
     };
     let topo_ref_id = feature_id
         .as_deref()

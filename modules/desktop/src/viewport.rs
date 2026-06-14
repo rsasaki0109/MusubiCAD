@@ -1,6 +1,9 @@
 //! Interactive viewport launcher for the desktop shell.
 
+use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 use opencad_core::Result;
 use opencad_render::{
@@ -14,6 +17,8 @@ use crate::pick::{
     ScreenSegment,
 };
 use crate::preview::{render_preview_png, CameraState, ViewData, PREVIEW_HEIGHT, PREVIEW_WIDTH};
+
+const CAMERA_SYNC_DEBOUNCE_MS: u64 = 120;
 
 /// Preview image and highlight overlay synced from the 3D viewport camera.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -82,13 +87,42 @@ where
     });
 
     let camera_callback = on_camera_sync.map(|handler| {
-        let data = data.clone();
-        let scene = scene.clone();
-        let last_selection = last_selection.clone();
-        Box::new(move |camera: OrbitCamera| {
-            let camera_state = CameraState::from(camera);
+        spawn_camera_sync_sender(data.clone(), scene, last_selection, handler)
+    });
+
+    let overlay_ref = if overlay_empty {
+        None
+    } else {
+        Some(&data.overlay)
+    };
+    run_viewport_with_callbacks(
+        &data.scene,
+        overlay_ref,
+        title,
+        pick_callback,
+        camera_callback,
+    )
+}
+
+fn spawn_camera_sync_sender<G>(
+    data: ViewData,
+    scene: opencad_render::RenderScene,
+    last_selection: Arc<Mutex<Option<PickTarget>>>,
+    handler: G,
+) -> ViewportCameraCallback
+where
+    G: Fn(PreviewSynced) + Send + 'static,
+{
+    let (tx, rx) = mpsc::channel::<OrbitCamera>();
+    thread::spawn(move || {
+        let debounce = Duration::from_millis(CAMERA_SYNC_DEBOUNCE_MS);
+        while let Ok(mut latest) = rx.recv() {
+            while let Ok(next) = rx.recv_timeout(debounce) {
+                latest = next;
+            }
+            let camera_state = CameraState::from(latest);
             let Ok(png_base64) = render_preview_png(&data, Some(camera_state)) else {
-                return;
+                continue;
             };
             let highlight_segments_px = last_selection
                 .lock()
@@ -109,19 +143,10 @@ where
                 camera: camera_state,
                 highlight_segments_px,
             });
-        }) as ViewportCameraCallback
+        }
     });
 
-    let overlay_ref = if overlay_empty {
-        None
-    } else {
-        Some(&data.overlay)
-    };
-    run_viewport_with_callbacks(
-        &data.scene,
-        overlay_ref,
-        title,
-        pick_callback,
-        camera_callback,
-    )
+    Box::new(move |camera: OrbitCamera| {
+        let _ = tx.send(camera);
+    })
 }
