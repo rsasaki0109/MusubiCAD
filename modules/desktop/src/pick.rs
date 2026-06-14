@@ -2,7 +2,8 @@
 
 use opencad_core::Result;
 use opencad_render::{
-    face_group_highlight_edges, triangle_world_positions, OffscreenRenderer, PickResult, RenderScene,
+    face_group_highlight_edges, triangle_world_positions, OffscreenRenderer, PickResult,
+    RenderScene, SketchOverlay,
 };
 use serde::{Deserialize, Serialize};
 
@@ -157,7 +158,7 @@ pub fn build_pick_summary(data: &ViewData, pick: PickResult, options: &PickOptio
     };
 
     let highlight_segments_px =
-        preview_highlight_segments(scene, &selection);
+        preview_highlight_segments(scene, overlay, &selection);
     let related_ids = related_parameter_ids_for_features(
         &selection,
         parameter_ids,
@@ -182,14 +183,16 @@ pub fn build_pick_summary(data: &ViewData, pick: PickResult, options: &PickOptio
 /// Screen-space highlight segments for the default preview camera.
 pub fn preview_highlight_segments(
     scene: &RenderScene,
+    overlay: &SketchOverlay,
     selection: &PickTarget,
 ) -> Vec<ScreenSegment> {
-    highlight_segments_for_selection(scene, selection, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+    highlight_segments_for_selection(scene, overlay, selection, PREVIEW_WIDTH, PREVIEW_HEIGHT)
 }
 
 /// Screen-space highlight segments projected with a synced camera pose.
 pub fn highlight_segments_for_camera(
     scene: &RenderScene,
+    overlay: &SketchOverlay,
     selection: &PickTarget,
     camera: &CameraState,
     width: u32,
@@ -197,22 +200,24 @@ pub fn highlight_segments_for_camera(
 ) -> Vec<ScreenSegment> {
     let aspect = width as f32 / height.max(1) as f32;
     let orbit = camera.to_orbit_camera(aspect);
-    highlight_segments_with_camera(scene, selection, &orbit, width, height)
+    highlight_segments_with_camera(scene, overlay, selection, &orbit, width, height)
 }
 
 fn highlight_segments_for_selection(
     scene: &RenderScene,
+    overlay: &SketchOverlay,
     selection: &PickTarget,
     width: u32,
     height: u32,
 ) -> Vec<ScreenSegment> {
     let aspect = width as f32 / height.max(1) as f32;
     let camera = scene.default_camera(aspect);
-    highlight_segments_with_camera(scene, selection, &camera, width, height)
+    highlight_segments_with_camera(scene, overlay, selection, &camera, width, height)
 }
 
 fn highlight_segments_with_camera(
     scene: &RenderScene,
+    overlay: &SketchOverlay,
     selection: &PickTarget,
     camera: &opencad_render::OrbitCamera,
     width: u32,
@@ -226,7 +231,23 @@ fn highlight_segments_with_camera(
 
     match selection {
         PickTarget::None => Vec::new(),
-        PickTarget::SketchLine { start_m, end_m, .. } => {
+        PickTarget::SketchLine {
+            start_m,
+            end_m,
+            entity_id,
+            segment_index,
+            ..
+        } => {
+            if segment_index.is_some() {
+                if let Some(entity_id) = entity_id {
+                    return overlay
+                        .lines
+                        .iter()
+                        .filter(|line| line.entity_id.as_deref() == Some(entity_id.as_str()))
+                        .filter_map(|line| project_segment(line.start, line.end))
+                        .collect();
+                }
+            }
             project_segment(*start_m, *end_m).into_iter().collect()
         }
         PickTarget::SolidTriangle {
@@ -381,6 +402,47 @@ mod tests {
             assert!(segment.start_px[1] <= PREVIEW_HEIGHT as f64);
             assert!(segment.end_px[1] <= PREVIEW_HEIGHT as f64);
         }
+    }
+
+    #[test]
+    fn hole_circle_pick_highlights_full_circle_ring() {
+        use opencad_feature::{apply_parameters, bracket_with_hole};
+        use opencad_graph::{bracket_parameters, evaluate_param_graph};
+        use opencad_render::build_sketch_overlay;
+
+        let mut model = bracket_with_hole().expect("model");
+        let params = bracket_parameters();
+        apply_parameters(&mut model, &params).expect("apply");
+        let values = evaluate_param_graph(&params).expect("eval");
+        let sketches: Vec<_> = model.sketches.values().cloned().collect();
+        let overlay = build_sketch_overlay(&sketches, &values).expect("overlay");
+        let line_index = overlay
+            .lines
+            .iter()
+            .position(|line| {
+                line.entity_id.as_deref() == Some("ent:hole_circle")
+                    && line.segment_index == Some(0)
+            })
+            .expect("hole circle segment");
+        let scene =
+            RenderScene::from_mesh_set(&opencad_geometry::MeshSet::box_prism(0.08, 0.006))
+                .expect("scene");
+        let selection = PickTarget::SketchLine {
+            line_index,
+            sketch_id: Some("sketch:hole".into()),
+            entity_id: Some("ent:hole_circle".into()),
+            entity_kind: Some("circle".into()),
+            segment_index: Some(0),
+            construction: false,
+            start_m: overlay.lines[line_index].start,
+            end_m: overlay.lines[line_index].end,
+        };
+        let segments = preview_highlight_segments(&scene, &overlay, &selection);
+        assert!(
+            segments.len() >= 16,
+            "expected full circle highlight ring, got {}",
+            segments.len()
+        );
     }
 
     #[test]

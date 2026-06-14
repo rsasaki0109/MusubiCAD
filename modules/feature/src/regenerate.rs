@@ -750,7 +750,7 @@ pub fn bracket_face_pin() -> Result<PartModel> {
             length: Length::from_meters(0.006),
         },
     );
-    pin.length_expr = Some("thickness".into());
+    pin.length_expr = Some("boss_height".into());
     model.add_node(FeatureNode::new(
         "feature:face_pin_join",
         "Face Pin Join",

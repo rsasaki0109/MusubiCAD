@@ -131,6 +131,7 @@ where
                 .map(|selection| {
                     highlight_segments_for_camera(
                         &scene,
+                        &data.overlay,
                         selection,
                         &camera_state,
                         PREVIEW_WIDTH,

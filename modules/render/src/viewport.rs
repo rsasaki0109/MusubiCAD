@@ -467,11 +467,23 @@ impl ViewportApp {
     fn set_selected_line(&mut self, line_index: usize) {
         self.selected_line = Some(line_index);
         self.selected_triangle = None;
-        let vertices = self
-            .overlay_lines
-            .get(line_index)
-            .map(|line| vec![line.start, line.end])
-            .unwrap_or_default();
+        let vertices = if let Some(line) = self.overlay_lines.get(line_index) {
+            if line.segment_index.is_some() {
+                if let Some(entity_id) = &line.entity_id {
+                    self.overlay_lines
+                        .iter()
+                        .filter(|overlay| overlay.entity_id.as_deref() == Some(entity_id.as_str()))
+                        .flat_map(|overlay| [overlay.start, overlay.end])
+                        .collect()
+                } else {
+                    vec![line.start, line.end]
+                }
+            } else {
+                vec![line.start, line.end]
+            }
+        } else {
+            Vec::new()
+        };
         self.highlight_line_buffers = create_line_buffers(&self.device, &vertices);
     }
 

@@ -422,7 +422,10 @@ fn related_parameter_candidates_heuristic(selection: &PickTarget) -> Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use opencad_feature::{bracket_base_plate, bracket_boss_join, bracket_hole_row, revolve_bushing};
+    use opencad_feature::{
+        bracket_base_plate, bracket_boss_join, bracket_hole_row, bracket_with_hole,
+        revolve_bushing,
+    };
     use opencad_graph::{bracket_parameters, revolve_parameters};
 
     fn model_context(
@@ -725,6 +728,37 @@ mod tests {
                 "param:revolve_angle".to_string(),
             ]
         );
+    }
+
+    #[test]
+    fn hole_circle_pick_targets_hole_diameter_only() {
+        let selection = PickTarget::SketchLine {
+            line_index: 0,
+            sketch_id: Some("sketch:hole".into()),
+            entity_id: Some("ent:hole_circle".into()),
+            entity_kind: Some("circle".into()),
+            segment_index: Some(0),
+            construction: false,
+            start_m: [0.0; 3],
+            end_m: [1.0, 0.0, 0.0],
+        };
+        let model = bracket_with_hole().expect("model");
+        let params = bracket_parameters();
+        let (nodes, sketches, name_map) = model_context(model, params);
+        let available = vec![
+            "param:hole_diameter".into(),
+            "param:width".into(),
+            "param:height".into(),
+            "param:thickness".into(),
+        ];
+        let ids = related_parameter_ids_for_features(
+            &selection,
+            &available,
+            &nodes,
+            &sketches,
+            &name_map,
+        );
+        assert_eq!(ids, vec!["param:hole_diameter".to_string()]);
     }
 
     #[test]
