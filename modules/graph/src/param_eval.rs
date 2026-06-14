@@ -254,6 +254,36 @@ pub fn bracket_parameters() -> ParamGraph {
     graph
 }
 
+/// Default revolve bushing/sector parameters (lengths in mm, angle in radians).
+pub fn revolve_parameters(angle_rad_expr: &str) -> ParamGraph {
+    let mut graph = ParamGraph::new();
+    graph
+        .add_parameter(ParameterEntry::new(
+            "param:inner_radius",
+            "inner_radius",
+            "15 mm",
+        ))
+        .expect("inner_radius");
+    graph
+        .add_parameter(ParameterEntry::new(
+            "param:outer_radius",
+            "outer_radius",
+            "25 mm",
+        ))
+        .expect("outer_radius");
+    graph
+        .add_parameter(ParameterEntry::new("param:height", "height", "20 mm"))
+        .expect("height");
+    graph
+        .add_parameter(ParameterEntry::new(
+            "param:revolve_angle",
+            "revolve_angle_rad",
+            angle_rad_expr,
+        ))
+        .expect("revolve_angle");
+    graph
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

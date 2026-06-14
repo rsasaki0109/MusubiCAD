@@ -5,6 +5,7 @@ pub mod inspect;
 pub mod parameters;
 pub mod pick;
 pub mod preview;
+pub mod related_parameters;
 pub mod regen;
 pub mod scene_query;
 pub mod template;
@@ -21,6 +22,9 @@ pub use pick::{
 pub use preview::{
     load_view_data, preview_document, render_preview_png, CameraState, DocumentPreview, ViewData,
     PREVIEW_HEIGHT, PREVIEW_WIDTH,
+};
+pub use related_parameters::{
+    related_parameter_candidates, related_parameter_ids,
 };
 pub use regen::{
     tessellate_active_body, tessellate_active_body_detailed, TessellatedBody,

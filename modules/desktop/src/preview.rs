@@ -63,6 +63,7 @@ pub struct ViewData {
     pub feature_nodes: Vec<FeatureNode>,
     pub semantic_refs: Vec<TopoRef>,
     pub face_history: Vec<FaceDerivation>,
+    pub parameter_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -92,6 +93,7 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
     let tessellated =
         tessellate_active_body_detailed(&mut model, Some(&parameters), Some(&semantic_refs))?;
     let scene = RenderScene::from_mesh_set(&tessellated.mesh_set)?;
+    let parameter_ids = parameters.evaluation_order()?;
     Ok(ViewData {
         scene,
         overlay,
@@ -99,6 +101,7 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
         feature_nodes,
         semantic_refs,
         face_history: tessellated.face_history,
+        parameter_ids,
     })
 }
 

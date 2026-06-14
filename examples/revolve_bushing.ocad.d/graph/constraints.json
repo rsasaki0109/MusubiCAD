@@ -1,3 +1,71 @@
 {
-  "constraints": []
+  "constraints": [
+    {
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:bottom_horizontal",
+        "line": "ent:e0"
+      }
+    },
+    {
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "distance",
+        "id": "con:height",
+        "target": {
+          "line": "ent:e1"
+        },
+        "expr": "height"
+      }
+    },
+    {
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "distance",
+        "id": "con:inner_radius",
+        "target": {
+          "a": "ent:axis",
+          "b": "ent:c0"
+        },
+        "expr": "inner_radius"
+      }
+    },
+    {
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:inner_vertical",
+        "line": "ent:e3"
+      }
+    },
+    {
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "distance",
+        "id": "con:outer_radius",
+        "target": {
+          "a": "ent:axis",
+          "b": "ent:c1"
+        },
+        "expr": "outer_radius"
+      }
+    },
+    {
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:outer_vertical",
+        "line": "ent:e1"
+      }
+    },
+    {
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:top_horizontal",
+        "line": "ent:e2"
+      }
+    }
+  ]
 }

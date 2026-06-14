@@ -1,4 +1,29 @@
 {
-  "parameters": {},
+  "parameters": {
+    "param:inner_radius": {
+      "id": "param:inner_radius",
+      "name": "inner_radius",
+      "expr": "15 mm",
+      "dirty": false
+    },
+    "param:outer_radius": {
+      "id": "param:outer_radius",
+      "name": "outer_radius",
+      "expr": "25 mm",
+      "dirty": false
+    },
+    "param:height": {
+      "id": "param:height",
+      "name": "height",
+      "expr": "20 mm",
+      "dirty": false
+    },
+    "param:revolve_angle": {
+      "id": "param:revolve_angle",
+      "name": "revolve_angle_rad",
+      "expr": "6.283185307179586",
+      "dirty": false
+    }
+  },
   "edges": []
 }

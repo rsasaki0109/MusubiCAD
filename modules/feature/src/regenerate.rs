@@ -458,103 +458,63 @@ pub fn bracket_with_top_chamfer() -> Result<PartModel> {
 
 /// Hollow bushing revolved from an XY profile (radius × axis height) around the global Y axis.
 pub fn revolve_bushing() -> Result<PartModel> {
-    use opencad_core::{EntityId, SketchId};
-    use opencad_sketch::{
-        entity::{Coord, EntityBase, LineEntity, PointEntity, SketchEntity},
-        workplane::Workplane,
-        Sketch,
-    };
-
-    use crate::revolve::RevolveFeature;
-    use crate::sketch_feature::SketchFeatureDef;
-
-    let mut model = PartModel::new();
-
-    let mut sketch = Sketch::new(
-        SketchId::new("sketch:profile")?,
+    revolve_annulus_model(
         "Bushing Profile",
-        Workplane::xy(),
-    );
-
-    let corners = ["ent:c0", "ent:c1", "ent:c2", "ent:c3"];
-    let edges = ["ent:e0", "ent:e1", "ent:e2", "ent:e3"];
-    for (id, radius, height) in [
-        (corners[0], 0.015, 0.0),
-        (corners[1], 0.025, 0.0),
-        (corners[2], 0.025, 0.02),
-        (corners[3], 0.015, 0.02),
-    ] {
-        sketch.add_entity(SketchEntity::Point(PointEntity {
-            base: EntityBase {
-                id: EntityId::new(id)?,
-                construction: false,
-            },
-            x: Coord::literal(radius),
-            y: Coord::literal(height),
-        }))?;
-    }
-    for (id, start, end) in [
-        (edges[0], corners[0], corners[1]),
-        (edges[1], corners[1], corners[2]),
-        (edges[2], corners[2], corners[3]),
-        (edges[3], corners[3], corners[0]),
-    ] {
-        sketch.add_entity(SketchEntity::Line(LineEntity {
-            base: EntityBase {
-                id: EntityId::new(id)?,
-                construction: false,
-            },
-            start: EntityId::new(start)?,
-            end: EntityId::new(end)?,
-        }))?;
-    }
-    model
-        .sketches
-        .insert(sketch.id.as_str().to_string(), sketch);
-
-    model.add_node(FeatureNode::new(
-        "feature:sketch_profile",
-        "Bushing Profile",
-        FeatureDefinition::Sketch(SketchFeatureDef {
-            sketch_id: "sketch:profile".into(),
-        }),
-    ))?;
-    model.add_node(FeatureNode::new(
-        "feature:revolve_bushing",
         "Revolve Bushing",
-        FeatureDefinition::Revolve(RevolveFeature::boss(
-            "feature:sketch_profile",
-            "sketch:profile/profile:outer",
-            [0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-        )),
-    ))?;
-    model.add_dependency("feature:sketch_profile", "feature:revolve_bushing")?;
-    Ok(model)
+        "feature:revolve_bushing",
+        std::f64::consts::TAU,
+        "6.283185307179586",
+    )
 }
 
 /// Half bushing (180°) revolved from the same XY annulus profile around the Y axis.
 pub fn revolve_sector() -> Result<PartModel> {
-    use opencad_core::{EntityId, SketchId};
+    revolve_annulus_model(
+        "Sector Profile",
+        "Revolve Sector",
+        "feature:revolve_sector",
+        std::f64::consts::PI,
+        "3.141592653589793",
+    )
+}
+
+fn revolve_annulus_model(
+    sketch_name: &str,
+    revolve_name: &str,
+    revolve_feature_id: &str,
+    default_angle_rad: f64,
+    angle_rad_expr: &str,
+) -> Result<PartModel> {
+    use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+    use opencad_graph::revolve_parameters;
     use opencad_sketch::{
+        constraint::{Constraint, DistanceTarget},
         entity::{Coord, EntityBase, LineEntity, PointEntity, SketchEntity},
         workplane::Workplane,
         Sketch,
     };
 
+    use crate::param_apply::apply_parameters;
     use crate::revolve::RevolveFeature;
     use crate::sketch_feature::SketchFeatureDef;
 
-    let mut model = PartModel::new();
-
     let mut sketch = Sketch::new(
         SketchId::new("sketch:profile")?,
-        "Sector Profile",
+        sketch_name,
         Workplane::xy(),
     );
 
+    let axis = "ent:axis";
     let corners = ["ent:c0", "ent:c1", "ent:c2", "ent:c3"];
     let edges = ["ent:e0", "ent:e1", "ent:e2", "ent:e3"];
+    sketch.add_entity(SketchEntity::Point(PointEntity {
+        base: EntityBase {
+            id: EntityId::new(axis)?,
+            construction: true,
+        },
+        x: Coord::literal(0.0),
+        y: Coord::literal(0.0),
+    }))?;
     for (id, radius, height) in [
         (corners[0], 0.015, 0.0),
         (corners[1], 0.025, 0.0),
@@ -585,30 +545,72 @@ pub fn revolve_sector() -> Result<PartModel> {
             end: EntityId::new(end)?,
         }))?;
     }
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new("con:inner_radius")?,
+        target: DistanceTarget::PointToPoint {
+            a: EntityId::new(axis)?,
+            b: EntityId::new(corners[0])?,
+        },
+        expr: Expression::new("inner_radius")?,
+    })?;
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new("con:outer_radius")?,
+        target: DistanceTarget::PointToPoint {
+            a: EntityId::new(axis)?,
+            b: EntityId::new(corners[1])?,
+        },
+        expr: Expression::new("outer_radius")?,
+    })?;
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new("con:height")?,
+        target: DistanceTarget::LineLength {
+            line: EntityId::new(edges[1])?,
+        },
+        expr: Expression::new("height")?,
+    })?;
+    sketch.add_constraint(Constraint::Horizontal {
+        id: ConstraintId::new("con:bottom_horizontal")?,
+        line: EntityId::new(edges[0])?,
+    })?;
+    sketch.add_constraint(Constraint::Vertical {
+        id: ConstraintId::new("con:outer_vertical")?,
+        line: EntityId::new(edges[1])?,
+    })?;
+    sketch.add_constraint(Constraint::Horizontal {
+        id: ConstraintId::new("con:top_horizontal")?,
+        line: EntityId::new(edges[2])?,
+    })?;
+    sketch.add_constraint(Constraint::Vertical {
+        id: ConstraintId::new("con:inner_vertical")?,
+        line: EntityId::new(edges[3])?,
+    })?;
+
+    let params = revolve_parameters(angle_rad_expr);
+    let mut model = PartModel::new();
     model
         .sketches
         .insert(sketch.id.as_str().to_string(), sketch);
-
+    apply_parameters(&mut model, &params)?;
     model.add_node(FeatureNode::new(
         "feature:sketch_profile",
-        "Sector Profile",
+        sketch_name,
         FeatureDefinition::Sketch(SketchFeatureDef {
             sketch_id: "sketch:profile".into(),
         }),
     ))?;
     model.add_node(FeatureNode::new(
-        "feature:revolve_sector",
-        "Revolve Sector",
+        revolve_feature_id,
+        revolve_name,
         FeatureDefinition::Revolve(RevolveFeature::with_angle(
             "feature:sketch_profile",
             "sketch:profile/profile:outer",
             [0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
-            std::f64::consts::PI,
-            None,
+            default_angle_rad,
+            Some("revolve_angle_rad".into()),
         )),
     ))?;
-    model.add_dependency("feature:sketch_profile", "feature:revolve_sector")?;
+    model.add_dependency("feature:sketch_profile", revolve_feature_id)?;
     Ok(model)
 }
 
@@ -1366,8 +1368,9 @@ mod tests {
         let mut model = revolve_bushing().expect("model");
         let kernel = MockGeometryKernel::new();
         let registry = FeatureRegistry::with_defaults();
+        let params = opencad_graph::revolve_parameters("6.283185307179586");
         let report = model
-            .regenerate(&kernel, &registry, None, None)
+            .regenerate(&kernel, &registry, Some(&params), None)
             .expect("regen");
         assert_eq!(report.regenerated.len(), 2);
         assert!(model.active_body().is_some());
@@ -1378,8 +1381,9 @@ mod tests {
         let mut model = revolve_sector().expect("model");
         let kernel = MockGeometryKernel::new();
         let registry = FeatureRegistry::with_defaults();
+        let params = opencad_graph::revolve_parameters("3.141592653589793");
         let report = model
-            .regenerate(&kernel, &registry, None, None)
+            .regenerate(&kernel, &registry, Some(&params), None)
             .expect("regen");
         assert_eq!(report.regenerated.len(), 2);
         assert!(model.active_body().is_some());

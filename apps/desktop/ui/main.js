@@ -119,7 +119,10 @@ function relatedParameterCandidates(selection) {
   return [];
 }
 
-function relatedParameterIds(selection) {
+function relatedParameterIds(selection, summary) {
+  if (summary?.related_parameter_ids?.length) {
+    return summary.related_parameter_ids;
+  }
   return filterExistingParameterIds(relatedParameterCandidates(selection));
 }
 
@@ -205,7 +208,7 @@ function renderSelection(summary) {
     }
   }
 
-  const relatedNames = relatedParameterIds(summary.selection)
+  const relatedNames = relatedParameterIds(summary.selection, summary)
     .map((id) => parameterRows.find((row) => row.id === id)?.name)
     .filter(Boolean);
   if (relatedNames.length) {
@@ -246,7 +249,7 @@ function handlePickSummary(summary, sourceLabel) {
   }
   const label = summary.selection.kind.replaceAll("_", " ");
   const relatedNames = focusRelatedParameters(
-    relatedParameterIds(summary.selection),
+    relatedParameterIds(summary.selection, summary),
   );
   let message =
     sourceLabel === "preview" ? `Selected ${label}` : `3D viewport: ${label}`;

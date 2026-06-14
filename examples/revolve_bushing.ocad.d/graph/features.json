@@ -47,6 +47,7 @@
           0.0
         ],
         "angle_rad": 6.283185307179586,
+        "angle_expr": "revolve_angle_rad",
         "operation": "new_body"
       },
       "suppressed": false

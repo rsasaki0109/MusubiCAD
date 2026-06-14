@@ -1,14 +1,13 @@
 //! Headless viewport pick queries for the desktop shell.
 
 use opencad_core::Result;
-use opencad_feature::FeatureNode;
-use opencad_geometry::{FaceDerivation, TopoRef};
 use opencad_render::{
     face_group_highlight_edges, triangle_world_positions, OffscreenRenderer, PickResult, RenderScene,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::preview::{load_view_data, CameraState, PREVIEW_HEIGHT, PREVIEW_WIDTH};
+use crate::preview::{load_view_data, ViewData, CameraState, PREVIEW_HEIGHT, PREVIEW_WIDTH};
+use crate::related_parameters::related_parameter_ids;
 use crate::scene_query::{infer_face_refs, topo_ref_for_group};
 
 /// Options for a pick query against the default preview viewport.
@@ -88,6 +87,8 @@ pub struct PickSummary {
     pub triangle_count: usize,
     pub selection: PickTarget,
     pub highlight_segments_px: Vec<ScreenSegment>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub related_parameter_ids: Vec<String>,
 }
 
 pub fn pick_document(path: &str, options: &PickOptions) -> Result<PickSummary> {
@@ -106,26 +107,16 @@ pub fn pick_document(path: &str, options: &PickOptions) -> Result<PickSummary> {
         options.width,
         options.height,
     )?;
-    Ok(build_pick_summary(
-        &data.scene,
-        &data.overlay,
-        pick,
-        options,
-        Some(&data.feature_nodes),
-        &data.semantic_refs,
-        &data.face_history,
-    ))
+    Ok(build_pick_summary(&data, pick, options))
 }
 
-pub fn build_pick_summary(
-    scene: &opencad_render::RenderScene,
-    overlay: &opencad_render::SketchOverlay,
-    pick: PickResult,
-    options: &PickOptions,
-    feature_nodes: Option<&[FeatureNode]>,
-    semantic_refs: &[TopoRef],
-    face_history: &[FaceDerivation],
-) -> PickSummary {
+pub fn build_pick_summary(data: &ViewData, pick: PickResult, options: &PickOptions) -> PickSummary {
+    let scene = &data.scene;
+    let overlay = &data.overlay;
+    let feature_nodes = Some(data.feature_nodes.as_slice());
+    let semantic_refs = data.semantic_refs.as_slice();
+    let face_history = data.face_history.as_slice();
+    let parameter_ids = data.parameter_ids.as_slice();
     let selection = match pick {
         PickResult::None => PickTarget::None,
         PickResult::SketchLine(line_index) => {
@@ -167,6 +158,7 @@ pub fn build_pick_summary(
 
     let highlight_segments_px =
         preview_highlight_segments(scene, &selection);
+    let related_ids = related_parameter_ids(&selection, parameter_ids);
 
     PickSummary {
         x: options.x,
@@ -177,6 +169,7 @@ pub fn build_pick_summary(
         triangle_count: scene.triangle_count(),
         selection,
         highlight_segments_px,
+        related_parameter_ids: related_ids,
     }
 }
 
@@ -372,15 +365,7 @@ mod tests {
                 options.height,
             )
             .expect("pick");
-        let summary = build_pick_summary(
-            &data.scene,
-            &data.overlay,
-            pick,
-            &options,
-            Some(&data.feature_nodes),
-            &data.semantic_refs,
-            &data.face_history,
-        );
+        let summary = build_pick_summary(&data, pick, &options);
         assert_eq!(summary.width, 1280);
         assert_eq!(summary.height, 720);
         assert!(!summary.highlight_segments_px.is_empty());

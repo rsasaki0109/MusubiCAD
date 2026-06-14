@@ -10,6 +10,13 @@
       "entities": [
         {
           "type": "point",
+          "id": "ent:axis",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
           "id": "ent:c0",
           "construction": false,
           "x": 0.015,
@@ -65,11 +72,72 @@
           "end": "ent:c0"
         }
       ],
-      "constraints": [],
+      "constraints": [
+        {
+          "type": "distance",
+          "id": "con:inner_radius",
+          "target": {
+            "a": "ent:axis",
+            "b": "ent:c0"
+          },
+          "expr": "inner_radius"
+        },
+        {
+          "type": "distance",
+          "id": "con:outer_radius",
+          "target": {
+            "a": "ent:axis",
+            "b": "ent:c1"
+          },
+          "expr": "outer_radius"
+        },
+        {
+          "type": "distance",
+          "id": "con:height",
+          "target": {
+            "line": "ent:e1"
+          },
+          "expr": "height"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:bottom_horizontal",
+          "line": "ent:e0"
+        },
+        {
+          "type": "vertical",
+          "id": "con:outer_vertical",
+          "line": "ent:e1"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:top_horizontal",
+          "line": "ent:e2"
+        },
+        {
+          "type": "vertical",
+          "id": "con:inner_vertical",
+          "line": "ent:e3"
+        }
+      ],
       "dimensions": [],
       "solve_state": {
-        "status": "unknown"
-      }
+        "status": "under_constrained",
+        "dof": 1
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:e0",
+            "ent:e1",
+            "ent:e2",
+            "ent:e3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:profile/profile:outer"
+        }
+      ]
     }
   ]
 }

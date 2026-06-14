@@ -59,7 +59,7 @@ pub fn print_summary(summary: &PickSummary) {
 mod tests {
     use super::*;
     use opencad_desktop::{
-        build_pick_summary, pick_document, PickOptions, PickSummary, PickTarget,
+        build_pick_summary, pick_document, PickOptions, PickTarget, ViewData,
     };
     use crate::mesh::write_bracket_fixture_at;
     use opencad_feature::{apply_parameters, bracket_base_plate};
@@ -103,14 +103,19 @@ mod tests {
             .expect("ent:e0 overlay line");
         let scene = RenderScene::from_mesh_set(&opencad_geometry::MeshSet::box_prism(0.08, 0.006))
             .expect("scene");
+        let data = ViewData {
+            scene,
+            overlay,
+            name: String::new(),
+            feature_nodes: Vec::new(),
+            semantic_refs: Vec::new(),
+            face_history: Vec::new(),
+            parameter_ids: vec!["param:width".into(), "param:height".into()],
+        };
         let summary = build_pick_summary(
-            &scene,
-            &overlay,
+            &data,
             PickResult::SketchLine(line_index),
             &PickOptions::default(),
-            None,
-            &[],
-            &[],
         );
         let PickTarget::SketchLine {
             sketch_id,

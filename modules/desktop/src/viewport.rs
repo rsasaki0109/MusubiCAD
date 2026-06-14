@@ -47,18 +47,11 @@ where
 {
     let overlay_empty = data.overlay.is_empty();
     let scene = data.scene.clone();
-    let overlay = data.overlay.clone();
-    let feature_nodes = data.feature_nodes.clone();
-    let semantic_refs = data.semantic_refs.clone();
-    let face_history = data.face_history.clone();
     let last_selection: Arc<Mutex<Option<PickTarget>>> = Arc::new(Mutex::new(None));
+    let view_data = data.clone();
 
     let pick_callback = on_pick.map(|handler| {
-        let scene = scene.clone();
-        let overlay = overlay.clone();
-        let feature_nodes = feature_nodes.clone();
-        let semantic_refs = semantic_refs.clone();
-        let face_history = face_history.clone();
+        let view_data = view_data.clone();
         let last_selection = last_selection.clone();
         Box::new(
             move |x: f64, y: f64, width: u32, height: u32, pick: PickResult| {
@@ -68,15 +61,7 @@ where
                     width,
                     height,
                 };
-                let summary = build_pick_summary(
-                    &scene,
-                    &overlay,
-                    pick,
-                    &options,
-                    Some(&feature_nodes),
-                    &semantic_refs,
-                    &face_history,
-                );
+                let summary = build_pick_summary(&view_data, pick, &options);
                 *last_selection.lock().expect("selection lock") = match &summary.selection {
                     PickTarget::None => None,
                     selection => Some(selection.clone()),

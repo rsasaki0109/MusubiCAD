@@ -7,7 +7,7 @@ use opencad_feature::{
     bracket_with_hole, revolve_bushing, revolve_sector,
 };
 use opencad_file::{write_ocad, OcadDocument};
-use opencad_graph::bracket_parameters;
+use opencad_graph::{bracket_parameters, revolve_parameters};
 
 /// Built-in sample document templates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -148,7 +148,8 @@ pub fn create_revolve_bushing_document(path: &str) -> Result<()> {
         DocumentId::new("doc:revolve_bushing_001")?,
         "Revolved Bushing",
     );
-    let doc = OcadDocument::from_part_model(metadata, &part);
+    let mut doc = OcadDocument::from_part_model(metadata, &part);
+    doc.parameters = revolve_parameters("6.283185307179586");
     write_ocad(path, &doc)
 }
 
@@ -158,7 +159,8 @@ pub fn create_revolve_sector_document(path: &str) -> Result<()> {
         DocumentId::new("doc:revolve_sector_001")?,
         "Revolved Sector (180°)",
     );
-    let doc = OcadDocument::from_part_model(metadata, &part);
+    let mut doc = OcadDocument::from_part_model(metadata, &part);
+    doc.parameters = revolve_parameters("3.141592653589793");
     write_ocad(path, &doc)
 }
 

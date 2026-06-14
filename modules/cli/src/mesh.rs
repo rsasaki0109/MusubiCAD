@@ -57,6 +57,7 @@ pub fn mesh_document(input: &str, options: &MeshOptions) -> Result<MeshSummary> 
             feature_nodes: Vec::new(),
             semantic_refs: Vec::new(),
             face_history: Vec::new(),
+            parameter_ids: Vec::new(),
         }
     };
 

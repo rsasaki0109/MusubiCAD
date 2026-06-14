@@ -316,12 +316,14 @@ fn occt_face_sketch_pin_joins_onto_plate() {
 #[test]
 fn occt_revolve_bushing_has_annulus_volume() {
     use opencad_feature::revolve_bushing;
+    use opencad_graph::revolve_parameters;
 
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
+    let params = revolve_parameters("6.283185307179586");
     let mut model = revolve_bushing().expect("model");
     model
-        .regenerate(&kernel, &registry, None, None)
+        .regenerate(&kernel, &registry, Some(&params), None)
         .expect("regen");
     let mass = kernel
         .mass_properties(model.active_body().expect("body"), 2700.0)
@@ -342,13 +344,16 @@ fn occt_revolve_bushing_has_annulus_volume() {
 #[test]
 fn occt_revolve_sector_is_half_bushing_volume() {
     use opencad_feature::{revolve_bushing, revolve_sector};
+    use opencad_graph::revolve_parameters;
 
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
+    let full_params = revolve_parameters("6.283185307179586");
+    let sector_params = revolve_parameters("3.141592653589793");
 
     let mut full = revolve_bushing().expect("model");
     full
-        .regenerate(&kernel, &registry, None, None)
+        .regenerate(&kernel, &registry, Some(&full_params), None)
         .expect("regen");
     let full_mass = kernel
         .mass_properties(full.active_body().expect("body"), 2700.0)
@@ -356,7 +361,7 @@ fn occt_revolve_sector_is_half_bushing_volume() {
 
     let mut sector = revolve_sector().expect("model");
     sector
-        .regenerate(&kernel, &registry, None, None)
+        .regenerate(&kernel, &registry, Some(&sector_params), None)
         .expect("regen");
     let sector_mass = kernel
         .mass_properties(sector.active_body().expect("body"), 2700.0)

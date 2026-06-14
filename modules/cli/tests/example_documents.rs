@@ -76,11 +76,12 @@ fn example_revolve_bushing_regenerates_with_occt() {
     let path = workspace_root().join("examples/revolve_bushing.ocad.d");
     validate_expanded_dir(&path).expect("validate");
     let doc = read_expanded_dir(&path).expect("read");
+    let parameters = doc.parameters.clone();
     let mut model = doc.into_part_model();
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     model
-        .regenerate(&kernel, &registry, None, None)
+        .regenerate(&kernel, &registry, Some(&parameters), None)
         .expect("regen");
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
@@ -98,11 +99,12 @@ fn example_revolve_sector_regenerates_with_occt() {
     let path = workspace_root().join("examples/revolve_sector.ocad.d");
     validate_expanded_dir(&path).expect("validate");
     let doc = read_expanded_dir(&path).expect("read");
+    let parameters = doc.parameters.clone();
     let mut model = doc.into_part_model();
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     model
-        .regenerate(&kernel, &registry, None, None)
+        .regenerate(&kernel, &registry, Some(&parameters), None)
         .expect("regen");
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
