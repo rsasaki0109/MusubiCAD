@@ -24,7 +24,7 @@ pub use preview::{
     PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
 pub use related_parameters::{
-    related_parameter_candidates, related_parameter_ids,
+    related_parameter_candidates, related_parameter_ids, related_parameter_ids_for_features,
 };
 pub use regen::{
     tessellate_active_body, tessellate_active_body_detailed, TessellatedBody,

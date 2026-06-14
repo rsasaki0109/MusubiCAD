@@ -1,5 +1,6 @@
 //! Load documents and render PNG previews for the desktop shell.
 
+use std::collections::BTreeMap;
 use std::io::Cursor;
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
@@ -12,6 +13,7 @@ use opencad_graph::evaluate_param_graph;
 use opencad_render::{
     build_sketch_overlay, OffscreenRenderer, OrbitCamera, RenderImage, RenderScene, SketchOverlay,
 };
+use opencad_sketch::Sketch;
 use serde::{Deserialize, Serialize};
 
 use crate::regen::tessellate_active_body_detailed;
@@ -61,6 +63,8 @@ pub struct ViewData {
     pub overlay: SketchOverlay,
     pub name: String,
     pub feature_nodes: Vec<FeatureNode>,
+    pub sketches: BTreeMap<String, Sketch>,
+    pub parameter_name_to_id: BTreeMap<String, String>,
     pub semantic_refs: Vec<TopoRef>,
     pub face_history: Vec<FaceDerivation>,
     pub parameter_ids: Vec<String>,
@@ -94,11 +98,25 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
         tessellate_active_body_detailed(&mut model, Some(&parameters), Some(&semantic_refs))?;
     let scene = RenderScene::from_mesh_set(&tessellated.mesh_set)?;
     let parameter_ids = parameters.evaluation_order()?;
+    let parameter_name_to_id = parameter_ids
+        .iter()
+        .filter_map(|id| {
+            parameters
+                .get(id)
+                .map(|entry| (entry.name.clone(), entry.id.clone()))
+        })
+        .collect();
+    let sketches = model
+        .sketches
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
     Ok(ViewData {
         scene,
         overlay,
         name,
         feature_nodes,
+        sketches,
+        parameter_name_to_id,
         semantic_refs,
         face_history: tessellated.face_history,
         parameter_ids,

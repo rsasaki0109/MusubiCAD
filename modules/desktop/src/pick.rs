@@ -7,7 +7,7 @@ use opencad_render::{
 use serde::{Deserialize, Serialize};
 
 use crate::preview::{load_view_data, ViewData, CameraState, PREVIEW_HEIGHT, PREVIEW_WIDTH};
-use crate::related_parameters::related_parameter_ids;
+use crate::related_parameters::related_parameter_ids_for_features;
 use crate::scene_query::{infer_face_refs, topo_ref_for_group};
 
 /// Options for a pick query against the default preview viewport.
@@ -158,7 +158,13 @@ pub fn build_pick_summary(data: &ViewData, pick: PickResult, options: &PickOptio
 
     let highlight_segments_px =
         preview_highlight_segments(scene, &selection);
-    let related_ids = related_parameter_ids(&selection, parameter_ids);
+    let related_ids = related_parameter_ids_for_features(
+        &selection,
+        parameter_ids,
+        data.feature_nodes.as_slice(),
+        &data.sketches,
+        &data.parameter_name_to_id,
+    );
 
     PickSummary {
         x: options.x,

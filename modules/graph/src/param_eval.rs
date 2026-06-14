@@ -35,6 +35,24 @@ pub fn eval_angle_expr(expr: &str, scope: &IndexMap<String, f64>) -> Result<f64>
     eval_expr(expr, scope, convert_angle)
 }
 
+/// Identifier names referenced by a parametric expression (e.g. `hole_diameter / 2`).
+pub fn parameter_names_in_expr(expr: &str) -> Vec<String> {
+    let tokens = match tokenize(expr, |value, _| value) {
+        Ok(tokens) => tokens,
+        Err(_) => return Vec::new(),
+    };
+    let mut names = Vec::new();
+    let mut seen = std::collections::BTreeSet::new();
+    for token in tokens {
+        if let Token::Ident(ident) = token {
+            if seen.insert(ident.clone()) {
+                names.push(ident);
+            }
+        }
+    }
+    names
+}
+
 fn is_angle_parameter(name: &str) -> bool {
     name.ends_with("_rad") || name.ends_with("_deg") || name.contains("angle")
 }
@@ -351,5 +369,11 @@ mod tests {
         let values = evaluate_param_graph(&graph).expect("eval");
         assert!((values["width"] - 0.08).abs() < 1e-9);
         assert!((values["half"] - 0.04).abs() < 1e-9);
+    }
+
+    #[test]
+    fn parameter_names_in_expr_extracts_identifiers() {
+        let names = parameter_names_in_expr("hole_diameter / 2");
+        assert_eq!(names, vec!["hole_diameter".to_string()]);
     }
 }

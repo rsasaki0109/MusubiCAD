@@ -1,5 +1,7 @@
 //! `opencad mesh` command — tessellate and summarize viewport scene data.
 
+use std::collections::BTreeMap;
+
 use opencad_core::Result;
 use opencad_desktop::tessellate_active_body;
 use opencad_file::read_ocad;
@@ -55,6 +57,8 @@ pub fn mesh_document(input: &str, options: &MeshOptions) -> Result<MeshSummary> 
             overlay: SketchOverlay::default(),
             name: String::new(),
             feature_nodes: Vec::new(),
+            sketches: BTreeMap::new(),
+            parameter_name_to_id: BTreeMap::new(),
             semantic_refs: Vec::new(),
             face_history: Vec::new(),
             parameter_ids: Vec::new(),

@@ -57,6 +57,8 @@ pub fn print_summary(summary: &PickSummary) {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
     use opencad_desktop::{
         build_pick_summary, pick_document, PickOptions, PickTarget, ViewData,
@@ -108,6 +110,12 @@ mod tests {
             overlay,
             name: String::new(),
             feature_nodes: Vec::new(),
+            sketches: model.sketches.into_iter().collect(),
+            parameter_name_to_id: params
+                .parameter_ids()
+                .into_iter()
+                .filter_map(|id| params.get(&id).map(|entry| (entry.name.clone(), id)))
+                .collect(),
             semantic_refs: Vec::new(),
             face_history: Vec::new(),
             parameter_ids: vec!["param:width".into(), "param:height".into()],
