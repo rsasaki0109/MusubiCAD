@@ -208,9 +208,7 @@ function renderHighlight(segments) {
 
 function handlePickSummary(summary, sourceLabel) {
   renderSelection(summary);
-  if (sourceLabel === "preview") {
-    renderHighlight(summary.highlight_segments_px ?? []);
-  }
+  renderHighlight(summary.highlight_segments_px ?? []);
   if (summary.selection.kind === "none") {
     setStatus(
       sourceLabel === "preview"

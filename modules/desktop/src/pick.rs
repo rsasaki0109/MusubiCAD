@@ -166,7 +166,7 @@ pub fn build_pick_summary(
     };
 
     let highlight_segments_px =
-        highlight_segments_for_selection(scene, &selection, options.width, options.height);
+        preview_highlight_segments(scene, &selection);
 
     PickSummary {
         x: options.x,
@@ -178,6 +178,14 @@ pub fn build_pick_summary(
         selection,
         highlight_segments_px,
     }
+}
+
+/// Screen-space highlight segments for the default preview camera.
+pub fn preview_highlight_segments(
+    scene: &RenderScene,
+    selection: &PickTarget,
+) -> Vec<ScreenSegment> {
+    highlight_segments_for_selection(scene, selection, PREVIEW_WIDTH, PREVIEW_HEIGHT)
 }
 
 fn highlight_segments_for_selection(
@@ -316,6 +324,49 @@ mod tests {
                 "expected ring outlines for dense cylinder, got {}",
                 edges.len()
             );
+        }
+    }
+
+    #[test]
+    fn preview_highlight_matches_default_preview_dimensions() {
+        let dir = tempdir().expect("tempdir");
+        let path = dir.path().join("bracket.ocad.d");
+        write_bracket_fixture_at(&path);
+        let data = load_view_data(path.to_str().expect("path")).expect("view");
+        let options = PickOptions {
+            x: 640.0,
+            y: 360.0,
+            width: 1280,
+            height: 720,
+        };
+        let renderer = OffscreenRenderer::new().expect("renderer");
+        let pick = renderer
+            .pick_scene_at(
+                &data.scene,
+                Some(&data.overlay),
+                options.x,
+                options.y,
+                options.width,
+                options.height,
+            )
+            .expect("pick");
+        let summary = build_pick_summary(
+            &data.scene,
+            &data.overlay,
+            pick,
+            &options,
+            Some(&data.feature_nodes),
+            &data.semantic_refs,
+            &data.face_history,
+        );
+        assert_eq!(summary.width, 1280);
+        assert_eq!(summary.height, 720);
+        assert!(!summary.highlight_segments_px.is_empty());
+        for segment in &summary.highlight_segments_px {
+            assert!(segment.start_px[0] <= PREVIEW_WIDTH as f64);
+            assert!(segment.end_px[0] <= PREVIEW_WIDTH as f64);
+            assert!(segment.start_px[1] <= PREVIEW_HEIGHT as f64);
+            assert!(segment.end_px[1] <= PREVIEW_HEIGHT as f64);
         }
     }
 

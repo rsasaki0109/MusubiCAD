@@ -36,7 +36,7 @@ The app loads `examples/bracket.ocad.d` automatically when launched from the wor
 - Click preview to pick faces/sketch lines (topo ref + feature inference)
 - Picking geometry highlights related parameters in the panel
 - Selected geometry is highlighted on the preview image (face-group boundary edges; cylindrical faces use ring outlines)
-- Open interactive wgpu 3D viewport (separate window; picks sync to Selection panel)
+- Open interactive wgpu 3D viewport (separate window; picks sync to Selection panel and preview highlight)
 - Create built-in sample templates
 - Document inspect panel (features, sketches, bounds)
 

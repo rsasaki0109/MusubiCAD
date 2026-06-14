@@ -15,7 +15,8 @@ pub use parameters::{
     list_document_parameters, set_document_parameter, ParameterRow,
 };
 pub use pick::{
-    build_pick_summary, pick_document, PickOptions, PickSummary, PickTarget, ScreenSegment,
+    build_pick_summary, pick_document, preview_highlight_segments, PickOptions, PickSummary,
+    PickTarget, ScreenSegment,
 };
 pub use preview::{
     load_view_data, preview_document, DocumentPreview, ViewData, PREVIEW_HEIGHT, PREVIEW_WIDTH,
