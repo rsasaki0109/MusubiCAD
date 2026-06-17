@@ -21,10 +21,10 @@ use crate::selection::{
     triangle_edge_vertices, PickDrawBuffers, PickResult, ScenePickContext, SelectionCatalog,
 };
 use crate::solid::{
-    create_depth_texture, create_label_line_pipeline, create_line_buffers, create_line_pipeline,
-    create_mesh_buffers, create_solid_pipeline, create_uniform_bind_group,
-    encode_sketch_overlay_passes, encode_solid_pass, pack_scene, LineBuffers, MeshBuffers,
-    SketchOverlayPass, Uniforms,
+    create_background_pipeline, create_depth_texture, create_label_line_pipeline,
+    create_line_buffers, create_line_pipeline, create_mesh_buffers, create_solid_pipeline,
+    create_uniform_bind_group, encode_background_pass, encode_sketch_overlay_passes,
+    encode_solid_pass, pack_scene, LineBuffers, MeshBuffers, SketchOverlayPass, Uniforms,
 };
 
 const CLICK_THRESHOLD_PX: f64 = 5.0;
@@ -269,6 +269,7 @@ struct ViewportApp {
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
     queue: wgpu::Queue,
+    background_pipeline: wgpu::RenderPipeline,
     pipeline: wgpu::RenderPipeline,
     uniform_layout: wgpu::BindGroupLayout,
     line_pipeline: wgpu::RenderPipeline,
@@ -376,6 +377,7 @@ impl ViewportApp {
         };
         surface.configure(&device, &config);
 
+        let background_pipeline = create_background_pipeline(&device, surface_format);
         let (pipeline, uniform_layout) = create_solid_pipeline(&device, surface_format);
         let (line_pipeline, line_uniform_layout) = create_line_pipeline(&device, surface_format);
         let (label_line_pipeline, _) = create_label_line_pipeline(&device, surface_format);
@@ -405,6 +407,7 @@ impl ViewportApp {
             surface,
             device,
             queue,
+            background_pipeline,
             pipeline,
             uniform_layout,
             line_pipeline,
@@ -563,6 +566,8 @@ impl ViewportApp {
             None
         };
         let needs_overlay_pass = self.has_overlay || highlight_lines.is_some();
+
+        encode_background_pass(&mut encoder, &self.background_pipeline, &color_view);
 
         encode_solid_pass(
             &mut encoder,

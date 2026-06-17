@@ -33,6 +33,11 @@ pub fn run() -> Result<()> {
         Some("pick") => cmd_pick(args.next().as_deref(), args.collect()),
         Some("view") => cmd_view(args.next().as_deref()),
         Some("screenshot") => cmd_screenshot(args.next().as_deref(), args.next().as_deref()),
+        Some("turntable") => cmd_turntable(
+            args.next().as_deref(),
+            args.next().as_deref(),
+            args.collect(),
+        ),
         Some("patch") => cmd_patch(args.collect()),
         Some("diff") => cmd_diff(args.collect()),
         Some("agent") => cmd_agent(args.collect()),
@@ -234,6 +239,63 @@ fn cmd_screenshot(input: Option<&str>, output: Option<&str>) -> Result<()> {
     view::screenshot_document(input, output)
 }
 
+fn cmd_turntable(
+    input: Option<&str>,
+    out_dir: Option<&str>,
+    extra_args: Vec<String>,
+) -> Result<()> {
+    let input = input.ok_or_else(|| {
+        opencad_core::OpenCadError::validation(
+            "usage: opencad turntable <input> <out_dir> [--frames N] [--width W] [--height H] [--pitch DEG] [--yaw DEG] [--overlay]",
+        )
+    })?;
+    let out_dir = out_dir.ok_or_else(|| {
+        opencad_core::OpenCadError::validation(
+            "usage: opencad turntable <input> <out_dir> [--frames N] [--width W] [--height H] [--pitch DEG] [--yaw DEG] [--overlay]",
+        )
+    })?;
+    let options = parse_turntable_options(&extra_args)?;
+    view::turntable_document(input, out_dir, &options)?;
+    Ok(())
+}
+
+fn parse_turntable_options(args: &[String]) -> Result<view::TurntableOptions> {
+    let mut options = view::TurntableOptions::default();
+    let mut index = 0_usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--frames" => {
+                options.frames = parse_u32_arg(args, index, "--frames")?;
+                index += 1;
+            }
+            "--width" => {
+                options.width = parse_u32_arg(args, index, "--width")?;
+                index += 1;
+            }
+            "--height" => {
+                options.height = parse_u32_arg(args, index, "--height")?;
+                index += 1;
+            }
+            "--pitch" => {
+                options.pitch_deg = parse_f64_arg(args, index, "--pitch")? as f32;
+                index += 1;
+            }
+            "--yaw" => {
+                options.yaw_deg = parse_f64_arg(args, index, "--yaw")? as f32;
+                index += 1;
+            }
+            "--overlay" => options.overlay = true,
+            other => {
+                return Err(opencad_core::OpenCadError::validation(format!(
+                    "unknown turntable option '{other}'"
+                )));
+            }
+        }
+        index += 1;
+    }
+    Ok(options)
+}
+
 fn cmd_patch(args: Vec<String>) -> Result<()> {
     let parsed = patch::parse_patch_args(args)?;
     patch::patch_document_with_options(&parsed)
@@ -318,6 +380,7 @@ COMMANDS:
     pick        Query viewport selection at a pixel coordinate
     view        Open an interactive 3D viewport
     screenshot  Render a PNG preview of the active body
+    turntable   Render a 360° orbit PNG sequence for animations
     patch       Apply a DesignPatch JSON to parameters
     diff        Show semantic diff between documents or a patch preview
     agent       JSON-RPC 2.0 server on stdio for programmatic access
@@ -348,6 +411,8 @@ EXAMPLES:
     opencad pick bracket.ocad.d --x 256 --y 256 --json
     opencad view bracket.ocad.d
     opencad screenshot bracket.ocad.d preview.png
+    opencad turntable bracket.ocad.d frames/ --frames 48 --width 1600 --height 900
+    opencad turntable bracket_pin_row.ocad.d frames/ --frames 1 --pitch 24 --yaw 26
     opencad patch bracket.ocad.d width.patch.json
     opencad patch bracket.ocad.d combined.patch.json --dry-run --geometry
     opencad diff bracket.ocad.d --patch width.patch.json --geometry

@@ -1,11 +1,19 @@
 # ForgeCAD
 
 <p align="center">
-  <img src="docs/assets/preview.gif" alt="ForgeCAD — parametric bracket with sketch overlay, extruded plate, mounting hole, and width patch regen" width="960">
+  <img src="docs/assets/preview.gif" alt="ForgeCAD — 360° turntable of an OCCT solid rendered headless with wgpu" width="960">
 </p>
 
 <p align="center">
-  <sub>OCCT solid + wgpu viewport from <code>examples/bracket.ocad.d</code> (80 mm → 100 mm parameter patch)</sub>
+  <sub>360° turntable of <code>examples/bracket.ocad.d</code> — OCCT solid rendered headless via wgpu (studio lighting, feature edges, baked ambient occlusion, <code>opencad turntable</code>)</sub>
+</p>
+
+<p align="center">
+  <img src="docs/assets/preview_param.gif" alt="ForgeCAD — parametric width patch regenerating the bracket from 80 mm to 100 mm" width="960">
+</p>
+
+<p align="center">
+  <sub>Parametric patch — <code>width 80 mm → 100 mm</code> regenerated from <code>examples/agent/width_patch.json</code></sub>
 </p>
 
 <p align="center">
@@ -14,6 +22,14 @@
 
 <p align="center">
   <sub><code>examples/bracket_pin_row.ocad.d</code> — linear union pattern with <code>spacing_expr: hole_pitch</code></sub>
+</p>
+
+<p align="center">
+  <img src="docs/assets/preview_pin_ring.png" alt="ForgeCAD — bracket with a circular ring of pin bosses around the central hole" width="960">
+</p>
+
+<p align="center">
+  <sub><code>examples/bracket_pin_ring.ocad.d</code> — circular union pattern: 4 bosses revolved around the plate centre</sub>
 </p>
 
 <p align="center">
@@ -50,7 +66,7 @@ ForgeCAD treats the **Design Graph** as the source of truth — not the GUI and 
 | TopoRef | Semantic face refs, `plane_face_ref` / hole `face_ref`, fingerprint fallback |
 | Agent API | JSON-RPC over stdio (`opencad agent`) — patch, query, diff, regen, pick |
 | Kernel | OCCT 8.0 via cadrum (auto-download on first build) |
-| Headless | CLI regen, mesh render, STL export, golden regression tests |
+| Headless | CLI regen, mesh render, PNG screenshot, 360° turntable frames, STL export, golden regression tests |
 
 ## Stack
 
@@ -87,6 +103,11 @@ cargo run -p opencad-cli -- new examples/bracket_pin_row.ocad.d pin-row
 cargo run -p opencad-cli -- new examples/bracket_pin_ring.ocad.d pin-ring
 cargo run -p opencad-cli -- new examples/bracket_pin_mirror.ocad.d pin-mirror
 cargo run -p opencad-cli -- regen examples/bracket.ocad.d
+
+# Headless previews: a PNG screenshot or a 360° turntable PNG sequence
+cargo run -p opencad-cli -- screenshot examples/bracket.ocad.d preview.png
+cargo run -p opencad-cli -- turntable examples/bracket.ocad.d frames/ --frames 48
+# Regenerate the README orbit/patch GIFs (needs ffmpeg): docs/assets/generate.sh
 
 # Agent API (JSON-RPC on stdio)
 echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"examples/bracket.ocad.d"}}' \

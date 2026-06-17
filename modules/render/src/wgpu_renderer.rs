@@ -4,6 +4,7 @@ use std::path::Path;
 
 use opencad_core::{OpenCadError, Result};
 
+use crate::edges::feature_edge_vertices;
 use crate::overlay::{label_depth_offset_for_bounds, label_scale_for_bounds, SketchOverlay};
 use crate::png::write_png;
 use crate::scene::RenderScene;
@@ -12,11 +13,19 @@ use crate::selection::{
     overlay_pick_vertices, pick_scene, ScenePickContext, SelectionCatalog,
 };
 use crate::solid::{
-    create_depth_texture, create_label_line_pipeline, create_line_buffers, create_line_pipeline,
-    create_mesh_buffers, create_solid_pipeline, create_uniform_bind_group,
+    background_srgb, create_background_pipeline, create_depth_texture, create_label_line_pipeline,
+    create_line_bind_group, create_line_buffers, create_line_pipeline, create_mesh_buffers,
+    create_solid_pipeline, create_uniform_bind_group, encode_background_pass, encode_line_pass,
     encode_sketch_overlay_passes, encode_solid_pass, pack_scene, SketchOverlayPass, Uniforms,
-    CLEAR_COLOR,
+    EDGE_LINE_COLOR,
 };
+
+/// Crease angle (degrees) above which a shared edge is drawn as a feature edge.
+const EDGE_CREASE_ANGLE_DEG: f32 = 25.0;
+
+/// Color target for offscreen previews. sRGB so the shader's linear output is
+/// gamma-encoded on store, matching the interactive viewport's sRGB surface.
+const PREVIEW_COLOR_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 /// Tightly packed RGBA8 pixels from an offscreen render.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,6 +58,7 @@ impl From<RenderImage> for RenderOutput {
 pub struct OffscreenRenderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
+    background_pipeline: wgpu::RenderPipeline,
     pipeline: wgpu::RenderPipeline,
     uniform_layout: wgpu::BindGroupLayout,
     line_pipeline: wgpu::RenderPipeline,
@@ -92,17 +102,22 @@ impl OffscreenRenderer {
             .await
             .map_err(|err| OpenCadError::Other(format!("wgpu device init failed: {err}")))?;
 
-        let color_format = wgpu::TextureFormat::Rgba8Unorm;
+        let color_format = PREVIEW_COLOR_FORMAT;
+        let background_pipeline = create_background_pipeline(&device, color_format);
         let (pipeline, uniform_layout) = create_solid_pipeline(&device, color_format);
         let (line_pipeline, line_uniform_layout) = create_line_pipeline(&device, color_format);
         let (label_line_pipeline, _) = create_label_line_pipeline(&device, color_format);
+        // Pick pipelines encode integer IDs as raw bytes, so they must use a
+        // non-sRGB format to avoid gamma corruption of the IDs.
         let (pick_mesh_pipeline, pick_uniform_layout) =
-            create_pick_mesh_pipeline(&device, color_format);
-        let (pick_line_pipeline, _) = create_pick_line_pipeline(&device, color_format);
+            create_pick_mesh_pipeline(&device, wgpu::TextureFormat::Rgba8Unorm);
+        let (pick_line_pipeline, _) =
+            create_pick_line_pipeline(&device, wgpu::TextureFormat::Rgba8Unorm);
 
         Ok(Self {
             device,
             queue,
+            background_pipeline,
             pipeline,
             uniform_layout,
             line_pipeline,
@@ -186,7 +201,7 @@ impl OffscreenRenderer {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
+            format: PREVIEW_COLOR_FORMAT,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
@@ -201,6 +216,9 @@ impl OffscreenRenderer {
                 label: Some("render-encoder"),
             });
 
+        encode_background_pass(&mut encoder, &self.background_pipeline, &color_view);
+
+        // Preserve depth so feature edges and overlays test against the solid.
         encode_solid_pass(
             &mut encoder,
             &self.pipeline,
@@ -208,8 +226,29 @@ impl OffscreenRenderer {
             &mesh_buffers,
             &color_view,
             &depth_view,
-            has_overlay,
+            true,
         );
+
+        // Feature edges (silhouette + creases) give every raised feature a CAD
+        // outline regardless of the camera angle.
+        let edge_vertices = feature_edge_vertices(&vertices, &indices, EDGE_CREASE_ANGLE_DEG);
+        let edge_lines = create_line_buffers(&self.device, &edge_vertices);
+        if edge_lines.vertex_count > 0 {
+            let edge_bind_group = create_line_bind_group(
+                &self.device,
+                &self.line_uniform_layout,
+                view_proj,
+                EDGE_LINE_COLOR,
+            );
+            encode_line_pass(
+                &mut encoder,
+                &self.label_line_pipeline,
+                &edge_bind_group,
+                &edge_lines,
+                &color_view,
+                &depth_view,
+            );
+        }
 
         if has_overlay {
             encode_sketch_overlay_passes(SketchOverlayPass {
@@ -361,18 +400,23 @@ fn unpack_rgba(data: &[u8], width: u32, height: u32, bytes_per_row: u32) -> Vec<
     rgba
 }
 
+/// Count pixels that differ from the gradient backdrop, i.e. covered by the
+/// model or its overlays. The backdrop is reconstructed per row from the same
+/// endpoints the shader uses, with a small tolerance for rounding.
 fn count_non_background_pixels(data: &[u8], width: u32, height: u32, bytes_per_row: u32) -> usize {
-    let clear_r = (CLEAR_COLOR.r * 255.0).round() as u8;
-    let clear_g = (CLEAR_COLOR.g * 255.0).round() as u8;
-    let clear_b = (CLEAR_COLOR.b * 255.0).round() as u8;
+    const TOLERANCE: i32 = 14;
 
     let mut count = 0_usize;
     for y in 0..height {
+        let [bg_r, bg_g, bg_b] = background_srgb(y, height);
         let row_start = (y * bytes_per_row) as usize;
         for x in 0..width {
             let offset = row_start + (x * 4) as usize;
             let pixel = &data[offset..offset + 4];
-            if pixel[0] != clear_r || pixel[1] != clear_g || pixel[2] != clear_b {
+            let dr = (pixel[0] as i32 - bg_r as i32).abs();
+            let dg = (pixel[1] as i32 - bg_g as i32).abs();
+            let db = (pixel[2] as i32 - bg_b as i32).abs();
+            if dr > TOLERANCE || dg > TOLERANCE || db > TOLERANCE {
                 count += 1;
             }
         }
