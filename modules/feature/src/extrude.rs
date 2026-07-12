@@ -6,9 +6,7 @@ use opencad_core::{OpenCadError, Result};
 use opencad_geometry::{BooleanOp, ExtrudeExtent, ExtrudeOperation};
 
 use crate::feature::{Feature, FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
-use crate::sketch_bridge::{
-    extrude_direction_for_operation, profile_to_solved_with_context,
-};
+use crate::sketch_bridge::{extrude_direction_for_operation, profile_to_solved_with_context};
 
 /// Extrude feature parameters.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

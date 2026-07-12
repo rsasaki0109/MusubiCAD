@@ -1,18 +1,63 @@
 use std::cell::RefCell;
 
 use opencad_core::{OpenCadError, Result, TopoRefId};
+use opencad_geometry::topo_sync::EdgeRefDiscovery;
 use opencad_geometry::{
     BooleanOp, BoundingBox, ExtrudeExtent, ExtrudeOperation, FilletEdgeSelector, GeometryKernel,
     KernelBody, KernelWire, MassProperties, MeshSet, RevolveInput, RevolveOperation,
-    SolvedSketch, TessellationSettings,
+    RigidTransform, SolvedSketch, TessellationSettings,
 };
-use opencad_geometry::topo_sync::EdgeRefDiscovery;
 
 use crate::convert::{map_occt_error, sketch_to_edges, sketch_to_edges_on_plane};
 use crate::store::KernelStore;
 
 #[cfg(feature = "occt")]
-use cadrum::{DVec3, Edge, ProfileOrient, Solid};
+use cadrum::{DMat3, DQuat, DVec3, Edge, ProfileOrient, Solid};
+
+#[cfg(feature = "occt")]
+fn rotation_matrix_to_axis_angle(rotation: [[f64; 3]; 3]) -> (DVec3, f64) {
+    let matrix = DMat3::from_cols(
+        DVec3::new(rotation[0][0], rotation[1][0], rotation[2][0]),
+        DVec3::new(rotation[0][1], rotation[1][1], rotation[2][1]),
+        DVec3::new(rotation[0][2], rotation[1][2], rotation[2][2]),
+    );
+    let (axis, angle) = DQuat::from_mat3(&matrix).to_axis_angle();
+    (axis, angle)
+}
+
+#[cfg(feature = "occt")]
+fn collect_body_solids(store: &KernelStore, body_id: u64) -> Result<Vec<Solid>> {
+    if let Some(members) = store.compound_member_ids(body_id) {
+        members
+            .iter()
+            .map(|member_id| {
+                store
+                    .body(*member_id)
+                    .cloned()
+                    .ok_or_else(|| OpenCadError::not_found(format!("body {member_id}")))
+            })
+            .collect()
+    } else {
+        Ok(vec![store.body(body_id).cloned().ok_or_else(|| {
+            OpenCadError::not_found(format!("body {body_id}"))
+        })?])
+    }
+}
+
+#[cfg(feature = "occt")]
+fn merge_bounding_boxes(mut merged: BoundingBox, next: BoundingBox) -> BoundingBox {
+    merged.min = [
+        merged.min[0].min(next.min[0]),
+        merged.min[1].min(next.min[1]),
+        merged.min[2].min(next.min[2]),
+    ];
+    merged.max = [
+        merged.max[0].max(next.max[0]),
+        merged.max[1].max(next.max[1]),
+        merged.max[2].max(next.max[2]),
+    ];
+    merged
+}
 
 #[cfg(feature = "occt")]
 fn collect_edges(solid: &Solid, selector: FilletEdgeSelector) -> Vec<&Edge> {
@@ -42,10 +87,7 @@ fn collect_edges(solid: &Solid, selector: FilletEdgeSelector) -> Vec<&Edge> {
             .collect(),
         FilletEdgeSelector::EdgeRole { role } => {
             let bb = solid.bounding_box();
-            let bbox = [
-                [bb[0].x, bb[0].y, bb[0].z],
-                [bb[1].x, bb[1].y, bb[1].z],
-            ];
+            let bbox = [[bb[0].x, bb[0].y, bb[0].z], [bb[1].x, bb[1].y, bb[1].z]];
             let mut matches: Vec<(&Edge, f64)> = solid
                 .iter_edge()
                 .filter_map(|edge| {
@@ -56,11 +98,8 @@ fn collect_edges(solid: &Solid, selector: FilletEdgeSelector) -> Vec<&Edge> {
                         (start.y + end.y) * 0.5,
                         (start.z + end.z) * 0.5,
                     ];
-                    let tangent = normalize_vec3([
-                        end.x - start.x,
-                        end.y - start.y,
-                        end.z - start.z,
-                    ]);
+                    let tangent =
+                        normalize_vec3([end.x - start.x, end.y - start.y, end.z - start.z]);
                     let edge_role = top_edge_role(&midpoint, &tangent, &bbox);
                     if edge_role != role {
                         return None;
@@ -88,10 +127,7 @@ fn discover_edges_from_solid(solid: &Solid) -> Vec<EdgeRefDiscovery> {
     let bb = solid.bounding_box();
     let z_max = bb[1].z;
     let eps = 1e-6;
-    let bbox = [
-        [bb[0].x, bb[0].y, bb[0].z],
-        [bb[1].x, bb[1].y, bb[1].z],
-    ];
+    let bbox = [[bb[0].x, bb[0].y, bb[0].z], [bb[1].x, bb[1].y, bb[1].z]];
     solid
         .iter_edge()
         .filter_map(|edge| {
@@ -105,34 +141,17 @@ fn discover_edges_from_solid(solid: &Solid) -> Vec<EdgeRefDiscovery> {
             if (midpoint[2] - z_max).abs() > eps {
                 return None;
             }
-            let tangent = normalize_vec3([
-                end.x - start.x,
-                end.y - start.y,
-                end.z - start.z,
-            ]);
-            let length_m = [
-                end.x - start.x,
-                end.y - start.y,
-                end.z - start.z,
-            ];
-            let length = (length_m[0] * length_m[0]
-                + length_m[1] * length_m[1]
-                + length_m[2] * length_m[2])
-                .sqrt();
+            let tangent = normalize_vec3([end.x - start.x, end.y - start.y, end.z - start.z]);
+            let length_m = [end.x - start.x, end.y - start.y, end.z - start.z];
+            let length =
+                (length_m[0] * length_m[0] + length_m[1] * length_m[1] + length_m[2] * length_m[2])
+                    .sqrt();
             let role = top_edge_role(&midpoint, &tangent, &bbox);
             Some(EdgeRefDiscovery {
                 kernel_edge_id: edge.id(),
                 role,
-                midpoint_m: [
-                    midpoint[0] as f32,
-                    midpoint[1] as f32,
-                    midpoint[2] as f32,
-                ],
-                tangent_m: [
-                    tangent[0] as f32,
-                    tangent[1] as f32,
-                    tangent[2] as f32,
-                ],
+                midpoint_m: [midpoint[0] as f32, midpoint[1] as f32, midpoint[2] as f32],
+                tangent_m: [tangent[0] as f32, tangent[1] as f32, tangent[2] as f32],
                 length_m: length as f32,
                 feature_id: None,
             })
@@ -142,8 +161,7 @@ fn discover_edges_from_solid(solid: &Solid) -> Vec<EdgeRefDiscovery> {
 
 #[cfg(feature = "occt")]
 fn normalize_vec3(vector: [f64; 3]) -> [f64; 3] {
-    let len =
-        (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]).sqrt();
+    let len = (vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]).sqrt();
     if len <= 1e-12 {
         return [1.0, 0.0, 0.0];
     }
@@ -248,10 +266,8 @@ impl GeometryKernel for OcctGeometryKernel {
                 return Err(OpenCadError::validation("extrude length must be positive"));
             }
 
-            let dir_len = (direction_m[0].powi(2)
-                + direction_m[1].powi(2)
-                + direction_m[2].powi(2))
-            .sqrt();
+            let dir_len =
+                (direction_m[0].powi(2) + direction_m[1].powi(2) + direction_m[2].powi(2)).sqrt();
             if dir_len <= 1e-12 {
                 return Err(OpenCadError::validation(
                     "extrude direction must be a non-zero vector",
@@ -325,16 +341,18 @@ impl GeometryKernel for OcctGeometryKernel {
 
             let edges = sketch_to_edges_on_plane(sketch, profile_plane)?;
             let spine = revolve_spine_edge(axis, angle_rad)?;
-            let mut solid = Solid::sweep(&edges, std::slice::from_ref(&spine), ProfileOrient::Up(axis))
-                .map_err(map_occt_error)?;
+            let mut solid = Solid::sweep(
+                &edges,
+                std::slice::from_ref(&spine),
+                ProfileOrient::Up(axis),
+            )
+            .map_err(map_occt_error)?;
 
             match operation {
                 RevolveOperation::NewBody => {}
                 RevolveOperation::Cut => {
                     let Some(target_body) = target else {
-                        return Err(OpenCadError::validation(
-                            "cut revolve requires target body",
-                        ));
+                        return Err(OpenCadError::validation("cut revolve requires target body"));
                     };
                     let target_solid = self
                         .store
@@ -423,20 +441,16 @@ impl GeometryKernel for OcctGeometryKernel {
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
         #[cfg(feature = "occt")]
         {
-            let solid = self
-                .store
-                .borrow()
-                .body(body.0)
-                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
-                .clone();
+            let store = self.store.borrow();
+            let solids = collect_body_solids(&store, body.0)?;
+            drop(store);
 
             let tessellation = cadrum::Tessellation {
                 deflection_linear: settings.linear_deflection,
                 deflection_angular: settings.angular_deflection_deg.to_radians(),
                 relative_linear: false,
             };
-            let mesh =
-                Solid::mesh(std::slice::from_ref(&solid), tessellation).map_err(map_occt_error)?;
+            let mesh = Solid::mesh(solids.iter(), tessellation).map_err(map_occt_error)?;
 
             let positions: Vec<[f32; 3]> = mesh
                 .vertices
@@ -464,21 +478,42 @@ impl GeometryKernel for OcctGeometryKernel {
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
         #[cfg(feature = "occt")]
         {
-            let solid = self
-                .store
-                .borrow()
-                .body(body.0)
-                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
-                .clone();
+            let store = self.store.borrow();
+            let solids = collect_body_solids(&store, body.0)?;
 
-            let volume = solid.volume();
-            let area = solid.area();
-            let center = solid.center();
+            let mut total_volume = 0.0;
+            let mut total_area = 0.0;
+            let mut total_mass = 0.0;
+            let mut weighted_com = [0.0_f64; 3];
+
+            for solid in solids {
+                let volume = solid.volume();
+                let area = solid.area();
+                let center = solid.center();
+                let mass = volume * density_kg_per_m3;
+                total_volume += volume;
+                total_area += area;
+                total_mass += mass;
+                weighted_com[0] += center.x * mass;
+                weighted_com[1] += center.y * mass;
+                weighted_com[2] += center.z * mass;
+            }
+
+            let center_of_mass = if total_mass > 0.0 {
+                [
+                    weighted_com[0] / total_mass,
+                    weighted_com[1] / total_mass,
+                    weighted_com[2] / total_mass,
+                ]
+            } else {
+                [0.0, 0.0, 0.0]
+            };
+
             Ok(MassProperties {
-                volume_m3: volume,
-                area_m2: area,
-                mass_kg: volume * density_kg_per_m3,
-                center_of_mass: [center.x, center.y, center.z],
+                volume_m3: total_volume,
+                area_m2: total_area,
+                mass_kg: total_mass,
+                center_of_mass,
             })
         }
         #[cfg(not(feature = "occt"))]
@@ -491,17 +526,23 @@ impl GeometryKernel for OcctGeometryKernel {
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
         #[cfg(feature = "occt")]
         {
-            let solid = self
-                .store
-                .borrow()
-                .body(body.0)
-                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
-                .clone();
-            let bb = solid.bounding_box();
-            Ok(BoundingBox {
-                min: [bb[0].x, bb[0].y, bb[0].z],
-                max: [bb[1].x, bb[1].y, bb[1].z],
-            })
+            let store = self.store.borrow();
+            let solids = collect_body_solids(&store, body.0)?;
+
+            let mut merged: Option<BoundingBox> = None;
+            for solid in solids {
+                let bb = solid.bounding_box();
+                let next = BoundingBox {
+                    min: [bb[0].x, bb[0].y, bb[0].z],
+                    max: [bb[1].x, bb[1].y, bb[1].z],
+                };
+                merged = Some(match merged {
+                    None => next,
+                    Some(current) => merge_bounding_boxes(current, next),
+                });
+            }
+
+            merged.ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))
         }
         #[cfg(not(feature = "occt"))]
         {
@@ -654,6 +695,67 @@ impl GeometryKernel for OcctGeometryKernel {
         {
             let _ = (body, translation_m);
             Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
+    fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let solid = self
+                .store
+                .borrow()
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+
+            let mut transformed = solid;
+            if !transform.is_identity_rotation() {
+                let (axis, angle) = rotation_matrix_to_axis_angle(transform.rotation);
+                if angle.abs() > 1e-12 {
+                    transformed = transformed.rotate(DVec3::ZERO, axis, angle);
+                }
+            }
+            if !transform.is_identity_translation() {
+                transformed = transformed.translate(DVec3::new(
+                    transform.translation_m[0],
+                    transform.translation_m[1],
+                    transform.translation_m[2],
+                ));
+            }
+
+            let id = self.store.borrow_mut().insert_body(transformed);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, transform);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
+    fn make_compound(&self, bodies: &[KernelBody]) -> Result<KernelBody> {
+        if bodies.is_empty() {
+            return Err(OpenCadError::validation(
+                "compound requires at least one body",
+            ));
+        }
+        if bodies.len() == 1 {
+            return Ok(bodies[0].clone());
+        }
+
+        #[cfg(feature = "occt")]
+        {
+            let member_ids: Vec<u64> = bodies.iter().map(|body| body.0).collect();
+            let compound_id = self.store.borrow_mut().insert_compound(member_ids.clone());
+            Ok(KernelBody::new(compound_id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let id = bodies
+                .iter()
+                .fold(0_u64, |acc, body| acc.wrapping_add(body.0))
+                .max(1);
+            Ok(KernelBody::new(id))
         }
     }
 
@@ -895,6 +997,39 @@ mod tests {
             .expect("translate");
         let mass = kernel.mass_properties(&translated, 2700.0).expect("mass");
         assert!(mass.volume_m3 > 0.0);
+    }
+
+    #[test]
+    fn occt_transform_body_rotates_and_translates_bbox() {
+        use opencad_geometry::RigidTransform;
+
+        let kernel = OcctGeometryKernel::new();
+        let wire = kernel
+            .make_wire_from_sketch(&rectangle_sketch())
+            .expect("wire");
+        let body = kernel
+            .extrude(
+                wire,
+                ExtrudeExtent::Distance {
+                    length: Length::from_meters(0.006),
+                },
+                ExtrudeOperation::NewBody,
+                None,
+                [0.0, 0.0, 1.0],
+            )
+            .expect("extrude");
+
+        let before = kernel.bounding_box(&body).expect("before bbox");
+        let transform = RigidTransform {
+            translation_m: [0.1, 0.0, 0.0],
+            rotation: [[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+        };
+        let transformed = kernel.transform_body(body, transform).expect("transform");
+        let after = kernel.bounding_box(&transformed).expect("after bbox");
+
+        assert!((after.min[0] - (before.min[0] + 0.1)).abs() < 1e-3);
+        assert!((after.max[0] - (before.max[0] + 0.1)).abs() < 1e-3);
+        assert!((after.min[1] - -before.max[1]).abs() < 1e-3);
     }
 
     #[test]

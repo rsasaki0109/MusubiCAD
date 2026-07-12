@@ -1,0 +1,11 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:bracket_001",
+    "name": "Bracket with Mounting Hole",
+    "units": "mm",
+    "kind": "part",
+    "created_with": "OpenCAD 0.1.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

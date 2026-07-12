@@ -1,0 +1,133 @@
+{
+  "assembly": {
+    "components": [
+      {
+        "id": "component:bracket",
+        "source_path": "parts/bracket.ocad.d",
+        "source_doc": "doc:bracket_001"
+      }
+    ],
+    "instances": [
+      {
+        "id": "instance:left",
+        "component": "component:bracket",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": false,
+        "name": "Left Bracket"
+      },
+      {
+        "id": "instance:right",
+        "component": "component:bracket",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.05,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": false,
+        "name": "Right Bracket"
+      }
+    ],
+    "mates": [
+      {
+        "id": "mate:ground_left",
+        "type": "ground",
+        "instance": "instance:left",
+        "suppressed": false
+      },
+      {
+        "id": "mate:spacing",
+        "type": "distance",
+        "a": {
+          "instance": "instance:left",
+          "topo_ref": {
+            "ref_id": "ref:face:left_origin",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:extrude_base",
+              "role": "origin"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "b": {
+          "instance": "instance:right",
+          "topo_ref": {
+            "ref_id": "ref:face:right_origin",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:extrude_base",
+              "role": "origin"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "distance_m": 0.12,
+        "suppressed": false
+      }
+    ]
+  }
+}

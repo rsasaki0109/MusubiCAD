@@ -2,13 +2,17 @@
 
 use std::collections::BTreeMap;
 use std::io::Cursor;
+use std::path::{Path, PathBuf};
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use image::{ImageBuffer, ImageFormat, RgbaImage};
-use opencad_core::Result;
-use opencad_feature::{apply_parameters, FeatureNode};
-use opencad_file::read_ocad;
-use opencad_geometry::{FaceDerivation, TopoRef};
+use opencad_assembly::{
+    regenerate_assembly, tessellate_assembly_instances, ChildPart, ResolvedChild,
+};
+use opencad_core::{DocumentKind, Result};
+use opencad_feature::{apply_parameters, FeatureNode, FeatureRegistry};
+use opencad_file::{read_ocad, OcadDocument};
+use opencad_geometry::{FaceDerivation, TessellationSettings, TopoRef};
 use opencad_graph::evaluate_param_graph;
 use opencad_render::{
     build_sketch_overlay, OffscreenRenderer, OrbitCamera, RenderImage, RenderScene, SketchOverlay,
@@ -20,6 +24,15 @@ use crate::regen::tessellate_active_body_detailed;
 
 pub const PREVIEW_WIDTH: u32 = 960;
 pub const PREVIEW_HEIGHT: u32 = 540;
+
+const INSTANCE_COLORS: [[f32; 4]; 6] = [
+    [0.45, 0.65, 0.85, 1.0],
+    [0.85, 0.55, 0.35, 1.0],
+    [0.55, 0.78, 0.45, 1.0],
+    [0.78, 0.45, 0.65, 1.0],
+    [0.65, 0.55, 0.85, 1.0],
+    [0.85, 0.75, 0.35, 1.0],
+];
 
 /// Serializable orbit camera pose (aspect is chosen at render time).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -86,6 +99,10 @@ pub struct DocumentPreview {
 pub fn load_view_data(input: &str) -> Result<ViewData> {
     let doc = read_ocad(input)?;
     let name = doc.metadata.name.clone();
+    if doc.metadata.kind == DocumentKind::Assembly {
+        return load_assembly_view_data(input, doc, name);
+    }
+
     let parameters = doc.parameters.clone();
     let feature_nodes = doc.feature_nodes.clone();
     let semantic_refs = doc.semantic_refs.clone();
@@ -106,10 +123,7 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
                 .map(|entry| (entry.name.clone(), entry.id.clone()))
         })
         .collect();
-    let sketches = model
-        .sketches
-        .into_iter()
-        .collect::<BTreeMap<_, _>>();
+    let sketches = model.sketches.into_iter().collect::<BTreeMap<_, _>>();
     Ok(ViewData {
         scene,
         overlay,
@@ -121,6 +135,117 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
         face_history: tessellated.face_history,
         parameter_ids,
     })
+}
+
+fn load_assembly_view_data(input: &str, doc: OcadDocument, name: String) -> Result<ViewData> {
+    let assembly = doc
+        .assembly
+        .as_ref()
+        .ok_or_else(|| opencad_core::OpenCadError::validation("assembly document missing model"))?;
+    let parameters = doc.parameters.clone();
+    let parameter_ids = parameters.evaluation_order().unwrap_or_default();
+    let parameter_name_to_id = parameter_ids
+        .iter()
+        .filter_map(|id| {
+            parameters
+                .get(id)
+                .map(|entry| (entry.name.clone(), entry.id.clone()))
+        })
+        .collect();
+
+    #[cfg(feature = "occt")]
+    {
+        use opencad_kernel_occt::OcctGeometryKernel;
+
+        let path = Path::new(input);
+        let assembly_root = assembly_root_for_path(path);
+        let kernel = OcctGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+        let report = regenerate_assembly(
+            assembly,
+            &doc.metadata.id,
+            &assembly_root,
+            &kernel,
+            &registry,
+            &mut load_child_document,
+        )?;
+        let instance_meshes = tessellate_assembly_instances(
+            &kernel,
+            &report.scene,
+            &TessellationSettings::default(),
+        )?;
+        let mesh_sets: Vec<_> = instance_meshes
+            .iter()
+            .map(|instance| instance.mesh_set.clone())
+            .collect();
+        let colors: Vec<_> = instance_meshes
+            .iter()
+            .enumerate()
+            .map(|(index, _)| INSTANCE_COLORS[index % INSTANCE_COLORS.len()])
+            .collect();
+        let scene = RenderScene::from_mesh_sets_with_colors(&mesh_sets, Some(&colors))?;
+        Ok(ViewData {
+            scene,
+            overlay: SketchOverlay::default(),
+            name,
+            feature_nodes: Vec::new(),
+            sketches: BTreeMap::new(),
+            parameter_name_to_id,
+            semantic_refs: Vec::new(),
+            face_history: Vec::new(),
+            parameter_ids,
+        })
+    }
+
+    #[cfg(not(feature = "occt"))]
+    {
+        let _ = (
+            input,
+            doc,
+            assembly,
+            name,
+            parameter_name_to_id,
+            parameter_ids,
+        );
+        Err(opencad_core::OpenCadError::Other(
+            "OCCT backend disabled; rebuild with --features occt".into(),
+        ))
+    }
+}
+
+fn assembly_root_for_path(path: &Path) -> PathBuf {
+    if path.extension().and_then(|ext| ext.to_str()) == Some("ocad") {
+        path.parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| Path::new(".").to_path_buf())
+    } else {
+        path.to_path_buf()
+    }
+}
+
+fn load_child_document(path: &Path) -> Result<ResolvedChild> {
+    let doc = read_ocad(path)?;
+    if doc.metadata.kind == DocumentKind::Assembly {
+        let assembly = doc.assembly.ok_or_else(|| {
+            opencad_core::OpenCadError::validation(format!(
+                "assembly document '{}' is missing assembly model",
+                path.display()
+            ))
+        })?;
+        Ok(ResolvedChild::Assembly {
+            model: Box::new(assembly),
+            doc_id: doc.metadata.id,
+        })
+    } else {
+        let parameters = doc.parameters.clone();
+        let semantic_refs = doc.semantic_refs.clone();
+        let part = doc.into_part_model();
+        Ok(ResolvedChild::Part(Box::new(ChildPart {
+            parameters,
+            part,
+            semantic_refs,
+        })))
+    }
 }
 
 pub fn preview_document(path: &str) -> Result<DocumentPreview> {
@@ -172,8 +297,8 @@ pub fn render_preview_png(data: &ViewData, camera: Option<CameraState>) -> Resul
 }
 
 fn encode_png_base64(image: &RenderImage) -> Result<String> {
-    let buffer: RgbaImage =
-        ImageBuffer::from_vec(image.width, image.height, image.rgba.clone()).ok_or_else(|| {
+    let buffer: RgbaImage = ImageBuffer::from_vec(image.width, image.height, image.rgba.clone())
+        .ok_or_else(|| {
             opencad_core::OpenCadError::validation(format!(
                 "invalid RGBA buffer for {}x{} image",
                 image.width, image.height

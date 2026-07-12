@@ -1,0 +1,22 @@
+{
+  "schema": "opencad.manifest.v0.1",
+  "format_version": "0.1.0",
+  "document_id": "doc:bracket_001",
+  "created_at": "1970-01-01T00:00:00Z",
+  "files": {
+    "document": "document.ocad.json",
+    "graph": {
+      "parameters": "graph/parameters.json",
+      "sketches": "graph/sketches.json",
+      "constraints": "graph/constraints.json",
+      "features": "graph/features.json",
+      "assemblies": "graph/assemblies.json",
+      "materials": "graph/materials.json",
+      "semantic_refs": "graph/semantic_refs.json"
+    },
+    "ai": {
+      "design_intent": "ai/design_intent.md",
+      "edit_history": "ai/edit_history.jsonl"
+    }
+  }
+}

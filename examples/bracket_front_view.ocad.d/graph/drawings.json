@@ -1,0 +1,28 @@
+{
+  "drawing": {
+    "sheets": [
+      {
+        "id": "sheet:a4",
+        "name": "Sheet 1",
+        "width_m": 0.21,
+        "height_m": 0.297,
+        "views": [
+          {
+            "id": "view:front",
+            "name": "Front",
+            "model": {
+              "source_path": "parts/bracket.ocad.d",
+              "source_doc": "doc:bracket_001"
+            },
+            "projection": "front",
+            "scale": 1.0,
+            "origin_on_sheet_m": [
+              0.05,
+              0.05
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

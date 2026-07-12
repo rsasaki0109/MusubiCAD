@@ -39,10 +39,7 @@ pub fn sketch_to_edges_placed(
 }
 
 #[cfg(feature = "occt")]
-pub fn sketch_to_edges_on_plane(
-    sketch: &SolvedSketch,
-    plane: ProfilePlane,
-) -> Result<Vec<Edge>> {
+pub fn sketch_to_edges_on_plane(sketch: &SolvedSketch, plane: ProfilePlane) -> Result<Vec<Edge>> {
     let placement = match plane {
         ProfilePlane::Xy => SketchPlacement::global_xy(),
         ProfilePlane::Yz => SketchPlacement {

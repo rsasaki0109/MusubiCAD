@@ -281,7 +281,7 @@ fn occt_edge_ref_fillet_affects_less_volume_than_top_perimeter() {
 
 #[test]
 fn occt_face_sketch_pin_joins_onto_plate() {
-    use opencad_feature::{bracket_base_plate, bracket_face_pin, apply_parameters};
+    use opencad_feature::{apply_parameters, bracket_base_plate, bracket_face_pin};
 
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
@@ -352,8 +352,7 @@ fn occt_revolve_sector_is_half_bushing_volume() {
     let sector_params = revolve_parameters("180 deg");
 
     let mut full = revolve_bushing().expect("model");
-    full
-        .regenerate(&kernel, &registry, Some(&full_params), None)
+    full.regenerate(&kernel, &registry, Some(&full_params), None)
         .expect("regen");
     let full_mass = kernel
         .mass_properties(full.active_body().expect("body"), 2700.0)
@@ -389,7 +388,7 @@ fn occt_revolve_sector_is_half_bushing_volume() {
 
 #[test]
 fn occt_join_extrude_fuses_onto_plate() {
-    use opencad_feature::{bracket_base_plate, bracket_boss_join, apply_parameters};
+    use opencad_feature::{apply_parameters, bracket_base_plate, bracket_boss_join};
 
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();

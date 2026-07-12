@@ -9,15 +9,19 @@ use crate::OcadDocument;
 /// Compare two in-memory documents and return a semantic diff.
 pub fn diff_documents(before: &OcadDocument, after: &OcadDocument) -> DesignDiff {
     diff_design_state(
-        &DesignState::with_semantic_refs(
+        &DesignState::with_models(
             before.parameters.clone(),
             before.feature_nodes.clone(),
             before.semantic_refs.clone(),
+            before.assembly.clone(),
+            before.drawing.clone(),
         ),
-        &DesignState::with_semantic_refs(
+        &DesignState::with_models(
             after.parameters.clone(),
             after.feature_nodes.clone(),
             after.semantic_refs.clone(),
+            after.assembly.clone(),
+            after.drawing.clone(),
         ),
     )
 }

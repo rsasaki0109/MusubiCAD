@@ -1,8 +1,6 @@
 //! `opencad pick` — headless viewport selection query.
 
-pub use opencad_desktop::{
-    pick_document, PickOptions, PickSummary, PickTarget,
-};
+pub use opencad_desktop::{pick_document, PickOptions, PickSummary, PickTarget};
 
 pub fn print_summary(summary: &PickSummary) {
     println!("pick_x: {}", summary.x);
@@ -60,10 +58,8 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use opencad_desktop::{
-        build_pick_summary, pick_document, PickOptions, PickTarget, ViewData,
-    };
     use crate::mesh::write_bracket_fixture_at;
+    use opencad_desktop::{build_pick_summary, pick_document, PickOptions, PickTarget, ViewData};
     use opencad_feature::{apply_parameters, bracket_base_plate};
     use opencad_graph::{bracket_parameters, evaluate_param_graph};
     use opencad_render::{build_sketch_overlay, PickResult, RenderScene};

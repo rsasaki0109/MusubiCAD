@@ -1,0 +1,11 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:assembly_two_brackets",
+    "name": "Two Brackets Assembly",
+    "units": "mm",
+    "kind": "assembly",
+    "created_with": "OpenCAD 0.1.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

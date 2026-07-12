@@ -12,6 +12,8 @@ occt = ["opencad-kernel-occt/occt", "opencad-file/occt"]
 
 [dependencies]
 opencad-core = { workspace = true }
+opencad-assembly = { workspace = true }
+opencad-drawing = { workspace = true }
 opencad-feature = { workspace = true }
 opencad-file = { workspace = true }
 opencad-geometry = { workspace = true }

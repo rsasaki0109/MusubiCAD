@@ -7,7 +7,7 @@ use opencad_render::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::preview::{load_view_data, ViewData, CameraState, PREVIEW_HEIGHT, PREVIEW_WIDTH};
+use crate::preview::{load_view_data, CameraState, ViewData, PREVIEW_HEIGHT, PREVIEW_WIDTH};
 use crate::related_parameters::related_parameter_ids_for_features;
 use crate::scene_query::{infer_face_refs, topo_ref_for_group};
 
@@ -157,8 +157,7 @@ pub fn build_pick_summary(data: &ViewData, pick: PickResult, options: &PickOptio
         }
     };
 
-    let highlight_segments_px =
-        preview_highlight_segments(scene, overlay, &selection);
+    let highlight_segments_px = preview_highlight_segments(scene, overlay, &selection);
     let related_ids = related_parameter_ids_for_features(
         &selection,
         parameter_ids,
@@ -424,9 +423,8 @@ mod tests {
                     && line.segment_index == Some(0)
             })
             .expect("hole circle segment");
-        let scene =
-            RenderScene::from_mesh_set(&opencad_geometry::MeshSet::box_prism(0.08, 0.006))
-                .expect("scene");
+        let scene = RenderScene::from_mesh_set(&opencad_geometry::MeshSet::box_prism(0.08, 0.006))
+            .expect("scene");
         let selection = PickTarget::SketchLine {
             line_index,
             sketch_id: Some("sketch:hole".into()),

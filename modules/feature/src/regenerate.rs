@@ -3,18 +3,18 @@
 use indexmap::IndexMap;
 
 use opencad_core::{Length, OpenCadError, Result};
+use opencad_geometry::EdgeRefDiscovery;
 use opencad_geometry::{
     ExtrudeExtent, FaceDerivation, FaceRefDiscovery, GeometryKernel, KernelBody, TopoRef,
 };
-use opencad_geometry::EdgeRefDiscovery;
 use opencad_graph::FeatureGraph;
 use opencad_sketch::Sketch;
 
 use opencad_graph::ParamGraph;
 
 use crate::chamfer::ChamferFeature;
-use crate::extrude::ExtrudeFeature;
 use crate::edge_discover::discover_edge_refs_from_body;
+use crate::extrude::ExtrudeFeature;
 use crate::face_discover::discover_face_refs_from_body;
 use crate::feature::{FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
 use crate::fillet::FilletFeature;

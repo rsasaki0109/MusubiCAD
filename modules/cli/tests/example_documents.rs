@@ -24,12 +24,7 @@ fn example_bracket_face_pin_regenerates_with_occt() {
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     model
-        .regenerate(
-            &kernel,
-            &registry,
-            Some(&params),
-            Some(&semantic_refs),
-        )
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
         .expect("regen");
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
@@ -53,12 +48,7 @@ fn example_bracket_edge_fillet_regenerates_with_occt() {
     let kernel = OcctGeometryKernel::new();
     let registry = FeatureRegistry::with_defaults();
     model
-        .regenerate(
-            &kernel,
-            &registry,
-            Some(&params),
-            Some(&semantic_refs),
-        )
+        .regenerate(&kernel, &registry, Some(&params), Some(&semantic_refs))
         .expect("regen");
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");

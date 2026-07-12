@@ -56,6 +56,62 @@ pub enum SemanticChange {
         before: String,
         after: String,
     },
+    AssemblyInstanceAdded {
+        id: String,
+    },
+    AssemblyInstanceRemoved {
+        id: String,
+    },
+    AssemblyInstanceChanged {
+        id: String,
+        field: String,
+        before: String,
+        after: String,
+    },
+    AssemblyMateAdded {
+        id: String,
+    },
+    AssemblyMateRemoved {
+        id: String,
+    },
+    AssemblyMateChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    AssemblyConnectorAdded {
+        id: String,
+    },
+    AssemblyConnectorRemoved {
+        id: String,
+    },
+    AssemblyConnectorChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    DrawingSheetAdded {
+        id: String,
+    },
+    DrawingSheetRemoved {
+        id: String,
+    },
+    DrawingSheetChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    DrawingViewAdded {
+        id: String,
+    },
+    DrawingViewRemoved {
+        id: String,
+    },
+    DrawingViewChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
 }
 
 /// Geometric diff summary (derived from regeneration).

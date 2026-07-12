@@ -4,6 +4,7 @@ use opencad_core::{Length, OpenCadError, Result, TopoRefId};
 
 use crate::mass::{BoundingBox, MassProperties};
 use crate::tessellation::{MeshSet, TessellationSettings};
+use crate::transform::RigidTransform;
 
 /// Opaque backend-neutral solid body handle.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -210,6 +211,10 @@ pub trait GeometryKernel {
 
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody>;
 
+    fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody>;
+
+    fn make_compound(&self, bodies: &[KernelBody]) -> Result<KernelBody>;
+
     fn rotate_body(
         &self,
         body: KernelBody,
@@ -284,9 +289,8 @@ impl GeometryKernel for MockGeometryKernel {
                 "revolve angle must not exceed 360° (2π rad)",
             ));
         }
-        let axis_sum = axis_direction_m[0].abs()
-            + axis_direction_m[1].abs()
-            + axis_direction_m[2].abs();
+        let axis_sum =
+            axis_direction_m[0].abs() + axis_direction_m[1].abs() + axis_direction_m[2].abs();
         if axis_sum <= 1e-12 {
             return Err(OpenCadError::validation(
                 "revolve axis direction must be a non-zero vector",
@@ -301,9 +305,7 @@ impl GeometryKernel for MockGeometryKernel {
             RevolveOperation::NewBody => Ok(body),
             RevolveOperation::Cut => {
                 let Some(target) = target else {
-                    return Err(OpenCadError::validation(
-                        "cut revolve requires target body",
-                    ));
+                    return Err(OpenCadError::validation("cut revolve requires target body"));
                 };
                 self.boolean(target, body, BooleanOp::Subtract)
             }
@@ -409,6 +411,29 @@ impl GeometryKernel for MockGeometryKernel {
         let delta = ((translation_m[0].abs() + translation_m[1].abs() + translation_m[2].abs())
             * 1000.0) as u64;
         Ok(KernelBody::new(body.0.wrapping_add(delta.max(1))))
+    }
+
+    fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
+        if transform.is_identity() {
+            return Ok(body);
+        }
+        self.translate_body(body, transform.translation_m)
+    }
+
+    fn make_compound(&self, bodies: &[KernelBody]) -> Result<KernelBody> {
+        if bodies.is_empty() {
+            return Err(OpenCadError::validation(
+                "compound requires at least one body",
+            ));
+        }
+        if bodies.len() == 1 {
+            return Ok(bodies[0].clone());
+        }
+        let id = bodies
+            .iter()
+            .fold(0_u64, |acc, body| acc.wrapping_add(body.0))
+            .max(1);
+        Ok(KernelBody::new(id))
     }
 
     fn rotate_body(

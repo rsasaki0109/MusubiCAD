@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencad.dev/schemas/ocad.drawing.v0.1.json",
+  "title": "ForgeCAD Drawing Model",
+  "type": "object",
+  "properties": {
+    "sheets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sheet" }
+    }
+  },
+  "$defs": {
+    "sheet": {
+      "type": "object",
+      "required": ["id", "name", "width_m", "height_m", "views"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^sheet:[a-zA-Z0-9_:/-]+$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "width_m": { "type": "number", "exclusiveMinimum": 0 },
+        "height_m": { "type": "number", "exclusiveMinimum": 0 },
+        "views": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/view" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "view": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "model",
+        "projection",
+        "scale",
+        "origin_on_sheet_m"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^view:[a-zA-Z0-9_:/-]+$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "model": { "$ref": "#/$defs/model_reference" },
+        "projection": {
+          "type": "string",
+          "enum": ["front", "top", "right", "isometric"]
+        },
+        "scale": { "type": "number", "exclusiveMinimum": 0 },
+        "origin_on_sheet_m": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    "model_reference": {
+      "type": "object",
+      "required": ["source_path", "source_doc"],
+      "properties": {
+        "source_path": { "type": "string", "minLength": 1 },
+        "source_doc": {
+          "type": "string",
+          "pattern": "^doc:[a-zA-Z0-9_-]+$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

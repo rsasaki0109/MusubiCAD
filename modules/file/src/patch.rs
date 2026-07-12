@@ -16,6 +16,8 @@ pub fn apply_patch_to_document(
         &mut doc.parameters,
         &mut doc.feature_nodes,
         &mut doc.semantic_refs,
+        doc.assembly.as_mut(),
+        doc.drawing.as_mut(),
     )?;
 
     for operation in &patch.operations {
@@ -41,10 +43,12 @@ pub fn apply_patch_to_document(
 /// Validate and preview a patch against a document without persisting changes.
 pub fn dry_run_patch_document(before: &OcadDocument, patch: &DesignPatch) -> PatchDryRunReport {
     dry_run_patch_state(
-        &DesignState::with_semantic_refs(
+        &DesignState::with_models(
             before.parameters.clone(),
             before.feature_nodes.clone(),
             before.semantic_refs.clone(),
+            before.assembly.clone(),
+            before.drawing.clone(),
         ),
         patch,
     )

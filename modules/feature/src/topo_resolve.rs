@@ -94,11 +94,10 @@ pub fn edge_selector_for_edge_ref(
         });
     }
 
-    let role = topo_ref
-        .semantic
-        .role
-        .clone()
-        .ok_or_else(|| OpenCadError::validation(format!("edge_ref '{edge_ref}' has no role")))?;
+    let role =
+        topo_ref.semantic.role.clone().ok_or_else(|| {
+            OpenCadError::validation(format!("edge_ref '{edge_ref}' has no role"))
+        })?;
 
     Ok(FilletEdgeSelector::EdgeRole { role })
 }
@@ -164,11 +163,7 @@ pub fn workplane_for_face_ref(ctx: &dyn RegenContext, face_ref: &str) -> Result<
     }
 
     if let Some(normal_hint) = topo_ref.semantic.normal_hint {
-        let normal = normalize_plane_normal([
-            normal_hint[0],
-            normal_hint[1],
-            normal_hint[2],
-        ])?;
+        let normal = normalize_plane_normal([normal_hint[0], normal_hint[1], normal_hint[2]])?;
         let body = ctx.body_for_feature(created_by)?;
         let bbox = ctx.kernel().bounding_box(&body)?;
         let origin = [

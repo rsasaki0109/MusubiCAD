@@ -29,6 +29,14 @@ pub enum DesignQuery {
     ListFaceGroups,
     ListSemanticRefs,
     GetSemanticRef { ref_id: String },
+    ListAssemblyInstances,
+    GetAssemblyInstance { id: String },
+    ListAssemblyMates,
+    ListConnectors,
+    ListDrawingSheets,
+    GetDrawingSheet { id: String },
+    ListDrawingViews { sheet_id: String },
+    GetDrawingView { sheet_id: String, view_id: String },
 }
 
 /// In-memory query parameters.
@@ -44,6 +52,10 @@ pub struct QueryParams {
     pub scene: Option<SceneQueryContext>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub semantic_refs: Vec<TopoRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly: Option<opencad_assembly::AssemblyModel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drawing: Option<opencad_drawing::DrawingModel>,
     pub query: DesignQuery,
 }
 
@@ -205,6 +217,31 @@ pub enum QueryResult {
     SemanticRef {
         item: SemanticRefInfo,
     },
+    AssemblyInstances {
+        items: Vec<crate::assembly::AssemblyInstanceInfo>,
+    },
+    AssemblyInstance {
+        item: crate::assembly::AssemblyInstanceInfo,
+    },
+    AssemblyMates {
+        items: Vec<crate::assembly::AssemblyMateInfo>,
+    },
+    Connectors {
+        items: Vec<crate::assembly::ConnectorInfo>,
+    },
+    DrawingSheets {
+        items: Vec<opencad_drawing::Sheet>,
+    },
+    DrawingSheet {
+        item: opencad_drawing::Sheet,
+    },
+    DrawingViews {
+        sheet_id: String,
+        items: Vec<opencad_drawing::DrawingView>,
+    },
+    DrawingView {
+        item: opencad_drawing::DrawingView,
+    },
 }
 
 pub fn query_needs_scene(query: &DesignQuery) -> bool {
@@ -289,7 +326,60 @@ pub fn run_query(params: &QueryParams) -> Result<QueryResult> {
             let item = get_semantic_ref(&params.semantic_refs, ref_id)?;
             Ok(QueryResult::SemanticRef { item })
         }
+        DesignQuery::ListAssemblyInstances => {
+            let assembly = assembly_context(params)?;
+            Ok(QueryResult::AssemblyInstances {
+                items: crate::assembly::list_assembly_instances(assembly),
+            })
+        }
+        DesignQuery::GetAssemblyInstance { id } => {
+            let assembly = assembly_context(params)?;
+            Ok(QueryResult::AssemblyInstance {
+                item: crate::assembly::get_assembly_instance(assembly, id)?,
+            })
+        }
+        DesignQuery::ListAssemblyMates => {
+            let assembly = assembly_context(params)?;
+            Ok(QueryResult::AssemblyMates {
+                items: crate::assembly::list_assembly_mates(assembly),
+            })
+        }
+        DesignQuery::ListConnectors => {
+            let assembly = assembly_context(params)?;
+            Ok(QueryResult::Connectors {
+                items: crate::assembly::list_connectors(assembly),
+            })
+        }
+        DesignQuery::ListDrawingSheets => Ok(QueryResult::DrawingSheets {
+            items: crate::drawing::list_drawing_sheets(drawing_context(params)?),
+        }),
+        DesignQuery::GetDrawingSheet { id } => Ok(QueryResult::DrawingSheet {
+            item: crate::drawing::get_drawing_sheet(drawing_context(params)?, id)?,
+        }),
+        DesignQuery::ListDrawingViews { sheet_id } => Ok(QueryResult::DrawingViews {
+            sheet_id: sheet_id.clone(),
+            items: crate::drawing::list_drawing_views(drawing_context(params)?, sheet_id)?,
+        }),
+        DesignQuery::GetDrawingView { sheet_id, view_id } => Ok(QueryResult::DrawingView {
+            item: crate::drawing::get_drawing_view(drawing_context(params)?, sheet_id, view_id)?,
+        }),
     }
+}
+
+fn drawing_context(params: &QueryParams) -> Result<&opencad_drawing::DrawingModel> {
+    params.drawing.as_ref().ok_or_else(|| {
+        OpenCadError::validation(
+            "drawing context is required; include `drawing` in query parameters",
+        )
+    })
+}
+
+fn assembly_context(params: &QueryParams) -> Result<&opencad_assembly::AssemblyModel> {
+    params.assembly.as_ref().ok_or_else(|| {
+        OpenCadError::validation(
+            "assembly context is required; include `assembly` in query parameters",
+        )
+    })
 }
 
 pub fn get_semantic_ref(semantic_refs: &[TopoRef], ref_id: &str) -> Result<SemanticRefInfo> {
@@ -527,6 +617,8 @@ mod tests {
             sketches: part.sketches.into_values().collect(),
             scene: None,
             semantic_refs: Vec::new(),
+            assembly: None,
+            drawing: None,
             query,
         }
     }

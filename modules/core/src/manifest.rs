@@ -29,6 +29,12 @@ pub struct ManifestGraphFiles {
     pub assemblies: String,
     pub materials: String,
     pub semantic_refs: String,
+    #[serde(default = "default_drawings_path")]
+    pub drawings: String,
+}
+
+fn default_drawings_path() -> String {
+    "graph/drawings.json".into()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -60,6 +66,7 @@ impl OcadManifest {
                     assemblies: "graph/assemblies.json".into(),
                     materials: "graph/materials.json".into(),
                     semantic_refs: "graph/semantic_refs.json".into(),
+                    drawings: "graph/drawings.json".into(),
                 },
                 ai: Some(ManifestAiFiles {
                     design_intent: "ai/design_intent.md".into(),

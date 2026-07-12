@@ -2,16 +2,20 @@
 
 use std::collections::BTreeMap;
 
+use opencad_assembly::AssemblyModel;
+use opencad_drawing::DrawingModel;
 use opencad_feature::FeatureNode;
 use opencad_geometry::TopoRef;
 use opencad_graph::{build_summary, diff_param_graphs, diff_semantic_refs, DesignDiff, ParamGraph};
 
-/// Parameter, feature, and semantic-ref slice of a design document.
+/// Serializable design intent used by in-memory agent operations.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DesignState {
     pub parameters: ParamGraph,
     pub feature_nodes: Vec<FeatureNode>,
     pub semantic_refs: Vec<TopoRef>,
+    pub assembly: Option<AssemblyModel>,
+    pub drawing: Option<DrawingModel>,
 }
 
 impl DesignState {
@@ -20,6 +24,8 @@ impl DesignState {
             parameters,
             feature_nodes,
             semantic_refs: Vec::new(),
+            assembly: None,
+            drawing: None,
         }
     }
 
@@ -32,6 +38,39 @@ impl DesignState {
             parameters,
             feature_nodes,
             semantic_refs,
+            assembly: None,
+            drawing: None,
+        }
+    }
+
+    pub fn with_assembly(
+        parameters: ParamGraph,
+        feature_nodes: Vec<FeatureNode>,
+        semantic_refs: Vec<TopoRef>,
+        assembly: Option<AssemblyModel>,
+    ) -> Self {
+        Self {
+            parameters,
+            feature_nodes,
+            semantic_refs,
+            assembly,
+            drawing: None,
+        }
+    }
+
+    pub fn with_models(
+        parameters: ParamGraph,
+        feature_nodes: Vec<FeatureNode>,
+        semantic_refs: Vec<TopoRef>,
+        assembly: Option<AssemblyModel>,
+        drawing: Option<DrawingModel>,
+    ) -> Self {
+        Self {
+            parameters,
+            feature_nodes,
+            semantic_refs,
+            assembly,
+            drawing,
         }
     }
 }
@@ -47,6 +86,13 @@ pub fn diff_design_state(before: &DesignState, after: &DesignState) -> DesignDif
         &before.semantic_refs,
         &after.semantic_refs,
     ));
+    if let (Some(before_assembly), Some(after_assembly)) = (&before.assembly, &after.assembly) {
+        let assembly_diff = crate::assembly::diff_assembly_models(before_assembly, after_assembly);
+        changes.extend(assembly_diff.changes);
+    }
+    if let (Some(before_drawing), Some(after_drawing)) = (&before.drawing, &after.drawing) {
+        changes.extend(crate::drawing::diff_drawing_models(before_drawing, after_drawing).changes);
+    }
     DesignDiff::semantic(build_summary(&changes), changes)
 }
 

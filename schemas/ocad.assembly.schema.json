@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencad.dev/schemas/ocad.assembly.v0.1.json",
+  "title": "ForgeCAD Assembly Model",
+  "type": "object",
+  "properties": {
+    "components": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "instances": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/instance" }
+    },
+    "mates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mate" }
+    },
+    "connectors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/connector" }
+    },
+    "patterns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pattern" }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": ["id", "source_path", "source_doc"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^component:[a-zA-Z0-9_:/-]+$"
+        },
+        "source_path": { "type": "string", "minLength": 1 },
+        "source_doc": {
+          "type": "string",
+          "pattern": "^doc:[a-zA-Z0-9_-]+$"
+        },
+        "source_kind": {
+          "type": "string",
+          "enum": ["part", "assembly"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "instance": {
+      "type": "object",
+      "required": ["id", "component", "placement", "fixed", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^instance:[a-zA-Z0-9_:/-]+$"
+        },
+        "component": {
+          "type": "string",
+          "pattern": "^component:[a-zA-Z0-9_:/-]+$"
+        },
+        "placement": { "$ref": "#/$defs/placement" },
+        "fixed": { "type": "boolean" },
+        "name": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "placement": {
+      "type": "object",
+      "required": ["transform"],
+      "properties": {
+        "transform": { "$ref": "#/$defs/rigid_transform" }
+      },
+      "additionalProperties": false
+    },
+    "rigid_transform": {
+      "type": "object",
+      "required": ["translation_m", "rotation"],
+      "properties": {
+        "translation_m": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "rotation": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "connector": {
+      "type": "object",
+      "required": ["id", "name", "instance", "transform"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^connector:[a-zA-Z0-9_:/-]+$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "instance": {
+          "type": "string",
+          "pattern": "^instance:[a-zA-Z0-9_:/-]+$"
+        },
+        "transform": { "$ref": "#/$defs/rigid_transform" }
+      },
+      "additionalProperties": false
+    },
+    "pattern": {
+      "type": "object",
+      "required": [
+        "id",
+        "component",
+        "count",
+        "spacing_m",
+        "base_placement",
+        "name_prefix"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pattern:[a-zA-Z0-9_:/-]+$"
+        },
+        "component": {
+          "type": "string",
+          "pattern": "^component:[a-zA-Z0-9_:/-]+$"
+        },
+        "count": { "type": "integer", "minimum": 1 },
+        "spacing_m": { "type": "number", "minimum": 0 },
+        "direction_m": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "base_placement": { "$ref": "#/$defs/placement" },
+        "name_prefix": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "mate_entity": {
+      "type": "object",
+      "required": ["instance", "topo_ref"],
+      "properties": {
+        "instance": {
+          "type": "string",
+          "pattern": "^instance:[a-zA-Z0-9_:/-]+$"
+        },
+        "topo_ref": { "type": "object" },
+        "connector": { "type": "string", "minLength": 1 },
+        "local_origin_m": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "local_axis_m": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "mate": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^mate:[a-zA-Z0-9_:/-]+$"
+        },
+        "suppressed": { "type": "boolean" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "coincident",
+            "concentric",
+            "distance",
+            "angle",
+            "parallel",
+            "ground"
+          ]
+        },
+        "a": { "$ref": "#/$defs/mate_entity" },
+        "b": { "$ref": "#/$defs/mate_entity" },
+        "distance_m": { "type": "number", "minimum": 0 },
+        "angle_rad": { "type": "number" },
+        "instance": {
+          "type": "string",
+          "pattern": "^instance:[a-zA-Z0-9_:/-]+$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

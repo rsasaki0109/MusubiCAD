@@ -1,6 +1,6 @@
-use crate::dof::estimate_dof;
-use crate::numeric::{gauss_newton_solve, SolveOutput, SolverOptions};
-use crate::residual::ConstraintResidual;
+use crate::dof::estimate_dof_generic;
+use crate::numeric::{gauss_newton_solve_generic, SolveOutput, SolverOptions};
+use crate::residual::{ConstraintResidual, ResidualEquation};
 use crate::variables::VarSet;
 
 /// Solver outcome with DOF and redundancy diagnostics.
@@ -39,6 +39,15 @@ pub fn solve_with_diagnostics(
     vars: VarSet,
     options: &SolverOptions,
 ) -> (SolveOutput, SolveStatus) {
+    solve_with_diagnostics_generic(equations, vars, options)
+}
+
+/// Solve and classify the result for any [`ResidualEquation`] type.
+pub fn solve_with_diagnostics_generic<E: ResidualEquation>(
+    equations: &[E],
+    vars: VarSet,
+    options: &SolverOptions,
+) -> (SolveOutput, SolveStatus) {
     let n_vars = vars.len();
     let n_eqs = equations.len();
 
@@ -57,8 +66,8 @@ pub fn solve_with_diagnostics(
         );
     }
 
-    let output = gauss_newton_solve(equations, vars, options);
-    let dof = estimate_dof(equations, &output.vars);
+    let output = gauss_newton_solve_generic(equations, vars, options);
+    let dof = estimate_dof_generic(equations, &output.vars);
 
     let redundant = if n_eqs > n_vars {
         n_eqs.saturating_sub(n_vars)

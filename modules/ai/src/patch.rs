@@ -96,6 +96,29 @@ pub enum PatchOperation {
         #[serde(default = "default_normal_up")]
         normal_m: [f32; 3],
     },
+    SetInstancePlacement {
+        instance_id: String,
+        translation_m: [f64; 3],
+        rotation: [[f64; 3]; 3],
+    },
+    SetMateDistance {
+        mate_id: String,
+        distance_m: f64,
+    },
+    AddConnector {
+        id: String,
+        name: String,
+        instance_id: String,
+        transform: opencad_geometry::RigidTransform,
+    },
+    SetDrawingViewScale {
+        view_id: String,
+        scale: f64,
+    },
+    SetDrawingViewOrigin {
+        view_id: String,
+        origin_on_sheet_m: [f64; 2],
+    },
 }
 
 fn default_normal_up() -> [f32; 3] {
@@ -191,6 +214,11 @@ impl DesignPatch {
                 PatchOperation::SetFeatureExpr { .. } => {}
                 PatchOperation::SetFeatureRef { .. } => {}
                 PatchOperation::AssignFaceRef { .. } => {}
+                PatchOperation::SetInstancePlacement { .. }
+                | PatchOperation::SetMateDistance { .. }
+                | PatchOperation::AddConnector { .. }
+                | PatchOperation::SetDrawingViewScale { .. }
+                | PatchOperation::SetDrawingViewOrigin { .. } => {}
             }
         }
         Ok(())
@@ -264,10 +292,19 @@ impl DesignPatch {
         parameters: &mut ParamGraph,
         feature_nodes: &mut [FeatureNode],
         semantic_refs: &mut Vec<TopoRef>,
+        assembly: Option<&mut opencad_assembly::AssemblyModel>,
+        drawing: Option<&mut opencad_drawing::DrawingModel>,
     ) -> Result<()> {
         self.apply_to_parameters(parameters)?;
         self.apply_to_features(feature_nodes)?;
-        self.apply_to_semantic_refs(semantic_refs)
+        self.apply_to_semantic_refs(semantic_refs)?;
+        if let Some(assembly) = assembly {
+            crate::assembly::apply_assembly_patch(assembly, &self.operations)?;
+        }
+        if let Some(drawing) = drawing {
+            crate::drawing::apply_drawing_patch(drawing, &self.operations)?;
+        }
+        Ok(())
     }
 
     pub fn has_assign_face_ref(&self) -> bool {
@@ -491,7 +528,7 @@ mod tests {
         let patch =
             DesignPatch::assign_face_ref("ref:face:bracket_top", "feature:extrude_base", "top");
         patch
-            .apply_to_document(&mut params, &mut nodes, &mut semantic_refs)
+            .apply_to_document(&mut params, &mut nodes, &mut semantic_refs, None, None)
             .expect("patch");
         assert_eq!(semantic_refs.len(), 1);
         assert_eq!(semantic_refs[0].ref_id.as_str(), "ref:face:bracket_top");

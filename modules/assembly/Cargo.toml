@@ -8,7 +8,16 @@ rust-version.workspace = true
 
 [dependencies]
 opencad-core = { workspace = true }
+opencad-feature = { workspace = true }
+opencad-geometry = { workspace = true }
+opencad-graph = { workspace = true }
+opencad-solver = { workspace = true }
 serde = { workspace = true }
+
+[dev-dependencies]
+opencad-file = { workspace = true }
+serde_json = { workspace = true }
+tempfile = "3"
 
 [lints]
 workspace = true

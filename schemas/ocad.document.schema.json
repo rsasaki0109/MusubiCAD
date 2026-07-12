@@ -25,6 +25,11 @@
           "type": "string",
           "enum": ["m", "mm", "cm", "in"]
         },
+        "kind": {
+          "type": "string",
+          "enum": ["part", "assembly", "drawing"],
+          "default": "part"
+        },
         "created_with": {
           "type": "string"
         }

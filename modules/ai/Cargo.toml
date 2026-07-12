@@ -8,6 +8,8 @@ rust-version.workspace = true
 
 [dependencies]
 opencad-core = { workspace = true }
+opencad-assembly = { workspace = true }
+opencad-drawing = { workspace = true }
 opencad-feature = { workspace = true }
 opencad-geometry = { workspace = true }
 opencad-graph = { workspace = true }

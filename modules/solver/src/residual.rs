@@ -100,6 +100,11 @@ impl ResidualEquation for ConstraintResidual {
 
 /// Evaluate all residuals into a vector.
 pub fn evaluate_residuals(equations: &[ConstraintResidual], vars: &VarSet) -> Vec<f64> {
+    evaluate_residuals_generic(equations, vars)
+}
+
+/// Evaluate residuals for any equation type implementing [`ResidualEquation`].
+pub fn evaluate_residuals_generic<E: ResidualEquation>(equations: &[E], vars: &VarSet) -> Vec<f64> {
     equations.iter().map(|eq| eq.residual(vars)).collect()
 }
 

@@ -13,6 +13,8 @@ occt = ["dep:opencad-kernel-occt", "dep:opencad-render"]
 [dependencies]
 opencad-core = { workspace = true }
 opencad-ai = { workspace = true }
+opencad-assembly = { workspace = true }
+opencad-drawing = { workspace = true }
 opencad-feature = { workspace = true }
 opencad-geometry = { workspace = true }
 opencad-graph = { workspace = true }
@@ -24,6 +26,7 @@ serde_json = { workspace = true }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
+opencad-drawing = { workspace = true }
 opencad-geometry = { workspace = true }
 opencad-graph = { workspace = true }
 opencad-kernel-occt = { workspace = true }

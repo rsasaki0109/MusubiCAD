@@ -17,11 +17,13 @@ struct Uniforms {
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
+    @location(2) color: vec3<f32>,
 }
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) normal: vec3<f32>,
+    @location(1) color: vec3<f32>,
 }
 
 @vertex
@@ -29,6 +31,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
     output.position = uniforms.view_proj * vec4<f32>(input.position, 1.0);
     output.normal = input.normal;
+    output.color = input.color;
     return output;
 }
 
@@ -36,8 +39,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     let light = normalize(vec3<f32>(0.35, 0.85, 0.4));
     let ndotl = max(dot(normalize(input.normal), light), 0.18);
-    let base = vec3<f32>(0.72, 0.76, 0.82);
-    return vec4<f32>(base * ndotl, 1.0);
+    return vec4<f32>(input.color * ndotl, 1.0);
 }
 "#;
 
@@ -53,6 +55,7 @@ pub(crate) const CLEAR_COLOR: wgpu::Color = wgpu::Color {
 pub(crate) struct GpuVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
+    pub color: [f32; 3],
 }
 
 #[repr(C)]
@@ -94,6 +97,7 @@ fn append_mesh(
         vertices.push(GpuVertex {
             position: *position,
             normal,
+            color: [mesh.base_color[0], mesh.base_color[1], mesh.base_color[2]],
         });
     }
     for index in &mesh.indices {
@@ -140,7 +144,7 @@ pub(crate) fn create_solid_pipeline(
             buffers: &[wgpu::VertexBufferLayout {
                 array_stride: std::mem::size_of::<GpuVertex>() as wgpu::BufferAddress,
                 step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
+                attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x3],
             }],
             compilation_options: Default::default(),
         },

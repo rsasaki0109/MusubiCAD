@@ -1,5 +1,5 @@
-use crate::jacobian::{finite_difference_jacobian, Jacobian};
-use crate::residual::{evaluate_residuals, ConstraintResidual};
+use crate::jacobian::{finite_difference_jacobian_generic, Jacobian};
+use crate::residual::{evaluate_residuals_generic, ConstraintResidual, ResidualEquation};
 use crate::variables::VarSet;
 
 /// Solver configuration.
@@ -36,6 +36,15 @@ pub struct SolveOutput {
 /// Gauss-Newton with optional Levenberg-Marquardt-style damping.
 pub fn gauss_newton_solve(
     equations: &[ConstraintResidual],
+    vars: VarSet,
+    options: &SolverOptions,
+) -> SolveOutput {
+    gauss_newton_solve_generic(equations, vars, options)
+}
+
+/// Gauss-Newton solve for any equation type implementing [`ResidualEquation`].
+pub fn gauss_newton_solve_generic<E: ResidualEquation>(
+    equations: &[E],
     mut vars: VarSet,
     options: &SolverOptions,
 ) -> SolveOutput {
@@ -44,7 +53,7 @@ pub fn gauss_newton_solve(
     let mut max_error = f64::INFINITY;
 
     while iterations < options.max_iterations {
-        let residuals = evaluate_residuals(equations, &vars);
+        let residuals = evaluate_residuals_generic(equations, &vars);
         max_error = residuals.iter().map(|r| r.abs()).fold(0.0, f64::max);
 
         if max_error < options.tolerance {
@@ -56,7 +65,7 @@ pub fn gauss_newton_solve(
             };
         }
 
-        let jacobian = finite_difference_jacobian(equations, &vars);
+        let jacobian = finite_difference_jacobian_generic(equations, &vars);
         let step = match damped_normal_equations_step(&jacobian, &residuals, lambda) {
             Some(step) => step,
             None => break,
@@ -67,7 +76,7 @@ pub fn gauss_newton_solve(
             trial.set(crate::variables::VarId(i as u32), vars.values()[i] - delta);
         }
 
-        let trial_error = evaluate_residuals(equations, &trial)
+        let trial_error = evaluate_residuals_generic(equations, &trial)
             .iter()
             .map(|r| r.abs())
             .fold(0.0, f64::max);

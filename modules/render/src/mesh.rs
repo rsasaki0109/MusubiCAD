@@ -9,15 +9,21 @@ pub struct RenderMesh {
     pub normals: Vec<[f32; 3]>,
     pub indices: Vec<u32>,
     pub triangle_face_ids: Vec<u64>,
+    pub base_color: [f32; 4],
 }
 
 impl RenderMesh {
     pub fn from_mesh_set(mesh: &MeshSet) -> Self {
+        Self::from_mesh_set_with_color(mesh, [0.72, 0.76, 0.82, 1.0])
+    }
+
+    pub fn from_mesh_set_with_color(mesh: &MeshSet, base_color: [f32; 4]) -> Self {
         Self {
             positions: mesh.positions.clone(),
             normals: mesh.normals.clone(),
             indices: mesh.indices.clone(),
             triangle_face_ids: mesh.triangle_face_ids.clone(),
+            base_color,
         }
     }
 

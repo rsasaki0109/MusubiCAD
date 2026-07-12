@@ -369,7 +369,7 @@ fn handle_export(request: &JsonRpcRequest) -> JsonRpcResponse {
             );
         }
     };
-    match export::export_stl(&params.path, &params.output) {
+    match export::export_document(&params.path, &params.output) {
         Ok(summary) => match serde_json::to_value(summary) {
             Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
             Err(err) => JsonRpcResponse::error(
@@ -494,6 +494,8 @@ fn handle_query_document(request: &JsonRpcRequest) -> JsonRpcResponse {
                 sketches: doc.sketches,
                 scene,
                 semantic_refs: doc.semantic_refs,
+                assembly: doc.assembly,
+                drawing: doc.drawing,
                 query: params.query,
             };
             match AgentApi.query(query_params) {
@@ -1077,6 +1079,69 @@ mod tests {
         assert!(items
             .iter()
             .any(|item| item["face_role"].as_str() == Some("top")));
+    }
+
+    #[test]
+    fn query_document_lists_assembly_instances() {
+        use opencad_assembly::{AssemblyModel, Component, Instance, Placement};
+        use opencad_core::{ComponentId, InstanceId};
+
+        let dir = tempdir().expect("tempdir");
+        let doc_path = dir.path().join("assembly.ocad.d");
+        let doc = OcadDocument {
+            metadata: DocumentMetadata::new_assembly(
+                DocumentId::new("doc:assembly_test").expect("id"),
+                "Test Assembly",
+            ),
+            parameters: bracket_parameters(),
+            sketches: Vec::new(),
+            feature_graph: opencad_graph::FeatureGraph::new(),
+            feature_nodes: Vec::new(),
+            semantic_refs: Vec::new(),
+            assembly: Some(
+                AssemblyModel {
+                    components: vec![Component::new(
+                        ComponentId::new("component:bracket").expect("id"),
+                        "parts/bracket.ocad.d",
+                        DocumentId::new("doc:bracket_001").expect("id"),
+                    )],
+                    instances: vec![
+                        Instance::new(
+                            InstanceId::new("instance:left").expect("id"),
+                            ComponentId::new("component:bracket").expect("id"),
+                            Placement::identity(),
+                            "Left",
+                        ),
+                        Instance::new(
+                            InstanceId::new("instance:right").expect("id"),
+                            ComponentId::new("component:bracket").expect("id"),
+                            Placement::identity(),
+                            "Right",
+                        ),
+                    ],
+                    ..Default::default()
+                }
+                .sorted_deterministic(),
+            ),
+            drawing: None,
+        };
+        write_expanded_dir(&doc_path, &doc).expect("write");
+
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: serde_json::json!(16),
+            method: "opencad.query_document".into(),
+            params: serde_json::json!({
+                "path": doc_path.to_str().expect("path"),
+                "query": { "kind": "list_assembly_instances" },
+            }),
+        };
+        let response = handle_agent_request(&request);
+        assert!(response.error.is_none(), "{:?}", response.error);
+        let result = response.result.expect("result");
+        assert_eq!(result["kind"], "assembly_instances");
+        let items = result["items"].as_array().expect("items");
+        assert_eq!(items.len(), 2);
     }
 
     #[test]

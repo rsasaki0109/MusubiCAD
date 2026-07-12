@@ -11,10 +11,7 @@ use opencad_sketch::{Constraint, DistanceTarget, Sketch, SketchEntity};
 
 use crate::pick::PickTarget;
 
-pub fn related_parameter_ids(
-    selection: &PickTarget,
-    available_ids: &[String],
-) -> Vec<String> {
+pub fn related_parameter_ids(selection: &PickTarget, available_ids: &[String]) -> Vec<String> {
     related_parameter_ids_for_features(
         selection,
         available_ids,
@@ -32,12 +29,8 @@ pub fn related_parameter_ids_for_features(
     parameter_name_to_id: &BTreeMap<String, String>,
 ) -> Vec<String> {
     let available: BTreeSet<&str> = available_ids.iter().map(String::as_str).collect();
-    let graph_ids = graph_related_parameter_ids(
-        selection,
-        feature_nodes,
-        sketches,
-        parameter_name_to_id,
-    );
+    let graph_ids =
+        graph_related_parameter_ids(selection, feature_nodes, sketches, parameter_name_to_id);
     let merged = if graph_ids.is_empty() {
         related_parameter_candidates_heuristic(selection)
     } else {
@@ -135,9 +128,7 @@ fn collect_feature_exprs(
 }
 
 fn find_feature<'a>(feature_nodes: &'a [FeatureNode], feature_id: &str) -> Option<&'a FeatureNode> {
-    feature_nodes
-        .iter()
-        .find(|node| node.id == feature_id)
+    feature_nodes.iter().find(|node| node.id == feature_id)
 }
 
 fn sketch_feature_id_for(node: &FeatureNode) -> Option<&str> {
@@ -226,11 +217,7 @@ fn exprs_for_sketch_line(sketch: &Sketch, entity_id: Option<&str>) -> Vec<String
                 direct.push(expr.as_str().to_string());
             }
             Constraint::Distance {
-                target:
-                    DistanceTarget::PointToPoint {
-                        a,
-                        b,
-                    },
+                target: DistanceTarget::PointToPoint { a, b },
                 expr,
                 ..
             } => {
@@ -280,14 +267,17 @@ fn shared_vertical_height_expr(sketch: &Sketch, line_id: &str) -> Option<String>
     if !is_vertical {
         return None;
     }
-    sketch.constraints.iter().find_map(|constraint| match constraint {
-        Constraint::Distance {
-            target: DistanceTarget::LineLength { .. },
-            expr,
-            ..
-        } if expr.as_str() == "height" => Some(expr.as_str().to_string()),
-        _ => None,
-    })
+    sketch
+        .constraints
+        .iter()
+        .find_map(|constraint| match constraint {
+            Constraint::Distance {
+                target: DistanceTarget::LineLength { .. },
+                expr,
+                ..
+            } if expr.as_str() == "height" => Some(expr.as_str().to_string()),
+            _ => None,
+        })
 }
 
 fn revolve_feature_exprs(feature_nodes: &[FeatureNode]) -> Vec<String> {
@@ -316,17 +306,14 @@ fn map_expr_names_to_param_ids(
     let mut seen = BTreeSet::new();
     for expr in exprs {
         for name in parameter_names_in_expr(expr) {
-            let param_id = parameter_name_to_id
-                .get(&name)
-                .cloned()
-                .or_else(|| {
-                    let direct = format!("param:{name}");
-                    if parameter_name_to_id.values().any(|id| id == &direct) {
-                        Some(direct)
-                    } else {
-                        None
-                    }
-                });
+            let param_id = parameter_name_to_id.get(&name).cloned().or_else(|| {
+                let direct = format!("param:{name}");
+                if parameter_name_to_id.values().any(|id| id == &direct) {
+                    Some(direct)
+                } else {
+                    None
+                }
+            });
             if let Some(param_id) = param_id {
                 if seen.insert(param_id.clone()) {
                     ids.push(param_id);
@@ -423,20 +410,20 @@ fn related_parameter_candidates_heuristic(selection: &PickTarget) -> Vec<String>
 mod tests {
     use super::*;
     use opencad_feature::{
-        bracket_base_plate, bracket_boss_join, bracket_hole_row, bracket_with_hole,
-        revolve_bushing,
+        bracket_base_plate, bracket_boss_join, bracket_hole_row, bracket_with_hole, revolve_bushing,
     };
     use opencad_graph::{bracket_parameters, revolve_parameters};
 
     fn model_context(
         model: opencad_feature::PartModel,
         params: opencad_graph::ParamGraph,
-    ) -> (Vec<FeatureNode>, BTreeMap<String, Sketch>, BTreeMap<String, String>) {
+    ) -> (
+        Vec<FeatureNode>,
+        BTreeMap<String, Sketch>,
+        BTreeMap<String, String>,
+    ) {
         let nodes: Vec<FeatureNode> = model.nodes.into_values().collect();
-        let sketches = model
-            .sketches
-            .into_iter()
-            .collect::<BTreeMap<_, _>>();
+        let sketches = model.sketches.into_iter().collect::<BTreeMap<_, _>>();
         let parameter_name_to_id = params
             .parameter_ids()
             .into_iter()
@@ -468,11 +455,7 @@ mod tests {
             "param:revolve_angle".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(
             ids,
@@ -507,11 +490,7 @@ mod tests {
             "param:thickness".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(
             ids,
@@ -545,11 +524,7 @@ mod tests {
             "param:thickness".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(
             ids,
@@ -582,11 +557,7 @@ mod tests {
             "param:outer_radius".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(ids, vec!["param:width".to_string()]);
     }
@@ -608,11 +579,7 @@ mod tests {
         let (nodes, sketches, name_map) = model_context(model, params);
         let available = vec!["param:width".into(), "param:height".into()];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(ids, vec!["param:height".to_string()]);
     }
@@ -639,11 +606,7 @@ mod tests {
             "param:revolve_angle".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(
             ids,
@@ -676,11 +639,7 @@ mod tests {
             "param:revolve_angle".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(
             ids,
@@ -714,11 +673,7 @@ mod tests {
             "param:revolve_angle".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(
             ids,
@@ -752,11 +707,7 @@ mod tests {
             "param:thickness".into(),
         ];
         let ids = related_parameter_ids_for_features(
-            &selection,
-            &available,
-            &nodes,
-            &sketches,
-            &name_map,
+            &selection, &available, &nodes, &sketches, &name_map,
         );
         assert_eq!(ids, vec!["param:hole_diameter".to_string()]);
     }

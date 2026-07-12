@@ -16,6 +16,8 @@ pub struct KernelStore {
     pub wires: HashMap<u64, Vec<Edge>>,
     #[cfg(feature = "occt")]
     pub bodies: HashMap<u64, Solid>,
+    #[cfg(feature = "occt")]
+    pub compound_members: HashMap<u64, Vec<u64>>,
 }
 
 impl KernelStore {
@@ -41,6 +43,18 @@ impl KernelStore {
         let id = self.alloc_id();
         self.bodies.insert(id, solid);
         id
+    }
+
+    #[cfg(feature = "occt")]
+    pub fn insert_compound(&mut self, member_ids: Vec<u64>) -> u64 {
+        let id = self.alloc_id();
+        self.compound_members.insert(id, member_ids);
+        id
+    }
+
+    #[cfg(feature = "occt")]
+    pub fn compound_member_ids(&self, id: u64) -> Option<&[u64]> {
+        self.compound_members.get(&id).map(Vec::as_slice)
     }
 
     #[cfg(feature = "occt")]

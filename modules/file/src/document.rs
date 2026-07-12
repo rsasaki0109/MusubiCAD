@@ -1,6 +1,8 @@
 //! In-memory `.ocad` document model.
 
+use opencad_assembly::AssemblyModel;
 use opencad_core::DocumentMetadata;
+use opencad_drawing::DrawingModel;
 use opencad_feature::{FeatureNode, PartModel};
 use opencad_geometry::TopoRef;
 use opencad_graph::{FeatureGraph, ParamGraph};
@@ -17,6 +19,10 @@ pub struct OcadDocument {
     pub feature_nodes: Vec<FeatureNode>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub semantic_refs: Vec<TopoRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly: Option<AssemblyModel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drawing: Option<DrawingModel>,
 }
 
 impl OcadDocument {
@@ -28,6 +34,8 @@ impl OcadDocument {
             feature_graph: FeatureGraph::new(),
             feature_nodes: Vec::new(),
             semantic_refs: Vec::new(),
+            assembly: None,
+            drawing: None,
         }
     }
 
@@ -45,6 +53,21 @@ impl OcadDocument {
             feature_graph: part.graph.clone(),
             feature_nodes,
             semantic_refs: Vec::new(),
+            assembly: None,
+            drawing: None,
+        }
+    }
+
+    pub fn from_drawing_model(metadata: DocumentMetadata, drawing: DrawingModel) -> Self {
+        Self {
+            metadata,
+            parameters: ParamGraph::new(),
+            sketches: Vec::new(),
+            feature_graph: FeatureGraph::new(),
+            feature_nodes: Vec::new(),
+            semantic_refs: Vec::new(),
+            assembly: None,
+            drawing: Some(drawing),
         }
     }
 

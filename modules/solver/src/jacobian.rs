@@ -31,6 +31,14 @@ impl Jacobian {
 
 /// Compute Jacobian by central finite differences.
 pub fn finite_difference_jacobian(equations: &[ConstraintResidual], vars: &VarSet) -> Jacobian {
+    finite_difference_jacobian_generic(equations, vars)
+}
+
+/// Compute Jacobian for any equation type implementing [`ResidualEquation`].
+pub fn finite_difference_jacobian_generic<E: ResidualEquation>(
+    equations: &[E],
+    vars: &VarSet,
+) -> Jacobian {
     let cols = vars.len();
     let rows = equations.len();
     let mut jac = Jacobian::new(rows, cols);

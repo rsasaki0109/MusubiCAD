@@ -27,15 +27,9 @@ fn is_angle_parameter(name: &str) -> bool {
 
 fn parameter_hints(name: &str) -> (Option<String>, Option<String>) {
     if is_angle_parameter(name) {
-        (
-            Some("deg or rad".into()),
-            Some("180 deg".into()),
-        )
+        (Some("deg or rad".into()), Some("180 deg".into()))
     } else {
-        (
-            Some("mm, m, or names".into()),
-            Some("80 mm".into()),
-        )
+        (Some("mm, m, or names".into()), Some("80 mm".into()))
     }
 }
 
@@ -60,9 +54,7 @@ pub fn list_document_parameters(path: &str) -> Result<Vec<ParameterRow>> {
                 values.get(&entry.name).map(|meters| meters * 1000.0)
             },
             value_deg: if is_angle_parameter(&entry.name) {
-                values
-                    .get(&entry.name)
-                    .map(|radians| radians.to_degrees())
+                values.get(&entry.name).map(|radians| radians.to_degrees())
             } else {
                 None
             },
@@ -100,7 +92,10 @@ mod tests {
             .expect("width row");
         assert!(width.value_mm.is_some());
         let ids: Vec<_> = rows.iter().map(|row| row.id.as_str()).collect();
-        assert_eq!(ids.len(), ids.iter().collect::<std::collections::BTreeSet<_>>().len());
+        assert_eq!(
+            ids.len(),
+            ids.iter().collect::<std::collections::BTreeSet<_>>().len()
+        );
     }
 
     #[test]

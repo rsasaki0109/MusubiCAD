@@ -1,6 +1,8 @@
 //! JSON-RPC Agent API (Task-156+).
 
+use opencad_assembly::AssemblyModel;
 use opencad_core::{OpenCadError, Result};
+use opencad_drawing::DrawingModel;
 use opencad_feature::FeatureNode;
 use opencad_geometry::TopoRef;
 use opencad_graph::{evaluate_param_graph, DesignDiff, ParamGraph};
@@ -92,6 +94,10 @@ pub struct PatchDryRunParams {
     pub feature_nodes: Vec<FeatureNode>,
     #[serde(default)]
     pub semantic_refs: Vec<TopoRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly: Option<AssemblyModel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drawing: Option<DrawingModel>,
     pub patch: DesignPatch,
 }
 
@@ -102,6 +108,10 @@ pub struct PatchApplyParams {
     pub feature_nodes: Vec<FeatureNode>,
     #[serde(default)]
     pub semantic_refs: Vec<TopoRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly: Option<AssemblyModel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drawing: Option<DrawingModel>,
     pub patch: DesignPatch,
 }
 
@@ -111,6 +121,10 @@ pub struct PatchApplyResult {
     pub parameters: ParamGraph,
     pub feature_nodes: Vec<FeatureNode>,
     pub semantic_refs: Vec<TopoRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly: Option<AssemblyModel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drawing: Option<DrawingModel>,
     pub diff: DesignDiff,
 }
 
@@ -128,6 +142,10 @@ pub struct DesignStateSnapshot {
     pub feature_nodes: Vec<FeatureNode>,
     #[serde(default)]
     pub semantic_refs: Vec<TopoRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assembly: Option<AssemblyModel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drawing: Option<DrawingModel>,
 }
 
 impl From<DesignState> for DesignStateSnapshot {
@@ -136,16 +154,20 @@ impl From<DesignState> for DesignStateSnapshot {
             parameters: state.parameters,
             feature_nodes: state.feature_nodes,
             semantic_refs: state.semantic_refs,
+            assembly: state.assembly,
+            drawing: state.drawing,
         }
     }
 }
 
 impl From<DesignStateSnapshot> for DesignState {
     fn from(snapshot: DesignStateSnapshot) -> Self {
-        DesignState::with_semantic_refs(
+        DesignState::with_models(
             snapshot.parameters,
             snapshot.feature_nodes,
             snapshot.semantic_refs,
+            snapshot.assembly,
+            snapshot.drawing,
         )
     }
 }
@@ -176,25 +198,31 @@ impl AgentApi {
     }
 
     pub fn patch_dry_run(&self, params: PatchDryRunParams) -> PatchDryRunReport {
-        let state = DesignState::with_semantic_refs(
+        let state = DesignState::with_models(
             params.parameters,
             params.feature_nodes,
             params.semantic_refs,
+            params.assembly,
+            params.drawing,
         );
         dry_run_patch_state(&state, &params.patch)
     }
 
     pub fn patch_apply(&self, params: PatchApplyParams) -> Result<PatchApplyResult> {
-        let before = DesignState::with_semantic_refs(
+        let before = DesignState::with_models(
             params.parameters,
             params.feature_nodes,
             params.semantic_refs,
+            params.assembly,
+            params.drawing,
         );
         let mut after = before.clone();
         params.patch.apply_to_document(
             &mut after.parameters,
             &mut after.feature_nodes,
             &mut after.semantic_refs,
+            after.assembly.as_mut(),
+            after.drawing.as_mut(),
         )?;
         evaluate_param_graph(&after.parameters)?;
         let diff = diff_design_state(&before, &after);
@@ -202,6 +230,8 @@ impl AgentApi {
             parameters: after.parameters,
             feature_nodes: after.feature_nodes,
             semantic_refs: after.semantic_refs,
+            assembly: after.assembly,
+            drawing: after.drawing,
             diff,
         })
     }

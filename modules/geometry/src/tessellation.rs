@@ -36,6 +36,29 @@ impl MeshSet {
         self.triangle_face_ids.len() == self.triangle_count()
     }
 
+    /// Concatenate multiple mesh sets into one scene mesh.
+    pub fn merge(meshes: &[Self]) -> Self {
+        let mut positions = Vec::new();
+        let mut normals = Vec::new();
+        let mut indices = Vec::new();
+        let mut triangle_face_ids = Vec::new();
+
+        for mesh in meshes {
+            let vertex_offset = positions.len() as u32;
+            positions.extend_from_slice(&mesh.positions);
+            normals.extend_from_slice(&mesh.normals);
+            indices.extend(mesh.indices.iter().map(|index| index + vertex_offset));
+            triangle_face_ids.extend_from_slice(&mesh.triangle_face_ids);
+        }
+
+        Self {
+            positions,
+            normals,
+            indices,
+            triangle_face_ids,
+        }
+    }
+
     pub fn box_prism(side_m: f64, _deflection: f64) -> Self {
         let s = side_m as f32;
         let positions = vec![
@@ -77,5 +100,14 @@ mod tests {
         let mesh = MeshSet::box_prism(0.01, 0.001);
         assert!(mesh.has_triangle_face_ids());
         assert_eq!(mesh.triangle_face_ids, vec![1, 1, 2, 2]);
+    }
+
+    #[test]
+    fn mesh_merge_concatenates_geometry() {
+        let first = MeshSet::box_prism(0.01, 0.001);
+        let second = MeshSet::box_prism(0.02, 0.001);
+        let merged = MeshSet::merge(&[first, second]);
+        assert!(merged.triangle_count() >= 4);
+        assert!(merged.positions.len() >= 16);
     }
 }

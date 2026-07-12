@@ -5,16 +5,14 @@ pub mod inspect;
 pub mod parameters;
 pub mod pick;
 pub mod preview;
-pub mod related_parameters;
 pub mod regen;
+pub mod related_parameters;
 pub mod scene_query;
 pub mod template;
 pub mod viewport;
 
 pub use inspect::{inspect_document, DocumentInspect};
-pub use parameters::{
-    list_document_parameters, set_document_parameter, ParameterRow,
-};
+pub use parameters::{list_document_parameters, set_document_parameter, ParameterRow};
 pub use pick::{
     build_pick_summary, highlight_segments_for_camera, pick_document, preview_highlight_segments,
     PickOptions, PickSummary, PickTarget, ScreenSegment,
@@ -23,11 +21,9 @@ pub use preview::{
     load_view_data, preview_document, render_preview_png, CameraState, DocumentPreview, ViewData,
     PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
+pub use regen::{tessellate_active_body, tessellate_active_body_detailed, TessellatedBody};
 pub use related_parameters::{
     related_parameter_candidates, related_parameter_ids, related_parameter_ids_for_features,
-};
-pub use regen::{
-    tessellate_active_body, tessellate_active_body_detailed, TessellatedBody,
 };
 pub use template::{create_document, DocumentTemplate};
 pub use viewport::{run_document_viewport, run_document_viewport_with_sync, PreviewSynced};

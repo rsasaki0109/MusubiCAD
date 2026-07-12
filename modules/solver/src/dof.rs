@@ -1,5 +1,5 @@
-use crate::jacobian::finite_difference_jacobian;
-use crate::residual::ConstraintResidual;
+use crate::jacobian::finite_difference_jacobian_generic;
+use crate::residual::{ConstraintResidual, ResidualEquation};
 use crate::variables::VarSet;
 
 const RANK_TOL: f64 = 1e-6;
@@ -8,11 +8,16 @@ const RANK_TOL: f64 = 1e-6;
 ///
 /// `dof = n_vars - rank(J)`
 pub fn estimate_dof(equations: &[ConstraintResidual], vars: &VarSet) -> i32 {
+    estimate_dof_generic(equations, vars)
+}
+
+/// Estimate DOF for any equation type implementing [`ResidualEquation`].
+pub fn estimate_dof_generic<E: ResidualEquation>(equations: &[E], vars: &VarSet) -> i32 {
     let n_vars = vars.len();
     if n_vars == 0 {
         return 0;
     }
-    let jac = finite_difference_jacobian(equations, vars);
+    let jac = finite_difference_jacobian_generic(equations, vars);
     let rank = matrix_rank(&jac);
     (n_vars as i32) - (rank as i32)
 }

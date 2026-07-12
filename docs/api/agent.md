@@ -17,11 +17,11 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 
 | Method | Params | Result |
 |---|---|---|
-| `opencad.patch_dry_run` | `{ parameters, feature_nodes, semantic_refs?, patch }` | `{ validation, diff }` |
-| `opencad.patch_apply` | `{ parameters, feature_nodes, semantic_refs?, patch }` | `{ parameters, feature_nodes, semantic_refs, diff }` |
-| `opencad.diff` | `{ before, after }` (each may include `semantic_refs`) | `DesignDiff` |
+| `opencad.patch_dry_run` | `{ parameters, feature_nodes, semantic_refs?, assembly?, drawing?, patch }` | `{ validation, diff }` |
+| `opencad.patch_apply` | `{ parameters, feature_nodes, semantic_refs?, assembly?, drawing?, patch }` | `{ parameters, feature_nodes, semantic_refs, assembly?, drawing?, diff }` |
+| `opencad.diff` | `{ before, after }` (each may include `semantic_refs`, `assembly`, `drawing`) | `DesignDiff` |
 | `opencad.regen` | `{ parameters, sketches, feature_graph, feature_nodes }` | `RegenResult` |
-| `opencad.query` | `{ parameters, feature_nodes, feature_graph?, query }` | `QueryResult` |
+| `opencad.query` | `{ parameters, feature_nodes, feature_graph?, assembly?, drawing?, query }` | `QueryResult` |
 | `opencad.explain` | `{ parameters, feature_nodes, feature_graph?, sketch_count?, document_name? }` | `DesignExplanation` |
 
 ### Document (`.ocad` / `.ocad.d`)
@@ -60,6 +60,18 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 | `list_face_groups` | Tessellated solid face groups with inferred feature/topo refs |
 | `list_semantic_refs` | Persisted `TopoRef` entries from `semantic_refs.json` |
 | `get_semantic_ref` | Single persisted `TopoRef` (`ref_id`) |
+| `list_assembly_instances` | Placed assembly instances (requires `assembly` context) |
+| `get_assembly_instance` | Single assembly instance (`id`) |
+| `list_assembly_mates` | Assembly mate constraints |
+| `list_connectors` | Named connector frames on instances |
+| `list_drawing_sheets` | Drawing sheets (requires `drawing` context) |
+| `get_drawing_sheet` | Single drawing sheet (`id`) |
+| `list_drawing_views` | Views on a sheet (`sheet_id`) |
+| `get_drawing_view` | Single drawing view (`sheet_id`, `view_id`) |
+
+Assembly query kinds require an `assembly` field in in-memory `opencad.query`, or an assembly document path in `opencad.query_document`.
+
+Drawing query kinds require a `drawing` field in in-memory `opencad.query`, or a drawing document path in `opencad.query_document`. Drawing patches support `set_drawing_view_scale` and `set_drawing_view_origin`; origins use meters through `origin_on_sheet_m`.
 
 `list_overlay_lines` and `list_face_groups` require document tessellation. Use `opencad.query_document` (or pass a `scene` context to in-memory `opencad.query`).
 
@@ -236,6 +248,36 @@ opencad regen bracket.ocad.d --sync-topo-refs
 ```
 
 See `examples/agent/plane_face_ref_patch.json`.
+
+### Assembly patch operations
+
+Assembly documents accept these additional operation types (alongside part patches):
+
+| type | fields | effect |
+|---|---|---|
+| `set_instance_placement` | `instance_id`, `translation_m`, `rotation` | Update instance rigid transform |
+| `set_mate_distance` | `mate_id`, `distance_m` | Update a distance mate target |
+| `add_connector` | `id`, `name`, `instance_id`, `transform` | Add a named connector frame |
+
+```json
+{
+  "operations": [
+    {
+      "type": "set_instance_placement",
+      "instance_id": "instance:right",
+      "translation_m": [0.12, 0.0, 0.0],
+      "rotation": [[1,0,0],[0,1,0],[0,0,1]]
+    },
+    {
+      "type": "set_mate_distance",
+      "mate_id": "mate:spacing",
+      "distance_m": 0.15
+    }
+  ]
+}
+```
+
+Semantic diffs report `assembly_instance_*`, `assembly_mate_*`, and `assembly_connector_*` changes.
 
 ### Pattern features
 

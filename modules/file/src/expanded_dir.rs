@@ -4,7 +4,9 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
+use opencad_assembly::AssemblyModel;
 use opencad_core::{DocumentMetadata, OpenCadError, Result};
+use opencad_drawing::DrawingModel;
 use opencad_geometry::TopoRef;
 use opencad_sketch::{Constraint, Sketch};
 use serde::{Deserialize, Serialize};
@@ -25,6 +27,7 @@ const FEATURES_FILE: &str = "graph/features.json";
 const ASSEMBLIES_FILE: &str = "graph/assemblies.json";
 const MATERIALS_FILE: &str = "graph/materials.json";
 const SEMANTIC_REFS_FILE: &str = "graph/semantic_refs.json";
+const DRAWINGS_FILE: &str = "graph/drawings.json";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct DocumentEnvelope {
@@ -56,12 +59,22 @@ struct FeaturesFile {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct AssembliesFile {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    assembly: Option<AssemblyModel>,
+    /// Legacy placeholder from pre-M3.1 manifests.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     assemblies: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct MaterialsFile {
     materials: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct DrawingsFile {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    drawing: Option<DrawingModel>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -153,6 +166,7 @@ pub fn serialize_document_files(doc: &OcadDocument) -> Result<BTreeMap<String, V
     files.insert(
         ASSEMBLIES_FILE.into(),
         to_canonical_json(&AssembliesFile {
+            assembly: doc.assembly.clone(),
             assemblies: Vec::new(),
         })?
         .into_bytes(),
@@ -161,6 +175,13 @@ pub fn serialize_document_files(doc: &OcadDocument) -> Result<BTreeMap<String, V
         MATERIALS_FILE.into(),
         to_canonical_json(&MaterialsFile {
             materials: Vec::new(),
+        })?
+        .into_bytes(),
+    );
+    files.insert(
+        DRAWINGS_FILE.into(),
+        to_canonical_json(&DrawingsFile {
+            drawing: doc.drawing.clone(),
         })?
         .into_bytes(),
     );
@@ -190,6 +211,12 @@ pub(crate) fn parse_document_files(files: &BTreeMap<String, Vec<u8>>) -> Result<
         read_json(files, SEMANTIC_REFS_FILE).unwrap_or(SemanticRefsFile {
             semantic_refs: Vec::new(),
         });
+    let assemblies: AssembliesFile = read_json(files, ASSEMBLIES_FILE).unwrap_or(AssembliesFile {
+        assembly: None,
+        assemblies: Vec::new(),
+    });
+    let drawings: DrawingsFile =
+        read_json(files, DRAWINGS_FILE).unwrap_or(DrawingsFile { drawing: None });
 
     Ok(OcadDocument {
         metadata: envelope.document,
@@ -198,6 +225,8 @@ pub(crate) fn parse_document_files(files: &BTreeMap<String, Vec<u8>>) -> Result<
         feature_graph: features.feature_graph,
         feature_nodes: features.feature_nodes,
         semantic_refs: semantic_refs.semantic_refs,
+        assembly: assemblies.assembly,
+        drawing: drawings.drawing,
     })
 }
 
@@ -321,5 +350,103 @@ mod tests {
         let tampered = dir.path().join(SKETCHES_FILE);
         fs::write(&tampered, br#"{"sketches":[]}"#).expect("tamper");
         assert!(validate_expanded_dir(dir.path()).is_err());
+    }
+
+    #[test]
+    fn assembly_round_trip() {
+        use opencad_assembly::{AssemblyModel, Component, Instance, Placement};
+        use opencad_core::{ComponentId, DocumentId, DocumentMetadata, InstanceId};
+
+        let mut doc = bracket_document();
+        doc.metadata = DocumentMetadata::new_assembly(
+            DocumentId::new("doc:assembly_two_brackets").expect("id"),
+            "Two Brackets Assembly",
+        );
+        doc.assembly = Some(
+            AssemblyModel {
+                components: vec![Component::new(
+                    ComponentId::new("component:bracket").expect("id"),
+                    "parts/bracket.ocad.d",
+                    DocumentId::new("doc:bracket_001").expect("id"),
+                )],
+                instances: vec![Instance::new(
+                    InstanceId::new("instance:left").expect("id"),
+                    ComponentId::new("component:bracket").expect("id"),
+                    Placement::identity(),
+                    "Left",
+                )],
+                mates: Vec::new(),
+                ..Default::default()
+            }
+            .sorted_deterministic(),
+        );
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_expanded_dir(dir.path(), &doc).expect("write");
+        let restored = read_expanded_dir(dir.path()).expect("read");
+        assert_eq!(doc.assembly, restored.assembly);
+    }
+
+    #[test]
+    fn legacy_empty_assemblies_file_is_compatible() {
+        let doc = bracket_document();
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_expanded_dir(dir.path(), &doc).expect("write");
+
+        let legacy = dir.path().join(ASSEMBLIES_FILE);
+        fs::write(&legacy, br#"{"assemblies":[]}"#).expect("legacy");
+        let restored = read_expanded_dir(dir.path()).expect("read");
+        assert!(restored.assembly.is_none());
+    }
+
+    #[test]
+    fn drawing_round_trip() {
+        use opencad_core::{DocumentMetadata, SheetId, ViewId};
+        use opencad_drawing::{DrawingModel, DrawingView, ModelReference, ProjectionKind, Sheet};
+
+        let mut doc = bracket_document();
+        doc.metadata = DocumentMetadata::new_drawing(
+            DocumentId::new("doc:bracket_front_view").expect("id"),
+            "Bracket Front View",
+        );
+        doc.drawing = Some(
+            DrawingModel {
+                sheets: vec![Sheet {
+                    id: SheetId::new("sheet:a4").expect("id"),
+                    name: "Sheet 1".into(),
+                    width_m: 0.210,
+                    height_m: 0.297,
+                    views: vec![DrawingView::new(
+                        ViewId::new("view:front").expect("id"),
+                        "Front",
+                        ModelReference::new(
+                            "parts/bracket.ocad.d",
+                            DocumentId::new("doc:bracket_001").expect("id"),
+                        ),
+                        ProjectionKind::Front,
+                        1.0,
+                        [0.05, 0.05],
+                    )],
+                }],
+            }
+            .sorted_deterministic(),
+        );
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_expanded_dir(dir.path(), &doc).expect("write");
+        let restored = read_expanded_dir(dir.path()).expect("read");
+        assert_eq!(doc.drawing, restored.drawing);
+    }
+
+    #[test]
+    fn legacy_manifest_without_drawings_file_is_compatible() {
+        let doc = bracket_document();
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_expanded_dir(dir.path(), &doc).expect("write");
+
+        let drawings = dir.path().join(DRAWINGS_FILE);
+        fs::remove_file(&drawings).expect("remove");
+        let restored = read_expanded_dir(dir.path()).expect("read");
+        assert!(restored.drawing.is_none());
     }
 }

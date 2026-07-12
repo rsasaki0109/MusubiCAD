@@ -76,6 +76,12 @@ define_id!(EntityId, "ent");
 define_id!(ConstraintId, "con");
 define_id!(TopoRefId, "ref");
 define_id!(ComponentId, "component");
+define_id!(InstanceId, "instance");
+define_id!(MateId, "mate");
+define_id!(ConnectorId, "connector");
+define_id!(PatternId, "pattern");
+define_id!(SheetId, "sheet");
+define_id!(ViewId, "view");
 define_id!(PatchId, "patch");
 
 #[cfg(test)]

@@ -186,6 +186,48 @@ fn print_change(change: &SemanticChange) {
         } => {
             println!("  topo ref {ref_id}.{field}: {before} -> {after}");
         }
+        SemanticChange::AssemblyInstanceAdded { id } => {
+            println!("  assembly instance added {id}");
+        }
+        SemanticChange::AssemblyInstanceRemoved { id } => {
+            println!("  assembly instance removed {id}");
+        }
+        SemanticChange::AssemblyInstanceChanged {
+            id,
+            field,
+            before,
+            after,
+        } => {
+            println!("  assembly instance {id}.{field}: {before} -> {after}");
+        }
+        SemanticChange::AssemblyMateAdded { id } => {
+            println!("  assembly mate added {id}");
+        }
+        SemanticChange::AssemblyMateRemoved { id } => {
+            println!("  assembly mate removed {id}");
+        }
+        SemanticChange::AssemblyMateChanged { id, before, after } => {
+            println!("  assembly mate {id}: {before} -> {after}");
+        }
+        SemanticChange::AssemblyConnectorAdded { id } => {
+            println!("  assembly connector added {id}");
+        }
+        SemanticChange::AssemblyConnectorRemoved { id } => {
+            println!("  assembly connector removed {id}");
+        }
+        SemanticChange::AssemblyConnectorChanged { id, before, after } => {
+            println!("  assembly connector {id}: {before} -> {after}");
+        }
+        SemanticChange::DrawingSheetAdded { id } => println!("  drawing sheet added {id}"),
+        SemanticChange::DrawingSheetRemoved { id } => println!("  drawing sheet removed {id}"),
+        SemanticChange::DrawingSheetChanged { id, before, after } => {
+            println!("  drawing sheet {id}: {before} -> {after}");
+        }
+        SemanticChange::DrawingViewAdded { id } => println!("  drawing view added {id}"),
+        SemanticChange::DrawingViewRemoved { id } => println!("  drawing view removed {id}"),
+        SemanticChange::DrawingViewChanged { id, before, after } => {
+            println!("  drawing view {id}: {before} -> {after}");
+        }
     }
 }
 

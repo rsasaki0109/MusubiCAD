@@ -1,13 +1,15 @@
 //! `opencad new` command (Task-121+).
 
+use opencad_assembly::{AssemblyModel, Component, Instance, Mate, MateEntity, MateKind, Placement};
 use opencad_core::{DocumentId, DocumentMetadata, Result};
 use opencad_feature::{
-    bracket_boss_join, bracket_face_pin, bracket_edge_fillet, bracket_hole_ring, bracket_hole_row,
+    bracket_boss_join, bracket_edge_fillet, bracket_face_pin, bracket_hole_ring, bracket_hole_row,
     bracket_pin_mirror, bracket_pin_ring, bracket_pin_row, bracket_semantic_refs,
     bracket_with_hole, revolve_bushing, revolve_sector,
 };
 use opencad_file::{write_ocad, OcadDocument};
-use opencad_graph::{bracket_parameters, revolve_parameters};
+use opencad_geometry::RigidTransform;
+use opencad_graph::{bracket_parameters, revolve_parameters, FeatureGraph, ParamGraph};
 
 /// Built-in sample document templates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -24,6 +26,8 @@ pub enum DocumentTemplate {
     PinMirror,
     RevolveBushing,
     RevolveSector,
+    AssemblyTwoBrackets,
+    BracketFrontViewDrawing,
 }
 
 impl DocumentTemplate {
@@ -40,8 +44,10 @@ impl DocumentTemplate {
             "pin-mirror" => Ok(Self::PinMirror),
             "revolve-bushing" => Ok(Self::RevolveBushing),
             "revolve-sector" => Ok(Self::RevolveSector),
+            "assembly" => Ok(Self::AssemblyTwoBrackets),
+            "drawing" => Ok(Self::BracketFrontViewDrawing),
             _ => Err(opencad_core::OpenCadError::validation(format!(
-                "unknown template '{name}'; expected 'bracket', 'boss-join', 'face-pin', 'edge-fillet', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', 'pin-mirror', 'revolve-bushing', or 'revolve-sector'"
+                "unknown template '{name}'; expected 'bracket', 'boss-join', 'face-pin', 'edge-fillet', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', 'pin-mirror', 'revolve-bushing', 'revolve-sector', 'assembly', or 'drawing'"
             ))),
         }
     }
@@ -59,6 +65,8 @@ impl DocumentTemplate {
             Self::PinMirror => "pin-mirror",
             Self::RevolveBushing => "revolve-bushing",
             Self::RevolveSector => "revolve-sector",
+            Self::AssemblyTwoBrackets => "assembly",
+            Self::BracketFrontViewDrawing => "drawing",
         }
     }
 
@@ -75,6 +83,8 @@ impl DocumentTemplate {
             Self::PinMirror,
             Self::RevolveBushing,
             Self::RevolveSector,
+            Self::AssemblyTwoBrackets,
+            Self::BracketFrontViewDrawing,
         ]
     }
 }
@@ -92,6 +102,8 @@ pub fn create_document(path: &str, template: DocumentTemplate) -> Result<()> {
         DocumentTemplate::PinMirror => create_bracket_pin_mirror_document(path),
         DocumentTemplate::RevolveBushing => create_revolve_bushing_document(path),
         DocumentTemplate::RevolveSector => create_revolve_sector_document(path),
+        DocumentTemplate::AssemblyTwoBrackets => create_assembly_two_brackets_document(path),
+        DocumentTemplate::BracketFrontViewDrawing => create_bracket_front_view_document(path),
     }
 }
 
@@ -217,5 +229,126 @@ pub fn create_bracket_pin_mirror_document(path: &str) -> Result<()> {
     let mut doc = OcadDocument::from_part_model(metadata, &part);
     doc.parameters = bracket_parameters();
     doc.semantic_refs = bracket_semantic_refs();
+    write_ocad(path, &doc)
+}
+
+pub fn create_assembly_two_brackets_document(path: &str) -> Result<()> {
+    use opencad_core::{ComponentId, InstanceId, MateId, TopoRefId};
+    use std::path::Path;
+
+    let root = Path::new(path);
+    let child_relative = "parts/bracket.ocad.d";
+    let child_path = root.join(child_relative);
+    create_bracket_document(child_path.to_str().expect("child path"))?;
+
+    let assembly = AssemblyModel {
+        components: vec![Component::new(
+            ComponentId::new("component:bracket")?,
+            child_relative,
+            DocumentId::new("doc:bracket_001")?,
+        )],
+        instances: vec![
+            Instance::new(
+                InstanceId::new("instance:left")?,
+                ComponentId::new("component:bracket")?,
+                Placement::identity(),
+                "Left Bracket",
+            ),
+            Instance::new(
+                InstanceId::new("instance:right")?,
+                ComponentId::new("component:bracket")?,
+                Placement::new(RigidTransform::from_translation([0.05, 0.0, 0.0])),
+                "Right Bracket",
+            ),
+        ],
+        mates: vec![
+            Mate::new(
+                MateId::new("mate:ground_left")?,
+                MateKind::Ground {
+                    instance: InstanceId::new("instance:left")?,
+                },
+            ),
+            Mate::new(
+                MateId::new("mate:spacing")?,
+                MateKind::Distance {
+                    a: MateEntity::at_origin(
+                        InstanceId::new("instance:left")?,
+                        opencad_geometry::TopoRef::face(
+                            TopoRefId::new("ref:face:left_origin")?,
+                            "feature:extrude_base",
+                            "origin",
+                        ),
+                    ),
+                    b: MateEntity::at_origin(
+                        InstanceId::new("instance:right")?,
+                        opencad_geometry::TopoRef::face(
+                            TopoRefId::new("ref:face:right_origin")?,
+                            "feature:extrude_base",
+                            "origin",
+                        ),
+                    ),
+                    distance_m: 0.12,
+                },
+            ),
+        ],
+        ..Default::default()
+    }
+    .sorted_deterministic();
+
+    let doc = OcadDocument {
+        metadata: DocumentMetadata::new_assembly(
+            DocumentId::new("doc:assembly_two_brackets")?,
+            "Two Brackets Assembly",
+        ),
+        parameters: ParamGraph::new(),
+        sketches: Vec::new(),
+        feature_graph: FeatureGraph::new(),
+        feature_nodes: Vec::new(),
+        semantic_refs: Vec::new(),
+        assembly: Some(assembly),
+        drawing: None,
+    };
+
+    write_ocad(path, &doc)
+}
+
+pub fn create_bracket_front_view_document(path: &str) -> Result<()> {
+    use opencad_core::{SheetId, ViewId};
+    use opencad_drawing::{
+        DrawingModel, DrawingView, ModelReference, ProjectionKind, Sheet, A4_HEIGHT_M, A4_WIDTH_M,
+    };
+    use std::path::Path;
+
+    let root = Path::new(path);
+    let child_relative = "parts/bracket.ocad.d";
+    let child_path = root.join(child_relative);
+    create_bracket_document(child_path.to_str().expect("child path"))?;
+
+    let drawing = DrawingModel {
+        sheets: vec![Sheet {
+            id: SheetId::new("sheet:a4")?,
+            name: "Sheet 1".into(),
+            width_m: A4_WIDTH_M,
+            height_m: A4_HEIGHT_M,
+            views: vec![DrawingView::new(
+                ViewId::new("view:front")?,
+                "Front",
+                ModelReference::new(child_relative, DocumentId::new("doc:bracket_001")?),
+                ProjectionKind::Front,
+                1.0,
+                [0.05, 0.05],
+            )],
+        }],
+    }
+    .sorted_deterministic();
+
+    let doc = OcadDocument::from_drawing_model(
+        DocumentMetadata::new_drawing(
+            DocumentId::new("doc:bracket_front_view")?,
+            "Bracket Front View",
+        ),
+        drawing,
+    );
+
     write_ocad(path, &doc)
 }

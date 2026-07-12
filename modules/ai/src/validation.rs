@@ -23,6 +23,8 @@ pub fn dry_run_patch_state(before: &DesignState, patch: &DesignPatch) -> PatchDr
         &mut after.parameters,
         &mut after.feature_nodes,
         &mut after.semantic_refs,
+        after.assembly.as_mut(),
+        after.drawing.as_mut(),
     ) {
         validation.push(
             ValidationMessage::error("patch_apply_failed", err.to_string()).with_target("patch"),

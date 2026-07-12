@@ -1350,7 +1350,9 @@ name = "opencad-ai"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "opencad-assembly",
  "opencad-core",
+ "opencad-drawing",
  "opencad-feature",
  "opencad-geometry",
  "opencad-graph",
@@ -1364,7 +1366,14 @@ name = "opencad-assembly"
 version = "0.1.0"
 dependencies = [
  "opencad-core",
+ "opencad-feature",
+ "opencad-file",
+ "opencad-geometry",
+ "opencad-graph",
+ "opencad-solver",
  "serde",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -1372,8 +1381,10 @@ name = "opencad-cli"
 version = "0.1.0"
 dependencies = [
  "opencad-ai",
+ "opencad-assembly",
  "opencad-core",
  "opencad-desktop",
+ "opencad-drawing",
  "opencad-feature",
  "opencad-file",
  "opencad-geometry",
@@ -1403,7 +1414,9 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "image",
+ "opencad-assembly",
  "opencad-core",
+ "opencad-drawing",
  "opencad-feature",
  "opencad-file",
  "opencad-geometry",
@@ -1421,7 +1434,12 @@ name = "opencad-drawing"
 version = "0.1.0"
 dependencies = [
  "opencad-core",
+ "opencad-feature",
+ "opencad-file",
+ "opencad-geometry",
+ "opencad-graph",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1445,7 +1463,9 @@ name = "opencad-file"
 version = "0.1.0"
 dependencies = [
  "opencad-ai",
+ "opencad-assembly",
  "opencad-core",
+ "opencad-drawing",
  "opencad-feature",
  "opencad-geometry",
  "opencad-graph",

@@ -212,10 +212,7 @@ pub fn face_group_boundary_edges(
         ]
     }
 
-    fn canonical_edge(
-        start: [f32; 3],
-        end: [f32; 3],
-    ) -> (EdgeKey, ([f32; 3], [f32; 3])) {
+    fn canonical_edge(start: [f32; 3], end: [f32; 3]) -> (EdgeKey, ([f32; 3], [f32; 3])) {
         let start_q = quantize_point(start);
         let end_q = quantize_point(end);
         if start_q <= end_q {
@@ -225,17 +222,18 @@ pub fn face_group_boundary_edges(
         }
     }
 
-    let triangle_indices = scene
-        .face_catalog
-        .triangle_indices_in_group(group_index);
+    let triangle_indices = scene.face_catalog.triangle_indices_in_group(group_index);
     let mut edge_counts: HashMap<EdgeKey, EdgeCount> = HashMap::new();
 
     for triangle_index in triangle_indices {
         let Some(vertices) = triangle_world_positions(scene, triangle_index) else {
             continue;
         };
-        for (start, end) in [(vertices[0], vertices[1]), (vertices[1], vertices[2]), (vertices[2], vertices[0])]
-        {
+        for (start, end) in [
+            (vertices[0], vertices[1]),
+            (vertices[1], vertices[2]),
+            (vertices[2], vertices[0]),
+        ] {
             let (key, edge) = canonical_edge(start, end);
             edge_counts
                 .entry(key)
@@ -275,10 +273,7 @@ fn cylindrical_ring_highlight_edges(
     const POINT_EPS_M: f32 = 0.00005;
 
     let mut vertices = Vec::new();
-    for triangle_index in scene
-        .face_catalog
-        .triangle_indices_in_group(group_index)
-    {
+    for triangle_index in scene.face_catalog.triangle_indices_in_group(group_index) {
         if let Some(triangle) = triangle_world_positions(scene, triangle_index) {
             vertices.extend_from_slice(&triangle);
         }
@@ -291,8 +286,7 @@ fn cylindrical_ring_highlight_edges(
     let min_level = extremal_coord_along_axis(&vertices, &frame, false);
     let max_level = extremal_coord_along_axis(&vertices, &frame, true);
     let mid_level = (min_level + max_level) * 0.5;
-    let mut top_ring =
-        split_ring_points_oblique(&vertices, &frame, mid_level, true, POINT_EPS_M);
+    let mut top_ring = split_ring_points_oblique(&vertices, &frame, mid_level, true, POINT_EPS_M);
     let mut bottom_ring =
         split_ring_points_oblique(&vertices, &frame, mid_level, false, POINT_EPS_M);
     if top_ring.len() < 3 {
@@ -398,11 +392,7 @@ fn extremal_ring_points_oblique(
     points
 }
 
-fn sort_ring_points_oblique(
-    points: &mut [[f32; 3]],
-    frame: &CylinderAxisFrame,
-    center_along: f32,
-) {
+fn sort_ring_points_oblique(points: &mut [[f32; 3]], frame: &CylinderAxisFrame, center_along: f32) {
     if points.len() < 2 {
         return;
     }
@@ -415,11 +405,7 @@ fn sort_ring_points_oblique(
     });
 }
 
-fn extremal_coord_along_axis(
-    vertices: &[[f32; 3]],
-    frame: &CylinderAxisFrame,
-    max: bool,
-) -> f32 {
+fn extremal_coord_along_axis(vertices: &[[f32; 3]], frame: &CylinderAxisFrame, max: bool) -> f32 {
     if max {
         vertices
             .iter()
@@ -941,14 +927,17 @@ mod tests {
             GpuVertex {
                 position: [0.0, 0.0, 0.0],
                 normal: [0.0, 0.0, 1.0],
+                color: [0.72, 0.76, 0.82],
             },
             GpuVertex {
                 position: [1.0, 0.0, 0.0],
                 normal: [0.0, 0.0, 1.0],
+                color: [0.72, 0.76, 0.82],
             },
             GpuVertex {
                 position: [0.0, 1.0, 0.0],
                 normal: [0.0, 0.0, 1.0],
+                color: [0.72, 0.76, 0.82],
             },
         ];
         let indices = vec![0, 1, 2];
@@ -996,10 +985,8 @@ mod tests {
         let min_level = extremal_coord_along_axis(&vertices, &frame, false);
         let max_level = extremal_coord_along_axis(&vertices, &frame, true);
         let mid_level = (min_level + max_level) * 0.5;
-        let top_ring =
-            split_ring_points_oblique(&vertices, &frame, mid_level, true, 0.00005);
-        let bottom_ring =
-            split_ring_points_oblique(&vertices, &frame, mid_level, false, 0.00005);
+        let top_ring = split_ring_points_oblique(&vertices, &frame, mid_level, true, 0.00005);
+        let bottom_ring = split_ring_points_oblique(&vertices, &frame, mid_level, false, 0.00005);
 
         assert!(top_ring.len() >= 8, "top ring points: {}", top_ring.len());
         assert!(

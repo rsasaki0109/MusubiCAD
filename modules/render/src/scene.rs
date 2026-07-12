@@ -79,6 +79,13 @@ pub struct RenderScene {
 
 impl RenderScene {
     pub fn from_mesh_sets(mesh_sets: &[MeshSet]) -> Result<Self> {
+        Self::from_mesh_sets_with_colors(mesh_sets, None)
+    }
+
+    pub fn from_mesh_sets_with_colors(
+        mesh_sets: &[MeshSet],
+        colors: Option<&[[f32; 4]]>,
+    ) -> Result<Self> {
         if mesh_sets.is_empty() {
             return Err(opencad_core::OpenCadError::validation(
                 "scene requires at least one mesh",
@@ -87,8 +94,11 @@ impl RenderScene {
 
         let mut meshes = Vec::with_capacity(mesh_sets.len());
         let mut bounds = BoundingBox::empty();
-        for mesh_set in mesh_sets {
-            let mesh = RenderMesh::from_mesh_set(mesh_set);
+        for (index, mesh_set) in mesh_sets.iter().enumerate() {
+            let color = colors
+                .and_then(|palette| palette.get(index).copied())
+                .unwrap_or([0.72, 0.76, 0.82, 1.0]);
+            let mesh = RenderMesh::from_mesh_set_with_color(mesh_set, color);
             let mesh_bounds = BoundingBox::from_positions(&mesh.positions)?;
             bounds.merge(&mesh_bounds);
             meshes.push(mesh);

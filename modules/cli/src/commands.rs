@@ -45,7 +45,7 @@ pub fn run() -> Result<()> {
 fn cmd_new(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let path = path.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad new <path> [bracket|boss-join|face-pin|edge-fillet|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing|revolve-sector]",
+            "usage: opencad new <path> [bracket|boss-join|face-pin|edge-fillet|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing|revolve-sector|assembly|drawing]",
         )
     })?;
     let template = extra_args
@@ -76,6 +76,25 @@ fn cmd_inspect(path: Option<&str>) -> Result<()> {
     println!("sketches: {}", doc.sketches.len());
     println!("features: {}", doc.feature_nodes.len());
     println!("parameters: {}", doc.parameters.evaluation_order()?.len());
+    if let Some(assembly) = &doc.assembly {
+        println!("kind: assembly");
+        println!("components: {}", assembly.components.len());
+        println!("instances: {}", assembly.instances.len());
+        println!("mates: {}", assembly.mates.len());
+        println!("connectors: {}", assembly.connectors.len());
+        println!("patterns: {}", assembly.patterns.len());
+    } else if let Some(drawing) = &doc.drawing {
+        println!("kind: drawing");
+        println!("sheets: {}", drawing.sheets.len());
+        let views = drawing
+            .sheets
+            .iter()
+            .map(|sheet| sheet.views.len())
+            .sum::<usize>();
+        println!("views: {views}");
+    } else {
+        println!("kind: part");
+    }
     Ok(())
 }
 
@@ -94,12 +113,16 @@ fn cmd_regen(path: Option<&str>, extra_args: &[String]) -> Result<()> {
 
 fn cmd_export(input: Option<&str>, output: Option<&str>) -> Result<()> {
     let input = input.ok_or_else(|| {
-        opencad_core::OpenCadError::validation("usage: opencad export <input> <output.stl>")
+        opencad_core::OpenCadError::validation(
+            "usage: opencad export <input> <output.stl|output.svg>",
+        )
     })?;
     let output = output.ok_or_else(|| {
-        opencad_core::OpenCadError::validation("usage: opencad export <input> <output.stl>")
+        opencad_core::OpenCadError::validation(
+            "usage: opencad export <input> <output.stl|output.svg>",
+        )
     })?;
-    let summary = export::export_stl(input, output)?;
+    let summary = export::export_document(input, output)?;
     export::print_summary(&summary);
     Ok(())
 }
@@ -313,7 +336,7 @@ COMMANDS:
     validate    Validate a .ocad or .ocad.d document
     inspect     Show document summary
     regen       Regenerate features through the geometry kernel
-    export      Export the active body to STL
+    export      Export the active body to STL or a drawing to SVG
     mesh        Tessellate and summarize viewport scene data
     pick        Query viewport selection at a pixel coordinate
     view        Open an interactive 3D viewport
@@ -337,11 +360,14 @@ EXAMPLES:
     opencad new bracket_pin_ring.ocad.d pin-ring
     opencad new bracket_pin_mirror.ocad.d pin-mirror
     opencad new revolve_bushing.ocad.d revolve-bushing
+    opencad new assembly_two_brackets.ocad.d assembly
+    opencad new bracket_front_view.ocad.d drawing
     opencad validate bracket.ocad
     opencad inspect bracket.ocad.d
     opencad regen bracket.ocad
     opencad regen bracket.ocad --sync-topo-refs
     opencad export bracket.ocad bracket.stl
+    opencad export bracket_front_view.ocad.d bracket_front.svg
     opencad mesh bracket.ocad.d
     opencad mesh bracket.ocad.d --json --render
     opencad mesh bracket.ocad.d --png preview.png
