@@ -401,8 +401,10 @@ mod tests {
 
     #[test]
     fn drawing_round_trip() {
-        use opencad_core::{DocumentMetadata, SheetId, ViewId};
-        use opencad_drawing::{DrawingModel, DrawingView, ModelReference, ProjectionKind, Sheet};
+        use opencad_core::{DimensionId, DocumentMetadata, SheetId, ViewId};
+        use opencad_drawing::{
+            DrawingModel, DrawingView, LinearDimension, ModelReference, ProjectionKind, Sheet,
+        };
 
         let mut doc = bracket_document();
         doc.metadata = DocumentMetadata::new_drawing(
@@ -427,6 +429,13 @@ mod tests {
                         1.0,
                         [0.05, 0.05],
                     )],
+                    dimensions: vec![LinearDimension {
+                        id: DimensionId::new("dim:width").expect("id"),
+                        view_id: ViewId::new("view:front").expect("id"),
+                        start_model_m: [0.0, 0.0, 0.0],
+                        end_model_m: [0.08, 0.0, 0.0],
+                        offset_m: -0.01,
+                    }],
                 }],
             }
             .sorted_deterministic(),

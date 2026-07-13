@@ -304,6 +304,7 @@ mod tests {
                         1.0,
                         [0.05, 0.05],
                     )],
+                    dimensions: Vec::new(),
                 }],
             }
             .sorted_deterministic(),

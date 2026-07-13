@@ -29,7 +29,7 @@ SVG sheets.
 
 ### M4.3 — Dimensions (Task-179)
 
-- [ ] Model-driven dimensions on sheets
+- [x] Model-driven aligned linear dimensions on sheets and SVG export
 
 ## Definition of done (M4.1)
 

@@ -82,6 +82,7 @@ define_id!(ConnectorId, "connector");
 define_id!(PatternId, "pattern");
 define_id!(SheetId, "sheet");
 define_id!(ViewId, "view");
+define_id!(DimensionId, "dim");
 define_id!(PatchId, "patch");
 
 #[cfg(test)]

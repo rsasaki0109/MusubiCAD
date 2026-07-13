@@ -2,6 +2,7 @@
 
 use opencad_core::{OpenCadError, Result};
 
+use crate::dimension::{layout_linear_dimension, DimensionLayout};
 use crate::hidden_line::LineVisibility;
 use crate::render::{build_sheet_segments, SheetSegment, ViewMesh};
 use crate::sheet::Sheet;
@@ -11,10 +12,35 @@ const MM_PER_M: f64 = 1000.0;
 /// Render one sheet and its projected view meshes to SVG (millimeter user units).
 pub fn render_sheet_svg(sheet: &Sheet, meshes: &[ViewMesh]) -> Result<String> {
     let segments = build_sheet_segments(sheet, meshes)?;
-    Ok(sheet_segments_to_svg(sheet, &segments))
+    let dimensions = sheet
+        .dimensions
+        .iter()
+        .map(|dimension| {
+            let view = sheet
+                .views
+                .iter()
+                .find(|view| view.id == dimension.view_id)
+                .ok_or_else(|| {
+                    OpenCadError::validation(format!(
+                        "dimension '{}' references missing view '{}'",
+                        dimension.id, dimension.view_id
+                    ))
+                })?;
+            layout_linear_dimension(dimension, view)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    Ok(sheet_content_to_svg(sheet, &segments, &dimensions))
 }
 
 pub fn sheet_segments_to_svg(sheet: &Sheet, segments: &[SheetSegment]) -> String {
+    sheet_content_to_svg(sheet, segments, &[])
+}
+
+fn sheet_content_to_svg(
+    sheet: &Sheet,
+    segments: &[SheetSegment],
+    dimensions: &[DimensionLayout],
+) -> String {
     let width_mm = sheet.width_m * MM_PER_M;
     let height_mm = sheet.height_m * MM_PER_M;
     let mut svg = String::new();
@@ -39,8 +65,34 @@ pub fn sheet_segments_to_svg(sheet: &Sheet, segments: &[SheetSegment]) -> String
             "<line x1=\"{x1:.3}\" y1=\"{y1:.3}\" x2=\"{x2:.3}\" y2=\"{y2:.3}\" {style}/>\n"
         ));
     }
+    for dimension in dimensions {
+        push_dimension_svg(&mut svg, sheet, dimension);
+    }
     svg.push_str("</svg>\n");
     svg
+}
+
+fn push_dimension_svg(svg: &mut String, sheet: &Sheet, dimension: &DimensionLayout) {
+    let points = [
+        (dimension.witness_start_m, dimension.line_start_m),
+        (dimension.witness_end_m, dimension.line_end_m),
+        (dimension.line_start_m, dimension.line_end_m),
+    ];
+    for (start, end) in points {
+        let x1 = start[0] * MM_PER_M;
+        let y1 = flip_y(start[1], sheet.height_m) * MM_PER_M;
+        let x2 = end[0] * MM_PER_M;
+        let y2 = flip_y(end[1], sheet.height_m) * MM_PER_M;
+        svg.push_str(&format!(
+            "<line class=\"dimension\" x1=\"{x1:.3}\" y1=\"{y1:.3}\" x2=\"{x2:.3}\" y2=\"{y2:.3}\" stroke=\"#225588\" stroke-width=\"0.18\"/>\n"
+        ));
+    }
+    let text_x = dimension.text_position_m[0] * MM_PER_M;
+    let text_y = flip_y(dimension.text_position_m[1], sheet.height_m) * MM_PER_M - 1.0;
+    svg.push_str(&format!(
+        "<text class=\"dimension-label\" x=\"{text_x:.3}\" y=\"{text_y:.3}\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"3\" fill=\"#225588\">{}</text>\n",
+        dimension.label
+    ));
 }
 
 fn flip_y(y_m: f64, sheet_height_m: f64) -> f64 {
@@ -57,8 +109,8 @@ pub fn validate_svg(svg: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{DrawingView, ModelReference, ProjectionKind};
-    use opencad_core::{DocumentId, SheetId, ViewId};
+    use crate::{DrawingView, LinearDimension, ModelReference, ProjectionKind};
+    use opencad_core::{DimensionId, DocumentId, SheetId, ViewId};
     use opencad_geometry::MeshSet;
 
     #[test]
@@ -96,5 +148,36 @@ mod tests {
             }],
         );
         assert!(svg.contains("stroke-dasharray=\"2,1\""));
+    }
+
+    #[test]
+    fn renders_model_driven_dimension_label() -> opencad_core::Result<()> {
+        let mut sheet = Sheet::a4_portrait(SheetId::new("sheet:a4")?, "Sheet 1");
+        let view_id = ViewId::new("view:front")?;
+        sheet.views.push(DrawingView::new(
+            view_id.clone(),
+            "Front",
+            ModelReference::new("part.ocad.d", DocumentId::new("doc:part")?),
+            ProjectionKind::Front,
+            1.0,
+            [0.02, 0.02],
+        ));
+        sheet.dimensions.push(LinearDimension {
+            id: DimensionId::new("dim:width")?,
+            view_id: view_id.clone(),
+            start_model_m: [0.0, 0.0, 0.0],
+            end_model_m: [0.08, 0.0, 0.0],
+            offset_m: 0.01,
+        });
+        let svg = render_sheet_svg(
+            &sheet,
+            &[ViewMesh {
+                view_id,
+                mesh_set: MeshSet::box_prism(0.08, 0.006),
+            }],
+        )?;
+        assert!(svg.contains("class=\"dimension-label\""));
+        assert!(svg.contains(">80.00 mm</text>"));
+        Ok(())
     }
 }

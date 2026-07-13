@@ -25,6 +25,9 @@ impl DrawingModel {
         self.sheets.sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         for sheet in &mut self.sheets {
             sheet.views.sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
+            sheet
+                .dimensions
+                .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         }
         self
     }
@@ -70,6 +73,7 @@ mod tests {
                     1.0,
                     [0.05, 0.05],
                 )],
+                dimensions: Vec::new(),
             }],
         };
         let json = serde_json::to_string(&model).expect("serialize");

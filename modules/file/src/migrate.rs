@@ -4,7 +4,10 @@ use opencad_core::Result;
 
 use crate::document::OcadDocument;
 
-/// No-op migration hook for MVP (`0.1.0` only).
+/// Normalize current models after deserialization.
+///
+/// Legacy drawing sheets deserialize without `dimensions` as an empty collection;
+/// sorting here makes newly added dimension records deterministic.
 pub fn migrate_to_current(mut doc: OcadDocument) -> Result<OcadDocument> {
     if let Some(assembly) = doc.assembly.take() {
         doc.assembly = Some(assembly.sorted_deterministic());

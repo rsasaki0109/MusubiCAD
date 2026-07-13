@@ -20,12 +20,13 @@ Adopt the same approach as ADR-003:
 3. Serialize drawing data to `graph/drawings.json`.
 4. Drawing documents do not own B-Rep; each view references a child `.ocad`
    path and stores sheet placement + orthographic projection kind.
-5. MVP exports **wireframe SVG** from tessellated mesh edges (no HLR yet).
+5. SVG export classifies hidden mesh edges and renders model-driven linear dimensions.
 
 ```
 DrawingModel
 └─ sheets: Vec<Sheet>
-   └─ views: Vec<DrawingView>   // model ref + projection + sheet placement
+   ├─ views: Vec<DrawingView>   // model ref + projection + sheet placement
+   └─ dimensions: Vec<LinearDimension> // view ref + model-space measurement points
 ```
 
 ## Consequences
@@ -34,12 +35,12 @@ DrawingModel
 
 - Reuses CLI, file I/O, and Agent API document pipeline
 - Kernel-neutral projection and SVG live in `opencad-drawing`
-- Clear path to hidden-line removal and model-driven dimensions (M4.2+)
+- Dimension values remain derived from referenced-model geometry
 
 ### Negative
 
 - Drawing documents still carry unused part fields
-- Wireframe export is not true engineering HLR until Task-177 lands
+- Mesh midpoint HLR does not split partially occluded edges
 
 ## Alternatives considered
 

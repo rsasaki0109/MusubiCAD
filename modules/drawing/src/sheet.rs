@@ -4,6 +4,7 @@ use opencad_core::{OpenCadError, Result, SheetId};
 use serde::{Deserialize, Serialize};
 
 use crate::view::DrawingView;
+use crate::LinearDimension;
 
 /// ISO A4 portrait sheet size in meters.
 pub const A4_WIDTH_M: f64 = 0.210;
@@ -17,6 +18,8 @@ pub struct Sheet {
     pub width_m: f64,
     pub height_m: f64,
     pub views: Vec<DrawingView>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dimensions: Vec<LinearDimension>,
 }
 
 impl Sheet {
@@ -27,6 +30,7 @@ impl Sheet {
             width_m: A4_WIDTH_M,
             height_m: A4_HEIGHT_M,
             views: Vec::new(),
+            dimensions: Vec::new(),
         }
     }
 
@@ -39,6 +43,22 @@ impl Sheet {
         }
         for view in &self.views {
             view.validate(drawing_doc_id)?;
+        }
+        let mut dimension_ids = std::collections::BTreeSet::new();
+        for dimension in &self.dimensions {
+            if !dimension_ids.insert(dimension.id.as_str()) {
+                return Err(OpenCadError::validation(format!(
+                    "duplicate drawing dimension id '{}'",
+                    dimension.id
+                )));
+            }
+            if !self.views.iter().any(|view| view.id == dimension.view_id) {
+                return Err(OpenCadError::validation(format!(
+                    "drawing dimension '{}' references missing view '{}'",
+                    dimension.id, dimension.view_id
+                )));
+            }
+            dimension.validate()?;
         }
         Ok(())
     }
@@ -56,5 +76,15 @@ mod tests {
         let restored: Sheet = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(sheet, restored);
         Ok(())
+    }
+
+    #[test]
+    fn legacy_sheet_without_dimensions_deserializes_empty() {
+        let json = r#"{
+            "id":"sheet:a4","name":"Sheet 1","width_m":0.21,
+            "height_m":0.297,"views":[]
+        }"#;
+        let sheet: Sheet = serde_json::from_str(json).expect("legacy sheet");
+        assert!(sheet.dimensions.is_empty());
     }
 }

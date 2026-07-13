@@ -2,9 +2,10 @@
 
 use std::path::PathBuf;
 
-use opencad_core::{DocumentId, DocumentMetadata, SheetId, ViewId};
+use opencad_core::{DimensionId, DocumentId, DocumentMetadata, SheetId, ViewId};
 use opencad_drawing::{
-    DrawingModel, DrawingView, ModelReference, ProjectionKind, Sheet, A4_HEIGHT_M, A4_WIDTH_M,
+    DrawingModel, DrawingView, LinearDimension, ModelReference, ProjectionKind, Sheet, A4_HEIGHT_M,
+    A4_WIDTH_M,
 };
 use opencad_feature::bracket_with_hole;
 use opencad_file::{write_expanded_dir, OcadDocument};
@@ -50,6 +51,13 @@ fn write_bracket_front_view_example() {
                 1.0,
                 [0.05, 0.05],
             )],
+            dimensions: vec![LinearDimension {
+                id: DimensionId::new("dim:overall_width").expect("id"),
+                view_id: ViewId::new("view:front").expect("id"),
+                start_model_m: [0.0, 0.0, 0.0],
+                end_model_m: [0.08, 0.0, 0.0],
+                offset_m: -0.01,
+            }],
         }],
     }
     .sorted_deterministic();

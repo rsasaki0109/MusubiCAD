@@ -313,9 +313,10 @@ pub fn create_assembly_two_brackets_document(path: &str) -> Result<()> {
 }
 
 pub fn create_bracket_front_view_document(path: &str) -> Result<()> {
-    use opencad_core::{SheetId, ViewId};
+    use opencad_core::{DimensionId, SheetId, ViewId};
     use opencad_drawing::{
-        DrawingModel, DrawingView, ModelReference, ProjectionKind, Sheet, A4_HEIGHT_M, A4_WIDTH_M,
+        DrawingModel, DrawingView, LinearDimension, ModelReference, ProjectionKind, Sheet,
+        A4_HEIGHT_M, A4_WIDTH_M,
     };
     use std::path::Path;
 
@@ -338,6 +339,13 @@ pub fn create_bracket_front_view_document(path: &str) -> Result<()> {
                 1.0,
                 [0.05, 0.05],
             )],
+            dimensions: vec![LinearDimension {
+                id: DimensionId::new("dim:overall_width")?,
+                view_id: ViewId::new("view:front")?,
+                start_model_m: [0.0, 0.0, 0.0],
+                end_model_m: [0.08, 0.0, 0.0],
+                offset_m: -0.01,
+            }],
         }],
     }
     .sorted_deterministic();

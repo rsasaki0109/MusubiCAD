@@ -24,7 +24,33 @@
         "views": {
           "type": "array",
           "items": { "$ref": "#/$defs/view" }
+        },
+        "dimensions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/linear_dimension" }
         }
+      },
+      "additionalProperties": false
+    },
+    "linear_dimension": {
+      "type": "object",
+      "required": ["id", "view_id", "start_model_m", "end_model_m", "offset_m"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^dim:[a-zA-Z0-9_:/-]+$" },
+        "view_id": { "type": "string", "pattern": "^view:[a-zA-Z0-9_:/-]+$" },
+        "start_model_m": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "end_model_m": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "offset_m": { "type": "number" }
       },
       "additionalProperties": false
     },

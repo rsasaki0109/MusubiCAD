@@ -141,6 +141,7 @@ mod tests {
                 1.0,
                 [0.01, 0.01],
             )],
+            dimensions: Vec::new(),
         };
         let meshes = vec![ViewMesh {
             view_id: ViewId::new("view:front")?,
