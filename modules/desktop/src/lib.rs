@@ -18,8 +18,8 @@ pub use pick::{
     PickOptions, PickSummary, PickTarget, ScreenSegment,
 };
 pub use preview::{
-    load_view_data, preview_document, render_preview_png, CameraState, DocumentPreview, ViewData,
-    PREVIEW_HEIGHT, PREVIEW_WIDTH,
+    load_assembly_scene_from_document, load_view_data, preview_document, render_preview_png,
+    CameraState, DocumentPreview, ViewData, PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
 pub use regen::{tessellate_active_body, tessellate_active_body_detailed, TessellatedBody};
 pub use related_parameters::{

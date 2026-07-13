@@ -5,7 +5,9 @@ pub mod assembly;
 pub mod drawing;
 pub mod explain;
 pub mod intent;
+pub mod merge;
 pub mod patch;
+pub mod policy;
 pub mod query;
 pub mod state;
 pub mod validation;
@@ -23,7 +25,20 @@ pub use drawing::{
     list_drawing_views,
 };
 pub use explain::{explain_design, DesignExplanation, ExplainParams};
-pub use patch::{DesignPatch, FeatureExprField, FeatureRefField, PatchOperation};
+pub use intent::{
+    apply_approved_proposal, create_proposal, AgentIntent, AgentProposal, AgentSelection,
+    IntentProvider,
+};
+pub use merge::{
+    rebase_patch, semantic_three_way_merge, ConflictKind, SemanticConflict, SemanticMergeResult,
+};
+pub use patch::{
+    DesignPatch, ExpectedEffect, FeatureExprField, FeatureRefField, PatchOperation,
+    PatchPrecondition,
+};
+pub use policy::{
+    evaluate_policy, EngineeringMetrics, EngineeringPolicy, PolicyFinding, PolicyReport, PolicyRule,
+};
 pub use query::{
     get_semantic_ref, list_semantic_refs, query_needs_scene, run_query, DesignQuery, FaceGroupInfo,
     OverlayLineInfo, ParameterInfo, QueryParams, QueryResult, SceneQueryContext, SemanticRefInfo,

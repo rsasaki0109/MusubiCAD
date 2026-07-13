@@ -1,0 +1,82 @@
+{
+  "document_id": "doc:bracket_001",
+  "intent": "Increase bracket width for a wider mounting pattern",
+  "rationale": "The downstream enclosure requires 20 mm additional clearance.",
+  "patch_file": "review_width_patch.json",
+  "diff": {
+    "diff_type": "semantic",
+    "summary": "param:width: 80 mm -> 100 mm",
+    "changes": [
+      {
+        "kind": "parameter_changed",
+        "id": "param:width",
+        "before": "80 mm",
+        "after": "100 mm"
+      },
+      {
+        "kind": "mass_changed",
+        "before": "76.50 g",
+        "after": "84.10 g"
+      }
+    ],
+    "geometry": {
+      "volume_before": 0.00002833178323652379,
+      "volume_after": 0.00003114947927485105,
+      "mass_before": 0.07649581473861423,
+      "mass_after": 0.08410359404209784
+    }
+  },
+  "geometry": {
+    "before_bounds_m": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.08,
+        0.06,
+        0.006
+      ]
+    ],
+    "after_bounds_m": [
+      [
+        0.0,
+        6.3362164e-15,
+        0.0
+      ],
+      [
+        0.09998689,
+        0.06,
+        0.006
+      ]
+    ],
+    "before_triangles": 144,
+    "after_triangles": 144,
+    "before_interference_count": null,
+    "after_interference_count": null
+  },
+  "expected_effects": [
+    {
+      "effect": {
+        "type": "parameter_expr_equals",
+        "id": "param:width",
+        "expr": "100 mm"
+      },
+      "passed": true,
+      "message": "parameter 'param:width' expression is 100 mm"
+    },
+    {
+      "effect": {
+        "type": "mass_delta_kg",
+        "min": 0.006,
+        "max": 0.009
+      },
+      "passed": true,
+      "message": "mass delta is 0.007607779303483608 kg"
+    }
+  ],
+  "before_image": "before.png",
+  "after_image": "after.png",
+  "comparison_gif": "comparison.gif"
+}

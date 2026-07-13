@@ -136,6 +136,48 @@ pub fn render_orbit_gif(
     })
 }
 
+/// Encode pre-rendered, equal-sized RGBA frames as a deterministic looping GIF.
+pub fn write_gif_frames(
+    frames: &[crate::RenderImage],
+    frames_per_second: u32,
+    output: impl AsRef<Path>,
+) -> Result<AnimationSummary> {
+    let first = frames
+        .first()
+        .ok_or_else(|| OpenCadError::validation("GIF requires at least one frame"))?;
+    if frames_per_second == 0 {
+        return Err(OpenCadError::validation("GIF frame rate must be positive"));
+    }
+    if frames
+        .iter()
+        .any(|frame| frame.width != first.width || frame.height != first.height)
+    {
+        return Err(OpenCadError::validation(
+            "GIF frames must have identical pixel dimensions",
+        ));
+    }
+    let file = File::create(output.as_ref())
+        .map_err(|err| OpenCadError::Other(format!("failed to create GIF: {err}")))?;
+    let mut encoder = GifEncoder::new_with_speed(file, 20);
+    encoder
+        .set_repeat(Repeat::Infinite)
+        .map_err(|err| OpenCadError::Other(format!("failed to configure GIF: {err}")))?;
+    let delay = Delay::from_numer_denom_ms(1000, frames_per_second);
+    for frame in frames {
+        let image = RgbaImage::from_raw(frame.width, frame.height, frame.rgba.clone())
+            .ok_or_else(|| OpenCadError::validation("invalid GIF RGBA buffer"))?;
+        encoder
+            .encode_frame(Frame::from_parts(image, 0, 0, delay))
+            .map_err(|err| OpenCadError::Other(format!("failed to encode GIF frame: {err}")))?;
+    }
+    Ok(AnimationSummary {
+        width_px: first.width,
+        height_px: first.height,
+        frame_count: frames.len() as u32,
+        frames_per_second,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -175,5 +217,28 @@ mod tests {
         assert!(bytes.starts_with(b"GIF89a"));
         render_orbit_gif(&renderer, &scene, None, options, &second_path).expect("second gif");
         assert_eq!(bytes, std::fs::read(second_path).expect("read second gif"));
+    }
+
+    #[test]
+    fn writes_pre_rendered_gif_frames() {
+        let dir = tempdir().expect("tempdir");
+        let path = dir.path().join("review.gif");
+        let frames = [
+            crate::RenderImage {
+                width: 2,
+                height: 1,
+                rgba: vec![255, 0, 0, 255, 255, 0, 0, 255],
+                non_background_pixels: 2,
+            },
+            crate::RenderImage {
+                width: 2,
+                height: 1,
+                rgba: vec![0, 255, 0, 255, 0, 255, 0, 255],
+                non_background_pixels: 2,
+            },
+        ];
+        let summary = write_gif_frames(&frames, 2, &path).expect("gif");
+        assert_eq!(summary.frame_count, 2);
+        assert!(std::fs::read(path).expect("read").starts_with(b"GIF89a"));
     }
 }

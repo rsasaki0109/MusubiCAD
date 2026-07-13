@@ -7,11 +7,14 @@ use crate::agent;
 use crate::animate;
 use crate::diff;
 use crate::export;
+use crate::git_workflow;
 use crate::mesh;
 use crate::new;
 use crate::patch;
 use crate::pick;
+use crate::policy_check;
 use crate::regen;
+use crate::review;
 use crate::view;
 
 pub fn run() -> Result<()> {
@@ -41,6 +44,10 @@ pub fn run() -> Result<()> {
         }
         Some("patch") => cmd_patch(args.collect()),
         Some("diff") => cmd_diff(args.collect()),
+        Some("review") => cmd_review(args.collect()),
+        Some("merge") => git_workflow::merge(args.collect()),
+        Some("rebase-patch") => git_workflow::rebase(args.collect()),
+        Some("check") => policy_check::check(args.collect()),
         Some("agent") => cmd_agent(args.collect()),
         Some(cmd) => Err(opencad_core::OpenCadError::Other(format!(
             "unknown command '{cmd}'; run 'opencad help' for usage"
@@ -298,6 +305,15 @@ fn cmd_diff(args: Vec<String>) -> Result<()> {
     Ok(())
 }
 
+fn cmd_review(args: Vec<String>) -> Result<()> {
+    let args = review::parse_review_args(&args)?;
+    let artifact = review::generate_review(&args)?;
+    println!("review: {}/review.html", args.output_dir);
+    println!("document: {}", artifact.document_id);
+    println!("changes: {}", artifact.diff.changes.len());
+    Ok(())
+}
+
 fn cmd_agent(args: Vec<String>) -> Result<()> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print_agent_help();
@@ -368,6 +384,10 @@ COMMANDS:
     animate     Render a deterministic presentation orbit GIF
     patch       Apply a DesignPatch JSON to parameters
     diff        Show semantic diff between documents or a patch preview
+    review      Generate a self-contained DesignPatch review directory
+    merge       Semantically merge base/ours/theirs Design Graph documents
+    rebase-patch Rebase a DesignPatch onto a newer document state
+    check       Evaluate an engineering policy as a CI gate
     agent       JSON-RPC 2.0 server on stdio for programmatic access
 
 OPTIONS (patch):
@@ -404,6 +424,10 @@ EXAMPLES:
     opencad patch bracket.ocad.d combined.patch.json --dry-run --geometry
     opencad diff bracket.ocad.d --patch width.patch.json --geometry
     opencad diff before.ocad.d after.ocad.d --json
+    opencad review bracket.ocad.d width.patch.json --output review
+    opencad merge base.ocad.d ours.ocad.d theirs.ocad.d merged.ocad.d
+    opencad rebase-patch old.ocad.d new.ocad.d change.json rebased.json
+    opencad check bracket.ocad.d engineering-policy.json
 "
     );
 }

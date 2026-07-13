@@ -14,7 +14,7 @@ pub mod stroke_font;
 pub mod viewport;
 pub mod wgpu_renderer;
 
-pub use animation::{render_orbit_gif, AnimationOptions, AnimationSummary};
+pub use animation::{render_orbit_gif, write_gif_frames, AnimationOptions, AnimationSummary};
 pub use camera::{project_world_to_screen, OrbitCamera};
 pub use face_catalog::{FaceCatalog, FaceGroup, FaceRole};
 pub use mesh::RenderMesh;

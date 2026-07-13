@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>ForgeCAD Review</title><style>body{margin:0;background:#111722;color:#e7edf7;font:16px system-ui}main{max-width:1100px;margin:auto;padding:48px}.eyebrow{color:#6dd5ff;letter-spacing:.18em}h1{font-size:42px;margin:.2em 0}.hero{width:100%;border-radius:12px}.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0}.compare img{width:100%}figure{margin:0;background:#1d2635;padding:12px;border-radius:10px}figcaption{padding-top:8px}pre{white-space:pre-wrap;background:#0a0f18;padding:20px;border-radius:10px;overflow:auto}</style></head><body><main><p class="eyebrow">FORGECAD DESIGN REVIEW</p><h1>Increase bracket width for a wider mounting pattern</h1><p>The downstream enclosure requires 20 mm additional clearance.</p><img class="hero" src="comparison.gif" alt="Before and after geometry"><section class="compare"><figure><img src="before.png"><figcaption>Before</figcaption></figure><figure><img src="after.png"><figcaption>After</figcaption></figure></section><h2>Semantic and geometric diff</h2><pre>{
+  &quot;diff_type&quot;: &quot;semantic&quot;,
+  &quot;summary&quot;: &quot;param:width: 80 mm -&gt; 100 mm&quot;,
+  &quot;changes&quot;: [
+    {
+      &quot;kind&quot;: &quot;parameter_changed&quot;,
+      &quot;id&quot;: &quot;param:width&quot;,
+      &quot;before&quot;: &quot;80 mm&quot;,
+      &quot;after&quot;: &quot;100 mm&quot;
+    },
+    {
+      &quot;kind&quot;: &quot;mass_changed&quot;,
+      &quot;before&quot;: &quot;76.50 g&quot;,
+      &quot;after&quot;: &quot;84.10 g&quot;
+    }
+  ],
+  &quot;geometry&quot;: {
+    &quot;volume_before&quot;: 0.00002833178323652379,
+    &quot;volume_after&quot;: 0.00003114947927485105,
+    &quot;mass_before&quot;: 0.07649581473861423,
+    &quot;mass_after&quot;: 0.08410359404209784
+  }
+}</pre></main></body></html>

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgecad.dev/schemas/ocad.patch.v0.1.json",
+  "title": "ForgeCAD DesignPatch",
+  "type": "object",
+  "required": ["operations"],
+  "properties": {
+    "intent": { "type": "string", "minLength": 1 },
+    "rationale": { "type": "string", "minLength": 1 },
+    "preconditions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/precondition" }
+    },
+    "expected_effects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/expected_effect" }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type"]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "precondition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "id", "expr"],
+          "properties": {
+            "type": { "const": "parameter_expr_equals" },
+            "id": { "type": "string", "pattern": "^param:" },
+            "expr": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "const": "feature_exists" },
+            "id": { "type": "string", "pattern": "^feature:" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "ref_id"],
+          "properties": {
+            "type": { "const": "topo_ref_exists" },
+            "ref_id": { "type": "string", "pattern": "^ref:" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "expected_effect": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "parameter_expr_equals",
+            "mass_delta_kg",
+            "drawing_changed",
+            "no_assembly_interference"
+          ]
+        },
+        "id": { "type": "string" },
+        "expr": { "type": "string" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "expected": { "type": "boolean" }
+      }
+    }
+  }
+}

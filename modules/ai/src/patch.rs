@@ -121,19 +121,75 @@ pub enum PatchOperation {
     },
 }
 
+/// State assertion that must hold before any patch operation is applied.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum PatchPrecondition {
+    /// Require a parameter to exist with the exact source expression.
+    ParameterExprEquals { id: String, expr: String },
+    /// Require a feature node to exist.
+    FeatureExists { id: String },
+    /// Require a semantic topology reference to exist.
+    TopoRefExists { ref_id: String },
+}
+
+/// Reviewable effect that should be verified after regeneration.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ExpectedEffect {
+    /// Require a parameter expression in the resulting Design Graph.
+    ParameterExprEquals { id: String, expr: String },
+    /// Require regenerated mass delta to remain inside an inclusive kilogram range.
+    MassDeltaKg { min: f64, max: f64 },
+    /// Require drawing graph data to change or remain unchanged.
+    DrawingChanged { expected: bool },
+    /// Require the resulting assembly to contain no interference.
+    NoAssemblyInterference,
+}
+
 fn default_normal_up() -> [f32; 3] {
     [0.0, 0.0, 1.0]
 }
 
 /// Semantic patch applied by agents or CLI tooling.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DesignPatch {
+    /// Short human-readable statement of the requested design change.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub intent: Option<String>,
+    /// Explanation of why the change is proposed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rationale: Option<String>,
+    /// Assertions protecting the patch from stale or incompatible design state.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub preconditions: Vec<PatchPrecondition>,
+    /// Post-regeneration effects checked by the review workflow.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub expected_effects: Vec<ExpectedEffect>,
     pub operations: Vec<PatchOperation>,
 }
 
 impl DesignPatch {
     pub fn new(operations: Vec<PatchOperation>) -> Self {
-        Self { operations }
+        Self {
+            operations,
+            ..Self::default()
+        }
+    }
+
+    /// Attach review intent, rationale, preconditions, and expected effects.
+    pub fn with_review_metadata(
+        mut self,
+        intent: impl Into<String>,
+        rationale: impl Into<String>,
+        preconditions: Vec<PatchPrecondition>,
+        expected_effects: Vec<ExpectedEffect>,
+    ) -> Self {
+        self.intent = Some(intent.into());
+        self.rationale = Some(rationale.into());
+        self.preconditions = preconditions;
+        self.expected_effects = expected_effects;
+        self
     }
 
     pub fn set_parameter(id: impl Into<String>, expr: impl Into<String>) -> Self {
@@ -142,6 +198,7 @@ impl DesignPatch {
                 id: id.into(),
                 expr: expr.into(),
             }],
+            ..Self::default()
         }
     }
 
@@ -156,6 +213,7 @@ impl DesignPatch {
                     expr: expr.into(),
                 })
                 .collect(),
+            ..Self::default()
         }
     }
 
@@ -170,6 +228,7 @@ impl DesignPatch {
                 field: field.as_str().to_string(),
                 expr: expr.into(),
             }],
+            ..Self::default()
         }
     }
 
@@ -184,6 +243,7 @@ impl DesignPatch {
                 field: field.as_str().to_string(),
                 ref_id: ref_id.into(),
             }],
+            ..Self::default()
         }
     }
 
@@ -200,7 +260,52 @@ impl DesignPatch {
                 role: role.into(),
                 normal_m: default_normal_up(),
             }],
+            ..Self::default()
         }
+    }
+
+    /// Verify every precondition against the unmodified Design Graph state.
+    pub fn validate_preconditions(
+        &self,
+        parameters: &ParamGraph,
+        feature_nodes: &[FeatureNode],
+        semantic_refs: &[TopoRef],
+    ) -> Result<()> {
+        for precondition in &self.preconditions {
+            match precondition {
+                PatchPrecondition::ParameterExprEquals { id, expr } => {
+                    let actual = parameters.get(id).ok_or_else(|| {
+                        OpenCadError::validation(format!(
+                            "patch precondition failed: parameter '{id}' does not exist"
+                        ))
+                    })?;
+                    if actual.expr != *expr {
+                        return Err(OpenCadError::validation(format!(
+                            "patch precondition failed: parameter '{id}' expected expression '{expr}', found '{}'",
+                            actual.expr
+                        )));
+                    }
+                }
+                PatchPrecondition::FeatureExists { id } => {
+                    if !feature_nodes.iter().any(|node| node.id == *id) {
+                        return Err(OpenCadError::validation(format!(
+                            "patch precondition failed: feature '{id}' does not exist"
+                        )));
+                    }
+                }
+                PatchPrecondition::TopoRefExists { ref_id } => {
+                    if !semantic_refs
+                        .iter()
+                        .any(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
+                    {
+                        return Err(OpenCadError::validation(format!(
+                            "patch precondition failed: topology reference '{ref_id}' does not exist"
+                        )));
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn apply_to_parameters(&self, graph: &mut ParamGraph) -> Result<()> {
@@ -295,6 +400,7 @@ impl DesignPatch {
         assembly: Option<&mut opencad_assembly::AssemblyModel>,
         drawing: Option<&mut opencad_drawing::DrawingModel>,
     ) -> Result<()> {
+        self.validate_preconditions(parameters, feature_nodes, semantic_refs)?;
         self.apply_to_parameters(parameters)?;
         self.apply_to_features(feature_nodes)?;
         self.apply_to_semantic_refs(semantic_refs)?;
@@ -533,5 +639,39 @@ mod tests {
         assert_eq!(semantic_refs.len(), 1);
         assert_eq!(semantic_refs[0].ref_id.as_str(), "ref:face:bracket_top");
         assert_eq!(semantic_refs[0].semantic.role.as_deref(), Some("top"));
+    }
+
+    #[test]
+    fn stale_parameter_precondition_rejects_patch_before_mutation() {
+        let mut params = bracket_parameters();
+        let mut nodes = Vec::new();
+        let mut refs = Vec::new();
+        let patch = DesignPatch::set_parameter("param:width", "100 mm").with_review_metadata(
+            "Increase width",
+            "Fit the larger enclosure",
+            vec![PatchPrecondition::ParameterExprEquals {
+                id: "param:width".into(),
+                expr: "75 mm".into(),
+            }],
+            vec![ExpectedEffect::ParameterExprEquals {
+                id: "param:width".into(),
+                expr: "100 mm".into(),
+            }],
+        );
+        patch
+            .apply_to_document(&mut params, &mut nodes, &mut refs, None, None)
+            .expect_err("stale patch");
+        assert_eq!(params.get("param:width").expect("width").expr, "80 mm");
+    }
+
+    #[test]
+    fn legacy_operations_only_patch_deserializes() {
+        let patch: DesignPatch = serde_json::from_str(
+            r#"{"operations":[{"type":"set_parameter","id":"param:width","expr":"100 mm"}]}"#,
+        )
+        .expect("legacy patch");
+        assert!(patch.intent.is_none());
+        assert!(patch.preconditions.is_empty());
+        assert_eq!(patch.operations.len(), 1);
     }
 }
