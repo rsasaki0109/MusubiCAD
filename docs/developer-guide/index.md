@@ -23,6 +23,8 @@ cargo run -p opencad-cli -- new my_holes.ocad.d hole-ring
 cargo run -p opencad-cli -- new my_bosses.ocad.d pin-row
 cargo run -p opencad-cli -- new my_ring.ocad.d pin-ring
 cargo run -p opencad-cli -- new my_mirror.ocad.d pin-mirror
+cargo run -p opencad-cli -- animate examples/assembly_two_brackets.ocad.d showcase.gif \
+  --frames 36 --fps 12 --orbit-deg 220 --pitch-deg 26
 ```
 
 ## Workspace layout

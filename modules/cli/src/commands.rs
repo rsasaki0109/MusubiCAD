@@ -4,6 +4,7 @@ use opencad_core::Result;
 use opencad_file::{read_ocad, validate_ocad};
 
 use crate::agent;
+use crate::animate;
 use crate::diff;
 use crate::export;
 use crate::mesh;
@@ -33,6 +34,11 @@ pub fn run() -> Result<()> {
         Some("pick") => cmd_pick(args.next().as_deref(), args.collect()),
         Some("view") => cmd_view(args.next().as_deref()),
         Some("screenshot") => cmd_screenshot(args.next().as_deref(), args.next().as_deref()),
+        Some("animate") => {
+            let input = args.next();
+            let output = args.next();
+            cmd_animate(input.as_deref(), output.as_deref(), args.collect())
+        }
         Some("patch") => cmd_patch(args.collect()),
         Some("diff") => cmd_diff(args.collect()),
         Some("agent") => cmd_agent(args.collect()),
@@ -257,6 +263,24 @@ fn cmd_screenshot(input: Option<&str>, output: Option<&str>) -> Result<()> {
     view::screenshot_document(input, output)
 }
 
+fn cmd_animate(input: Option<&str>, output: Option<&str>, args: Vec<String>) -> Result<()> {
+    let input = input.ok_or_else(|| {
+        opencad_core::OpenCadError::validation(
+            "usage: opencad animate <input> <output.gif> [--frames N] [--fps N] [--orbit-deg DEG] [--pitch-deg DEG] [--show-sketch]",
+        )
+    })?;
+    let output = output.ok_or_else(|| {
+        opencad_core::OpenCadError::validation("animation output path is required")
+    })?;
+    let options = animate::parse_animation_options(&args)?;
+    let summary = animate::animate_document(input, output, options)?;
+    println!("animation: {output}");
+    println!("frames: {}", summary.frame_count);
+    println!("fps: {}", summary.frames_per_second);
+    println!("size_px: {}x{}", summary.width_px, summary.height_px);
+    Ok(())
+}
+
 fn cmd_patch(args: Vec<String>) -> Result<()> {
     let parsed = patch::parse_patch_args(args)?;
     patch::patch_document_with_options(&parsed)
@@ -341,6 +365,7 @@ COMMANDS:
     pick        Query viewport selection at a pixel coordinate
     view        Open an interactive 3D viewport
     screenshot  Render a PNG preview of the active body
+    animate     Render a deterministic presentation orbit GIF
     patch       Apply a DesignPatch JSON to parameters
     diff        Show semantic diff between documents or a patch preview
     agent       JSON-RPC 2.0 server on stdio for programmatic access
@@ -374,6 +399,7 @@ EXAMPLES:
     opencad pick bracket.ocad.d --x 256 --y 256 --json
     opencad view bracket.ocad.d
     opencad screenshot bracket.ocad.d preview.png
+    opencad animate bracket.ocad.d showcase.gif --frames 48 --fps 12 --orbit-deg 220
     opencad patch bracket.ocad.d width.patch.json
     opencad patch bracket.ocad.d combined.patch.json --dry-run --geometry
     opencad diff bracket.ocad.d --patch width.patch.json --geometry

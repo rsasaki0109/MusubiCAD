@@ -14,7 +14,7 @@ pub struct RenderMesh {
 
 impl RenderMesh {
     pub fn from_mesh_set(mesh: &MeshSet) -> Self {
-        Self::from_mesh_set_with_color(mesh, [0.72, 0.76, 0.82, 1.0])
+        Self::from_mesh_set_with_color(mesh, [0.22, 0.55, 0.86, 1.0])
     }
 
     pub fn from_mesh_set_with_color(mesh: &MeshSet, base_color: [f32; 4]) -> Self {

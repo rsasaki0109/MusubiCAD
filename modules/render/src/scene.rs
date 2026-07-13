@@ -97,7 +97,7 @@ impl RenderScene {
         for (index, mesh_set) in mesh_sets.iter().enumerate() {
             let color = colors
                 .and_then(|palette| palette.get(index).copied())
-                .unwrap_or([0.72, 0.76, 0.82, 1.0]);
+                .unwrap_or([0.22, 0.55, 0.86, 1.0]);
             let mesh = RenderMesh::from_mesh_set_with_color(mesh_set, color);
             let mesh_bounds = BoundingBox::from_positions(&mesh.positions)?;
             bounds.merge(&mesh_bounds);

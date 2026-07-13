@@ -108,6 +108,7 @@ mod tests {
         let nodes: Vec<FeatureNode> = model.nodes.into_values().collect();
         let face = FaceGroup {
             index: 0,
+            mesh_index: 0,
             role: FaceRole::Cylindrical,
             normal: [1.0, 0.0, 0.0],
             centroid: [0.0, 0.0, 0.0],
@@ -129,6 +130,7 @@ mod tests {
         let nodes: Vec<FeatureNode> = model.nodes.into_values().collect();
         let face = FaceGroup {
             index: 0,
+            mesh_index: 0,
             role: FaceRole::Top,
             normal: [0.0, 1.0, 0.0],
             centroid: [0.0, 0.0, 0.0],

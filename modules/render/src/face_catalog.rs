@@ -41,6 +41,8 @@ impl FaceRole {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FaceGroup {
     pub index: usize,
+    /// Zero-based scene mesh containing this face group.
+    pub mesh_index: usize,
     pub kernel_face_id: Option<u64>,
     pub role: FaceRole,
     pub normal: [f32; 3],
@@ -59,11 +61,9 @@ impl FaceCatalog {
     pub fn from_meshes(meshes: &[RenderMesh], bounds: &BoundingBox) -> Result<Self> {
         let mut groups = Vec::new();
         let mut triangle_group = Vec::new();
-        let mut triangle_index = 0_usize;
-
-        for mesh in meshes {
+        for (mesh_index, mesh) in meshes.iter().enumerate() {
             let use_kernel_faces = mesh.has_triangle_face_ids();
-            for triangle in mesh.indices.chunks_exact(3) {
+            for (mesh_triangle_index, triangle) in mesh.indices.chunks_exact(3).enumerate() {
                 let positions = [
                     mesh.positions[triangle[0] as usize],
                     mesh.positions[triangle[1] as usize],
@@ -73,17 +73,23 @@ impl FaceCatalog {
                 let centroid = triangle_centroid(positions);
                 let role = classify_normal(normal, bounds);
                 let kernel_face_id = if use_kernel_faces {
-                    Some(mesh.triangle_face_ids[triangle_index])
+                    Some(mesh.triangle_face_ids[mesh_triangle_index])
                 } else {
                     None
                 };
                 let group_index = if let Some(kernel_face_id) = kernel_face_id {
-                    group_index_for_kernel_face(&mut groups, kernel_face_id, role, normal, centroid)
+                    group_index_for_kernel_face(
+                        &mut groups,
+                        mesh_index,
+                        kernel_face_id,
+                        role,
+                        normal,
+                        centroid,
+                    )
                 } else {
-                    group_index_for(&mut groups, role, normal, centroid, triangle_index)
+                    group_index_for(&mut groups, mesh_index, role, normal, centroid)
                 };
                 triangle_group.push(group_index);
-                triangle_index += 1;
             }
         }
 
@@ -123,15 +129,15 @@ struct GroupKey {
 
 fn group_index_for_kernel_face(
     groups: &mut Vec<FaceGroup>,
+    mesh_index: usize,
     kernel_face_id: u64,
     role: FaceRole,
     normal: [f32; 3],
     centroid: [f32; 3],
 ) -> usize {
-    if let Some(index) = groups
-        .iter()
-        .position(|group| group.kernel_face_id == Some(kernel_face_id))
-    {
+    if let Some(index) = groups.iter().position(|group| {
+        group.mesh_index == mesh_index && group.kernel_face_id == Some(kernel_face_id)
+    }) {
         groups[index].triangle_count += 1;
         return index;
     }
@@ -139,6 +145,7 @@ fn group_index_for_kernel_face(
     let index = groups.len();
     groups.push(FaceGroup {
         index,
+        mesh_index,
         kernel_face_id: Some(kernel_face_id),
         role,
         normal,
@@ -150,16 +157,15 @@ fn group_index_for_kernel_face(
 
 fn group_index_for(
     groups: &mut Vec<FaceGroup>,
+    mesh_index: usize,
     role: FaceRole,
     normal: [f32; 3],
     centroid: [f32; 3],
-    triangle_index: usize,
 ) -> usize {
     let key = group_key(role, normal, centroid);
-    if let Some(index) = groups
-        .iter()
-        .position(|group| group_key(group.role, group.normal, group.centroid) == key)
-    {
+    if let Some(index) = groups.iter().position(|group| {
+        group.mesh_index == mesh_index && group_key(group.role, group.normal, group.centroid) == key
+    }) {
         groups[index].triangle_count += 1;
         return index;
     }
@@ -167,13 +173,13 @@ fn group_index_for(
     let index = groups.len();
     groups.push(FaceGroup {
         index,
+        mesh_index,
         kernel_face_id: None,
         role,
         normal,
         centroid,
         triangle_count: 1,
     });
-    let _ = triangle_index;
     index
 }
 
@@ -313,6 +319,28 @@ mod tests {
         assert_eq!(
             catalog.group_at(2).and_then(|group| group.kernel_face_id),
             Some(2)
+        );
+    }
+
+    #[test]
+    fn catalog_keeps_kernel_faces_separate_across_meshes() {
+        let first = RenderMesh::from_mesh_set(&MeshSet::box_prism(0.08, 0.001));
+        let mut second = first.clone();
+        for position in &mut second.positions {
+            position[0] += 0.1;
+        }
+        let mut bounds = BoundingBox::from_positions(&first.positions).expect("first bounds");
+        bounds.merge(&BoundingBox::from_positions(&second.positions).expect("second bounds"));
+        let catalog = FaceCatalog::from_meshes(&[first, second], &bounds).expect("catalog");
+        assert_eq!(catalog.triangle_count(), 8);
+        assert_eq!(catalog.groups.len(), 4);
+        assert_eq!(
+            catalog
+                .groups
+                .iter()
+                .filter(|group| group.mesh_index == 1)
+                .count(),
+            2
         );
     }
 }

@@ -53,7 +53,7 @@ wgpu = "24"
 pollster = "0.4"
 bytemuck = { version = "1", features = ["derive"] }
 winit = "0.29"
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "gif"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

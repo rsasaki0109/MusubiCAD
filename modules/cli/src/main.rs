@@ -1,4 +1,5 @@
 mod agent;
+mod animate;
 mod commands;
 mod diff;
 mod export;

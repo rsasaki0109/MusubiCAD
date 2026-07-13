@@ -153,8 +153,19 @@ impl OffscreenRenderer {
         let mut camera = *camera;
         camera.aspect = width as f32 / height.max(1) as f32;
         let view_proj = camera.view_projection_matrix();
-        let bind_group =
-            create_uniform_bind_group(&self.device, &self.uniform_layout, &Uniforms { view_proj });
+        let bind_group = create_uniform_bind_group(
+            &self.device,
+            &self.uniform_layout,
+            &Uniforms {
+                view_proj,
+                eye_position: [
+                    camera.eye_position()[0],
+                    camera.eye_position()[1],
+                    camera.eye_position()[2],
+                    1.0,
+                ],
+            },
+        );
         let mesh_buffers = create_mesh_buffers(&self.device, &vertices, &indices);
         let model_lines = overlay
             .map(|overlay| create_line_buffers(&self.device, &overlay.model_line_vertices()))

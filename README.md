@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/forgecad-demo.gif" alt="ForgeCAD regenerating a parametric OCCT model and exporting an engineering drawing with a model-driven dimension" width="960">
+  <img src="docs/assets/forgecad-showcase.gif" alt="ForgeCAD deterministic presentation orbit of a two-component assembly with feature edges and floor grid" width="960">
 </p>
 
 <p align="center">
-  <sub>One source of truth: Design Graph → OCCT regeneration → wgpu viewport → engineering drawing.</sub>
+  <sub>Deterministic Design Graph → OCCT regeneration → presentation viewport → reproducible GIF export.</sub>
 </p>
 
 <p align="center">
@@ -83,6 +83,7 @@ cargo run -p opencad-cli -- new examples/bracket_pin_row.ocad.d pin-row
 cargo run -p opencad-cli -- new examples/bracket_pin_ring.ocad.d pin-ring
 cargo run -p opencad-cli -- new examples/bracket_pin_mirror.ocad.d pin-mirror
 cargo run -p opencad-cli -- regen examples/bracket.ocad.d
+cargo run -p opencad-cli -- animate examples/assembly_two_brackets.ocad.d showcase.gif
 
 # Agent API (JSON-RPC on stdio)
 echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"examples/bracket.ocad.d"}}' \

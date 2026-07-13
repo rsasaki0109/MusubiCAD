@@ -10,6 +10,7 @@ use crate::scene::RenderScene;
 pub(crate) const SHADER_SOURCE: &str = r#"
 struct Uniforms {
     view_proj: mat4x4<f32>,
+    eye_position: vec4<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -24,6 +25,7 @@ struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) normal: vec3<f32>,
     @location(1) color: vec3<f32>,
+    @location(2) world_position: vec3<f32>,
 }
 
 @vertex
@@ -32,14 +34,20 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     output.position = uniforms.view_proj * vec4<f32>(input.position, 1.0);
     output.normal = input.normal;
     output.color = input.color;
+    output.world_position = input.position;
     return output;
 }
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    let light = normalize(vec3<f32>(0.35, 0.85, 0.4));
-    let ndotl = max(dot(normalize(input.normal), light), 0.18);
-    return vec4<f32>(input.color * ndotl, 1.0);
+    let normal = normalize(input.normal);
+    let key = max(dot(normal, normalize(vec3<f32>(0.45, 0.8, 0.55))), 0.0);
+    let fill = max(dot(normal, normalize(vec3<f32>(-0.7, 0.25, -0.4))), 0.0);
+    let view_direction = normalize(uniforms.eye_position.xyz - input.world_position);
+    let rim = pow(1.0 - max(dot(normal, view_direction), 0.0), 2.5);
+    let lighting = 0.2 + key * 0.68 + fill * 0.18;
+    let color = input.color * lighting + vec3<f32>(0.18, 0.42, 0.72) * rim * 0.32;
+    return vec4<f32>(color, 1.0);
 }
 "#;
 
@@ -62,6 +70,7 @@ pub(crate) struct GpuVertex {
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub(crate) struct Uniforms {
     pub view_proj: [f32; 16],
+    pub eye_position: [f32; 4],
 }
 
 pub(crate) struct MeshBuffers {
@@ -119,7 +128,7 @@ pub(crate) fn create_solid_pipeline(
         label: Some("uniform-layout"),
         entries: &[wgpu::BindGroupLayoutEntry {
             binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX,
+            visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
             ty: wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Uniform,
                 has_dynamic_offset: false,
@@ -477,7 +486,7 @@ pub(crate) fn encode_line_pass(
             view: depth_view,
             depth_ops: Some(wgpu::Operations {
                 load: wgpu::LoadOp::Load,
-                store: wgpu::StoreOp::Discard,
+                store: wgpu::StoreOp::Store,
             }),
             stencil_ops: None,
         }),

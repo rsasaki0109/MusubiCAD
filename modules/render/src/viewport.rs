@@ -548,8 +548,15 @@ impl ViewportApp {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         let view_proj = self.camera.view_projection_matrix();
-        let bind_group =
-            create_uniform_bind_group(&self.device, &self.uniform_layout, &Uniforms { view_proj });
+        let eye = self.camera.eye_position();
+        let bind_group = create_uniform_bind_group(
+            &self.device,
+            &self.uniform_layout,
+            &Uniforms {
+                view_proj,
+                eye_position: [eye[0], eye[1], eye[2], 1.0],
+            },
+        );
 
         let mut encoder = self
             .device
