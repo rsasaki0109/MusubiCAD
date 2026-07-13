@@ -25,7 +25,7 @@ SVG sheets.
 
 ### M4.2 — Hidden-line removal (Task-177)
 
-- [ ] `hidden_line.rs` integration with OCCT or mesh-based HLR
+- [x] Deterministic mesh-based HLR with dashed hidden edges in SVG
 
 ### M4.3 — Dimensions (Task-179)
 
@@ -40,5 +40,5 @@ SVG sheets.
 
 ## Notes
 
-- MVP export uses tessellated mesh edges, not true HLR.
+- HLR uses a tessellated-mesh midpoint depth test; partially occluded edges are not split.
 - Windows MSVC OCCT link errors (`LNK2019`) remain a pre-existing environment issue.

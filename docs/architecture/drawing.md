@@ -26,15 +26,16 @@ document at export time, tessellates it, and projects mesh edges onto the sheet.
 | `document.ocad.json` | `DocumentMetadata` with `kind: drawing` |
 | `graph/drawings.json` | `{ "drawing": DrawingModel }` |
 
-## Export pipeline (M4.1 MVP)
+## Export pipeline
 
 1. Load drawing document and first sheet.
 2. For each view, resolve `ModelReference.source_path` relative to the drawing directory.
 3. Tessellate the referenced model (part or assembly).
-4. Project triangle edges with `ProjectionKind` and place on the sheet.
-5. Emit wireframe SVG in millimeter user units (`export_svg::render_sheet_svg`).
+4. Project triangle edges with `ProjectionKind` and classify their visibility.
+5. Place visible and hidden segments on the sheet.
+6. Emit SVG in millimeter user units (`export_svg::render_sheet_svg`), using dashed hidden lines.
 
-Hidden-line removal (Task-177) and model-driven dimensions (Task-179) are deferred.
+Model-driven dimensions (Task-179) are deferred.
 
 ## Module boundaries
 
@@ -43,3 +44,11 @@ Hidden-line removal (Task-177) and model-driven dimensions (Task-179) are deferr
 | `opencad-drawing` | Model, projection, wireframe layout, SVG export |
 | `opencad-file` | `graph/drawings.json` serialization |
 | `opencad-cli` | `opencad new … drawing`, `opencad export … .svg` |
+## Hidden-line classification
+
+SVG drawing views classify tessellated mesh edges using projected triangle depth.
+Edges hidden at their midpoint are emitted as dashed lines, while coincident
+visible and hidden edges collapse to the visible edge. Comparisons use a
+`1e-7 m` depth tolerance. Tessellation diagonals with matching B-Rep face IDs are
+omitted. Because occlusion is sampled at the midpoint, partially occluded edges
+are not split in the current implementation.

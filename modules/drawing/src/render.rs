@@ -1,10 +1,11 @@
 //! Wireframe extraction and sheet layout for drawing export.
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 
 use opencad_core::{OpenCadError, Result, ViewId};
 use opencad_geometry::MeshSet;
 
+use crate::hidden_line::{classify_hidden_lines, LineVisibility};
 use crate::projection::ProjectionKind;
 use crate::sheet::Sheet;
 use crate::view::DrawingView;
@@ -12,8 +13,12 @@ use crate::view::DrawingView;
 /// A line segment on the sheet in meters.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SheetSegment {
+    /// Segment start on the sheet in meters.
     pub start_m: [f64; 2],
+    /// Segment end on the sheet in meters.
     pub end_m: [f64; 2],
+    /// Line visibility used to select the exported stroke style.
+    pub visibility: LineVisibility,
 }
 
 /// Tessellated mesh prepared for one drawing view.
@@ -27,30 +32,23 @@ const EDGE_KEY_SCALE: f64 = 1_000_000.0;
 
 /// Extract projected wireframe segments from a mesh in model space (meters).
 pub fn project_mesh_wireframe(mesh: &MeshSet, projection: ProjectionKind) -> Vec<SheetSegment> {
-    let mut segments = BTreeSet::new();
-    for triangle in mesh.indices.chunks_exact(3) {
-        let points = [
-            mesh.positions[triangle[0] as usize],
-            mesh.positions[triangle[1] as usize],
-            mesh.positions[triangle[2] as usize],
-        ];
-        for (start, end) in [
-            (points[0], points[1]),
-            (points[1], points[2]),
-            (points[2], points[0]),
-        ] {
-            let start_2d =
-                projection.project_point([start[0] as f64, start[1] as f64, start[2] as f64]);
-            let end_2d = projection.project_point([end[0] as f64, end[1] as f64, end[2] as f64]);
-            if let Some(key) = edge_key(start_2d, end_2d) {
-                segments.insert(key);
-            }
+    let mut segments = BTreeMap::new();
+    for edge in classify_hidden_lines(mesh, projection) {
+        if let Some((start, end)) = edge_key(edge.start_m, edge.end_m) {
+            segments
+                .entry((start, end))
+                .and_modify(|visibility| {
+                    if edge.visibility == LineVisibility::Visible {
+                        *visibility = LineVisibility::Visible;
+                    }
+                })
+                .or_insert(edge.visibility);
         }
     }
 
     segments
         .into_iter()
-        .map(|(start, end)| SheetSegment {
+        .map(|((start, end), visibility)| SheetSegment {
             start_m: [
                 start[0] as f64 / EDGE_KEY_SCALE,
                 start[1] as f64 / EDGE_KEY_SCALE,
@@ -59,6 +57,7 @@ pub fn project_mesh_wireframe(mesh: &MeshSet, projection: ProjectionKind) -> Vec
                 end[0] as f64 / EDGE_KEY_SCALE,
                 end[1] as f64 / EDGE_KEY_SCALE,
             ],
+            visibility,
         })
         .collect()
 }
@@ -91,6 +90,7 @@ pub fn layout_view_on_sheet(view: &DrawingView, segments: &[SheetSegment]) -> Ve
                 view.origin_on_sheet_m[0] + segment.end_m[0] * view.scale,
                 view.origin_on_sheet_m[1] + segment.end_m[1] * view.scale,
             ],
+            visibility: segment.visibility,
         })
         .collect()
 }

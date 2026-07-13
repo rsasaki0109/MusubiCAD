@@ -11,6 +11,9 @@ pub mod sheet;
 pub mod view;
 
 pub use export_svg::{render_sheet_svg, validate_svg};
+pub use hidden_line::{
+    classify_hidden_lines, ClassifiedEdge, LineVisibility, HIDDEN_LINE_DEPTH_TOLERANCE_M,
+};
 pub use model::DrawingModel;
 pub use projection::ProjectionKind;
 pub use reference::ModelReference;

@@ -2,6 +2,7 @@
 
 use opencad_core::{OpenCadError, Result};
 
+use crate::hidden_line::LineVisibility;
 use crate::render::{build_sheet_segments, SheetSegment, ViewMesh};
 use crate::sheet::Sheet;
 
@@ -28,8 +29,14 @@ pub fn sheet_segments_to_svg(sheet: &Sheet, segments: &[SheetSegment]) -> String
         let y1 = flip_y(segment.start_m[1], sheet.height_m) * MM_PER_M;
         let x2 = segment.end_m[0] * MM_PER_M;
         let y2 = flip_y(segment.end_m[1], sheet.height_m) * MM_PER_M;
+        let style = match segment.visibility {
+            LineVisibility::Visible => "stroke=\"#111111\" stroke-width=\"0.25\"",
+            LineVisibility::Hidden => {
+                "stroke=\"#777777\" stroke-width=\"0.18\" stroke-dasharray=\"2,1\""
+            }
+        };
         svg.push_str(&format!(
-            "<line x1=\"{x1:.3}\" y1=\"{y1:.3}\" x2=\"{x2:.3}\" y2=\"{y2:.3}\" stroke=\"#111111\" stroke-width=\"0.25\"/>\n"
+            "<line x1=\"{x1:.3}\" y1=\"{y1:.3}\" x2=\"{x2:.3}\" y2=\"{y2:.3}\" {style}/>\n"
         ));
     }
     svg.push_str("</svg>\n");
@@ -75,5 +82,19 @@ mod tests {
         validate_svg(&svg).expect("valid");
         assert!(svg.contains("<line"));
         Ok(())
+    }
+
+    #[test]
+    fn renders_hidden_segments_as_dashed_lines() {
+        let sheet = Sheet::a4_portrait(SheetId::new("sheet:a4").expect("sheet id"), "Sheet 1");
+        let svg = sheet_segments_to_svg(
+            &sheet,
+            &[SheetSegment {
+                start_m: [0.01, 0.01],
+                end_m: [0.02, 0.01],
+                visibility: LineVisibility::Hidden,
+            }],
+        );
+        assert!(svg.contains("stroke-dasharray=\"2,1\""));
     }
 }
