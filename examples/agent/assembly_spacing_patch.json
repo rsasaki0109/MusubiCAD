@@ -1,0 +1,16 @@
+{
+  "intent": "Increase service clearance between bracket instances",
+  "rationale": "Provide an additional 20 mm tool-access envelope while preserving mate intent.",
+  "expected_effects": [
+    {
+      "type": "no_assembly_interference"
+    }
+  ],
+  "operations": [
+    {
+      "type": "set_mate_distance",
+      "mate_id": "mate:spacing",
+      "distance_m": 0.14
+    }
+  ]
+}

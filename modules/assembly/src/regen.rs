@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use opencad_core::{DocumentId, InstanceId, OpenCadError, Result};
 use opencad_feature::{FeatureRegistry, PartModel};
 use opencad_geometry::{
-    BoundingBox, GeometryKernel, KernelBody, MassProperties, MeshSet, RigidTransform,
+    BooleanOp, BoundingBox, GeometryKernel, KernelBody, MassProperties, MeshSet, RigidTransform,
     TessellationSettings,
 };
 use opencad_graph::ParamGraph;
@@ -66,6 +66,63 @@ pub struct AssemblyRegenReport {
     pub successful_instances: usize,
     pub scene: AssemblyScene,
     pub mate_solve: Option<crate::solve::AssemblySolveReport>,
+}
+
+/// Pair of placed instances whose common solid volume exceeds the requested tolerance.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AssemblyInterference {
+    pub first: InstanceId,
+    pub second: InstanceId,
+    pub common_volume_m3: f64,
+}
+
+/// Detect solid interference using exact kernel boolean intersection.
+pub fn detect_interferences<K: GeometryKernel>(
+    kernel: &K,
+    scene: &AssemblyScene,
+    volume_tolerance_m3: f64,
+) -> Result<Vec<AssemblyInterference>> {
+    const BOUNDS_TOLERANCE_M: f64 = 1e-9;
+    if !volume_tolerance_m3.is_finite() || volume_tolerance_m3 < 0.0 {
+        return Err(OpenCadError::validation(
+            "interference volume tolerance must be finite and non-negative",
+        ));
+    }
+    let bodies = scene
+        .instances
+        .iter()
+        .filter_map(|instance| instance.body.as_ref().map(|body| (instance, body)))
+        .collect::<Vec<_>>();
+    let mut result = Vec::new();
+    for first_index in 0..bodies.len() {
+        for second_index in (first_index + 1)..bodies.len() {
+            let (first, first_body) = bodies[first_index];
+            let (second, second_body) = bodies[second_index];
+            let first_bounds = kernel.bounding_box(first_body)?;
+            let second_bounds = kernel.bounding_box(second_body)?;
+            let separated = (0..3).any(|axis| {
+                first_bounds.max[axis] <= second_bounds.min[axis] + BOUNDS_TOLERANCE_M
+                    || second_bounds.max[axis] <= first_bounds.min[axis] + BOUNDS_TOLERANCE_M
+            });
+            if separated {
+                continue;
+            }
+            let common = kernel.boolean(
+                first_body.clone(),
+                second_body.clone(),
+                BooleanOp::Intersect,
+            )?;
+            let volume = kernel.mass_properties(&common, 1.0)?.volume_m3;
+            if volume > volume_tolerance_m3 {
+                result.push(AssemblyInterference {
+                    first: first.instance_id.clone(),
+                    second: second.instance_id.clone(),
+                    common_volume_m3: volume,
+                });
+            }
+        }
+    }
+    Ok(result)
 }
 
 pub fn resolve_component_path(assembly_root: &Path, source_path: &str) -> PathBuf {
@@ -474,6 +531,32 @@ mod tests {
             report.instances[0].status,
             InstanceRegenStatus::Failed(_)
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn detects_common_solid_volume_above_tolerance() -> Result<()> {
+        let scene = AssemblyScene {
+            instances: vec![
+                InstanceRegenResult {
+                    instance_id: InstanceId::new("instance:first")?,
+                    status: InstanceRegenStatus::Ok,
+                    body: Some(KernelBody::new(3)),
+                },
+                InstanceRegenResult {
+                    instance_id: InstanceId::new("instance:second")?,
+                    status: InstanceRegenStatus::Ok,
+                    body: Some(KernelBody::new(7)),
+                },
+            ],
+            compound_body: None,
+            bounding_box: None,
+            mass: None,
+        };
+        let hits = detect_interferences(&MockGeometryKernel::new(), &scene, 1e-12)?;
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].first.as_str(), "instance:first");
+        assert!(hits[0].common_volume_m3 > 0.0);
         Ok(())
     }
 }

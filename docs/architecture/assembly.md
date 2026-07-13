@@ -56,6 +56,9 @@ Regeneration runs `solve_assembly_mates` when `mates` is non-empty, then places 
 - Agent API: `list_assembly_instances`, `list_assembly_mates`, `list_connectors` queries;
   `set_instance_placement`, `set_mate_distance`, `add_connector` patch operations.
 - Desktop preview tessellates each instance separately with distinct colors.
+- `detect_interferences` first rejects separated instance bounds with a `1e-9 m` tolerance, then
+  measures exact OCCT Boolean Intersect volume. Common volume must exceed the caller's explicit
+  cubic-metre tolerance; coincident contact alone is not reported as interference.
 
 ## CLI
 

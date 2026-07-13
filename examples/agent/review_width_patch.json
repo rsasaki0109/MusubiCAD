@@ -1,0 +1,34 @@
+{
+  "intent": "Increase bracket width for a wider mounting pattern",
+  "rationale": "The downstream enclosure requires 20 mm additional clearance.",
+  "preconditions": [
+    {
+      "type": "parameter_expr_equals",
+      "id": "param:width",
+      "expr": "80 mm"
+    },
+    {
+      "type": "feature_exists",
+      "id": "feature:extrude_base"
+    }
+  ],
+  "expected_effects": [
+    {
+      "type": "parameter_expr_equals",
+      "id": "param:width",
+      "expr": "100 mm"
+    },
+    {
+      "type": "mass_delta_kg",
+      "min": 0.006,
+      "max": 0.009
+    }
+  ],
+  "operations": [
+    {
+      "type": "set_parameter",
+      "id": "param:width",
+      "expr": "100 mm"
+    }
+  ]
+}

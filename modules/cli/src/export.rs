@@ -8,7 +8,7 @@ use opencad_core::DocumentKind;
 use opencad_core::{OpenCadError, Result};
 use opencad_drawing::{render_sheet_svg, validate_svg, ModelReference, ViewMesh};
 use opencad_feature::FeatureRegistry;
-use opencad_file::read_ocad;
+use opencad_file::{read_ocad, OcadDocument};
 use opencad_geometry::{write_binary_stl, TessellationSettings};
 use serde::{Deserialize, Serialize};
 
@@ -75,6 +75,17 @@ pub fn export_svg(input: &str, output: &str) -> Result<ExportSummary> {
         ));
     }
 
+    let (svg, segments) = render_drawing_svg(input, &doc)?;
+    fs::write(output_path, svg).map_err(|err| OpenCadError::Other(err.to_string()))?;
+
+    Ok(ExportSummary {
+        format: "svg".into(),
+        triangles: segments,
+        output: output.to_string(),
+    })
+}
+
+pub(crate) fn render_drawing_svg(input: &str, doc: &OcadDocument) -> Result<(String, usize)> {
     let drawing = doc
         .drawing
         .as_ref()
@@ -96,14 +107,8 @@ pub fn export_svg(input: &str, output: &str) -> Result<ExportSummary> {
 
     let svg = render_sheet_svg(sheet, &view_meshes)?;
     validate_svg(&svg)?;
-    fs::write(output_path, svg).map_err(|err| OpenCadError::Other(err.to_string()))?;
-
     let segments = opencad_drawing::build_sheet_segments(sheet, &view_meshes)?.len();
-    Ok(ExportSummary {
-        format: "svg".into(),
-        triangles: segments,
-        output: output.to_string(),
-    })
+    Ok((svg, segments))
 }
 
 fn tessellate_model_reference(

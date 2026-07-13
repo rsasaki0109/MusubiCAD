@@ -1,0 +1,17 @@
+{
+  "intent": "Increase the front-view drawing scale",
+  "rationale": "Use more of the available A4 sheet for review readability.",
+  "expected_effects": [
+    {
+      "type": "drawing_changed",
+      "expected": true
+    }
+  ],
+  "operations": [
+    {
+      "type": "set_drawing_view_scale",
+      "view_id": "view:front",
+      "scale": 1.5
+    }
+  ]
+}

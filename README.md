@@ -45,6 +45,8 @@ ForgeCAD treats the **Design Graph** as the source of truth — not the GUI and 
 | Drawings | Orthographic SVG, mesh-based hidden lines, model-driven linear dimensions |
 | TopoRef | Semantic face refs, `plane_face_ref` / hole `face_ref`, fingerprint fallback |
 | Agent API | JSON-RPC over stdio — patch, query, diff, dry-run, regen, pick, assembly and drawing operations |
+| Git-native review | Intent-rich patches, Before/After geometry, semantic diff, mass/bounds, HTML/JSON/GIF artifacts |
+| Semantic collaboration | Stable-ID three-way merge, patch rebase, engineering policy and explicit agent approval gates |
 | Kernel | OCCT 8.0 via cadrum (auto-download on first build) |
 | Headless | CLI regen, mesh render, STL export, golden regression tests |
 
@@ -84,6 +86,7 @@ cargo run -p opencad-cli -- new examples/bracket_pin_ring.ocad.d pin-ring
 cargo run -p opencad-cli -- new examples/bracket_pin_mirror.ocad.d pin-mirror
 cargo run -p opencad-cli -- regen examples/bracket.ocad.d
 cargo run -p opencad-cli -- animate examples/assembly_two_brackets.ocad.d showcase.gif
+cargo run -p opencad-cli -- review examples/bracket.ocad.d examples/agent/review_width_patch.json --output review
 
 # Agent API (JSON-RPC on stdio)
 echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"examples/bracket.ocad.d"}}' \
@@ -103,8 +106,23 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"examp
 | `examples/assembly_two_brackets.ocad.d` | Two-instance assembly with connectors and mates |
 | `examples/bracket_front_view.ocad.d` | Drawing document with hidden-line classification and an 80 mm model-driven dimension |
 | `examples/agent/` | JSON-RPC request samples for `opencad agent` |
+| `examples/agent/review_width_patch.json` | Reviewable width proposal with preconditions and expected effects |
+| `examples/agent/assembly_spacing_patch.json` | Assembly clearance review with exact interference check |
+| `examples/agent/drawing_scale_patch.json` | Drawing review producing Before/After SVG sheets |
+| `examples/agent/bracket_policy.json` | CI policy for parameter, mass, and bounding-box limits |
 
 Pattern comparison: [docs/examples/patterns.md](docs/examples/patterns.md).
+Git-native workflow: [docs/architecture/git-native-workflow.md](docs/architecture/git-native-workflow.md).
+
+### Review a design change, not a binary blob
+
+<p align="center">
+  <img src="docs/assets/review-demo/comparison.gif" alt="ForgeCAD semantic patch review comparing bracket width before and after" width="800">
+</p>
+
+The [flagship review report](docs/assets/review-demo/review.html) pairs that geometry comparison
+with intent, rationale, typed Design Graph changes, regenerated mass/volume, and checked expected
+effects. It is generated from `examples/agent/review_width_patch.json` without modifying the model.
 
 Regenerate and export:
 

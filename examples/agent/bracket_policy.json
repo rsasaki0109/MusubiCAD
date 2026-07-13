@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "type": "parameter_expr_equals",
+      "id": "param:thickness",
+      "expr": "6 mm"
+    },
+    {
+      "type": "max_mass_kg",
+      "value": 0.1
+    },
+    {
+      "type": "bounding_box_within_m",
+      "max": [0.12, 0.08, 0.02]
+    }
+  ]
+}

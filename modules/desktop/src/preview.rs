@@ -7,7 +7,8 @@ use std::path::{Path, PathBuf};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use image::{ImageBuffer, ImageFormat, RgbaImage};
 use opencad_assembly::{
-    regenerate_assembly, tessellate_assembly_instances, ChildPart, ResolvedChild,
+    detect_interferences, regenerate_assembly, tessellate_assembly_instances, ChildPart,
+    ResolvedChild,
 };
 use opencad_core::{DocumentKind, Result};
 use opencad_feature::{apply_parameters, FeatureNode, FeatureRegistry};
@@ -138,10 +139,6 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
 }
 
 fn load_assembly_view_data(input: &str, doc: OcadDocument, name: String) -> Result<ViewData> {
-    let assembly = doc
-        .assembly
-        .as_ref()
-        .ok_or_else(|| opencad_core::OpenCadError::validation("assembly document missing model"))?;
     let parameters = doc.parameters.clone();
     let parameter_ids = parameters.evaluation_order().unwrap_or_default();
     let parameter_name_to_id = parameter_ids
@@ -155,35 +152,7 @@ fn load_assembly_view_data(input: &str, doc: OcadDocument, name: String) -> Resu
 
     #[cfg(feature = "occt")]
     {
-        use opencad_kernel_occt::OcctGeometryKernel;
-
-        let path = Path::new(input);
-        let assembly_root = assembly_root_for_path(path);
-        let kernel = OcctGeometryKernel::new();
-        let registry = FeatureRegistry::with_defaults();
-        let report = regenerate_assembly(
-            assembly,
-            &doc.metadata.id,
-            &assembly_root,
-            &kernel,
-            &registry,
-            &mut load_child_document,
-        )?;
-        let instance_meshes = tessellate_assembly_instances(
-            &kernel,
-            &report.scene,
-            &TessellationSettings::default(),
-        )?;
-        let mesh_sets: Vec<_> = instance_meshes
-            .iter()
-            .map(|instance| instance.mesh_set.clone())
-            .collect();
-        let colors: Vec<_> = instance_meshes
-            .iter()
-            .enumerate()
-            .map(|(index, _)| INSTANCE_COLORS[index % INSTANCE_COLORS.len()])
-            .collect();
-        let scene = RenderScene::from_mesh_sets_with_colors(&mesh_sets, Some(&colors))?;
+        let (scene, _) = load_assembly_scene_from_document(input, &doc)?;
         Ok(ViewData {
             scene,
             overlay: SketchOverlay::default(),
@@ -199,6 +168,9 @@ fn load_assembly_view_data(input: &str, doc: OcadDocument, name: String) -> Resu
 
     #[cfg(not(feature = "occt"))]
     {
+        let assembly = doc.assembly.as_ref().ok_or_else(|| {
+            opencad_core::OpenCadError::validation("assembly document missing model")
+        })?;
         let _ = (
             input,
             doc,
@@ -211,6 +183,45 @@ fn load_assembly_view_data(input: &str, doc: OcadDocument, name: String) -> Resu
             "OCCT backend disabled; rebuild with --features occt".into(),
         ))
     }
+}
+
+/// Regenerate an assembly document and return its viewport scene and exact interference count.
+#[cfg(feature = "occt")]
+pub fn load_assembly_scene_from_document(
+    input: &str,
+    doc: &OcadDocument,
+) -> Result<(RenderScene, usize)> {
+    use opencad_kernel_occt::OcctGeometryKernel;
+
+    let assembly = doc
+        .assembly
+        .as_ref()
+        .ok_or_else(|| opencad_core::OpenCadError::validation("assembly document missing model"))?;
+    let assembly_root = assembly_root_for_path(Path::new(input));
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let report = regenerate_assembly(
+        assembly,
+        &doc.metadata.id,
+        &assembly_root,
+        &kernel,
+        &registry,
+        &mut load_child_document,
+    )?;
+    let instance_meshes =
+        tessellate_assembly_instances(&kernel, &report.scene, &TessellationSettings::default())?;
+    let mesh_sets: Vec<_> = instance_meshes
+        .iter()
+        .map(|instance| instance.mesh_set.clone())
+        .collect();
+    let colors: Vec<_> = instance_meshes
+        .iter()
+        .enumerate()
+        .map(|(index, _)| INSTANCE_COLORS[index % INSTANCE_COLORS.len()])
+        .collect();
+    let render_scene = RenderScene::from_mesh_sets_with_colors(&mesh_sets, Some(&colors))?;
+    let interference_count = detect_interferences(&kernel, &report.scene, 1e-12)?.len();
+    Ok((render_scene, interference_count))
 }
 
 fn assembly_root_for_path(path: &Path) -> PathBuf {
