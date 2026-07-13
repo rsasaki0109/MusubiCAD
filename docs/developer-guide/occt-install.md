@@ -23,6 +23,13 @@ Supported prebuilt targets:
 
 No `sudo`, no `apt`, no `LD_LIBRARY_PATH`.
 
+### Windows toolset requirement
+
+The cadrum OCCT 8.0.0 prebuilt requires MSVC 14.44 or newer. Install or update
+Visual Studio 2022 to version 17.14 with the **Desktop development with C++**
+workload. Older MSVC 14.38 installations fail to link internal STL symbols such
+as `__std_max_element_d` and `__std_min_4i`.
+
 ## Optional: system OCCT (Debian/Ubuntu)
 
 For developers who also want distro headers/libs (future direct C++ bridge):

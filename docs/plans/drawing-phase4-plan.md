@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress (M4.1)
+Complete
 
 ## Goal
 
@@ -41,4 +41,4 @@ SVG sheets.
 ## Notes
 
 - HLR uses a tessellated-mesh midpoint depth test; partially occluded edges are not split.
-- Windows MSVC OCCT link errors (`LNK2019`) remain a pre-existing environment issue.
+- Windows OCCT validation requires MSVC 14.44 or newer for the cadrum prebuilt ABI.

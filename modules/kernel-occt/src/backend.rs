@@ -1027,9 +1027,11 @@ mod tests {
         let transformed = kernel.transform_body(body, transform).expect("transform");
         let after = kernel.bounding_box(&transformed).expect("after bbox");
 
-        assert!((after.min[0] - (before.min[0] + 0.1)).abs() < 1e-3);
-        assert!((after.max[0] - (before.max[0] + 0.1)).abs() < 1e-3);
-        assert!((after.min[1] - -before.max[1]).abs() < 1e-3);
+        const BBOX_TOLERANCE_M: f64 = 1e-3;
+        assert!((after.min[0] - (0.1 - before.max[1])).abs() < BBOX_TOLERANCE_M);
+        assert!((after.max[0] - (0.1 - before.min[1])).abs() < BBOX_TOLERANCE_M);
+        assert!((after.min[1] - before.min[0]).abs() < BBOX_TOLERANCE_M);
+        assert!((after.max[1] - before.max[0]).abs() < BBOX_TOLERANCE_M);
     }
 
     #[test]

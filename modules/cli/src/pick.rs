@@ -55,9 +55,6 @@ pub fn print_summary(summary: &PickSummary) {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-
-    use super::*;
     use crate::mesh::write_bracket_fixture_at;
     use opencad_desktop::{build_pick_summary, pick_document, PickOptions, PickTarget, ViewData};
     use opencad_feature::{apply_parameters, bracket_base_plate};
