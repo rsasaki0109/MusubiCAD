@@ -1,32 +1,26 @@
 # ForgeCAD
 
 <p align="center">
-  <img src="docs/assets/preview.gif" alt="ForgeCAD — parametric bracket with sketch overlay, extruded plate, mounting hole, and width patch regen" width="960">
+  <strong>AI-native parametric CAD, built on a deterministic Design Graph.</strong>
 </p>
 
 <p align="center">
-  <sub>OCCT solid + wgpu viewport from <code>examples/bracket.ocad.d</code> (80 mm → 100 mm parameter patch)</sub>
+  <img src="docs/assets/forgecad-demo.gif" alt="ForgeCAD regenerating a parametric OCCT model and exporting an engineering drawing with a model-driven dimension" width="960">
 </p>
 
 <p align="center">
-  <img src="docs/assets/preview_pin_row.png" alt="ForgeCAD — bracket with linear union pin bosses fused onto plate" width="960">
+  <sub>One source of truth: Design Graph → OCCT regeneration → wgpu viewport → engineering drawing.</sub>
 </p>
 
 <p align="center">
-  <sub><code>examples/bracket_pin_row.ocad.d</code> — linear union pattern with <code>spacing_expr: hole_pitch</code></sub>
+  <a href="https://github.com/rsasaki0109/ForgeCAD/actions/workflows/ci.yml"><img src="https://github.com/rsasaki0109/ForgeCAD/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust" alt="Rust stable">
+  <img src="https://img.shields.io/badge/kernel-OCCT%208.0-3b82f6" alt="OCCT 8.0">
+  <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-22c55e" alt="MIT OR Apache-2.0">
 </p>
 
-<p align="center">
-  <img src="docs/assets/preview_pin_mirror.png" alt="ForgeCAD — bracket with mirrored pins fused onto plate via plane_face_ref" width="960">
-</p>
-
-<p align="center">
-  <sub><code>examples/bracket_pin_mirror.ocad.d</code> — mirror pattern with <code>plane_face_ref</code> + <code>target_feature</code></sub>
-</p>
-
-![CI](https://github.com/rsasaki0109/ForgeCAD/actions/workflows/ci.yml/badge.svg)
-
-AI-native, open-source, parametric 3D CAD engine.
+ForgeCAD is an open-source parametric 3D CAD engine designed for humans,
+agents, and CI pipelines to edit the same model safely.
 
 ForgeCAD treats the **Design Graph** as the source of truth — not the GUI and not a cached B-Rep shape. Human operators, AI agents, and CI pipelines all work against the same deterministic, Git-friendly design data.
 
@@ -47,8 +41,10 @@ ForgeCAD treats the **Design Graph** as the source of truth — not the GUI and 
 | Parametric sketches | Distance, radius, horizontal/vertical constraints |
 | Features | Extrude, hole, fillet, chamfer |
 | Patterns | Linear, circular, mirror (`union` / `cut`, `spacing_expr`) |
+| Assemblies | Components, instances, connectors, mates, patterns, deterministic regeneration |
+| Drawings | Orthographic SVG, mesh-based hidden lines, model-driven linear dimensions |
 | TopoRef | Semantic face refs, `plane_face_ref` / hole `face_ref`, fingerprint fallback |
-| Agent API | JSON-RPC over stdio (`opencad agent`) — patch, query, diff, regen, pick |
+| Agent API | JSON-RPC over stdio — patch, query, diff, dry-run, regen, pick, assembly and drawing operations |
 | Kernel | OCCT 8.0 via cadrum (auto-download on first build) |
 | Headless | CLI regen, mesh render, STL export, golden regression tests |
 
@@ -103,6 +99,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"examp
 | `examples/bracket_pin_row.ocad.d` | Linear union pattern fused onto plate (`pin-row`) |
 | `examples/bracket_pin_ring.ocad.d` | Circular union pattern fused onto plate (`pin-ring`) |
 | `examples/bracket_pin_mirror.ocad.d` | Mirror pattern via `plane_face_ref`, fused onto plate |
+| `examples/assembly_two_brackets.ocad.d` | Two-instance assembly with connectors and mates |
+| `examples/bracket_front_view.ocad.d` | Drawing document with hidden-line classification and an 80 mm model-driven dimension |
 | `examples/agent/` | JSON-RPC request samples for `opencad agent` |
 
 Pattern comparison: [docs/examples/patterns.md](docs/examples/patterns.md).
