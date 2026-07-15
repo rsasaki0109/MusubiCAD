@@ -311,6 +311,10 @@ fn cmd_review(args: Vec<String>) -> Result<()> {
     println!("review: {}/review.html", args.output_dir);
     println!("document: {}", artifact.document_id);
     println!("changes: {}", artifact.diff.changes.len());
+    review::ensure_expected_effects_pass(
+        &artifact,
+        &format!("{}/github-summary.md", args.output_dir),
+    )?;
     Ok(())
 }
 
