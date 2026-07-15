@@ -1,8 +1,8 @@
 # AGENTS.md
 
-This repository is the ForgeCAD project.
+This repository is the MusubiCAD project.
 
-ForgeCAD is an AI-native, open-source, parametric 3D CAD system.
+MusubiCAD is an AI-native, open-source, parametric 3D CAD system.
 The source of truth is the Design Graph, not the GUI and not a cached B-Rep shape.
 
 All AI agents must follow this document.
@@ -37,7 +37,7 @@ All AI agents must follow this document.
 ### TypeScript / UI
 
 - UI must not mutate the model directly.
-- UI must send commands or patches to the ForgeCAD backend.
+- UI must send commands or patches to the MusubiCAD backend.
 - Keep viewport state separate from document state.
 - Use generated schema types where available.
 - Every command exposed in UI must also be available through CLI or Agent API.
@@ -96,7 +96,7 @@ Allowed:
 - OCCT backend implementation
 
 Forbidden:
-- ForgeCAD document ownership
+- MusubiCAD document ownership
 - UI logic
 - direct `.ocad` serialization
 

@@ -1,4 +1,4 @@
-# ForgeCAD Desktop (Tauri)
+# MusubiCAD Desktop (Tauri)
 
 Minimal desktop shell for previewing `.ocad.d` documents with OCCT regeneration and wgpu rendering.
 

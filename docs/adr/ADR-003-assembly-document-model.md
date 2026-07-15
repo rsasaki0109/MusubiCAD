@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-ForgeCAD Phase 3 adds static assembly modeling: child part references, placed
+MusubiCAD Phase 3 adds static assembly modeling: child part references, placed
 instances, and compound regeneration without mate solving. The file format and
 core ID types already reserved slots (`graph/assemblies.json`, `ComponentId`),
 but no assembly data model existed.

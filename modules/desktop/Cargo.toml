@@ -1,6 +1,6 @@
 [package]
 name = "opencad-desktop"
-description = "Shared document preview and template helpers for ForgeCAD desktop UI"
+description = "Shared document preview and template helpers for MusubiCAD desktop UI"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

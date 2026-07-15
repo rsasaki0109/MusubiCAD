@@ -1,6 +1,6 @@
 # Architecture Overview
 
-ForgeCAD is an AI-native, open-source parametric 3D CAD engine.
+MusubiCAD is an AI-native, open-source parametric 3D CAD engine.
 
 ## Core equation
 
@@ -17,7 +17,7 @@ Human UI / AI Agents / CLI / Plugins
 Command Layer (transactions, undo, dry-run, design patch)
         │
         ▼
-ForgeCAD Design Graph
+MusubiCAD Design Graph
         │
         ▼
 Regeneration Engine

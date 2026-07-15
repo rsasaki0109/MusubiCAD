@@ -1,11 +1,15 @@
-# ForgeCAD
+# MusubiCAD
+
+<p align="center">
+  <img src="docs/assets/musubicad-mark.png" alt="MusubiCAD logo: three connected parametric solids" width="180">
+</p>
 
 <p align="center">
   <strong>AI-native parametric CAD, built on a deterministic Design Graph.</strong>
 </p>
 
 <p align="center">
-  <img src="docs/assets/forgecad-showcase.gif" alt="ForgeCAD deterministic presentation orbit of a two-component assembly with feature edges and floor grid" width="960">
+  <img src="docs/assets/musubicad-showcase.gif" alt="MusubiCAD deterministic presentation orbit of a two-component assembly with feature edges and floor grid" width="960">
 </p>
 
 <p align="center">
@@ -13,20 +17,20 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/rsasaki0109/ForgeCAD/actions/workflows/ci.yml"><img src="https://github.com/rsasaki0109/ForgeCAD/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/ci.yml"><img src="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust" alt="Rust stable">
   <img src="https://img.shields.io/badge/kernel-OCCT%208.0-3b82f6" alt="OCCT 8.0">
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-22c55e" alt="MIT OR Apache-2.0">
 </p>
 
-ForgeCAD is an open-source parametric 3D CAD engine designed for humans,
+MusubiCAD is an open-source parametric 3D CAD engine designed for humans,
 agents, and CI pipelines to edit the same model safely.
 
-ForgeCAD treats the **Design Graph** as the source of truth — not the GUI and not a cached B-Rep shape. Human operators, AI agents, and CI pipelines all work against the same deterministic, Git-friendly design data.
+MusubiCAD treats the **Design Graph** as the source of truth — not the GUI and not a cached B-Rep shape. Human operators, AI agents, and CI pipelines all work against the same deterministic, Git-friendly design data.
 
-> **Note:** The CLI binary and Rust crates still use the `opencad` prefix (`opencad agent`, `opencad-cli`, etc.) while the project is branded ForgeCAD.
+> **Note:** The CLI binary and Rust crates still use the `opencad` prefix (`opencad agent`, `opencad-cli`, etc.) while the project is branded MusubiCAD.
 
-**Repository:** [github.com/rsasaki0109/ForgeCAD](https://github.com/rsasaki0109/ForgeCAD)
+**Repository:** [github.com/rsasaki0109/MusubiCAD](https://github.com/rsasaki0109/MusubiCAD)
 
 ## Vision
 
@@ -117,7 +121,7 @@ Git-native workflow: [docs/architecture/git-native-workflow.md](docs/architectur
 ### Review a design change, not a binary blob
 
 <p align="center">
-  <img src="docs/assets/review-demo/comparison.gif" alt="ForgeCAD semantic patch review comparing bracket width before and after" width="800">
+  <img src="docs/assets/review-demo/comparison.gif" alt="MusubiCAD semantic patch review comparing bracket width before and after" width="800">
 </p>
 
 The [flagship review report](docs/assets/review-demo/review.html) pairs that geometry comparison

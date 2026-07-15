@@ -1,4 +1,4 @@
-//! Shared helpers for ForgeCAD desktop and CLI shells.
+//! Shared helpers for MusubiCAD desktop and CLI shells.
 
 pub mod fixture;
 pub mod inspect;

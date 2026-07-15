@@ -1,6 +1,6 @@
 # Rendering architecture
 
-ForgeCAD renders disposable tessellated meshes derived from the Design Graph.
+MusubiCAD renders disposable tessellated meshes derived from the Design Graph.
 The renderer never owns or mutates document state.
 
 ## Presentation pipeline

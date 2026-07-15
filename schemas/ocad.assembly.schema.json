@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://opencad.dev/schemas/ocad.assembly.v0.1.json",
-  "title": "ForgeCAD Assembly Model",
+  "title": "MusubiCAD Assembly Model",
   "type": "object",
   "properties": {
     "components": {

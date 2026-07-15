@@ -324,7 +324,7 @@ fn review_html(artifact: &ReviewArtifact) -> Result<String> {
         _ => String::new(),
     };
     Ok(format!(
-        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>ForgeCAD Review</title><style>{}</style></head><body><main><p class=\"eyebrow\">FORGECAD DESIGN REVIEW</p><h1>{intent}</h1><p>{rationale}</p><img class=\"hero\" src=\"comparison.gif\" alt=\"Before and after geometry\"><section class=\"compare\"><figure><img src=\"before.png\"><figcaption>Before</figcaption></figure><figure><img src=\"after.png\"><figcaption>After</figcaption></figure></section>{drawing}<h2>Semantic and geometric diff</h2><pre>{diff_json}</pre></main></body></html>\n",
+        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>MusubiCAD Review</title><style>{}</style></head><body><main><p class=\"eyebrow\">MUSUBICAD DESIGN REVIEW</p><h1>{intent}</h1><p>{rationale}</p><img class=\"hero\" src=\"comparison.gif\" alt=\"Before and after geometry\"><section class=\"compare\"><figure><img src=\"before.png\"><figcaption>Before</figcaption></figure><figure><img src=\"after.png\"><figcaption>After</figcaption></figure></section>{drawing}<h2>Semantic and geometric diff</h2><pre>{diff_json}</pre></main></body></html>\n",
         "body{margin:0;background:#111722;color:#e7edf7;font:16px system-ui}main{max-width:1100px;margin:auto;padding:48px}.eyebrow{color:#6dd5ff;letter-spacing:.18em}h1{font-size:42px;margin:.2em 0}.hero{width:100%;border-radius:12px}.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0}.compare img{width:100%}figure{margin:0;background:#1d2635;padding:12px;border-radius:10px}figcaption{padding-top:8px}pre{white-space:pre-wrap;background:#0a0f18;padding:20px;border-radius:10px;overflow:auto}"
     ))
 }
@@ -400,6 +400,8 @@ mod tests {
         .expect("review");
         assert_eq!(artifact.intent.as_deref(), Some("Increase bracket width"));
         assert!(artifact.expected_effects.iter().all(|effect| effect.passed));
+        let review_html = fs::read_to_string(output.join("review.html")).expect("review html");
+        assert!(review_html.contains("<title>MusubiCAD Review</title>"));
         for name in [
             "review.json",
             "review.html",

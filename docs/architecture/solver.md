@@ -1,6 +1,6 @@
 # Constraint Solver
 
-ForgeCAD uses a numeric 2D geometric constraint solver in `opencad-solver`.
+MusubiCAD uses a numeric 2D geometric constraint solver in `opencad-solver`.
 
 ## Algorithm
 

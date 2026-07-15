@@ -1,15 +1,15 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ForgeCAD",
+  "productName": "MusubiCAD",
   "version": "0.1.0",
-  "identifier": "com.forgecad.desktop",
+  "identifier": "com.musubicad.desktop",
   "build": {
     "frontendDist": "../ui"
   },
   "app": {
     "windows": [
       {
-        "title": "ForgeCAD",
+        "title": "MusubiCAD",
         "width": 1280,
         "height": 800,
         "resizable": true
