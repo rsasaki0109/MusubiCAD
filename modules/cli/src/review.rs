@@ -7,7 +7,7 @@ use opencad_ai::{ensure_patch_valid, ExpectedEffect};
 use opencad_core::{OpenCadError, Result};
 use opencad_desktop::{load_assembly_scene_from_document, load_view_data, tessellate_active_body};
 use opencad_file::{apply_patch_to_document, dry_run_patch_document, read_ocad, OcadDocument};
-use opencad_graph::DesignDiff;
+use opencad_graph::{DesignDiff, SemanticChange};
 use opencad_render::{
     presentation_overlay, write_gif_frames, write_png, OffscreenRenderer, OrbitCamera, RenderImage,
     RenderScene,
@@ -198,6 +198,11 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
     fs::write(output.join("review.json"), json).map_err(io_error("write review JSON"))?;
     fs::write(output.join("review.html"), review_html(&artifact)?)
         .map_err(io_error("write review HTML"))?;
+    fs::write(
+        output.join("github-summary.md"),
+        github_summary_markdown(&artifact),
+    )
+    .map_err(io_error("write GitHub review summary"))?;
     Ok(artifact)
 }
 
@@ -310,6 +315,293 @@ fn check_expected_effects(
         .collect()
 }
 
+/// Number of declared expected effects that did not pass review.
+pub fn failed_expected_effect_count(artifact: &ReviewArtifact) -> usize {
+    artifact
+        .expected_effects
+        .iter()
+        .filter(|check| !check.passed)
+        .count()
+}
+
+/// Return a validation error when a review does not satisfy its declared effects.
+pub fn ensure_expected_effects_pass(artifact: &ReviewArtifact, summary_path: &str) -> Result<()> {
+    let failed_effects = failed_expected_effect_count(artifact);
+    if failed_effects == 0 {
+        return Ok(());
+    }
+    Err(OpenCadError::validation(format!(
+        "{failed_effects} expected review effect(s) failed; see {summary_path}"
+    )))
+}
+
+/// Render a deterministic GitHub Actions job summary for a design review.
+pub fn github_summary_markdown(artifact: &ReviewArtifact) -> String {
+    let total_effects = artifact.expected_effects.len();
+    let failed_effects = failed_expected_effect_count(artifact);
+    let status = match (total_effects, failed_effects) {
+        (0, _) => "ℹ️ No expected effects declared".to_string(),
+        (_, 0) => format!("✅ All {total_effects} expected effects passed"),
+        _ => format!("❌ {failed_effects} of {total_effects} expected effects failed"),
+    };
+
+    let mut markdown = String::new();
+    markdown.push_str("## MusubiCAD Design Review\n\n");
+    markdown.push_str(&format!("**Status:** {status}\n\n"));
+    markdown.push_str("| Context | Value |\n|---|---|\n");
+    markdown.push_str(&format!(
+        "| Document | {} |\n",
+        markdown_cell(&artifact.document_id)
+    ));
+    markdown.push_str(&format!(
+        "| Intent | {} |\n",
+        markdown_cell(artifact.intent.as_deref().unwrap_or("Not supplied"))
+    ));
+    markdown.push_str(&format!(
+        "| Rationale | {} |\n",
+        markdown_cell(artifact.rationale.as_deref().unwrap_or("Not supplied"))
+    ));
+    markdown.push_str(&format!(
+        "| Patch | {} |\n\n",
+        markdown_cell(&artifact.patch_file)
+    ));
+
+    markdown.push_str("### Semantic changes\n\n");
+    markdown.push_str("| Change | Before | After |\n|---|---|---|\n");
+    if artifact.diff.changes.is_empty() {
+        markdown.push_str("| No semantic changes | — | — |\n");
+    } else {
+        for change in &artifact.diff.changes {
+            let (label, before, after) = semantic_change_row(change);
+            markdown.push_str(&format!(
+                "| {} | {} | {} |\n",
+                markdown_cell(&label),
+                markdown_cell(&before),
+                markdown_cell(&after)
+            ));
+        }
+    }
+
+    markdown.push_str("\n### Regenerated geometry\n\n");
+    markdown.push_str("| Property | Before | After |\n|---|---:|---:|\n");
+    if let Some(geometry) = &artifact.diff.geometry {
+        if let (Some(before), Some(after)) = (geometry.volume_before, geometry.volume_after) {
+            markdown.push_str(&format!(
+                "| Volume | {:.2} cm³ | {:.2} cm³ |\n",
+                before * 1_000_000.0,
+                after * 1_000_000.0
+            ));
+        }
+        if let (Some(before), Some(after)) = (geometry.mass_before, geometry.mass_after) {
+            markdown.push_str(&format!(
+                "| Mass | {:.2} g | {:.2} g |\n",
+                before * 1_000.0,
+                after * 1_000.0
+            ));
+        }
+    }
+    markdown.push_str(&format!(
+        "| Bounds | {} | {} |\n",
+        format_bounds_mm(artifact.geometry.before_bounds_m),
+        format_bounds_mm(artifact.geometry.after_bounds_m)
+    ));
+    markdown.push_str(&format!(
+        "| Triangles (count) | {} | {} |\n",
+        artifact.geometry.before_triangles, artifact.geometry.after_triangles
+    ));
+    if let (Some(before), Some(after)) = (
+        artifact.geometry.before_interference_count,
+        artifact.geometry.after_interference_count,
+    ) {
+        markdown.push_str(&format!("| Interferences (count) | {before} | {after} |\n"));
+    }
+
+    markdown.push_str("\n### Expected effects\n\n");
+    markdown.push_str("| Status | Expectation | Evidence |\n|---|---|---|\n");
+    if artifact.expected_effects.is_empty() {
+        markdown.push_str("| ℹ️ | None declared | — |\n");
+    } else {
+        for check in &artifact.expected_effects {
+            markdown.push_str(&format!(
+                "| {} | {} | {} |\n",
+                if check.passed { "✅" } else { "❌" },
+                markdown_cell(&expected_effect_label(&check.effect)),
+                markdown_cell(&check.message)
+            ));
+        }
+    }
+
+    markdown.push_str(
+        "\nThe workflow artifact contains `review.html`, `review.json`, `comparison.gif`, and the before/after images.\n",
+    );
+    markdown
+}
+
+fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
+    match change {
+        SemanticChange::ParameterChanged { id, before, after } => {
+            (format!("Parameter {id}"), before.clone(), after.clone())
+        }
+        SemanticChange::FeatureAdded { id, feature_type } => (
+            format!("Feature {id}"),
+            "—".into(),
+            format!("Added ({feature_type})"),
+        ),
+        SemanticChange::FeatureRemoved { id } => {
+            (format!("Feature {id}"), "Present".into(), "Removed".into())
+        }
+        SemanticChange::FeatureModified {
+            id,
+            field,
+            before,
+            after,
+        } => (
+            format!("Feature {id}.{field}"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::ConstraintModified { id, before, after } => {
+            (format!("Constraint {id}"), before.clone(), after.clone())
+        }
+        SemanticChange::MassChanged { before, after } => {
+            ("Mass".into(), before.clone(), after.clone())
+        }
+        SemanticChange::BboxChanged { before, after } => {
+            ("Bounding box".into(), before.clone(), after.clone())
+        }
+        SemanticChange::TopoRefAdded {
+            ref_id,
+            created_by,
+            role,
+        } => (
+            format!("Topology reference {ref_id}"),
+            "—".into(),
+            format!(
+                "Added by {created_by}{}",
+                role.as_ref()
+                    .map_or(String::new(), |role| format!(" ({role})"))
+            ),
+        ),
+        SemanticChange::TopoRefRemoved { ref_id } => (
+            format!("Topology reference {ref_id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::TopoRefModified {
+            ref_id,
+            field,
+            before,
+            after,
+        } => (
+            format!("Topology reference {ref_id}.{field}"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::AssemblyInstanceAdded { id } => (
+            format!("Assembly instance {id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::AssemblyInstanceRemoved { id } => (
+            format!("Assembly instance {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssemblyInstanceChanged {
+            id,
+            field,
+            before,
+            after,
+        } => (
+            format!("Assembly instance {id}.{field}"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::AssemblyMateAdded { id } => {
+            (format!("Assembly mate {id}"), "—".into(), "Added".into())
+        }
+        SemanticChange::AssemblyMateRemoved { id } => (
+            format!("Assembly mate {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssemblyMateChanged { id, before, after } => {
+            (format!("Assembly mate {id}"), before.clone(), after.clone())
+        }
+        SemanticChange::AssemblyConnectorAdded { id } => (
+            format!("Assembly connector {id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::AssemblyConnectorRemoved { id } => (
+            format!("Assembly connector {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssemblyConnectorChanged { id, before, after } => (
+            format!("Assembly connector {id}"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::DrawingSheetAdded { id } => {
+            (format!("Drawing sheet {id}"), "—".into(), "Added".into())
+        }
+        SemanticChange::DrawingSheetRemoved { id } => (
+            format!("Drawing sheet {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::DrawingSheetChanged { id, before, after } => {
+            (format!("Drawing sheet {id}"), before.clone(), after.clone())
+        }
+        SemanticChange::DrawingViewAdded { id } => {
+            (format!("Drawing view {id}"), "—".into(), "Added".into())
+        }
+        SemanticChange::DrawingViewRemoved { id } => (
+            format!("Drawing view {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::DrawingViewChanged { id, before, after } => {
+            (format!("Drawing view {id}"), before.clone(), after.clone())
+        }
+    }
+}
+
+fn expected_effect_label(effect: &ExpectedEffect) -> String {
+    match effect {
+        ExpectedEffect::ParameterExprEquals { id, expr } => {
+            format!("Parameter {id} equals {expr}")
+        }
+        ExpectedEffect::MassDeltaKg { min, max } => {
+            format!("Mass delta is between {min} kg and {max} kg")
+        }
+        ExpectedEffect::DrawingChanged { expected } => {
+            format!("Drawing changed is {expected}")
+        }
+        ExpectedEffect::NoAssemblyInterference => "No assembly interference".into(),
+    }
+}
+
+fn format_bounds_mm(bounds: [[f32; 3]; 2]) -> String {
+    let size = [
+        (bounds[1][0] - bounds[0][0]) * 1_000.0,
+        (bounds[1][1] - bounds[0][1]) * 1_000.0,
+        (bounds[1][2] - bounds[0][2]) * 1_000.0,
+    ];
+    format!("{:.2} × {:.2} × {:.2} mm", size[0], size[1], size[2])
+}
+
+fn markdown_cell(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('|', "\\|")
+        .replace("\r\n", "<br>")
+        .replace(['\r', '\n'], "<br>")
+}
+
 fn review_html(artifact: &ReviewArtifact) -> Result<String> {
     let diff_json = html_escape(&serde_json::to_string_pretty(&artifact.diff)?);
     let intent = html_escape(artifact.intent.as_deref().unwrap_or("Unspecified change"));
@@ -369,6 +661,11 @@ mod tests {
     }
 
     #[test]
+    fn escapes_github_markdown_table_content() {
+        assert_eq!(markdown_cell("a|b\n<c>"), "a\\|b<br>&lt;c&gt;");
+    }
+
+    #[test]
     fn generates_self_contained_review_artifacts() {
         let dir = tempdir().expect("tempdir");
         let document = dir.path().join("bracket.ocad.d");
@@ -400,11 +697,28 @@ mod tests {
         .expect("review");
         assert_eq!(artifact.intent.as_deref(), Some("Increase bracket width"));
         assert!(artifact.expected_effects.iter().all(|effect| effect.passed));
+        ensure_expected_effects_pass(&artifact, "review/github-summary.md").expect("effects pass");
         let review_html = fs::read_to_string(output.join("review.html")).expect("review html");
         assert!(review_html.contains("<title>MusubiCAD Review</title>"));
+        let summary = fs::read_to_string(output.join("github-summary.md")).expect("GitHub summary");
+        assert!(summary.contains("## MusubiCAD Design Review"));
+        assert!(summary.contains("✅ All 1 expected effects passed"));
+        assert!(summary.contains("| Parameter param:width | 80 mm | 100 mm |"));
+        assert!(summary.contains("| Bounds |"));
+
+        let mut failed_artifact = artifact.clone();
+        failed_artifact.expected_effects[0].passed = false;
+        assert_eq!(failed_expected_effect_count(&failed_artifact), 1);
+        assert!(
+            github_summary_markdown(&failed_artifact).contains("❌ 1 of 1 expected effects failed")
+        );
+        let error = ensure_expected_effects_pass(&failed_artifact, "review/github-summary.md")
+            .expect_err("failed effect must fail review");
+        assert!(error.to_string().contains("review/github-summary.md"));
         for name in [
             "review.json",
             "review.html",
+            "github-summary.md",
             "before.png",
             "after.png",
             "comparison.gif",

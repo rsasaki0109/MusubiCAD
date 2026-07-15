@@ -11,9 +11,16 @@ opencad review examples/bracket.ocad.d examples/agent/review_width_patch.json --
 ```
 
 The command performs an in-memory dry run and writes deterministic `review.json`,
-`review.html`, `before.png`, `after.png`, and `comparison.gif`. The report includes semantic
-parameter/feature changes, regenerated mass and volume, bounds, triangle counts, and expected
-effect results. It does not mutate the input document.
+`review.html`, `github-summary.md`, `before.png`, `after.png`, and `comparison.gif`. The report
+includes semantic parameter/feature changes, regenerated mass and volume, bounds, triangle counts,
+and expected effect results. It does not mutate the input document. After writing the complete
+review bundle, the command exits unsuccessfully if any declared expected effect failed.
+
+The repository's `Design Review` GitHub Actions workflow runs this command against the flagship
+bracket patch. It appends `github-summary.md` to the job summary and uploads the full bundle as a
+14-day workflow artifact. Summary and artifact publication use `always()` so failed expected-effect
+checks retain their review evidence. GitHub I/O remains in the workflow; the CLI only writes local
+files.
 
 Assembly reviews render placed instances and report exact solid-interference counts. Drawing
 reviews add Before/After SVG sheets alongside the referenced model geometry comparison.

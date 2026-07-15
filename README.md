@@ -24,6 +24,7 @@
 
 <p align="center">
   <a href="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/ci.yml"><img src="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/design-review.yml"><img src="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/design-review.yml/badge.svg" alt="Design Review status"></a>
   <a href="https://github.com/rsasaki0109/MusubiCAD/stargazers"><img src="https://img.shields.io/github/stars/rsasaki0109/MusubiCAD?style=flat" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust" alt="Rust stable">
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-22c55e" alt="MIT OR Apache-2.0">
@@ -98,6 +99,10 @@ Open `review/review.html` to inspect:
 The source document is unchanged. The checked-in
 [`review_width_patch.json`](examples/agent/review_width_patch.json) contains the
 proposal, preconditions, and expected engineering effects.
+
+The repository's [Design Review workflow](.github/workflows/design-review.yml) dogfoods this
+same example on GitHub, publishes its parameter and geometry results in the job summary, and
+attaches the complete HTML/GIF/JSON review bundle.
 
 ## How it works
 
@@ -179,10 +184,11 @@ covered by deterministic tests, but APIs and schemas may evolve before 1.0.
 
 Current priorities:
 
-1. GitHub-native CAD review summaries
-2. Reproducible README demo generation
-3. A one-command, 60-second first-run experience
-4. Downloadable desktop builds
+1. Reproducible README demo generation
+2. A one-command, 60-second first-run experience
+3. Downloadable desktop builds
+
+Recently delivered: GitHub-native CAD review summaries with downloadable review artifacts.
 
 ## Contributing
 
