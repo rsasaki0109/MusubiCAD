@@ -9,3 +9,4 @@ docs/assets/review-demo/*.png binary
 docs/assets/review-demo/*.gif binary
 quickstart.sh text eol=lf
 quickstart.ps1 text eol=lf
+tools/package-cli-release.ps1 text eol=lf
