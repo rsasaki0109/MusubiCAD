@@ -7,3 +7,5 @@ docs/assets/review-demo/*.html text eol=lf
 docs/assets/review-demo/*.md text eol=lf
 docs/assets/review-demo/*.png binary
 docs/assets/review-demo/*.gif binary
+quickstart.sh text eol=lf
+quickstart.ps1 text eol=lf
