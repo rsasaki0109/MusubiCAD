@@ -1,0 +1,57 @@
+name: Feature request
+description: Propose a focused, reviewable CAD or agent workflow.
+title: "Feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Engineering problem
+      description: Describe the workflow and why existing commands or APIs do not solve it.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Concrete example
+      description: Include explicit units, expected inputs/outputs, and the smallest useful model scenario.
+      placeholder: "Change a 6 mm hole to 8 mm and verify remaining wall thickness is at least 2 mm."
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Required interface
+      options:
+        - CLI and Agent API
+        - CLI only
+        - Agent API only
+        - Desktop UI plus CLI or Agent API
+        - File format or schema
+        - Documentation or example
+    validations:
+      required: true
+  - type: textarea
+    id: design_graph
+    attributes:
+      label: Design Graph impact
+      description: Explain the source-of-truth nodes, transactions, DesignPatch operations, or semantic references involved.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List deterministic tests, tolerance assumptions, examples, and documentation that would prove completion.
+    validations:
+      required: true
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Invariants
+      options:
+        - label: This proposal keeps the Design Graph as the source of truth.
+          required: true
+        - label: Any model mutation can go through a transaction and any AI change can go through DesignPatch.
+          required: true

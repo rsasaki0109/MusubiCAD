@@ -233,9 +233,10 @@ Recently delivered: GitHub-native review summaries, reproducible README demos, a
 ## Contributing
 
 Contributions are welcome in geometry, constraints, rendering, file formats, agent
-workflows, documentation, and test fixtures. Start with the
-[developer guide](docs/developer-guide/index.md) and read [`AGENTS.md`](AGENTS.md)
-before changing code.
+workflows, documentation, and test fixtures. Start with the focused
+[`CONTRIBUTING.md`](CONTRIBUTING.md), browse
+[`good first issue`](https://github.com/rsasaki0109/MusubiCAD/labels/good%20first%20issue), and read
+[`AGENTS.md`](AGENTS.md) before changing code.
 
 If reviewable, agent-safe CAD sounds useful, star the repository or open an issue with
 the workflow you want MusubiCAD to support next.
