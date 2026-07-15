@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-ForgeCAD Phase 4 adds 2D drawing documents that reference regenerated 3D
+MusubiCAD Phase 4 adds 2D drawing documents that reference regenerated 3D
 part or assembly geometry and export orthographic views to SVG. The manifest
 already reserves graph slots; assemblies established the pattern of extending
 `OcadDocument` with a dedicated model and `DocumentMetadata.kind`.

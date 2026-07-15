@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-ForgeCAD needs a core language that supports:
+MusubiCAD needs a core language that supports:
 
 - Deterministic regeneration
 - Safe concurrent access patterns

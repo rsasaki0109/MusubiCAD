@@ -1,6 +1,6 @@
 # Git-native CAD workflow
 
-ForgeCAD reviews design intent instead of opaque B-Rep files. A `DesignPatch` can carry an
+MusubiCAD reviews design intent instead of opaque B-Rep files. A `DesignPatch` can carry an
 `intent`, `rationale`, stale-state `preconditions`, and machine-checkable `expected_effects`.
 The Design Graph remains the source of truth; review geometry is regenerated and disposable.
 
@@ -34,7 +34,7 @@ since the old base.
 ## Agent approval boundary
 
 `IntentProvider` receives an immutable `DesignState` and selection IDs and may only return a
-serializable proposal. ForgeCAD validates the selection and dry-runs the patch. Mutation requires
+serializable proposal. MusubiCAD validates the selection and dry-runs the patch. Mutation requires
 the exact deterministic approval ID, verifies that the proposal did not change, and dry-runs again
 against current state. Providers therefore cannot silently bypass DesignPatch validation.
 

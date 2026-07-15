@@ -1,6 +1,6 @@
 # Developer Guide
 
-Welcome to ForgeCAD development.
+Welcome to MusubiCAD development.
 
 ## Prerequisites
 
@@ -11,8 +11,8 @@ Welcome to ForgeCAD development.
 ## Getting started
 
 ```bash
-git clone https://github.com/rsasaki0109/ForgeCAD.git
-cd ForgeCAD
+git clone https://github.com/rsasaki0109/MusubiCAD.git
+cd MusubiCAD
 cargo test --workspace
 cargo run -p opencad-cli -- help
 
@@ -92,5 +92,5 @@ Up next (recommended):
 - Face-ref-driven hole placement in sample documents
 - Mirror plane from semantic face refs
 - CI green + committed `examples/*.ocad.d` fixtures
-- Optional `forgecad` CLI crate rename
+- Optional MusubiCAD CLI/crate rename from the current `opencad` prefix
 - Desktop UI: [desktop-ui.md](desktop-ui.md)

@@ -1,6 +1,6 @@
 [package]
-name = "forgecad-desktop"
-description = "ForgeCAD desktop viewer (Tauri)"
+name = "musubicad-desktop"
+description = "MusubiCAD desktop viewer (Tauri)"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -9,11 +9,11 @@ rust-version = "1.78"
 [workspace]
 
 [lib]
-name = "forgecad_desktop_lib"
+name = "musubicad_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "forgecad-desktop"
+name = "musubicad-desktop"
 path = "src/main.rs"
 
 [build-dependencies]

@@ -145,5 +145,5 @@ pub fn run() {
             pick_document_cmd,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running ForgeCAD desktop");
+        .expect("error while running MusubiCAD desktop");
 }

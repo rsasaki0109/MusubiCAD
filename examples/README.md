@@ -1,6 +1,6 @@
 # Examples
 
-Ready-to-use ForgeCAD documents and Agent API requests.
+Ready-to-use MusubiCAD documents and Agent API requests.
 
 ## Documents
 

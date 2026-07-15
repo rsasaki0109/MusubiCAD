@@ -7,7 +7,7 @@ Complete
 ## Goal
 
 Produce deterministic, high-quality presentation renders and animated GIFs from
-real ForgeCAD documents without making rendered output a source of truth.
+real MusubiCAD documents without making rendered output a source of truth.
 
 ## Deliverables
 

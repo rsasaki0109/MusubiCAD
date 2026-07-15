@@ -1,6 +1,6 @@
 # Agent API
 
-ForgeCAD exposes a JSON-RPC 2.0 API for AI agents and automation tools.
+MusubiCAD exposes a JSON-RPC 2.0 API for AI agents and automation tools.
 
 Transport: **stdio** via `opencad agent`. No network server is started by default.
 

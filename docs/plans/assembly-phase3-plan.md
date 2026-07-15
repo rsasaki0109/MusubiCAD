@@ -1,4 +1,4 @@
-# ForgeCAD Assembly (Phase 3) 実装計画
+# MusubiCAD Assembly (Phase 3) 実装計画
 
 > Status: Complete (M3.1–M3.3 implemented)
 > Scope: `modules/assembly` を中心とした組立モデリング機能

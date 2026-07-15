@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-ForgeCAD needs a practical B-Rep kernel for extrude, boolean, tessellation, and mass properties.
+MusubiCAD needs a practical B-Rep kernel for extrude, boolean, tessellation, and mass properties.
 Building a custom kernel from scratch is out of scope for MVP.
 
 ## Decision

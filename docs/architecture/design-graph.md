@@ -1,6 +1,6 @@
 # Design Graph
 
-The Design Graph is ForgeCAD's authoritative intermediate representation (IR). All regeneration, AI patches, and semantic diffs operate on this graph — not on cached B-Rep geometry.
+The Design Graph is MusubiCAD's authoritative intermediate representation (IR). All regeneration, AI patches, and semantic diffs operate on this graph — not on cached B-Rep geometry.
 
 ## Node kinds
 

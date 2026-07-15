@@ -1,6 +1,6 @@
 # OCCT Installation
 
-ForgeCAD uses OpenCASCADE (OCCT) for B-Rep solid modeling.
+MusubiCAD uses OpenCASCADE (OCCT) for B-Rep solid modeling.
 
 ## Default: static OCCT (no system install)
 
@@ -35,7 +35,7 @@ as `__std_max_element_d` and `__std_min_4i`.
 For developers who also want distro headers/libs (future direct C++ bridge):
 
 ```bash
-ForgeCAD/tools/install_occt.sh
+MusubiCAD/tools/install_occt.sh
 ```
 
 Or manually:
@@ -66,4 +66,4 @@ Integration test `occt_extrude_plate_volume` checks volume ≈ 80×60×6 mm³.
 
 ## Units
 
-ForgeCAD internal units are **SI meters**. OCCT operations receive meter-scale coordinates.
+MusubiCAD internal units are **SI meters**. OCCT operations receive meter-scale coordinates.

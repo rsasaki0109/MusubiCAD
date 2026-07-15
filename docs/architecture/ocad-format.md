@@ -1,6 +1,6 @@
 # `.ocad` File Format
 
-ForgeCAD stores design intent in a git-friendly container. The source of truth is JSON on disk, not cached B-Rep.
+MusubiCAD stores design intent in a git-friendly container. The source of truth is JSON on disk, not cached B-Rep.
 
 ## Layout
 
@@ -39,5 +39,5 @@ let restored = validate_ocad("bracket.ocad.d")?;
 
 ## Schema
 
-- `ForgeCAD/schemas/ocad.document.schema.json`
+- `MusubiCAD/schemas/ocad.document.schema.json`
 - Format version: `0.1.0`

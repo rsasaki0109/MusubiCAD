@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    forgecad_desktop_lib::run();
+    musubicad_desktop_lib::run();
 }

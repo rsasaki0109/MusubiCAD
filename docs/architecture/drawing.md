@@ -1,6 +1,6 @@
 # Drawing architecture (Phase 4)
 
-ForgeCAD drawing documents reference regenerated 3D models and export
+MusubiCAD drawing documents reference regenerated 3D models and export
 orthographic views to SVG. See [ADR-004](../adr/ADR-004-drawing-document-model.md).
 
 ## Data model

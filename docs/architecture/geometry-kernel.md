@@ -1,6 +1,6 @@
 # Geometry Kernel Boundary
 
-ForgeCAD separates **design intent** from **kernel B-Rep cache**.
+MusubiCAD separates **design intent** from **kernel B-Rep cache**.
 
 ## Rule
 

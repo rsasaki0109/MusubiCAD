@@ -1,6 +1,6 @@
 # Desktop UI
 
-ForgeCAD desktop preview uses **Tauri 2** for the shell and **`opencad-desktop`** for regeneration + PNG preview.
+MusubiCAD desktop preview uses **Tauri 2** for the shell and **`opencad-desktop`** for regeneration + PNG preview.
 
 ## Quick start
 
