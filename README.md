@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="#try-a-real-design-review"><strong>Try the review workflow</strong></a>
+  <a href="#60-second-tour-no-build"><strong>Take the 60-second tour</strong></a>
   ·
   <a href="docs/architecture/overview.md">Architecture</a>
   ·
@@ -65,7 +65,25 @@ and cached B-Rep shapes and meshes remain disposable outputs of the Design Graph
 The goal is not to let an LLM silently manufacture geometry. The goal is to give
 humans and agents the same inspectable, testable model-editing protocol.
 
-## Try a real design review
+## 60-second tour (no build)
+
+See the complete review locally before installing Rust or compiling OCCT:
+
+```bash
+git clone --depth 1 https://github.com/rsasaki0109/MusubiCAD.git && cd MusubiCAD && ./quickstart.sh
+```
+
+On Windows PowerShell:
+
+```powershell
+git clone --depth 1 https://github.com/rsasaki0109/MusubiCAD.git; cd MusubiCAD; ./quickstart.ps1
+```
+
+This opens the real, generated `80 mm → 100 mm` DesignPatch report already shown above. It runs no
+downloaded executable, makes no network request after cloning, and does not mutate the model. The
+scripts verify that the HTML, JSON, Markdown, GIF, and before/after images are all present first.
+
+## Run a real design review
 
 You need [stable Rust](https://www.rust-lang.org/tools/install). The first build
 downloads a prebuilt OpenCASCADE 8.0 binary automatically; no system OCCT install is
@@ -195,10 +213,10 @@ covered by deterministic tests, but APIs and schemas may evolve before 1.0.
 
 Current priorities:
 
-1. A one-command, 60-second first-run experience
-2. Downloadable desktop builds
+1. Downloadable desktop builds
 
-Recently delivered: GitHub-native CAD review summaries and reproducible README demo generation.
+Recently delivered: GitHub-native review summaries, reproducible README demos, and a zero-build
+60-second tour.
 
 ## Contributing
 

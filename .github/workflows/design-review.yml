@@ -43,6 +43,9 @@ jobs:
       - name: Generate and verify flagship design review
         run: ./docs/assets/verify-review-demo.sh
 
+      - name: Verify zero-build quick start
+        run: ./quickstart.sh --check
+
       - name: Publish job summary
         if: ${{ always() && hashFiles('docs/assets/review-demo/github-summary.md') != '' }}
         run: cat docs/assets/review-demo/github-summary.md >> "$GITHUB_STEP_SUMMARY"
