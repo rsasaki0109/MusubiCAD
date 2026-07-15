@@ -4,12 +4,6 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [main]
-    paths:
-      - examples/bracket.ocad.d/**
-      - examples/agent/review_width_patch.json
-      - modules/cli/src/review.rs
-      - modules/cli/src/commands.rs
-      - .github/workflows/design-review.yml
 
 permissions:
   contents: read
@@ -28,7 +22,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Mesa Vulkan (headless wgpu)
-        run: sudo apt-get update && sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install -y imagemagick libvulkan1 mesa-vulkan-drivers
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -44,22 +40,18 @@ jobs:
             ${{ runner.os }}-design-review-
             ${{ runner.os }}-cargo-
 
-      - name: Generate flagship design review
-        run: >-
-          cargo run -p opencad-cli -- review
-          examples/bracket.ocad.d
-          examples/agent/review_width_patch.json
-          --output design-review
+      - name: Generate and verify flagship design review
+        run: ./docs/assets/verify-review-demo.sh
 
       - name: Publish job summary
-        if: ${{ always() && hashFiles('design-review/github-summary.md') != '' }}
-        run: cat design-review/github-summary.md >> "$GITHUB_STEP_SUMMARY"
+        if: ${{ always() && hashFiles('docs/assets/review-demo/github-summary.md') != '' }}
+        run: cat docs/assets/review-demo/github-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload review bundle
-        if: ${{ always() && hashFiles('design-review/review.json') != '' }}
+        if: ${{ always() && hashFiles('docs/assets/review-demo/review.json') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: musubicad-design-review-${{ github.run_id }}
-          path: design-review/
+          path: docs/assets/review-demo/
           if-no-files-found: error
           retention-days: 14

@@ -104,6 +104,17 @@ The repository's [Design Review workflow](.github/workflows/design-review.yml) d
 same example on GitHub, publishes its parameter and geometry results in the job summary, and
 attaches the complete HTML/GIF/JSON review bundle.
 
+The hero GIF is generated from those same committed inputs. Rebuild the complete README review
+bundle with one command:
+
+```bash
+./docs/assets/generate-review-demo.sh
+```
+
+On Windows PowerShell, run `./docs/assets/generate-review-demo.ps1`. CI regenerates the bundle,
+compares reports exactly and raster output with a documented 1% normalized mean-absolute-error
+tolerance, and fails when the demo drifts from the Design Graph, patch, or review renderer.
+
 ## How it works
 
 ```mermaid
@@ -184,11 +195,10 @@ covered by deterministic tests, but APIs and schemas may evolve before 1.0.
 
 Current priorities:
 
-1. Reproducible README demo generation
-2. A one-command, 60-second first-run experience
-3. Downloadable desktop builds
+1. A one-command, 60-second first-run experience
+2. Downloadable desktop builds
 
-Recently delivered: GitHub-native CAD review summaries with downloadable review artifacts.
+Recently delivered: GitHub-native CAD review summaries and reproducible README demo generation.
 
 ## Contributing
 
