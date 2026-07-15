@@ -48,6 +48,7 @@ cargo run -p opencad-cli -- animate examples/assembly_two_brackets.ocad.d showca
 | `opencad-plugin-api` | Plugin extension points |
 
 See [ocad-format.md](../architecture/ocad-format.md) for the native file layout.
+See [releases.md](releases.md) for the multi-platform CLI release contract.
 
 ## Development workflow
 

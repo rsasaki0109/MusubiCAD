@@ -1,0 +1,226 @@
+name: Release
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/release.yml
+      - Cargo.lock
+      - Cargo.toml
+      - modules/**
+      - tools/package-cli-release.ps1
+      - docs/release-quickstart.md
+      - docs/developer-guide/releases.md
+      - docs/developer-guide/index.md
+      - examples/bracket.ocad.d/**
+      - examples/agent/review_width_patch.json
+      - LICENSE
+      - README.md
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            platform: linux-x86_64
+            binary: target/release/opencad
+            wgpu_backend: vulkan
+          - runner: windows-2022
+            platform: windows-x86_64
+            binary: target/release/opencad.exe
+          - runner: macos-15
+            platform: macos-aarch64
+            binary: target/release/opencad
+          - runner: macos-15-intel
+            platform: macos-x86_64
+            binary: target/release/opencad
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Mesa Vulkan for Linux smoke test
+        if: ${{ runner.os == 'Linux' }}
+        run: sudo apt-get update && sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
+
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-${{ runner.arch }}-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-release-
+
+      - name: Resolve and verify version
+        id: version
+        shell: pwsh
+        env:
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+          RELEASE_REF_NAME: ${{ github.ref_name }}
+        run: |
+          $metadata = cargo metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
+          $version = ($metadata.packages | Where-Object name -eq "opencad-cli").version
+          if ($env:RELEASE_REF_TYPE -eq "tag" -and $env:RELEASE_REF_NAME -ne "v$version") {
+              throw "Tag $env:RELEASE_REF_NAME does not match opencad-cli version $version"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build release CLI
+        run: cargo build --locked --release -p opencad-cli
+
+      - name: Smoke-test version, OCCT regeneration, and semantic geometry diff
+        shell: pwsh
+        env:
+          BINARY_PATH: ${{ matrix.binary }}
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $versionOutput = @(& $env:BINARY_PATH version)
+          if ($LASTEXITCODE -ne 0 -or $versionOutput[0] -ne "opencad $env:EXPECTED_VERSION") {
+              throw "Unexpected version output: $($versionOutput -join '; ')"
+          }
+          & $env:BINARY_PATH regen examples/bracket.ocad.d
+          if ($LASTEXITCODE -ne 0) {
+              throw "OCCT regeneration smoke test failed"
+          }
+          $diffOutput = @(& $env:BINARY_PATH diff `
+              examples/bracket.ocad.d `
+              --patch examples/agent/review_width_patch.json `
+              --geometry `
+              --json)
+          $diffExitCode = $LASTEXITCODE
+          if ($diffExitCode -ne 1) {
+              throw "Semantic diff must exit 1 when the patch changes the design"
+          }
+          $diff = ($diffOutput -join "`n") | ConvertFrom-Json
+          $width = $diff.changes | Where-Object { $_.id -eq 'param:width' }
+          if ($width.before -ne '80 mm' -or $width.after -ne '100 mm') {
+              throw "Semantic width diff is missing or incorrect"
+          }
+          if ($diff.geometry.mass_after -le $diff.geometry.mass_before) {
+              throw "Regenerated geometry evidence is missing or incorrect"
+          }
+          $global:LASTEXITCODE = 0
+
+      - name: Smoke-test rendered design review on Mesa Vulkan
+        if: ${{ runner.os == 'Linux' }}
+        shell: pwsh
+        env:
+          BINARY_PATH: ${{ matrix.binary }}
+          WGPU_BACKEND: ${{ matrix.wgpu_backend }}
+        run: |
+          & $env:BINARY_PATH review `
+              examples/bracket.ocad.d `
+              examples/agent/review_width_patch.json `
+              --output target/release-smoke-review
+          if ($LASTEXITCODE -ne 0) {
+              throw "Design review smoke test failed on $env:WGPU_BACKEND"
+          }
+          $summary = Get-Content -Raw target/release-smoke-review/github-summary.md
+          if ($summary -notmatch 'All 2 expected effects passed') {
+              throw "Design review smoke test did not verify both expected effects"
+          }
+
+      - name: Package release archive
+        shell: pwsh
+        run: >-
+          ./tools/package-cli-release.ps1
+          -Version "${{ steps.version.outputs.version }}"
+          -Platform "${{ matrix.platform }}"
+          -BinaryPath "${{ matrix.binary }}"
+          -OutputDirectory dist
+
+      - name: Verify archive contract
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_PLATFORM: ${{ matrix.platform }}
+        run: |
+          $archive = Get-ChildItem dist -File | Where-Object { $_.Name -match '\.(zip|tar\.gz)$' }
+          if ($archive.Count -ne 1) {
+              throw "Expected one release archive, found $($archive.Count)"
+          }
+          $entries = & tar -tf $archive.FullName
+          if ($LASTEXITCODE -ne 0) {
+              throw "Could not list release archive $($archive.Name)"
+          }
+          $root = "musubicad-cli-v$env:RELEASE_VERSION-$env:RELEASE_PLATFORM"
+          $executable = if ($env:RELEASE_PLATFORM.StartsWith("windows-")) { "opencad.exe" } else { "opencad" }
+          $required = @(
+              "$root/$executable",
+              "$root/LICENSE",
+              "$root/README.md",
+              "$root/QUICKSTART.md",
+              "$root/examples/bracket.ocad.d/manifest.ocad.json",
+              "$root/examples/agent/review_width_patch.json"
+          )
+          foreach ($path in $required) {
+              if ($entries -notcontains $path) {
+                  throw "Release archive is missing $path"
+              }
+          }
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.platform }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: publish GitHub Release
+    if: ${{ github.ref_type == 'tag' }}
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify tagged commit is on main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Download release archives
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate SHA-256 checksums
+        working-directory: dist
+        run: sha256sum *.zip *.tar.gz > SHA256SUMS
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME" dist/*
+          --repo "$GITHUB_REPOSITORY"
+          --verify-tag
+          --generate-notes
+          --title "MusubiCAD CLI $GITHUB_REF_NAME"

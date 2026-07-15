@@ -25,6 +25,7 @@
 <p align="center">
   <a href="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/ci.yml"><img src="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/design-review.yml"><img src="https://github.com/rsasaki0109/MusubiCAD/actions/workflows/design-review.yml/badge.svg" alt="Design Review status"></a>
+  <a href="https://github.com/rsasaki0109/MusubiCAD/releases/latest"><img src="https://img.shields.io/github/v/release/rsasaki0109/MusubiCAD?display_name=tag" alt="Latest release"></a>
   <a href="https://github.com/rsasaki0109/MusubiCAD/stargazers"><img src="https://img.shields.io/github/stars/rsasaki0109/MusubiCAD?style=flat" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust" alt="Rust stable">
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-22c55e" alt="MIT OR Apache-2.0">
@@ -82,6 +83,17 @@ git clone --depth 1 https://github.com/rsasaki0109/MusubiCAD.git; cd MusubiCAD; 
 This opens the real, generated `80 mm → 100 mm` DesignPatch report already shown above. It runs no
 downloaded executable, makes no network request after cloning, and does not mutate the model. The
 scripts verify that the HTML, JSON, Markdown, GIF, and before/after images are all present first.
+
+## Download the CLI
+
+The [latest release](https://github.com/rsasaki0109/MusubiCAD/releases/latest) provides ready-to-run
+CLI archives for Linux x86-64, Windows x86-64, macOS Apple Silicon, and macOS Intel. Every archive
+includes the bracket document, DesignPatch, license, and a focused quick-start guide. Verify the
+download against the attached `SHA256SUMS` before running it.
+
+Release archives currently contain the historical `opencad` executable name. They are not yet
+code-signed or notarized; platform security warnings are documented in the included
+[`QUICKSTART.md`](docs/release-quickstart.md).
 
 ## Run a real design review
 
