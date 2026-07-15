@@ -65,6 +65,21 @@ cargo test --workspace
 
 6. Update docs if the public API or architecture changes.
 
+## README review demo
+
+The README hero is generated from `examples/bracket.ocad.d` and
+`examples/agent/review_width_patch.json`; do not edit its images or reports by hand. Regenerate the
+complete bundle on Linux or macOS with:
+
+```bash
+./docs/assets/generate-review-demo.sh
+```
+
+On Windows PowerShell, use `./docs/assets/generate-review-demo.ps1`. The Design Review workflow
+compares reports byte-for-byte and raster output with a 1% normalized mean-absolute-error tolerance.
+The tolerance absorbs GPU rasterization differences while still detecting a material visual change,
+so Design Graph, flagship patch, or renderer changes may require updating the bundle in the same PR.
+
 ## PR checklist
 
 - [ ] Task ID in PR title (`Task-XXX: …`)
