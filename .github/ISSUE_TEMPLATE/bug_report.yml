@@ -1,0 +1,66 @@
+name: Bug report
+description: Report a reproducible MusubiCAD failure or incorrect result.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve MusubiCAD. Remove secrets and proprietary geometry before attaching files.
+  - type: input
+    id: version
+    attributes:
+      label: MusubiCAD version or commit
+      description: Run `opencad version` for a release binary, or provide the commit SHA.
+      placeholder: "v0.1.0 / 7d9cd8b"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux x86-64
+        - Windows x86-64
+        - macOS Apple Silicon
+        - macOS Intel
+        - Other source build
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command or API request
+      description: Include flags and explicit units, or a minimal JSON-RPC request.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest deterministic sequence and a shareable `.ocad.d` or DesignPatch when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: Include expected dimensions, mass, volume, or tolerance with explicit units.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and logs
+      description: Paste the complete error and note whether the input document changed.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data safety
+      options:
+        - label: I removed secrets and proprietary geometry from everything shared here.
+          required: true

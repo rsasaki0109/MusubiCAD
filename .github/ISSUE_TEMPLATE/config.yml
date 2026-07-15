@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 60-second MusubiCAD tour
+    url: https://github.com/rsasaki0109/MusubiCAD#60-second-tour-no-build
+    about: See a real generated CAD review before filing an issue.
+  - name: Architecture and Agent API documentation
+    url: https://github.com/rsasaki0109/MusubiCAD/tree/main/docs
+    about: Check the current design boundaries and public APIs.
