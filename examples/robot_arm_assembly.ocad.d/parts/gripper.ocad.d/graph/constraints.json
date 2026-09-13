@@ -1,0 +1,129 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:finger_left",
+      "constraint": {
+        "type": "radius",
+        "id": "con:finger_left_radius",
+        "target": "ent:finger_left_circle",
+        "expr": "finger_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_left",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:finger_left_x_horizontal",
+        "line": "ent:finger_left_x_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_left",
+      "constraint": {
+        "type": "distance",
+        "id": "con:finger_left_x_offset",
+        "target": {
+          "line": "ent:finger_left_x_line"
+        },
+        "expr": "finger_spacing / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_left",
+      "constraint": {
+        "type": "distance",
+        "id": "con:finger_left_y_offset",
+        "target": {
+          "line": "ent:finger_left_y_line"
+        },
+        "expr": "gripper_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_left",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:finger_left_y_vertical",
+        "line": "ent:finger_left_y_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_right",
+      "constraint": {
+        "type": "radius",
+        "id": "con:finger_right_radius",
+        "target": "ent:finger_right_circle",
+        "expr": "finger_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_right",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:finger_right_x_horizontal",
+        "line": "ent:finger_right_x_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_right",
+      "constraint": {
+        "type": "distance",
+        "id": "con:finger_right_x_offset",
+        "target": {
+          "line": "ent:finger_right_x_line"
+        },
+        "expr": "finger_spacing / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_right",
+      "constraint": {
+        "type": "distance",
+        "id": "con:finger_right_y_offset",
+        "target": {
+          "line": "ent:finger_right_y_line"
+        },
+        "expr": "gripper_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:finger_right",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:finger_right_y_vertical",
+        "line": "ent:finger_right_y_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:gripper_body",
+      "constraint": {
+        "type": "distance",
+        "id": "con:gripper_body_length",
+        "target": {
+          "line": "ent:gripper_body_e0"
+        },
+        "expr": "gripper_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:gripper_body",
+      "constraint": {
+        "type": "distance",
+        "id": "con:gripper_body_width",
+        "target": {
+          "line": "ent:gripper_body_e1"
+        },
+        "expr": "gripper_width"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_bore",
+      "constraint": {
+        "type": "radius",
+        "id": "con:wrist_bore_radius",
+        "target": "ent:wrist_bore_circle",
+        "expr": "gripper_wrist_bore_diameter / 2"
+      }
+    }
+  ]
+}

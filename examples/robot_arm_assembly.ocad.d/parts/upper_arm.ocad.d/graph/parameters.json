@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "param:upper_arm_length": {
+      "id": "param:upper_arm_length",
+      "name": "upper_arm_length",
+      "expr": "160 mm",
+      "dirty": false
+    },
+    "param:upper_arm_width": {
+      "id": "param:upper_arm_width",
+      "name": "upper_arm_width",
+      "expr": "26 mm",
+      "dirty": false
+    },
+    "param:upper_arm_thickness": {
+      "id": "param:upper_arm_thickness",
+      "name": "upper_arm_thickness",
+      "expr": "14 mm",
+      "dirty": false
+    },
+    "param:shoulder_hub_diameter": {
+      "id": "param:shoulder_hub_diameter",
+      "name": "shoulder_hub_diameter",
+      "expr": "36 mm",
+      "dirty": false
+    },
+    "param:shoulder_bore_diameter": {
+      "id": "param:shoulder_bore_diameter",
+      "name": "shoulder_bore_diameter",
+      "expr": "14 mm",
+      "dirty": false
+    },
+    "param:upper_arm_elbow_hub_diameter": {
+      "id": "param:upper_arm_elbow_hub_diameter",
+      "name": "upper_arm_elbow_hub_diameter",
+      "expr": "32 mm",
+      "dirty": false
+    },
+    "param:upper_arm_elbow_bore_diameter": {
+      "id": "param:upper_arm_elbow_bore_diameter",
+      "name": "upper_arm_elbow_bore_diameter",
+      "expr": "12 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

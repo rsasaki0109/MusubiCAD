@@ -1,11 +1,15 @@
 //! `opencad new` command (Task-121+).
 
-use opencad_assembly::{AssemblyModel, Component, Instance, Mate, MateEntity, MateKind, Placement};
+use opencad_assembly::{
+    robot_arm_assembly_model, AssemblyModel, Component, Instance, Mate, MateEntity, MateKind,
+    Placement,
+};
 use opencad_core::{DocumentId, DocumentMetadata, Result};
 use opencad_feature::{
     bearing_carrier, bracket_boss_join, bracket_edge_fillet, bracket_face_pin, bracket_hole_ring,
     bracket_hole_row, bracket_pin_mirror, bracket_pin_ring, bracket_pin_row, bracket_semantic_refs,
-    bracket_with_hole, revolve_bushing, revolve_sector, robot_joint_actuator_housing,
+    bracket_with_hole, revolve_bushing, revolve_sector, robot_arm_base, robot_arm_forearm,
+    robot_arm_gripper, robot_arm_upper_arm, robot_joint_actuator_housing,
 };
 use opencad_file::{write_ocad, OcadDocument};
 use opencad_geometry::RigidTransform;
@@ -29,6 +33,7 @@ pub enum DocumentTemplate {
     RevolveBushing,
     RevolveSector,
     AssemblyTwoBrackets,
+    RobotArmAssembly,
     BracketFrontViewDrawing,
 }
 
@@ -49,9 +54,10 @@ impl DocumentTemplate {
             "revolve-bushing" => Ok(Self::RevolveBushing),
             "revolve-sector" => Ok(Self::RevolveSector),
             "assembly" => Ok(Self::AssemblyTwoBrackets),
+            "robot-arm" => Ok(Self::RobotArmAssembly),
             "drawing" => Ok(Self::BracketFrontViewDrawing),
             _ => Err(opencad_core::OpenCadError::validation(format!(
-                "unknown template '{name}'; expected 'bracket', 'bearing-carrier', 'robot-joint', 'boss-join', 'face-pin', 'edge-fillet', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', 'pin-mirror', 'revolve-bushing', 'revolve-sector', 'assembly', or 'drawing'"
+                "unknown template '{name}'; expected 'bracket', 'bearing-carrier', 'robot-joint', 'boss-join', 'face-pin', 'edge-fillet', 'hole-row', 'hole-ring', 'pin-row', 'pin-ring', 'pin-mirror', 'revolve-bushing', 'revolve-sector', 'assembly', 'robot-arm', or 'drawing'"
             ))),
         }
     }
@@ -72,6 +78,7 @@ impl DocumentTemplate {
             Self::RevolveBushing => "revolve-bushing",
             Self::RevolveSector => "revolve-sector",
             Self::AssemblyTwoBrackets => "assembly",
+            Self::RobotArmAssembly => "robot-arm",
             Self::BracketFrontViewDrawing => "drawing",
         }
     }
@@ -92,6 +99,7 @@ impl DocumentTemplate {
             Self::RevolveBushing,
             Self::RevolveSector,
             Self::AssemblyTwoBrackets,
+            Self::RobotArmAssembly,
             Self::BracketFrontViewDrawing,
         ]
     }
@@ -113,6 +121,7 @@ pub fn create_document(path: &str, template: DocumentTemplate) -> Result<()> {
         DocumentTemplate::RevolveBushing => create_revolve_bushing_document(path),
         DocumentTemplate::RevolveSector => create_revolve_sector_document(path),
         DocumentTemplate::AssemblyTwoBrackets => create_assembly_two_brackets_document(path),
+        DocumentTemplate::RobotArmAssembly => create_robot_arm_assembly_document(path),
         DocumentTemplate::BracketFrontViewDrawing => create_bracket_front_view_document(path),
     }
 }
@@ -337,6 +346,83 @@ pub fn create_assembly_two_brackets_document(path: &str) -> Result<()> {
         feature_graph: FeatureGraph::new(),
         feature_nodes: Vec::new(),
         semantic_refs: Vec::new(),
+        assertions: Vec::new(),
+        assembly: Some(assembly),
+        drawing: None,
+    };
+
+    write_ocad(path, &doc)
+}
+
+fn write_robot_arm_part(
+    path: &str,
+    part: opencad_feature::PartModel,
+    parameters: opencad_graph::ParamGraph,
+    doc_id: &str,
+    name: &str,
+) -> Result<()> {
+    let metadata = DocumentMetadata::new(DocumentId::new(doc_id)?, name);
+    let mut doc = OcadDocument::from_part_model(metadata, &part);
+    doc.parameters = parameters;
+    write_ocad(path, &doc)
+}
+
+pub fn create_robot_arm_assembly_document(path: &str) -> Result<()> {
+    use opencad_assembly::robot_arm;
+    use std::path::Path;
+
+    let root = Path::new(path);
+    for (child_relative, part, parameters, doc_id, name) in [
+        (
+            robot_arm::BASE_PATH,
+            robot_arm_base()?,
+            opencad_graph::robot_arm_base_parameters(),
+            robot_arm::BASE_DOC,
+            "Robot Arm Base",
+        ),
+        (
+            robot_arm::UPPER_ARM_PATH,
+            robot_arm_upper_arm()?,
+            opencad_graph::robot_arm_upper_arm_parameters(),
+            robot_arm::UPPER_ARM_DOC,
+            "Robot Arm Upper Link",
+        ),
+        (
+            robot_arm::FOREARM_PATH,
+            robot_arm_forearm()?,
+            opencad_graph::robot_arm_forearm_parameters(),
+            robot_arm::FOREARM_DOC,
+            "Robot Arm Forearm Link",
+        ),
+        (
+            robot_arm::GRIPPER_PATH,
+            robot_arm_gripper()?,
+            opencad_graph::robot_arm_gripper_parameters(),
+            robot_arm::GRIPPER_DOC,
+            "Robot Arm Wrist Gripper",
+        ),
+    ] {
+        write_robot_arm_part(
+            root.join(child_relative).to_str().expect("child path"),
+            part,
+            parameters,
+            doc_id,
+            name,
+        )?;
+    }
+
+    let assembly = robot_arm_assembly_model()?;
+    let doc = OcadDocument {
+        metadata: DocumentMetadata::new_assembly(
+            DocumentId::new("doc:robot_arm_assembly_001")?,
+            "Articulated Robot Arm",
+        ),
+        parameters: ParamGraph::new(),
+        sketches: Vec::new(),
+        feature_graph: FeatureGraph::new(),
+        feature_nodes: Vec::new(),
+        semantic_refs: Vec::new(),
+        assertions: Vec::new(),
         assembly: Some(assembly),
         drawing: None,
     };

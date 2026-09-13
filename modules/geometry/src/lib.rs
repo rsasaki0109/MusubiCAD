@@ -7,6 +7,7 @@ pub mod instrument;
 pub mod kernel;
 pub mod mass;
 pub mod nurbs;
+pub mod provenance;
 pub mod refs;
 pub mod stl;
 pub mod tessellation;
@@ -22,6 +23,11 @@ pub use kernel::{
 };
 pub use mass::{BoundingBox, MassProperties};
 pub use nurbs::NurbsSurface;
+pub use provenance::{
+    resolve_all_reference_provenance, resolve_edge_ref_with_provenance,
+    resolve_face_ref_with_provenance, CandidateEvidence, ReferenceProvenance, ReferenceResolution,
+    ReferenceStatus,
+};
 pub use refs::{
     GeometricFingerprint, TopoRef, TopoRefIdentity, TopoRefKind, TopoRefSemantic,
     TopoRefTolerancePolicy, DEFAULT_EDGE_MIDPOINT_TOLERANCE_M, DEFAULT_FACE_CENTROID_TOLERANCE_M,

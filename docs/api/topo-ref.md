@@ -57,6 +57,51 @@ current run's derivation history cannot bridge the prior process-local value.
 An absent stored ID therefore continues through semantic/fingerprint fallback;
 without discoveries, the legacy stored-ID behavior is retained.
 
+## Reference provenance (fail-closed, MCAD-P6-003)
+
+Every reference resolution can be classified and reported through
+`opencad_geometry::ReferenceProvenance`:
+
+```rust
+use opencad_geometry::{
+    resolve_face_ref_with_provenance, ReferenceStatus, TopoRefTolerancePolicy,
+};
+
+let resolution = resolve_face_ref_with_provenance(
+    semantic_refs,
+    face_history,
+    "ref:face:bracket_top",
+    Some(&discoveries),
+    TopoRefTolerancePolicy::default(),
+    /* required = */ true,
+)?;
+match resolution.provenance.status {
+    ReferenceStatus::Exact => { /* stored kernel id is present */ }
+    ReferenceStatus::Derived => { /* remapped through derivation history */ }
+    ReferenceStatus::Fingerprint => { /* role/geometric fallback */ }
+    ReferenceStatus::Ambiguous => { /* equal best scores; never picked */ }
+    ReferenceStatus::Missing => { /* no candidate satisfied the reference */ }
+}
+```
+
+- `exact` accepts the stored (or history-remapped) kernel id present in the
+  regenerated body; `derived` distinguishes the remapped case.
+- `fingerprint` is a role/geometric fallback pick.
+- When two or more distinct candidates tie for the best score, the resolution
+  is `ambiguous` and reports no chosen kernel id. Ties are detected from the
+  scored candidate set, so the outcome is independent of discovery order.
+- `missing` means no candidate satisfied the reference.
+- Setting `required = true` makes `ambiguous` and `missing` return an error,
+  so a required reference blocks the commit instead of silently choosing.
+- Each provenance records the source feature, intended role, candidate set
+  with scores, the tolerance policy, and a human-readable reason.
+
+`resolve_all_reference_provenance` classifies every document reference against
+the final regenerated discoveries as observability data; `RegenReport` carries
+the per-reference provenance, the CLI `opencad regen` prints a status summary,
+and the design-review artifact includes the same provenance table for part
+documents.
+
 For the legacy serialized fingerprint, `area_range` is measured in square
 meters. Face `bbox_hint` values are centroid bounds in meters, while edge
 `bbox_hint` stores `[midpoint_m, unit_tangent]`. P5-001 uses face centroids and

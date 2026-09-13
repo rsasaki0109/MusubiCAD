@@ -1,0 +1,31 @@
+{
+  "intent": "Repose the articulated arm to reach a lower working height",
+  "rationale": "Rotate the elbow and wrist joints from -45° to -75° about their vertical axes so the gripper sweeps a lower arc, while every concentric mate stays satisfied and the arm remains interference-free.",
+  "expected_effects": [
+    {
+      "type": "no_assembly_interference"
+    }
+  ],
+  "operations": [
+    {
+      "type": "set_instance_placement",
+      "instance_id": "instance:forearm",
+      "translation_m": [0.0, 0.16, 0.044],
+      "rotation": [
+        [0.25881904510252074, 0.9659258262890683, 0.0],
+        [-0.9659258262890683, 0.25881904510252074, 0.0],
+        [0.0, 0.0, 1.0]
+      ]
+    },
+    {
+      "type": "set_instance_placement",
+      "instance_id": "instance:gripper",
+      "translation_m": [0.1062518408946992, 0.188470094965001, 0.056],
+      "rotation": [
+        [0.25881904510252074, 0.9659258262890683, 0.0],
+        [-0.9659258262890683, 0.25881904510252074, 0.0],
+        [0.0, 0.0, 1.0]
+      ]
+    }
+  ]
+}

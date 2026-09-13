@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "param:gripper_length": {
+      "id": "param:gripper_length",
+      "name": "gripper_length",
+      "expr": "40 mm",
+      "dirty": false
+    },
+    "param:gripper_width": {
+      "id": "param:gripper_width",
+      "name": "gripper_width",
+      "expr": "36 mm",
+      "dirty": false
+    },
+    "param:gripper_thickness": {
+      "id": "param:gripper_thickness",
+      "name": "gripper_thickness",
+      "expr": "14 mm",
+      "dirty": false
+    },
+    "param:gripper_wrist_bore_diameter": {
+      "id": "param:gripper_wrist_bore_diameter",
+      "name": "gripper_wrist_bore_diameter",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:finger_diameter": {
+      "id": "param:finger_diameter",
+      "name": "finger_diameter",
+      "expr": "12 mm",
+      "dirty": false
+    },
+    "param:finger_spacing": {
+      "id": "param:finger_spacing",
+      "name": "finger_spacing",
+      "expr": "16 mm",
+      "dirty": false
+    },
+    "param:finger_length": {
+      "id": "param:finger_length",
+      "name": "finger_length",
+      "expr": "18 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

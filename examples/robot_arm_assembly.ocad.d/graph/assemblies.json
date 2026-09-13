@@ -1,0 +1,491 @@
+{
+  "assembly": {
+    "components": [
+      {
+        "id": "component:base",
+        "source_path": "parts/base.ocad.d",
+        "source_doc": "doc:robot_arm_base_001",
+        "source_kind": "part"
+      },
+      {
+        "id": "component:forearm",
+        "source_path": "parts/forearm.ocad.d",
+        "source_doc": "doc:robot_arm_forearm_001",
+        "source_kind": "part"
+      },
+      {
+        "id": "component:gripper",
+        "source_path": "parts/gripper.ocad.d",
+        "source_doc": "doc:robot_arm_gripper_001",
+        "source_kind": "part"
+      },
+      {
+        "id": "component:upper_arm",
+        "source_path": "parts/upper_arm.ocad.d",
+        "source_doc": "doc:robot_arm_upper_arm_001",
+        "source_kind": "part"
+      }
+    ],
+    "instances": [
+      {
+        "id": "instance:base",
+        "component": "component:base",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": false,
+        "name": "Base"
+      },
+      {
+        "id": "instance:forearm",
+        "component": "component:forearm",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.16,
+              0.044
+            ],
+            "rotation": [
+              [
+                0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                -0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": false,
+        "name": "Forearm"
+      },
+      {
+        "id": "instance:gripper",
+        "component": "component:gripper",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.07778174593052023,
+              0.23778174593052023,
+              0.055999999999999994
+            ],
+            "rotation": [
+              [
+                0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                -0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": false,
+        "name": "Gripper"
+      },
+      {
+        "id": "instance:upper_arm",
+        "component": "component:upper_arm",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.03
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": false,
+        "name": "Upper Arm"
+      }
+    ],
+    "mates": [
+      {
+        "id": "mate:elbow",
+        "type": "concentric",
+        "a": {
+          "instance": "instance:forearm",
+          "topo_ref": {
+            "ref_id": "ref:face:forearm_elbow",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:forearm_proximal_hub",
+              "role": "proximal"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "connector": "forearm_elbow"
+        },
+        "b": {
+          "instance": "instance:upper_arm",
+          "topo_ref": {
+            "ref_id": "ref:face:upper_arm_elbow",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:upper_arm_distal_hub",
+              "role": "distal"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "connector": "upper_arm_elbow"
+        },
+        "suppressed": false
+      },
+      {
+        "id": "mate:ground_base",
+        "type": "ground",
+        "instance": "instance:base",
+        "suppressed": false
+      },
+      {
+        "id": "mate:shoulder",
+        "type": "concentric",
+        "a": {
+          "instance": "instance:upper_arm",
+          "topo_ref": {
+            "ref_id": "ref:face:upper_arm_shoulder",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:upper_arm_proximal_hub",
+              "role": "proximal"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "connector": "upper_arm_shoulder"
+        },
+        "b": {
+          "instance": "instance:base",
+          "topo_ref": {
+            "ref_id": "ref:face:base_turret",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:turret",
+              "role": "top"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "connector": "shoulder_pin"
+        },
+        "suppressed": false
+      },
+      {
+        "id": "mate:wrist",
+        "type": "concentric",
+        "a": {
+          "instance": "instance:gripper",
+          "topo_ref": {
+            "ref_id": "ref:face:gripper_wrist",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:wrist_bore",
+              "role": "wrist"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "connector": "gripper_wrist"
+        },
+        "b": {
+          "instance": "instance:forearm",
+          "topo_ref": {
+            "ref_id": "ref:face:forearm_wrist",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:forearm_distal_hub",
+              "role": "distal"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "connector": "forearm_wrist"
+        },
+        "suppressed": false
+      }
+    ],
+    "connectors": [
+      {
+        "id": "connector:forearm_elbow",
+        "name": "forearm_elbow",
+        "instance": "instance:forearm",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      {
+        "id": "connector:forearm_wrist",
+        "name": "forearm_wrist",
+        "instance": "instance:forearm",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.11,
+            0.012
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      {
+        "id": "connector:gripper_wrist",
+        "name": "gripper_wrist",
+        "instance": "instance:gripper",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      {
+        "id": "connector:shoulder_pin",
+        "name": "shoulder_pin",
+        "instance": "instance:base",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.0,
+            0.03
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      {
+        "id": "connector:upper_arm_elbow",
+        "name": "upper_arm_elbow",
+        "instance": "instance:upper_arm",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.16,
+            0.014
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      {
+        "id": "connector:upper_arm_shoulder",
+        "name": "upper_arm_shoulder",
+        "instance": "instance:upper_arm",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      }
+    ]
+  }
+}

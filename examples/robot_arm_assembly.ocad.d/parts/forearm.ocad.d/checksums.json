@@ -1,0 +1,15 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "document.ocad.json": "68cca6228a264d45afd34371d7f1608d55d7c51d898e82a68b0e15df7c1e9b91",
+    "graph/assemblies.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "graph/constraints.json": "fe32ea63980f804d14189dc911fd01d439155a68c69c74102d8a6de42aab47d7",
+    "graph/drawings.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "graph/features.json": "c6272a850477f15853543caadebe639dcf09ae23980d108849f793f16d8610be",
+    "graph/materials.json": "75431017e3a6c79d0a8d746428bfc31df6aa40b8a44aa72ca4b9459ec5c79f44",
+    "graph/parameters.json": "1dae3fe614faa9970c2c5149bb69f76bfbd8bca383ee3ad6e1bd1fd049bef005",
+    "graph/semantic_refs.json": "7ec2c65ddfbdf5010dab75c349b4d7cc17795eb01badbf8a94ef84ad6d223927",
+    "graph/sketches.json": "ef29536e4bbb35fe8d2962c6c30fb5c41d3e30a449952d678e11c4d93801eeba",
+    "manifest.ocad.json": "9546a75472b4a6216c0d3ad28de17647ca8f8b99d985603701aba882cfe5213c"
+  }
+}

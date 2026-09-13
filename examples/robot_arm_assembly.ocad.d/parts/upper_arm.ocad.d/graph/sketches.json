@@ -1,0 +1,344 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:upper_arm_bar",
+      "name": "Upper Arm Bar",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:upper_arm_bar_c0",
+          "construction": false,
+          "x": -0.013,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:upper_arm_bar_c1",
+          "construction": false,
+          "x": -0.013,
+          "y": 0.16
+        },
+        {
+          "type": "point",
+          "id": "ent:upper_arm_bar_c2",
+          "construction": false,
+          "x": 0.013,
+          "y": 0.16
+        },
+        {
+          "type": "point",
+          "id": "ent:upper_arm_bar_c3",
+          "construction": false,
+          "x": 0.013,
+          "y": 0.0
+        },
+        {
+          "type": "line",
+          "id": "ent:upper_arm_bar_e0",
+          "construction": false,
+          "start": "ent:upper_arm_bar_c0",
+          "end": "ent:upper_arm_bar_c1"
+        },
+        {
+          "type": "line",
+          "id": "ent:upper_arm_bar_e1",
+          "construction": false,
+          "start": "ent:upper_arm_bar_c1",
+          "end": "ent:upper_arm_bar_c2"
+        },
+        {
+          "type": "line",
+          "id": "ent:upper_arm_bar_e2",
+          "construction": false,
+          "start": "ent:upper_arm_bar_c2",
+          "end": "ent:upper_arm_bar_c3"
+        },
+        {
+          "type": "line",
+          "id": "ent:upper_arm_bar_e3",
+          "construction": false,
+          "start": "ent:upper_arm_bar_c3",
+          "end": "ent:upper_arm_bar_c0"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "distance",
+          "id": "con:upper_arm_bar_length",
+          "target": {
+            "line": "ent:upper_arm_bar_e0"
+          },
+          "expr": "upper_arm_length"
+        },
+        {
+          "type": "distance",
+          "id": "con:upper_arm_bar_width",
+          "target": {
+            "line": "ent:upper_arm_bar_e1"
+          },
+          "expr": "upper_arm_width"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "under_constrained",
+        "dof": 4
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:upper_arm_bar_e0",
+            "ent:upper_arm_bar_e1",
+            "ent:upper_arm_bar_e2",
+            "ent:upper_arm_bar_e3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:upper_arm_bar/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:upper_arm_distal_bore",
+      "name": "Elbow Bore",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:upper_arm_distal_bore_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:upper_arm_distal_bore_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.16
+        },
+        {
+          "type": "circle",
+          "id": "ent:upper_arm_distal_bore_circle",
+          "construction": false,
+          "center": "ent:upper_arm_distal_bore_center",
+          "radius": 0.0059999999400120055
+        },
+        {
+          "type": "line",
+          "id": "ent:upper_arm_distal_bore_offset_line",
+          "construction": true,
+          "start": "ent:upper_arm_distal_bore_origin",
+          "end": "ent:upper_arm_distal_bore_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:upper_arm_distal_bore_vertical",
+          "line": "ent:upper_arm_distal_bore_offset_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:upper_arm_distal_bore_offset",
+          "target": {
+            "line": "ent:upper_arm_distal_bore_offset_line"
+          },
+          "expr": "upper_arm_length"
+        },
+        {
+          "type": "radius",
+          "id": "con:upper_arm_distal_bore_radius",
+          "target": "ent:upper_arm_distal_bore_circle",
+          "expr": "upper_arm_elbow_bore_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:upper_arm_distal_bore_circle",
+          "entity_ids": [
+            "ent:upper_arm_distal_bore_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:upper_arm_distal_bore/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:upper_arm_distal_hub",
+      "name": "Elbow Hub",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:upper_arm_distal_hub_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:upper_arm_distal_hub_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.16
+        },
+        {
+          "type": "circle",
+          "id": "ent:upper_arm_distal_hub_circle",
+          "construction": false,
+          "center": "ent:upper_arm_distal_hub_center",
+          "radius": 0.01599999984003146
+        },
+        {
+          "type": "line",
+          "id": "ent:upper_arm_distal_hub_offset_line",
+          "construction": true,
+          "start": "ent:upper_arm_distal_hub_origin",
+          "end": "ent:upper_arm_distal_hub_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:upper_arm_distal_hub_vertical",
+          "line": "ent:upper_arm_distal_hub_offset_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:upper_arm_distal_hub_offset",
+          "target": {
+            "line": "ent:upper_arm_distal_hub_offset_line"
+          },
+          "expr": "upper_arm_length"
+        },
+        {
+          "type": "radius",
+          "id": "con:upper_arm_distal_hub_radius",
+          "target": "ent:upper_arm_distal_hub_circle",
+          "expr": "upper_arm_elbow_hub_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:upper_arm_distal_hub_circle",
+          "entity_ids": [
+            "ent:upper_arm_distal_hub_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:upper_arm_distal_hub/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:upper_arm_proximal_bore",
+      "name": "Shoulder Bore",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:upper_arm_proximal_bore_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:upper_arm_proximal_bore_circle",
+          "construction": false,
+          "center": "ent:upper_arm_proximal_bore_center",
+          "radius": 0.006999999930014007
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:upper_arm_proximal_bore_radius",
+          "target": "ent:upper_arm_proximal_bore_circle",
+          "expr": "shoulder_bore_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:upper_arm_proximal_bore_circle",
+          "entity_ids": [
+            "ent:upper_arm_proximal_bore_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:upper_arm_proximal_bore/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:upper_arm_proximal_hub",
+      "name": "Shoulder Hub",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:upper_arm_proximal_hub_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:upper_arm_proximal_hub_circle",
+          "construction": false,
+          "center": "ent:upper_arm_proximal_hub_center",
+          "radius": 0.017999999820035396
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:upper_arm_proximal_hub_radius",
+          "target": "ent:upper_arm_proximal_hub_circle",
+          "expr": "shoulder_hub_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:upper_arm_proximal_hub_circle",
+          "entity_ids": [
+            "ent:upper_arm_proximal_hub_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:upper_arm_proximal_hub/profile:outer"
+        }
+      ]
+    }
+  ]
+}

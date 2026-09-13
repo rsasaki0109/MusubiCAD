@@ -6,6 +6,8 @@ Ready-to-use MusubiCAD documents and Agent API requests.
 
 | Directory | Template | Features |
 |---|---|---|
+| `robot_arm_assembly.ocad.d` | `opencad new <path> robot-arm` | 4-part articulated arm: base turret, upper link, forearm link, wrist gripper; 3 concentric joints via connectors and mates |
+| `robot_arm_assembly_drawing.ocad.d` | generated example | A4 front-view drawing of the arm assembly with a model-driven 160 mm upper-arm dimension |
 | `robot_joint_actuator.ocad.d` | `opencad new <path> robot-joint` | 22 nodes: stepped hubs, shaft/counterbore cuts, 8-hole PCD, 6 ribs, mirrored ears and holes |
 | `bearing_carrier.ocad.d` | `opencad new <path> bearing-carrier` | Base extrude, joined hub, through bore, four-hole circular cut pattern |
 | `bracket.ocad.d` | `opencad new <path>` | Sketch, extrude, hole (`face_ref`) |
@@ -89,6 +91,45 @@ Focused assembly tests cover canonical aliases, path/symlink escape, nested
 cycles, sibling reuse, localized failure, retry, and the explicit `m`/`m³`
 interference policy documented in
 [`docs/api/assembly.md`](../docs/api/assembly.md).
+
+### Robot arm flagship assembly
+
+`robot_arm_assembly.ocad.d` is a four-part articulated arm: a bolted base
+pedestal, an upper link with shoulder/elbow hubs, a forearm link, and a wrist
+gripper with two fingers. Its assembly declares six named connectors and three
+concentric revolute joints (`mate:shoulder`, `mate:elbow`, `mate:wrist`), all
+satisfied exactly at the authored pose, so the deterministic mate solver leaves
+the -45° posed arm unchanged. Links are stacked along `+Z` so joint hubs touch
+face-to-face; exact OCCT interference detection reports zero common volume.
+Each part stays independently parametric (`upper_arm_length`, `forearm_length`,
+`turret_height`, and so on). Regenerate and render it through the CLI, Agent
+API, or the same `run_desktop_smoke` path as the other examples:
+
+```bash
+cargo run -p opencad-cli -- regen examples/robot_arm_assembly.ocad.d
+cargo run -p opencad-cli -- screenshot examples/robot_arm_assembly.ocad.d arm.png
+```
+
+A ready-to-run agent review,
+[`examples/agent/review_robot_arm_patch.json`](agent/review_robot_arm_patch.json),
+reposes the elbow and wrist joints from -45° to -75° via two
+`set_instance_placement` operations and checks `no_assembly_interference`. The
+self-contained review bundle is pinned in `docs/assets/arm-review/`:
+
+```bash
+cargo run -p opencad-cli -- review examples/robot_arm_assembly.ocad.d \
+  examples/agent/review_robot_arm_patch.json --output arm-review
+```
+
+`robot_arm_assembly_drawing.ocad.d` is a model-driven drawing of the same
+assembly. Its A4 front view projects the posed arm at 0.5 scale and carries one
+model-driven dimension (upper-arm reach 160 mm). The drawing references the
+sibling assembly (`../robot_arm_assembly.ocad.d`) rather than copying it:
+
+```bash
+cargo run -p opencad-cli -- export \
+  examples/robot_arm_assembly_drawing.ocad.d arm_front.svg
+```
 
 ### Revision-guarded patches
 

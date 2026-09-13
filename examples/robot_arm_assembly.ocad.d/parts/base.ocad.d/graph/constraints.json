@@ -1,0 +1,31 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:base_plate",
+      "constraint": {
+        "type": "radius",
+        "id": "con:base_plate_radius",
+        "target": "ent:base_plate_circle",
+        "expr": "base_plate_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:bolt_hole",
+      "constraint": {
+        "type": "radius",
+        "id": "con:bolt_hole_radius",
+        "target": "ent:bolt_hole_circle",
+        "expr": "bolt_hole_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:turret",
+      "constraint": {
+        "type": "radius",
+        "id": "con:turret_radius",
+        "target": "ent:turret_circle",
+        "expr": "turret_diameter / 2"
+      }
+    }
+  ]
+}

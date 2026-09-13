@@ -1,0 +1,100 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:forearm_bar",
+      "constraint": {
+        "type": "distance",
+        "id": "con:forearm_bar_length",
+        "target": {
+          "line": "ent:forearm_bar_e0"
+        },
+        "expr": "forearm_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_bar",
+      "constraint": {
+        "type": "distance",
+        "id": "con:forearm_bar_width",
+        "target": {
+          "line": "ent:forearm_bar_e1"
+        },
+        "expr": "forearm_width"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_distal_bore",
+      "constraint": {
+        "type": "distance",
+        "id": "con:forearm_distal_bore_offset",
+        "target": {
+          "line": "ent:forearm_distal_bore_offset_line"
+        },
+        "expr": "forearm_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_distal_bore",
+      "constraint": {
+        "type": "radius",
+        "id": "con:forearm_distal_bore_radius",
+        "target": "ent:forearm_distal_bore_circle",
+        "expr": "wrist_bore_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_distal_bore",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:forearm_distal_bore_vertical",
+        "line": "ent:forearm_distal_bore_offset_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_distal_hub",
+      "constraint": {
+        "type": "distance",
+        "id": "con:forearm_distal_hub_offset",
+        "target": {
+          "line": "ent:forearm_distal_hub_offset_line"
+        },
+        "expr": "forearm_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_distal_hub",
+      "constraint": {
+        "type": "radius",
+        "id": "con:forearm_distal_hub_radius",
+        "target": "ent:forearm_distal_hub_circle",
+        "expr": "wrist_hub_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_distal_hub",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:forearm_distal_hub_vertical",
+        "line": "ent:forearm_distal_hub_offset_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_proximal_bore",
+      "constraint": {
+        "type": "radius",
+        "id": "con:forearm_proximal_bore_radius",
+        "target": "ent:forearm_proximal_bore_circle",
+        "expr": "forearm_elbow_bore_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:forearm_proximal_hub",
+      "constraint": {
+        "type": "radius",
+        "id": "con:forearm_proximal_hub_radius",
+        "target": "ent:forearm_proximal_hub_circle",
+        "expr": "forearm_elbow_hub_diameter / 2"
+      }
+    }
+  ]
+}

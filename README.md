@@ -71,6 +71,18 @@
       <sub><strong>Assembly-aware geometry</strong><br>Inspect placed components, feature edges, connectors, and mates.</sub>
     </td>
   </tr>
+<tr>
+    <td width="50%" align="center">
+      <img src="docs/assets/robot-arm-orbit.gif" alt="MusubiCAD orbiting a four-part articulated robot arm with a bolted base, upper and forearm links, and a two-finger gripper" width="100%">
+      <br>
+      <sub><strong>Articulated robot arm assembly</strong><br>Four parametric parts, six connectors, and three concentric joints regenerated together from one Design Graph.</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/assets/robot-arm-preview.png" alt="A static preview of the robot arm showing the stacked base, upper arm, forearm, and gripper links" width="100%">
+      <br>
+      <sub><strong>Assembly-aware rendering</strong><br>Regenerate and render the whole assembly headlessly through the CLI.</sub>
+    </td>
+  </tr>
 </table>
 
 ## The workflow
@@ -161,6 +173,19 @@ The source document is unchanged. The checked-in
 [`review_robot_joint_patch.json`](examples/agent/review_robot_joint_patch.json) contains the
 proposal, preconditions, and expected engineering effects.
 
+The same review pipeline also works on assemblies. The pinned
+[robot-arm review](docs/assets/arm-review/review.html) reposes the articulated
+arm's elbow and wrist joints from -45° to -75° through two
+`set_instance_placement` operations, reports the semantic placement diff and
+geometry bounds, and checks that the reposed arm remains interference-free:
+
+```bash
+cargo run -p opencad-cli -- review \
+  examples/robot_arm_assembly.ocad.d \
+  examples/agent/review_robot_arm_patch.json \
+  --output arm-review
+```
+
 The repository's [Design Review workflow](.github/workflows/design-review.yml) dogfoods this
 same example on GitHub, publishes its parameter and geometry results in the job summary, and
 attaches the complete HTML/GIF/JSON review bundle.
@@ -236,6 +261,8 @@ See the [desktop guide](apps/desktop/README.md) for platform prerequisites.
 
 | Example | Demonstrates |
 |---|---|
+| [`robot_arm_assembly.ocad.d`](examples/robot_arm_assembly.ocad.d) | Four-part articulated arm: bolted base, upper link, forearm link, and gripper; six connectors and three concentric joints |
+| [`robot_arm_assembly_drawing.ocad.d`](examples/robot_arm_assembly_drawing.ocad.d) | Model-driven A4 front view of the posed arm with a 160 mm reach dimension |
 | [`robot_joint_actuator.ocad.d`](examples/robot_joint_actuator.ocad.d) | Twenty-two-feature actuator housing: stepped hubs, bearing seats, 8-hole PCD, 6 ribs, and mirrored mounts |
 | [`bearing_carrier.ocad.d`](examples/bearing_carrier.ocad.d) | Nine-feature bearing carrier: joined hub, through bore, and four-hole circular cut pattern |
 | [`bracket.ocad.d`](examples/bracket.ocad.d) | Plate, centered hole, and semantic face reference |

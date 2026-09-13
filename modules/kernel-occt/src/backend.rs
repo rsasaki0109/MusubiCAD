@@ -438,6 +438,37 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn intersection_volume(&self, lhs: &KernelBody, rhs: &KernelBody) -> Result<f64> {
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let left = store
+                .body(lhs.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", lhs.0)))?
+                .clone();
+            let right = store
+                .body(rhs.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", rhs.0)))?
+                .clone();
+            drop(store);
+
+            // `build()` rejects a result with zero or several pieces. Interference
+            // detection must treat an empty intersection as zero volume, so collect
+            // every piece instead and sum the exact volumes.
+            let pieces = (left * right).build_vec().map_err(map_occt_error)?;
+            let mut volume_m3 = 0.0;
+            for piece in pieces {
+                volume_m3 += piece.volume();
+            }
+            Ok(volume_m3)
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (lhs, rhs);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
         #[cfg(feature = "occt")]
         {
@@ -855,6 +886,54 @@ mod tests {
         let expected_volume = 0.08 * 0.06 * 0.006;
         assert!((mass.volume_m3 - expected_volume).abs() < 1e-9);
         assert!(mass.mass_kg > 0.0);
+    }
+
+    #[test]
+    fn occt_intersection_volume_handles_empty_overlap_and_coincident() {
+        let kernel = OcctGeometryKernel::new();
+        let plate = |kernel: &OcctGeometryKernel| {
+            let wire = kernel
+                .make_wire_from_sketch(&rectangle_sketch())
+                .expect("wire");
+            kernel
+                .extrude(
+                    wire,
+                    ExtrudeExtent::Distance {
+                        length: Length::from_meters(0.006),
+                    },
+                    ExtrudeOperation::NewBody,
+                    None,
+                    [0.0, 0.0, 1.0],
+                )
+                .expect("extrude")
+        };
+
+        let a = plate(&kernel);
+        let volume_a = kernel.mass_properties(&a, 1.0).expect("mass").volume_m3;
+
+        // Coincident solids are a positive common volume, not an error.
+        let coincident = kernel.intersection_volume(&a, &a).expect("coincident");
+        assert!(
+            (coincident - volume_a).abs() < 1e-12,
+            "coincident {coincident} vs {volume_a}"
+        );
+
+        // Disjoint solids have exactly zero common volume and must not error.
+        let far = kernel
+            .translate_body(plate(&kernel), [1.0, 0.0, 0.0])
+            .expect("translate");
+        assert_eq!(kernel.intersection_volume(&a, &far).expect("empty"), 0.0);
+
+        // Partial overlap equals the intersection volume.
+        let shifted = kernel
+            .translate_body(plate(&kernel), [0.04, 0.0, 0.0])
+            .expect("translate");
+        let overlap = kernel.intersection_volume(&a, &shifted).expect("overlap");
+        let expected = 0.04 * 0.06 * 0.006;
+        assert!(
+            (overlap - expected).abs() < 1e-12,
+            "overlap {overlap} vs {expected}"
+        );
     }
 
     #[test]

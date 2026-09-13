@@ -1,0 +1,352 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:finger_left",
+      "name": "Left Finger",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:finger_left_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:finger_left_y_axis",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.04
+        },
+        {
+          "type": "point",
+          "id": "ent:finger_left_center",
+          "construction": false,
+          "x": -0.008,
+          "y": 0.04
+        },
+        {
+          "type": "circle",
+          "id": "ent:finger_left_circle",
+          "construction": false,
+          "center": "ent:finger_left_center",
+          "radius": 0.0059999999400120055
+        },
+        {
+          "type": "line",
+          "id": "ent:finger_left_y_line",
+          "construction": true,
+          "start": "ent:finger_left_origin",
+          "end": "ent:finger_left_y_axis"
+        },
+        {
+          "type": "line",
+          "id": "ent:finger_left_x_line",
+          "construction": true,
+          "start": "ent:finger_left_y_axis",
+          "end": "ent:finger_left_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:finger_left_y_vertical",
+          "line": "ent:finger_left_y_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:finger_left_y_offset",
+          "target": {
+            "line": "ent:finger_left_y_line"
+          },
+          "expr": "gripper_length"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:finger_left_x_horizontal",
+          "line": "ent:finger_left_x_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:finger_left_x_offset",
+          "target": {
+            "line": "ent:finger_left_x_line"
+          },
+          "expr": "finger_spacing / 2"
+        },
+        {
+          "type": "radius",
+          "id": "con:finger_left_radius",
+          "target": "ent:finger_left_circle",
+          "expr": "finger_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:finger_left_circle",
+          "entity_ids": [
+            "ent:finger_left_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:finger_left/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:finger_right",
+      "name": "Right Finger",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:finger_right_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:finger_right_y_axis",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.04
+        },
+        {
+          "type": "point",
+          "id": "ent:finger_right_center",
+          "construction": false,
+          "x": 0.008,
+          "y": 0.04
+        },
+        {
+          "type": "circle",
+          "id": "ent:finger_right_circle",
+          "construction": false,
+          "center": "ent:finger_right_center",
+          "radius": 0.0059999999400120055
+        },
+        {
+          "type": "line",
+          "id": "ent:finger_right_y_line",
+          "construction": true,
+          "start": "ent:finger_right_origin",
+          "end": "ent:finger_right_y_axis"
+        },
+        {
+          "type": "line",
+          "id": "ent:finger_right_x_line",
+          "construction": true,
+          "start": "ent:finger_right_y_axis",
+          "end": "ent:finger_right_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:finger_right_y_vertical",
+          "line": "ent:finger_right_y_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:finger_right_y_offset",
+          "target": {
+            "line": "ent:finger_right_y_line"
+          },
+          "expr": "gripper_length"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:finger_right_x_horizontal",
+          "line": "ent:finger_right_x_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:finger_right_x_offset",
+          "target": {
+            "line": "ent:finger_right_x_line"
+          },
+          "expr": "finger_spacing / 2"
+        },
+        {
+          "type": "radius",
+          "id": "con:finger_right_radius",
+          "target": "ent:finger_right_circle",
+          "expr": "finger_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:finger_right_circle",
+          "entity_ids": [
+            "ent:finger_right_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:finger_right/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:gripper_body",
+      "name": "Gripper Body",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:gripper_body_c0",
+          "construction": false,
+          "x": -0.018,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:gripper_body_c1",
+          "construction": false,
+          "x": -0.018,
+          "y": 0.04
+        },
+        {
+          "type": "point",
+          "id": "ent:gripper_body_c2",
+          "construction": false,
+          "x": 0.018,
+          "y": 0.04
+        },
+        {
+          "type": "point",
+          "id": "ent:gripper_body_c3",
+          "construction": false,
+          "x": 0.018,
+          "y": 0.0
+        },
+        {
+          "type": "line",
+          "id": "ent:gripper_body_e0",
+          "construction": false,
+          "start": "ent:gripper_body_c0",
+          "end": "ent:gripper_body_c1"
+        },
+        {
+          "type": "line",
+          "id": "ent:gripper_body_e1",
+          "construction": false,
+          "start": "ent:gripper_body_c1",
+          "end": "ent:gripper_body_c2"
+        },
+        {
+          "type": "line",
+          "id": "ent:gripper_body_e2",
+          "construction": false,
+          "start": "ent:gripper_body_c2",
+          "end": "ent:gripper_body_c3"
+        },
+        {
+          "type": "line",
+          "id": "ent:gripper_body_e3",
+          "construction": false,
+          "start": "ent:gripper_body_c3",
+          "end": "ent:gripper_body_c0"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "distance",
+          "id": "con:gripper_body_length",
+          "target": {
+            "line": "ent:gripper_body_e0"
+          },
+          "expr": "gripper_length"
+        },
+        {
+          "type": "distance",
+          "id": "con:gripper_body_width",
+          "target": {
+            "line": "ent:gripper_body_e1"
+          },
+          "expr": "gripper_width"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "under_constrained",
+        "dof": 4
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:gripper_body_e0",
+            "ent:gripper_body_e1",
+            "ent:gripper_body_e2",
+            "ent:gripper_body_e3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:gripper_body/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:wrist_bore",
+      "name": "Wrist Bore",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:wrist_bore_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:wrist_bore_circle",
+          "construction": false,
+          "center": "ent:wrist_bore_center",
+          "radius": 0.0049999999500100045
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:wrist_bore_radius",
+          "target": "ent:wrist_bore_circle",
+          "expr": "gripper_wrist_bore_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:wrist_bore_circle",
+          "entity_ids": [
+            "ent:wrist_bore_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:wrist_bore/profile:outer"
+        }
+      ]
+    }
+  ]
+}

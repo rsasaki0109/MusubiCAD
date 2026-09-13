@@ -1,0 +1,344 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:forearm_bar",
+      "name": "Forearm Bar",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:forearm_bar_c0",
+          "construction": false,
+          "x": -0.012,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:forearm_bar_c1",
+          "construction": false,
+          "x": -0.012,
+          "y": 0.11
+        },
+        {
+          "type": "point",
+          "id": "ent:forearm_bar_c2",
+          "construction": false,
+          "x": 0.012,
+          "y": 0.11
+        },
+        {
+          "type": "point",
+          "id": "ent:forearm_bar_c3",
+          "construction": false,
+          "x": 0.012,
+          "y": 0.0
+        },
+        {
+          "type": "line",
+          "id": "ent:forearm_bar_e0",
+          "construction": false,
+          "start": "ent:forearm_bar_c0",
+          "end": "ent:forearm_bar_c1"
+        },
+        {
+          "type": "line",
+          "id": "ent:forearm_bar_e1",
+          "construction": false,
+          "start": "ent:forearm_bar_c1",
+          "end": "ent:forearm_bar_c2"
+        },
+        {
+          "type": "line",
+          "id": "ent:forearm_bar_e2",
+          "construction": false,
+          "start": "ent:forearm_bar_c2",
+          "end": "ent:forearm_bar_c3"
+        },
+        {
+          "type": "line",
+          "id": "ent:forearm_bar_e3",
+          "construction": false,
+          "start": "ent:forearm_bar_c3",
+          "end": "ent:forearm_bar_c0"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "distance",
+          "id": "con:forearm_bar_length",
+          "target": {
+            "line": "ent:forearm_bar_e0"
+          },
+          "expr": "forearm_length"
+        },
+        {
+          "type": "distance",
+          "id": "con:forearm_bar_width",
+          "target": {
+            "line": "ent:forearm_bar_e1"
+          },
+          "expr": "forearm_width"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "under_constrained",
+        "dof": 4
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:forearm_bar_e0",
+            "ent:forearm_bar_e1",
+            "ent:forearm_bar_e2",
+            "ent:forearm_bar_e3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:forearm_bar/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:forearm_distal_bore",
+      "name": "Wrist Bore",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:forearm_distal_bore_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:forearm_distal_bore_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.11
+        },
+        {
+          "type": "circle",
+          "id": "ent:forearm_distal_bore_circle",
+          "construction": false,
+          "center": "ent:forearm_distal_bore_center",
+          "radius": 0.0049999999500100045
+        },
+        {
+          "type": "line",
+          "id": "ent:forearm_distal_bore_offset_line",
+          "construction": true,
+          "start": "ent:forearm_distal_bore_origin",
+          "end": "ent:forearm_distal_bore_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:forearm_distal_bore_vertical",
+          "line": "ent:forearm_distal_bore_offset_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:forearm_distal_bore_offset",
+          "target": {
+            "line": "ent:forearm_distal_bore_offset_line"
+          },
+          "expr": "forearm_length"
+        },
+        {
+          "type": "radius",
+          "id": "con:forearm_distal_bore_radius",
+          "target": "ent:forearm_distal_bore_circle",
+          "expr": "wrist_bore_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:forearm_distal_bore_circle",
+          "entity_ids": [
+            "ent:forearm_distal_bore_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:forearm_distal_bore/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:forearm_distal_hub",
+      "name": "Wrist Hub",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:forearm_distal_hub_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:forearm_distal_hub_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.11
+        },
+        {
+          "type": "circle",
+          "id": "ent:forearm_distal_hub_circle",
+          "construction": false,
+          "center": "ent:forearm_distal_hub_center",
+          "radius": 0.014999999850030013
+        },
+        {
+          "type": "line",
+          "id": "ent:forearm_distal_hub_offset_line",
+          "construction": true,
+          "start": "ent:forearm_distal_hub_origin",
+          "end": "ent:forearm_distal_hub_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:forearm_distal_hub_vertical",
+          "line": "ent:forearm_distal_hub_offset_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:forearm_distal_hub_offset",
+          "target": {
+            "line": "ent:forearm_distal_hub_offset_line"
+          },
+          "expr": "forearm_length"
+        },
+        {
+          "type": "radius",
+          "id": "con:forearm_distal_hub_radius",
+          "target": "ent:forearm_distal_hub_circle",
+          "expr": "wrist_hub_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:forearm_distal_hub_circle",
+          "entity_ids": [
+            "ent:forearm_distal_hub_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:forearm_distal_hub/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:forearm_proximal_bore",
+      "name": "Elbow Bore",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:forearm_proximal_bore_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:forearm_proximal_bore_circle",
+          "construction": false,
+          "center": "ent:forearm_proximal_bore_center",
+          "radius": 0.0059999999400120055
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:forearm_proximal_bore_radius",
+          "target": "ent:forearm_proximal_bore_circle",
+          "expr": "forearm_elbow_bore_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:forearm_proximal_bore_circle",
+          "entity_ids": [
+            "ent:forearm_proximal_bore_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:forearm_proximal_bore/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:forearm_proximal_hub",
+      "name": "Elbow Hub",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:forearm_proximal_hub_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:forearm_proximal_hub_circle",
+          "construction": false,
+          "center": "ent:forearm_proximal_hub_center",
+          "radius": 0.01599999984003146
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:forearm_proximal_hub_radius",
+          "target": "ent:forearm_proximal_hub_circle",
+          "expr": "forearm_elbow_hub_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:forearm_proximal_hub_circle",
+          "entity_ids": [
+            "ent:forearm_proximal_hub_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:forearm_proximal_hub/profile:outer"
+        }
+      ]
+    }
+  ]
+}

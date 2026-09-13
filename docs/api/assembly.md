@@ -32,8 +32,12 @@ regeneration may retry it.
 Both values must be finite and strictly positive. Use
 `detect_interferences_with_tolerance` to set both. The compatibility helper
 `detect_interferences` accepts a volume tolerance and uses the default bounds
-tolerance. Common volume must be strictly greater than the threshold; output
-pairs are sorted by `InstanceId` regardless of scene input order.
+tolerance. Common volume is computed exactly through the kernel-neutral
+`GeometryKernel::intersection_volume` primitive, which treats an empty or
+disjoint intersection as zero volume instead of failing; the OCCT backend sums
+the exact volumes of every resulting piece. Common volume must be strictly
+greater than the threshold; output pairs are sorted by `InstanceId` regardless
+of scene input order.
 
 ## Related
 

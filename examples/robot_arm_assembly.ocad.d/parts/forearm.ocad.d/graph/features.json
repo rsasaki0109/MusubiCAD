@@ -1,0 +1,274 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_forearm_bar",
+      "feature:forearm_extrude",
+      "feature:sketch_forearm_proximal_hub",
+      "feature:forearm_proximal_hub",
+      "feature:sketch_forearm_distal_hub",
+      "feature:forearm_distal_hub",
+      "feature:sketch_forearm_proximal_bore",
+      "feature:forearm_proximal_bore",
+      "feature:sketch_forearm_distal_bore",
+      "feature:forearm_distal_bore"
+    ],
+    "features": {
+      "feature:sketch_forearm_bar": {
+        "id": "feature:sketch_forearm_bar",
+        "name": "Forearm Bar Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:forearm_extrude": {
+        "id": "feature:forearm_extrude",
+        "name": "Forearm Body",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_forearm_proximal_hub": {
+        "id": "feature:sketch_forearm_proximal_hub",
+        "name": "Elbow Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:forearm_proximal_hub": {
+        "id": "feature:forearm_proximal_hub",
+        "name": "Elbow Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_forearm_distal_hub": {
+        "id": "feature:sketch_forearm_distal_hub",
+        "name": "Wrist Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:forearm_distal_hub": {
+        "id": "feature:forearm_distal_hub",
+        "name": "Wrist Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_forearm_proximal_bore": {
+        "id": "feature:sketch_forearm_proximal_bore",
+        "name": "Elbow Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:forearm_proximal_bore": {
+        "id": "feature:forearm_proximal_bore",
+        "name": "Elbow Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_forearm_distal_bore": {
+        "id": "feature:sketch_forearm_distal_bore",
+        "name": "Wrist Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:forearm_distal_bore": {
+        "id": "feature:forearm_distal_bore",
+        "name": "Wrist Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_forearm_bar",
+        "target": "feature:forearm_extrude",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_forearm_proximal_hub",
+        "target": "feature:forearm_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:forearm_extrude",
+        "target": "feature:forearm_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_forearm_distal_hub",
+        "target": "feature:forearm_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:forearm_proximal_hub",
+        "target": "feature:forearm_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_forearm_proximal_bore",
+        "target": "feature:forearm_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:forearm_distal_hub",
+        "target": "feature:forearm_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_forearm_distal_bore",
+        "target": "feature:forearm_distal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:forearm_proximal_bore",
+        "target": "feature:forearm_distal_bore",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:forearm_distal_bore",
+      "name": "Wrist Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_forearm_distal_bore",
+        "profile_ref": "sketch:forearm_distal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "target_feature": "feature:forearm_proximal_bore",
+        "depth_expr": "forearm_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:forearm_distal_hub",
+      "name": "Wrist Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_forearm_distal_hub",
+        "profile_ref": "sketch:forearm_distal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "operation": "join",
+        "length_expr": "forearm_thickness",
+        "target_feature": "feature:forearm_proximal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:forearm_extrude",
+      "name": "Forearm Body",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_forearm_bar",
+        "profile_ref": "sketch:forearm_bar/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "forearm_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:forearm_proximal_bore",
+      "name": "Elbow Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_forearm_proximal_bore",
+        "profile_ref": "sketch:forearm_proximal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "target_feature": "feature:forearm_distal_hub",
+        "depth_expr": "forearm_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:forearm_proximal_hub",
+      "name": "Elbow Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_forearm_proximal_hub",
+        "profile_ref": "sketch:forearm_proximal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "operation": "join",
+        "length_expr": "forearm_thickness",
+        "target_feature": "feature:forearm_extrude"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_forearm_bar",
+      "name": "Forearm Bar Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:forearm_bar"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_forearm_distal_bore",
+      "name": "Wrist Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:forearm_distal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_forearm_distal_hub",
+      "name": "Wrist Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:forearm_distal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_forearm_proximal_bore",
+      "name": "Elbow Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:forearm_proximal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_forearm_proximal_hub",
+      "name": "Elbow Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:forearm_proximal_hub"
+      },
+      "suppressed": false
+    }
+  ]
+}

@@ -66,7 +66,7 @@ pub fn run() -> Result<()> {
 fn cmd_new(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let path = path.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad new <path> [bracket|bearing-carrier|robot-joint|boss-join|face-pin|edge-fillet|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing|revolve-sector|assembly|drawing]",
+            "usage: opencad new <path> [bracket|bearing-carrier|robot-joint|boss-join|face-pin|edge-fillet|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing|revolve-sector|assembly|robot-arm|drawing]",
         )
     })?;
     let template = extra_args
@@ -542,6 +542,7 @@ EXAMPLES:
     opencad new bracket_pin_mirror.ocad.d pin-mirror
     opencad new revolve_bushing.ocad.d revolve-bushing
     opencad new assembly_two_brackets.ocad.d assembly
+    opencad new robot_arm_assembly.ocad.d robot-arm
     opencad new bracket_front_view.ocad.d drawing
     opencad validate bracket.ocad
     opencad inspect bracket.ocad.d

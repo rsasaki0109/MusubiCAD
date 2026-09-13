@@ -1,0 +1,74 @@
+{
+  "document_id": "doc:robot_arm_assembly_001",
+  "intent": "Repose the articulated arm to reach a lower working height",
+  "rationale": "Rotate the elbow and wrist joints from -45° to -75° about their vertical axes so the gripper sweeps a lower arc, while every concentric mate stays satisfied and the arm remains interference-free.",
+  "patch_file": "review_robot_arm_patch.json",
+  "diff": {
+    "diff_type": "semantic",
+    "summary": "2 change(s)",
+    "changes": [
+      {
+        "kind": "assembly_instance_changed",
+        "id": "instance:forearm",
+        "field": "placement",
+        "before": "{\"transform\":{\"translation_m\":[0.0,0.16,0.044],\"rotation\":[[0.7071067811865476,0.7071067811865476,0.0],[-0.7071067811865476,0.7071067811865476,0.0],[0.0,0.0,1.0]]}}",
+        "after": "{\"transform\":{\"translation_m\":[0.0,0.16,0.044],\"rotation\":[[0.25881904510252074,0.9659258262890684,0.0],[-0.9659258262890684,0.25881904510252074,0.0],[0.0,0.0,1.0]]}}"
+      },
+      {
+        "kind": "assembly_instance_changed",
+        "id": "instance:gripper",
+        "field": "placement",
+        "before": "{\"transform\":{\"translation_m\":[0.07778174593052023,0.23778174593052023,0.055999999999999994],\"rotation\":[[0.7071067811865476,0.7071067811865476,0.0],[-0.7071067811865476,0.7071067811865476,0.0],[0.0,0.0,1.0]]}}",
+        "after": "{\"transform\":{\"translation_m\":[0.1062518408946992,0.188470094965001,0.056],\"rotation\":[[0.25881904510252074,0.9659258262890684,0.0],[-0.9659258262890684,0.25881904510252074,0.0],[0.0,0.0,1.0]]}}"
+      }
+    ],
+    "geometry": {
+      "volume_before": null,
+      "volume_after": null,
+      "mass_before": null,
+      "mass_after": null
+    }
+  },
+  "geometry": {
+    "before_bounds_m": [
+      [
+        -0.06,
+        -0.06,
+        0.0
+      ],
+      [
+        0.11879394,
+        0.27879393,
+        0.074
+      ]
+    ],
+    "after_bounds_m": [
+      [
+        -0.06,
+        -0.06,
+        0.0
+      ],
+      [
+        0.15294658,
+        0.21620952,
+        0.074
+      ]
+    ],
+    "before_triangles": 2344,
+    "after_triangles": 2344,
+    "before_interference_count": 0,
+    "after_interference_count": 0
+  },
+  "expected_effects": [
+    {
+      "effect": {
+        "type": "no_assembly_interference"
+      },
+      "passed": true,
+      "message": "assembly interference count is 0"
+    }
+  ],
+  "before_image": "before.png",
+  "after_image": "after.png",
+  "comparison_gif": "comparison.gif"
+}

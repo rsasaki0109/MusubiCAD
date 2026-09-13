@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "param:forearm_length": {
+      "id": "param:forearm_length",
+      "name": "forearm_length",
+      "expr": "110 mm",
+      "dirty": false
+    },
+    "param:forearm_width": {
+      "id": "param:forearm_width",
+      "name": "forearm_width",
+      "expr": "24 mm",
+      "dirty": false
+    },
+    "param:forearm_thickness": {
+      "id": "param:forearm_thickness",
+      "name": "forearm_thickness",
+      "expr": "12 mm",
+      "dirty": false
+    },
+    "param:forearm_elbow_hub_diameter": {
+      "id": "param:forearm_elbow_hub_diameter",
+      "name": "forearm_elbow_hub_diameter",
+      "expr": "32 mm",
+      "dirty": false
+    },
+    "param:forearm_elbow_bore_diameter": {
+      "id": "param:forearm_elbow_bore_diameter",
+      "name": "forearm_elbow_bore_diameter",
+      "expr": "12 mm",
+      "dirty": false
+    },
+    "param:wrist_hub_diameter": {
+      "id": "param:wrist_hub_diameter",
+      "name": "wrist_hub_diameter",
+      "expr": "30 mm",
+      "dirty": false
+    },
+    "param:wrist_bore_diameter": {
+      "id": "param:wrist_bore_diameter",
+      "name": "wrist_bore_diameter",
+      "expr": "10 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

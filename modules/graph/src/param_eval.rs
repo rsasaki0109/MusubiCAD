@@ -371,6 +371,113 @@ pub fn robot_joint_housing_parameters() -> ParamGraph {
     graph
 }
 
+/// Parameters for the robot-arm base pedestal part.
+pub fn robot_arm_base_parameters() -> ParamGraph {
+    let mut graph = ParamGraph::new();
+    for (id, name, expression) in [
+        ("param:base_plate_diameter", "base_plate_diameter", "120 mm"),
+        (
+            "param:base_plate_thickness",
+            "base_plate_thickness",
+            "10 mm",
+        ),
+        ("param:turret_diameter", "turret_diameter", "44 mm"),
+        ("param:turret_height", "turret_height", "30 mm"),
+        ("param:bolt_circle_radius", "bolt_circle_radius", "50 mm"),
+        ("param:bolt_hole_diameter", "bolt_hole_diameter", "8 mm"),
+    ] {
+        graph
+            .add_parameter(ParameterEntry::new(id, name, expression))
+            .expect("static robot-arm base parameter must be valid");
+    }
+    graph
+}
+
+/// Parameters for the robot-arm upper link part.
+pub fn robot_arm_upper_arm_parameters() -> ParamGraph {
+    let mut graph = ParamGraph::new();
+    for (id, name, expression) in [
+        ("param:upper_arm_length", "upper_arm_length", "160 mm"),
+        ("param:upper_arm_width", "upper_arm_width", "26 mm"),
+        ("param:upper_arm_thickness", "upper_arm_thickness", "14 mm"),
+        (
+            "param:shoulder_hub_diameter",
+            "shoulder_hub_diameter",
+            "36 mm",
+        ),
+        (
+            "param:shoulder_bore_diameter",
+            "shoulder_bore_diameter",
+            "14 mm",
+        ),
+        (
+            "param:upper_arm_elbow_hub_diameter",
+            "upper_arm_elbow_hub_diameter",
+            "32 mm",
+        ),
+        (
+            "param:upper_arm_elbow_bore_diameter",
+            "upper_arm_elbow_bore_diameter",
+            "12 mm",
+        ),
+    ] {
+        graph
+            .add_parameter(ParameterEntry::new(id, name, expression))
+            .expect("static robot-arm upper-arm parameter must be valid");
+    }
+    graph
+}
+
+/// Parameters for the robot-arm forearm link part.
+pub fn robot_arm_forearm_parameters() -> ParamGraph {
+    let mut graph = ParamGraph::new();
+    for (id, name, expression) in [
+        ("param:forearm_length", "forearm_length", "110 mm"),
+        ("param:forearm_width", "forearm_width", "24 mm"),
+        ("param:forearm_thickness", "forearm_thickness", "12 mm"),
+        (
+            "param:forearm_elbow_hub_diameter",
+            "forearm_elbow_hub_diameter",
+            "32 mm",
+        ),
+        (
+            "param:forearm_elbow_bore_diameter",
+            "forearm_elbow_bore_diameter",
+            "12 mm",
+        ),
+        ("param:wrist_hub_diameter", "wrist_hub_diameter", "30 mm"),
+        ("param:wrist_bore_diameter", "wrist_bore_diameter", "10 mm"),
+    ] {
+        graph
+            .add_parameter(ParameterEntry::new(id, name, expression))
+            .expect("static robot-arm forearm parameter must be valid");
+    }
+    graph
+}
+
+/// Parameters for the robot-arm wrist gripper part.
+pub fn robot_arm_gripper_parameters() -> ParamGraph {
+    let mut graph = ParamGraph::new();
+    for (id, name, expression) in [
+        ("param:gripper_length", "gripper_length", "40 mm"),
+        ("param:gripper_width", "gripper_width", "36 mm"),
+        ("param:gripper_thickness", "gripper_thickness", "14 mm"),
+        (
+            "param:gripper_wrist_bore_diameter",
+            "gripper_wrist_bore_diameter",
+            "10 mm",
+        ),
+        ("param:finger_diameter", "finger_diameter", "12 mm"),
+        ("param:finger_spacing", "finger_spacing", "16 mm"),
+        ("param:finger_length", "finger_length", "18 mm"),
+    ] {
+        graph
+            .add_parameter(ParameterEntry::new(id, name, expression))
+            .expect("static robot-arm gripper parameter must be valid");
+    }
+    graph
+}
+
 /// Default revolve bushing/sector parameters (lengths in mm, angle in degrees).
 pub fn revolve_parameters(angle_expr: &str) -> ParamGraph {
     let mut graph = ParamGraph::new();
@@ -463,5 +570,29 @@ mod tests {
     fn parameter_names_in_expr_extracts_identifiers() {
         let names = parameter_names_in_expr("hole_diameter / 2");
         assert_eq!(names, vec!["hole_diameter".to_string()]);
+    }
+
+    #[test]
+    fn robot_arm_parameters_are_deterministic_and_unit_bearing() {
+        let base = evaluate_param_graph(&robot_arm_base_parameters()).expect("base params");
+        assert_eq!(robot_arm_base_parameters().parameter_ids().len(), 6);
+        assert!((base["base_plate_diameter"] - 0.12).abs() < 1e-12);
+        assert!((base["turret_height"] - 0.03).abs() < 1e-12);
+        assert!((base["bolt_circle_radius"] - 0.05).abs() < 1e-12);
+
+        let upper = evaluate_param_graph(&robot_arm_upper_arm_parameters()).expect("upper params");
+        assert_eq!(robot_arm_upper_arm_parameters().parameter_ids().len(), 7);
+        assert!((upper["upper_arm_length"] - 0.16).abs() < 1e-12);
+        assert!((upper["upper_arm_thickness"] - 0.014).abs() < 1e-12);
+
+        let forearm =
+            evaluate_param_graph(&robot_arm_forearm_parameters()).expect("forearm params");
+        assert_eq!(robot_arm_forearm_parameters().parameter_ids().len(), 7);
+        assert!((forearm["forearm_length"] - 0.11).abs() < 1e-12);
+
+        let gripper =
+            evaluate_param_graph(&robot_arm_gripper_parameters()).expect("gripper params");
+        assert_eq!(robot_arm_gripper_parameters().parameter_ids().len(), 7);
+        assert!((gripper["finger_spacing"] - 0.016).abs() < 1e-12);
     }
 }

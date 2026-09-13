@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 
 use opencad_core::{OpenCadError, Result, TopoRefId};
 
+use crate::provenance::CandidateEvidence;
 use crate::refs::{GeometricFingerprint, TopoRef, TopoRefTolerancePolicy};
 
 /// Discovered B-Rep face from tessellation and feature inference.
@@ -530,6 +531,84 @@ fn normalized_proximity(distance_m: f64, tolerance_m: f64) -> f64 {
         return if distance_m <= tolerance_m { 1.0 } else { 0.0 };
     }
     (1.0 - distance_m / tolerance_m).clamp(0.0, 1.0)
+}
+
+/// Every discovered face that satisfies a reference, scored and deduplicated by
+/// kernel id (the highest score wins per id) and sorted by kernel id.
+pub fn face_match_candidates(
+    topo_ref: &TopoRef,
+    discoveries: &[FaceRefDiscovery],
+    policy: TopoRefTolerancePolicy,
+) -> Vec<CandidateEvidence> {
+    let mut best = std::collections::BTreeMap::<u64, f64>::new();
+    let mut meta = std::collections::BTreeMap::<u64, CandidateEvidence>::new();
+    for discovery in discoveries {
+        if !discovery_matches_topo_ref(topo_ref, discovery, policy) {
+            continue;
+        }
+        let score = fingerprint_match_score(topo_ref, discovery, policy);
+        if score <= 0.0 {
+            continue;
+        }
+        let id = discovery.kernel_face_id;
+        let previous = best.get(&id).copied();
+        if previous.map_or(true, |previous| score > previous) {
+            best.insert(id, score);
+            meta.insert(
+                id,
+                CandidateEvidence {
+                    kernel_id: id,
+                    score,
+                    feature_id: discovery.feature_id.clone(),
+                    role: if discovery.role.is_empty() {
+                        None
+                    } else {
+                        Some(discovery.role.clone())
+                    },
+                },
+            );
+        }
+    }
+    meta.into_values().collect()
+}
+
+/// Every discovered edge that satisfies a reference, scored and deduplicated by
+/// kernel id and sorted by kernel id.
+pub fn edge_match_candidates(
+    topo_ref: &TopoRef,
+    discoveries: &[EdgeRefDiscovery],
+    policy: TopoRefTolerancePolicy,
+) -> Vec<CandidateEvidence> {
+    let mut best = std::collections::BTreeMap::<u64, f64>::new();
+    let mut meta = std::collections::BTreeMap::<u64, CandidateEvidence>::new();
+    for discovery in discoveries {
+        if !edge_discovery_matches_topo_ref(topo_ref, discovery, policy) {
+            continue;
+        }
+        let score = edge_fingerprint_match_score(topo_ref, discovery, policy);
+        if score <= 0.0 {
+            continue;
+        }
+        let id = discovery.kernel_edge_id;
+        let previous = best.get(&id).copied();
+        if previous.map_or(true, |previous| score > previous) {
+            best.insert(id, score);
+            meta.insert(
+                id,
+                CandidateEvidence {
+                    kernel_id: id,
+                    score,
+                    feature_id: discovery.feature_id.clone(),
+                    role: if discovery.role.is_empty() {
+                        None
+                    } else {
+                        Some(discovery.role.clone())
+                    },
+                },
+            );
+        }
+    }
+    meta.into_values().collect()
 }
 
 /// Map source face ids to their latest post ids using kernel derivation history.

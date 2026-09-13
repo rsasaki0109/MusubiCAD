@@ -3,11 +3,17 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use opencad_ai::{ensure_patch_valid, ExpectedEffect};
+use opencad_ai::{
+    ensure_patch_valid, evaluate_assertions, required_assertions_pass, AssertionContext,
+    AssertionResult, ExpectedEffect,
+};
 use opencad_core::{OpenCadError, Result};
 use opencad_desktop::{load_assembly_scene_from_document, load_view_data, tessellate_active_body};
+use opencad_feature::FeatureRegistry;
 use opencad_file::{apply_patch_to_document, dry_run_patch_document, read_ocad, OcadDocument};
-use opencad_graph::{DesignDiff, SemanticChange};
+use opencad_geometry::{GeometryKernel, ReferenceProvenance};
+use opencad_graph::{evaluate_param_graph, DesignDiff, SemanticChange};
+use opencad_kernel_occt::OcctGeometryKernel;
 use opencad_render::{
     presentation_overlay, write_gif_frames, write_png, OffscreenRenderer, OrbitCamera, RenderImage,
     RenderScene,
@@ -66,6 +72,14 @@ pub struct ReviewArtifact {
     pub before_drawing_svg: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub after_drawing_svg: Option<String>,
+    /// Fail-closed semantic reference provenance for the regenerated document
+    /// (MCAD-P6-003); populated for part documents with semantic references.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reference_provenance: Vec<ReferenceProvenance>,
+    /// Executable design assertion results (MCAD-P6-004); populated for part
+    /// documents that declare assertions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub assertions: Vec<AssertionResult>,
 }
 
 /// Parse `review <document> <patch> --output <directory>`.
@@ -117,6 +131,14 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
     ensure_patch_valid(&dry_run)?;
     let mut after = before.clone();
     apply_patch_to_document(&mut after, &patch)?;
+
+    let reference_provenance = document_reference_provenance(&after);
+    let assertions = document_assertion_results(&after);
+    if !required_assertions_pass(&assertions) {
+        return Err(OpenCadError::validation(
+            "reviewed change violates a required document assertion",
+        ));
+    }
     let diff = build_document_diff(
         &before,
         &after,
@@ -195,6 +217,8 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
         comparison_gif: "comparison.gif".into(),
         before_drawing_svg: drawing_assets.as_ref().map(|assets| assets.0.clone()),
         after_drawing_svg: drawing_assets.map(|assets| assets.1),
+        reference_provenance,
+        assertions,
     };
     let json = serde_json::to_string_pretty(&artifact)? + "\n";
     fs::write(output.join("review.json"), json).map_err(io_error("write review JSON"))?;
@@ -236,6 +260,68 @@ fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option
     let mut model = doc.clone().into_part_model();
     let mesh = tessellate_active_body(&mut model, Some(&parameters), Some(&refs))?;
     Ok((RenderScene::from_mesh_set(&mesh)?, None))
+}
+
+/// Regenerate a part document and return fail-closed reference provenance.
+///
+/// Assemblies and drawings currently report provenance at the part level only,
+/// so this returns an empty list for them (the review still carries geometry
+/// and interference evidence).
+fn document_reference_provenance(doc: &OcadDocument) -> Vec<ReferenceProvenance> {
+    if doc.assembly.is_some() || doc.drawing.is_some() || doc.semantic_refs.is_empty() {
+        return Vec::new();
+    }
+    let parameters = doc.parameters.clone();
+    let refs = doc.semantic_refs.clone();
+    let mut model = doc.clone().into_part_model();
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let Ok(report) = model.regenerate(&kernel, &registry, Some(&parameters), Some(&refs)) else {
+        return Vec::new();
+    };
+    report.reference_provenance
+}
+
+/// Regenerate a part document and evaluate its design assertions (MCAD-P6-004).
+fn document_assertion_results(doc: &OcadDocument) -> Vec<AssertionResult> {
+    if doc.assembly.is_some() || doc.drawing.is_some() || doc.assertions.is_empty() {
+        return Vec::new();
+    }
+    let parameters = doc.parameters.clone();
+    let refs = doc.semantic_refs.clone();
+    let mut model = doc.clone().into_part_model();
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let Ok(report) = model.regenerate(&kernel, &registry, Some(&parameters), Some(&refs)) else {
+        return Vec::new();
+    };
+    let Some(body) = model.active_body() else {
+        return Vec::new();
+    };
+    let Ok(mass) = kernel.mass_properties(body, 2700.0) else {
+        return Vec::new();
+    };
+    let Ok(bounds) = kernel.bounding_box(body) else {
+        return Vec::new();
+    };
+    let parameter_values = evaluate_param_graph(&parameters)
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+    let context = AssertionContext {
+        parameter_values,
+        mass_kg: Some(mass.mass_kg),
+        bounding_box_size_m: Some([
+            bounds.max[0] - bounds.min[0],
+            bounds.max[1] - bounds.min[1],
+            bounds.max[2] - bounds.min[2],
+        ]),
+        body_count: Some(1),
+        reference_provenance: report.reference_provenance.clone(),
+        assembly_dof: None,
+        interference_count: None,
+    };
+    evaluate_assertions(&doc.assertions, &context)
 }
 
 fn render_review_image(
@@ -408,6 +494,36 @@ pub fn github_summary_markdown(artifact: &ReviewArtifact) -> String {
         artifact.geometry.after_interference_count,
     ) {
         markdown.push_str(&format!("| Interferences (count) | {before} | {after} |\n"));
+    }
+
+    if !artifact.reference_provenance.is_empty() {
+        markdown.push_str("\n### Reference provenance\n\n");
+        markdown.push_str("| Reference | Status | Kernel id | Reason |\n|---|---|---:|---|\n");
+        for provenance in &artifact.reference_provenance {
+            markdown.push_str(&format!(
+                "| {} | {:?} | {} | {} |\n",
+                markdown_cell(&provenance.ref_id),
+                provenance.status,
+                provenance
+                    .resolved_kernel_id
+                    .map_or_else(|| "—".to_string(), |id| id.to_string()),
+                markdown_cell(&provenance.reason)
+            ));
+        }
+    }
+
+    if !artifact.assertions.is_empty() {
+        markdown.push_str("\n### Design assertions\n\n");
+        markdown.push_str("| Status | Assertion | Severity | Evidence |\n|---|---|---|---|\n");
+        for result in &artifact.assertions {
+            markdown.push_str(&format!(
+                "| {} | {} | {:?} | {} |\n",
+                if result.passed { "✅" } else { "❌" },
+                markdown_cell(&format!("{} ({})", result.name, result.id)),
+                result.severity,
+                markdown_cell(&result.message)
+            ));
+        }
     }
 
     markdown.push_str("\n### Expected effects\n\n");
@@ -646,7 +762,7 @@ mod tests {
         detect_interferences_with_tolerance, regenerate_assembly, AssemblyInterferenceTolerance,
         ChildPart, ResolvedChild,
     };
-    use opencad_core::{DocumentId, SheetId, ViewId};
+    use opencad_core::{Assertion, AssertionKind, AssertionSeverity, DocumentId, SheetId, ViewId};
     use opencad_drawing::{
         render_sheet_svg, DrawingView, ModelReference, ProjectionKind, Sheet, ViewMesh,
     };
@@ -1324,6 +1440,143 @@ mod tests {
                 "review artifact is not deterministic: {name}"
             );
             assert_eq!(first, golden, "review artifact differs from golden: {name}");
+        }
+    }
+
+    #[test]
+    fn review_evaluates_document_assertions_and_rejects_violations() {
+        let dir = tempdir().expect("tempdir");
+        let document = dir.path().join("bracket.ocad.d");
+        write_bracket_fixture_at(&document);
+
+        let mut doc = opencad_file::read_ocad(&document).expect("read");
+        doc.assertions = vec![
+            Assertion::new(
+                "assertion:mass",
+                "Bracket mass",
+                AssertionSeverity::Required,
+                AssertionKind::MassRange {
+                    min_kg: 0.07,
+                    max_kg: 0.09,
+                },
+            ),
+            Assertion::new(
+                "assertion:param",
+                "Width range",
+                AssertionSeverity::Required,
+                AssertionKind::ParameterRange {
+                    parameter_name: "width".into(),
+                    min_m: 0.05,
+                    max_m: 0.15,
+                },
+            ),
+        ];
+        opencad_file::write_ocad(&document, &doc).expect("write doc");
+        let readback = opencad_file::read_ocad(&document).expect("readback");
+        assert_eq!(readback.assertions.len(), 2, "assertions must persist");
+
+        let patch_path = dir.path().join("width.patch.json");
+        let patch = DesignPatch::set_parameter("param:width", "100 mm").with_review_metadata(
+            "Increase bracket width",
+            "Fit a wider mounting pattern",
+            Vec::new(),
+            vec![ExpectedEffect::ParameterExprEquals {
+                id: "param:width".into(),
+                expr: "100 mm".into(),
+            }],
+        );
+        fs::write(
+            &patch_path,
+            serde_json::to_string_pretty(&patch).expect("patch json"),
+        )
+        .expect("write patch");
+        let output = dir.path().join("review");
+        let artifact = generate_review(&ReviewArgs {
+            document_path: document.to_string_lossy().into_owned(),
+            patch_path: patch_path.to_string_lossy().into_owned(),
+            output_dir: output.to_string_lossy().into_owned(),
+        })
+        .expect("review");
+        assert_eq!(artifact.assertions.len(), 2);
+        assert!(
+            artifact.assertions.iter().all(|result| result.passed),
+            "assertions must pass: {:?}",
+            artifact.assertions
+        );
+
+        // A Required assertion the regenerated document violates rejects the review.
+        let mut doc = opencad_file::read_ocad(&document).expect("read");
+        doc.assertions = vec![Assertion::new(
+            "assertion:mass",
+            "Bracket mass",
+            AssertionSeverity::Required,
+            AssertionKind::MassRange {
+                min_kg: 0.07,
+                max_kg: 0.078,
+            },
+        )];
+        opencad_file::write_ocad(&document, &doc).expect("write doc");
+        let rejected = generate_review(&ReviewArgs {
+            document_path: document.to_string_lossy().into_owned(),
+            patch_path: patch_path.to_string_lossy().into_owned(),
+            output_dir: output.to_string_lossy().into_owned(),
+        });
+        assert!(
+            rejected.is_err(),
+            "a Required assertion violation must reject the review"
+        );
+    }
+
+    #[test]
+    fn robot_arm_assembly_review_is_deterministic_and_interference_free() {
+        let first_dir = tempdir().expect("first tempdir");
+        let second_dir = tempdir().expect("second tempdir");
+        let first_output = first_dir.path().join("review");
+        let second_output = second_dir.path().join("review");
+        let review_args = |output: &Path| ReviewArgs {
+            document_path: repo_path("examples/robot_arm_assembly.ocad.d")
+                .to_string_lossy()
+                .into_owned(),
+            patch_path: repo_path("examples/agent/review_robot_arm_patch.json")
+                .to_string_lossy()
+                .into_owned(),
+            output_dir: output.to_string_lossy().into_owned(),
+        };
+
+        let first = generate_review(&review_args(&first_output)).expect("first review");
+        generate_review(&review_args(&second_output)).expect("second review");
+
+        assert_eq!(first.document_id, "doc:robot_arm_assembly_001");
+        assert!(
+            first.expected_effects.iter().all(|effect| effect.passed),
+            "every expected effect must pass: {:?}",
+            first.expected_effects
+        );
+        assert_eq!(first.geometry.before_interference_count, Some(0));
+        assert_eq!(first.geometry.after_interference_count, Some(0));
+        assert_eq!(first.diff.changes.len(), 2);
+        assert!(
+            f64::from(first.geometry.after_bounds_m[1][0])
+                > f64::from(first.geometry.before_bounds_m[1][0]),
+            "bent arm must reach further in x"
+        );
+
+        let golden_dir = repo_path("docs/assets/arm-review");
+        for name in ["review.json", "review.html", "github-summary.md"] {
+            let generated =
+                fs::read_to_string(first_output.join(name)).expect("generated review artifact");
+            let repeated =
+                fs::read_to_string(second_output.join(name)).expect("repeated review artifact");
+            let golden =
+                fs::read_to_string(golden_dir.join(name)).expect("arm review golden artifact");
+            assert_eq!(
+                generated, repeated,
+                "review artifact is not deterministic: {name}"
+            );
+            assert_eq!(
+                generated, golden,
+                "review artifact differs from golden: {name}"
+            );
         }
     }
 }

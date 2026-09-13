@@ -2,6 +2,7 @@
 
 pub mod agent_api;
 pub mod assembly;
+pub mod assertions;
 pub mod drawing;
 pub mod explain;
 pub mod impact;
@@ -20,6 +21,10 @@ pub use agent_api::{
 pub use assembly::{
     diff_assembly_models, list_assembly_instances, list_assembly_mates, list_connectors,
     AssemblyInstanceInfo, AssemblyMateInfo, ConnectorInfo,
+};
+pub use assertions::{
+    evaluate_assertion, evaluate_assertions, required_assertions_pass, AssertionContext,
+    AssertionResult,
 };
 pub use drawing::{
     diff_drawing_models, get_drawing_sheet, get_drawing_view, list_drawing_sheets,

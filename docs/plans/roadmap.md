@@ -325,11 +325,40 @@ non-goals are defined in the
 | ID | Scope | Deliverables | Status |
 |---|---|---|---|
 | MCAD-P6-001 | Regeneration trace and impact preview | Shared serializable trace, exact dirty-node prediction, kernel/solver call counts, CLI/Desktop/Agent query parity | Complete |
-| MCAD-P6-002 | Incremental content-addressed regeneration | Dirty-subgraph execution, disposable versioned cache, cold-regeneration equivalence, 22/100/250-node benchmarks | Planned |
-| MCAD-P6-003 | Semantic reference provenance | Exact/derived/fingerprint/ambiguous/missing status, candidate evidence, fail-closed repair patches | Planned |
-| MCAD-P6-004 | Executable design assertions | Typed unit-explicit engineering assertions evaluated by dry-run and regeneration | Planned |
+| MCAD-P6-002 | Incremental content-addressed regeneration | Dirty-subgraph execution, disposable versioned cache, cold-regeneration equivalence, 22/100/250-node benchmarks | Complete |
+| MCAD-P6-003 | Semantic reference provenance | Exact/derived/fingerprint/ambiguous/missing status, candidate evidence, fail-closed repair patches | Complete |
+| MCAD-P6-004 | Executable design assertions | Typed unit-explicit engineering assertions evaluated by dry-run and regeneration | Complete |
 | MCAD-P6-005 | Git-native semantic merge | CLI merge driver, stable semantic conflicts, DesignPatch resolution, branch/merge golden workflow | Planned |
 | MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | Planned |
+
+MCAD-P6-003 is complete: `ReferenceProvenance` classifies every face/edge
+resolution as `exact`, `derived`, `fingerprint`, `ambiguous`, or `missing`,
+records the source feature, role, scored candidate set, tolerance policy, and a
+human-readable reason, and refuses to pick among equal-score candidates. The
+`required` flag makes an ambiguous or missing reference fail closed instead of
+choosing by incidental kernel order. `RegenReport.reference_provenance`,
+`opencad regen`, and the design-review artifact surface the same status, and
+adversarial fixtures cover exact, derived, fingerprint, ambiguous, and missing
+outcomes deterministically.
+
+MCAD-P6-004 is complete: serializable, unit-explicit `Assertion`s live in the
+`.ocad` document (`graph/assertions.json`), carry a stable id, name, severity
+(`required`/`advisory`), and a typed rule (parameter range, mass range,
+bounding-box limit, body count, required semantic reference, assembly DOF, and
+interference limit). `opencad regen` evaluates them against regenerated
+evidence, the design review embeds the same results and rejects a change when a
+`required` assertion fails, and the actuator acceptance is covered by OCCT
+regression tests. `RequiredReference` assertions consume the P6-003 provenance.
+
+MCAD-P6-002 is complete: `PartModel::regenerate_with_cache` derives a versioned
+content key per feature (definition, solved source sketch, upstream output
+identity, kernel backend tag) and serves unchanged nodes from an in-memory,
+disposable `RegenerationCache` with zero kernel calls. `RegenReport.cached_nodes`
+and `RegenerationTrace.output_hashes` expose the reuse, failed regeneration
+restores the previous document outputs, and OCCT regressions prove that editing
+`upper_hub_height` re-executes only the hub and downstream while changing
+`bolt_circle_radius` leaves the base and hubs cached. Checked-in 22/100/250-node
+chain benchmarks gate deterministic call counts and cold/incremental equivalence.
 
 **Definition of done:** the flagship model can undergo adversarial edits and
 concurrent branch changes while MusubiCAD deterministically explains the exact

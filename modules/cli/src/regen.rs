@@ -2,12 +2,15 @@
 
 use std::path::Path;
 
+use opencad_ai::{
+    evaluate_assertions, required_assertions_pass, AssertionContext, AssertionResult,
+};
 use opencad_assembly::{regenerate_assembly, ChildPart, InstanceRegenStatus, ResolvedChild};
-use opencad_core::DocumentKind;
+use opencad_core::{Assertion, DocumentKind, OpenCadError};
 use opencad_feature::{FeatureRegistry, PartModel, RegenReport, RegenerationTrace};
 use opencad_file::{read_ocad, write_expanded_dir, OcadDocument};
-use opencad_geometry::GeometryKernel;
-use opencad_graph::{FeatureGraph, ParamGraph};
+use opencad_geometry::{GeometryKernel, ReferenceProvenance, ReferenceStatus};
+use opencad_graph::{evaluate_param_graph, FeatureGraph, ParamGraph};
 use opencad_sketch::Sketch;
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +31,9 @@ pub struct RegenSummary {
     pub instances: Option<usize>,
     pub mate_dof: Option<i32>,
     pub mate_max_error: Option<f64>,
+    /// Executable design assertion results (MCAD-P6-004); empty when the
+    /// document declares no assertions.
+    pub assertions: Vec<AssertionResult>,
 }
 
 /// Serializable regeneration result for Agent API responses.
@@ -42,6 +48,12 @@ pub struct RegenResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub instances: Option<usize>,
     pub trace: RegenerationTrace,
+    /// Fail-closed semantic reference provenance (MCAD-P6-003).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reference_provenance: Vec<ReferenceProvenance>,
+    /// Executable design assertion results (MCAD-P6-004).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub assertions: Vec<AssertionResult>,
 }
 
 /// Design body required for in-memory regeneration.
@@ -65,6 +77,8 @@ impl From<RegenSummary> for RegenResult {
             density_kg_per_m3: DEFAULT_DENSITY_KG_PER_M3,
             instances: summary.instances,
             trace: report.trace,
+            reference_provenance: report.reference_provenance,
+            assertions: summary.assertions,
         }
     }
 }
@@ -87,8 +101,71 @@ pub fn regen_ocad_document(path: &str, doc: &OcadDocument) -> Result<RegenSummar
     }
 
     let parameters = doc.parameters.clone();
+    let assertions = doc.assertions.clone();
     let mut model = doc.clone().into_part_model();
-    regenerate_part(&mut model, Some(&parameters), Some(&doc.semantic_refs))
+    let mut summary = regenerate_part(&mut model, Some(&parameters), Some(&doc.semantic_refs))?;
+    if !assertions.is_empty() {
+        summary.assertions = evaluate_part_assertions(
+            &part_kernel(),
+            &model,
+            &parameters,
+            &summary.report,
+            &assertions,
+        );
+        if !required_assertions_pass(&summary.assertions) {
+            return Err(OpenCadError::validation(
+                "regeneration violated a required document assertion",
+            ));
+        }
+    }
+    Ok(summary)
+}
+
+#[cfg(feature = "occt")]
+fn part_kernel() -> OcctGeometryKernel {
+    OcctGeometryKernel::new()
+}
+
+#[cfg(not(feature = "occt"))]
+fn part_kernel() -> opencad_geometry::MockGeometryKernel {
+    opencad_geometry::MockGeometryKernel::new()
+}
+
+/// Evaluate part document assertions against regenerated evidence.
+fn evaluate_part_assertions(
+    kernel: &impl GeometryKernel,
+    model: &PartModel,
+    parameters: &ParamGraph,
+    report: &RegenReport,
+    assertions: &[Assertion],
+) -> Vec<AssertionResult> {
+    let parameter_values = evaluate_param_graph(parameters)
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+    let body = model.active_body();
+    let mass_kg = body
+        .and_then(|body| kernel.mass_properties(body, DEFAULT_DENSITY_KG_PER_M3).ok())
+        .map(|mass| mass.mass_kg);
+    let bounding_box_size_m = body
+        .and_then(|body| kernel.bounding_box(body).ok())
+        .map(|bounds| {
+            [
+                bounds.max[0] - bounds.min[0],
+                bounds.max[1] - bounds.min[1],
+                bounds.max[2] - bounds.min[2],
+            ]
+        });
+    let context = AssertionContext {
+        parameter_values,
+        mass_kg,
+        bounding_box_size_m,
+        body_count: Some(1),
+        reference_provenance: report.reference_provenance.clone(),
+        assembly_dof: None,
+        interference_count: None,
+    };
+    evaluate_assertions(assertions, &context)
 }
 
 pub fn regen_body(body: &RegenBodyParams) -> Result<RegenSummary> {
@@ -138,6 +215,7 @@ fn regen_assembly_document(
             instances: Some(report.instance_count),
             mate_dof: report.mate_solve.as_ref().map(|solve| solve.dof),
             mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
+            assertions: Vec::new(),
         })
     }
 
@@ -165,6 +243,7 @@ fn regen_assembly_document(
             instances: Some(report.instance_count),
             mate_dof: report.mate_solve.as_ref().map(|solve| solve.dof),
             mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
+            assertions: Vec::new(),
         })
     }
 }
@@ -181,8 +260,10 @@ fn assembly_regen_report(report: &opencad_assembly::AssemblyRegenReport) -> Rege
     RegenReport {
         regenerated,
         skipped_suppressed: Vec::new(),
+        cached_nodes: Vec::new(),
         face_history: Vec::new(),
         trace,
+        reference_provenance: Vec::new(),
     }
 }
 
@@ -252,6 +333,7 @@ pub fn regenerate_part(
             instances: None,
             mate_dof: None,
             mate_max_error: None,
+            assertions: Vec::new(),
         })
     }
 
@@ -268,6 +350,7 @@ pub fn regenerate_part(
             instances: None,
             mate_dof: None,
             mate_max_error: None,
+            assertions: Vec::new(),
         })
     }
 }
@@ -294,6 +377,12 @@ pub fn print_summary(summary: &RegenSummary) {
     for id in &summary.report.regenerated {
         println!("  {id}");
     }
+    if !summary.report.cached_nodes.is_empty() {
+        println!(
+            "cached: {} features (unchanged inputs, no kernel work)",
+            summary.report.cached_nodes.len()
+        );
+    }
     println!(
         "trace: solver_calls={} kernel_calls={} elapsed_time_ms={} hash={}",
         summary.report.trace.solver_call_count,
@@ -318,6 +407,40 @@ pub fn print_summary(summary: &RegenSummary) {
     }
     if let Some(error) = summary.mate_max_error {
         println!("mate_max_error: {error}");
+    }
+    if !summary.report.reference_provenance.is_empty() {
+        let count = |status: ReferenceStatus| {
+            summary
+                .report
+                .reference_provenance
+                .iter()
+                .filter(|provenance| provenance.status == status)
+                .count()
+        };
+        println!(
+            "references: exact={} derived={} fingerprint={} ambiguous={} missing={}",
+            count(ReferenceStatus::Exact),
+            count(ReferenceStatus::Derived),
+            count(ReferenceStatus::Fingerprint),
+            count(ReferenceStatus::Ambiguous),
+            count(ReferenceStatus::Missing)
+        );
+        for provenance in &summary.report.reference_provenance {
+            println!(
+                "  {} {:?} {}",
+                provenance.ref_id, provenance.status, provenance.reason
+            );
+        }
+    }
+    if !summary.assertions.is_empty() {
+        for result in &summary.assertions {
+            println!(
+                "assertion {}: {} ({})",
+                result.id,
+                if result.passed { "PASS" } else { "FAIL" },
+                result.message
+            );
+        }
     }
 }
 

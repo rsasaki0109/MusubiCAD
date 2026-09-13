@@ -24,6 +24,7 @@ cargo run -p opencad-cli -- help
 # Use committed samples
 cargo run -p opencad-cli -- regen examples/bracket.ocad.d
 cargo run -p opencad-cli -- new my_joint.ocad.d robot-joint
+cargo run -p opencad-cli -- new my_arm.ocad.d robot-arm
 cargo run -p opencad-cli -- new my_carrier.ocad.d bearing-carrier
 cargo run -p opencad-cli -- new my_part.ocad.d hole-row
 cargo run -p opencad-cli -- new my_holes.ocad.d hole-ring
@@ -56,6 +57,8 @@ cargo run -p opencad-cli -- animate examples/assembly_two_brackets.ocad.d showca
 
 See [ocad-format.md](../architecture/ocad-format.md) for the native file layout.
 See [feature.md](../api/feature.md) for the kernel-neutral feature-modeling API and flagship model.
+See [assertions.md](../api/assertions.md) for executable design assertions and
+[topo-ref.md](../api/topo-ref.md) for fail-closed reference provenance.
 See [plugins.md](plugins.md) for the linked-plugin authoring workflow and
 [plugin-api.md](../api/plugin-api.md) for the complete public contract.
 See [releases.md](releases.md) for the multi-platform CLI release contract.

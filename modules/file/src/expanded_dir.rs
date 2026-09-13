@@ -27,6 +27,7 @@ const FEATURES_FILE: &str = "graph/features.json";
 const ASSEMBLIES_FILE: &str = "graph/assemblies.json";
 const MATERIALS_FILE: &str = "graph/materials.json";
 const SEMANTIC_REFS_FILE: &str = "graph/semantic_refs.json";
+const ASSERTIONS_FILE: &str = "graph/assertions.json";
 const DRAWINGS_FILE: &str = "graph/drawings.json";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -80,6 +81,12 @@ struct DrawingsFile {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct SemanticRefsFile {
     semantic_refs: Vec<TopoRef>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+struct AssertionsFile {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    assertions: Vec<opencad_core::Assertion>,
 }
 
 /// Write a document to an expanded `.ocad.d` directory.
@@ -193,6 +200,16 @@ pub fn serialize_document_files(doc: &OcadDocument) -> Result<BTreeMap<String, V
         .into_bytes(),
     );
 
+    if !doc.assertions.is_empty() {
+        files.insert(
+            ASSERTIONS_FILE.into(),
+            to_canonical_json(&AssertionsFile {
+                assertions: doc.assertions.clone(),
+            })?
+            .into_bytes(),
+        );
+    }
+
     let checksums = ChecksumManifest::compute(&files);
     files.insert(
         CHECKSUMS_FILE.into(),
@@ -211,6 +228,7 @@ pub(crate) fn parse_document_files(files: &BTreeMap<String, Vec<u8>>) -> Result<
         read_json(files, SEMANTIC_REFS_FILE).unwrap_or(SemanticRefsFile {
             semantic_refs: Vec::new(),
         });
+    let assertions: AssertionsFile = read_json(files, ASSERTIONS_FILE).unwrap_or_default();
     let assemblies: AssembliesFile = read_json(files, ASSEMBLIES_FILE).unwrap_or(AssembliesFile {
         assembly: None,
         assemblies: Vec::new(),
@@ -225,6 +243,7 @@ pub(crate) fn parse_document_files(files: &BTreeMap<String, Vec<u8>>) -> Result<
         feature_graph: features.feature_graph,
         feature_nodes: features.feature_nodes,
         semantic_refs: semantic_refs.semantic_refs,
+        assertions: assertions.assertions,
         assembly: assemblies.assembly,
         drawing: drawings.drawing,
     })
@@ -338,6 +357,34 @@ mod tests {
             "ref:face:bracket_top"
         );
         assert_eq!(restored.semantic_refs[0].kernel_face_id(), Some(42));
+    }
+
+    #[test]
+    fn assertions_round_trip() {
+        use opencad_core::{Assertion, AssertionKind, AssertionSeverity};
+
+        let mut doc = bracket_document();
+        doc.assertions = vec![Assertion::new(
+            "assertion:mass",
+            "Mass range",
+            AssertionSeverity::Required,
+            AssertionKind::MassRange {
+                min_kg: 0.05,
+                max_kg: 0.10,
+            },
+        )];
+        let dir = tempfile::tempdir().expect("tempdir");
+        write_expanded_dir(dir.path(), &doc).expect("write");
+        let restored = read_expanded_dir(dir.path()).expect("read");
+        assert_eq!(restored.assertions.len(), 1);
+        assert_eq!(restored.assertions[0].id, "assertion:mass");
+        assert!(matches!(
+            restored.assertions[0].kind,
+            AssertionKind::MassRange {
+                min_kg: 0.05,
+                max_kg: 0.10
+            }
+        ));
     }
 
     #[test]

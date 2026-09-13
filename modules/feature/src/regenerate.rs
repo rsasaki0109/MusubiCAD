@@ -9,14 +9,16 @@ use serde::{Deserialize, Serialize};
 use opencad_core::{sha256_hex, Length, OpenCadError, Result};
 use opencad_geometry::EdgeRefDiscovery;
 use opencad_geometry::{
-    CountingGeometryKernel, ExtrudeExtent, FaceDerivation, FaceRefDiscovery, GeometryKernel,
-    KernelBody, TopoRef,
+    resolve_all_reference_provenance, CountingGeometryKernel, ExtrudeExtent, FaceDerivation,
+    FaceRefDiscovery, GeometryKernel, KernelBody, ReferenceProvenance, TopoRef,
+    TopoRefTolerancePolicy,
 };
 use opencad_graph::FeatureGraph;
 use opencad_sketch::Sketch;
 
 use opencad_graph::ParamGraph;
 
+use crate::cache::{CachedFeature, RegenerationCache};
 use crate::chamfer::ChamferFeature;
 use crate::edge_discover::discover_edge_refs_from_body;
 use crate::extrude::ExtrudeFeature;
@@ -39,13 +41,19 @@ pub struct PartModel {
 }
 
 /// Summary of a regeneration pass.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct RegenReport {
     pub regenerated: Vec<String>,
     pub skipped_suppressed: Vec<String>,
+    /// Nodes served from the content-addressed cache instead of re-executed
+    /// (MCAD-P6-002); empty for a cold regeneration.
+    pub cached_nodes: Vec<String>,
     /// Face derivation pairs accumulated across modifying features in regen order.
     pub face_history: Vec<FaceDerivation>,
     pub trace: RegenerationTrace,
+    /// Fail-closed provenance for every semantic reference resolved against the
+    /// final regenerated topology (MCAD-P6-003).
+    pub reference_provenance: Vec<ReferenceProvenance>,
 }
 
 /// Serializable evidence produced by one regeneration pass.
@@ -117,6 +125,31 @@ pub struct RegenSession<'a, K: GeometryKernel> {
     pub face_history: &'a [FaceDerivation],
     pub face_discoveries: &'a [FaceRefDiscovery],
     pub edge_discoveries: &'a [EdgeRefDiscovery],
+}
+
+/// Content-addressable key for one feature output (MCAD-P6-002).
+///
+/// The key hashes the versioned tag, kernel backend tag, feature id,
+/// definition, solved source sketch, and upstream output identity. Any change
+/// in a feature's inputs (or any upstream) produces a new key, so a cached
+/// output is reused only when its full derivation is unchanged.
+fn feature_output_key(
+    feature_id: &str,
+    node: &FeatureNode,
+    source_sketch: Option<&Sketch>,
+    upstream_hashes: &[(&str, &str)],
+    backend_tag: &str,
+) -> Result<String> {
+    let identity = (
+        "opencad.logical-feature-output.v1",
+        backend_tag,
+        feature_id,
+        &node.definition,
+        source_sketch,
+        node.suppressed,
+        upstream_hashes,
+    );
+    Ok(sha256_hex(&serde_json::to_vec(&identity)?))
 }
 
 impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
@@ -214,11 +247,33 @@ impl PartModel {
         parameters: Option<&ParamGraph>,
         semantic_refs: Option<&[TopoRef]>,
     ) -> Result<RegenReport> {
+        self.regenerate_with_cache(
+            kernel,
+            registry,
+            parameters,
+            semantic_refs,
+            &mut RegenerationCache::new(),
+        )
+    }
+
+    /// Regenerate, reusing content-addressed outputs for unchanged nodes
+    /// (MCAD-P6-002). The cache and kernel must be reused together across calls;
+    /// a failed regeneration restores the previous document outputs.
+    pub fn regenerate_with_cache<K: GeometryKernel>(
+        &mut self,
+        kernel: &K,
+        registry: &FeatureRegistry,
+        parameters: Option<&ParamGraph>,
+        semantic_refs: Option<&[TopoRef]>,
+        cache: &mut RegenerationCache,
+    ) -> Result<RegenReport> {
         let started = Instant::now();
         if let Some(params) = parameters {
             apply_parameters(self, params)?;
         }
         self.prepare_sketches()?;
+
+        let previous_outputs = self.outputs.clone();
         self.outputs.clear();
 
         let order = self.graph.recompute_order()?;
@@ -231,81 +286,127 @@ impl PartModel {
         let solver_call_count = u64::try_from(self.sketches.len()).unwrap_or(u64::MAX);
         let mut output_hashes = BTreeMap::new();
 
-        for feature_id in order {
-            let Some(node) = self.nodes.get(&feature_id) else {
-                continue;
-            };
-            if node.suppressed {
-                report.skipped_suppressed.push(feature_id);
-                continue;
-            }
-
-            let session = RegenSession {
-                kernel: &counted_kernel,
-                nodes: &self.nodes,
-                sketches: &self.sketches,
-                outputs: &self.outputs,
-                semantic_refs: refs,
-                face_history: &report.face_history,
-                face_discoveries: &face_discoveries,
-                edge_discoveries: &edge_discoveries,
-            };
-
-            let output = registry.execute(node, &session)?;
-            if let Some(ref body) = output.body {
-                report
-                    .face_history
-                    .extend(counted_kernel.face_derivation_history(body));
-                if !refs.is_empty() {
-                    face_discoveries =
-                        discover_face_refs_from_body(&counted_kernel, body, &node_list)
-                            .unwrap_or_default();
-                    edge_discoveries =
-                        discover_edge_refs_from_body(&counted_kernel, body, &node_list)
-                            .unwrap_or_default();
+        let result = (|| {
+            for feature_id in order {
+                let Some(node) = self.nodes.get(&feature_id) else {
+                    continue;
+                };
+                if node.suppressed {
+                    report.skipped_suppressed.push(feature_id);
+                    continue;
                 }
+
+                let mut upstream_hashes: Vec<(&str, &str)> = self
+                    .graph
+                    .dependency_edges()
+                    .iter()
+                    .filter(|edge| edge.target == feature_id)
+                    .filter_map(|edge| {
+                        output_hashes
+                            .get(&edge.source)
+                            .map(|hash: &String| (edge.source.as_str(), hash.as_str()))
+                    })
+                    .collect();
+                upstream_hashes.sort_unstable();
+                let source_sketch = match &node.definition {
+                    FeatureDefinition::Sketch(definition) => {
+                        self.sketches.get(&definition.sketch_id)
+                    }
+                    _ => None,
+                };
+                let output_key = feature_output_key(
+                    &feature_id,
+                    node,
+                    source_sketch,
+                    &upstream_hashes,
+                    cache.backend_tag(),
+                )?;
+
+                if let Some(cached) = cache.get(&output_key) {
+                    if cached.output.body.is_some() {
+                        face_discoveries = cached.face_discoveries.clone();
+                        edge_discoveries = cached.edge_discoveries.clone();
+                    }
+                    report.face_history.extend(cached.face_history.clone());
+                    output_hashes.insert(feature_id.clone(), output_key);
+                    self.outputs
+                        .insert(feature_id.clone(), cached.output.clone());
+                    report.cached_nodes.push(feature_id);
+                    continue;
+                }
+
+                let session = RegenSession {
+                    kernel: &counted_kernel,
+                    nodes: &self.nodes,
+                    sketches: &self.sketches,
+                    outputs: &self.outputs,
+                    semantic_refs: refs,
+                    face_history: &report.face_history,
+                    face_discoveries: &face_discoveries,
+                    edge_discoveries: &edge_discoveries,
+                };
+
+                let output = registry.execute(node, &session)?;
+                let mut face_history_delta = Vec::new();
+                if let Some(ref body) = output.body {
+                    face_history_delta = counted_kernel.face_derivation_history(body);
+                    report.face_history.extend(face_history_delta.clone());
+                    if !refs.is_empty() {
+                        face_discoveries =
+                            discover_face_refs_from_body(&counted_kernel, body, &node_list)
+                                .unwrap_or_default();
+                        edge_discoveries =
+                            discover_edge_refs_from_body(&counted_kernel, body, &node_list)
+                                .unwrap_or_default();
+                    }
+                }
+                output_hashes.insert(feature_id.clone(), output_key.clone());
+                cache.insert(
+                    output_key,
+                    CachedFeature {
+                        output: output.clone(),
+                        face_history: face_history_delta,
+                        face_discoveries: face_discoveries.clone(),
+                        edge_discoveries: edge_discoveries.clone(),
+                    },
+                );
+                self.outputs.insert(feature_id.clone(), output);
+                report.regenerated.push(feature_id);
             }
-            let mut upstream_hashes: Vec<(&str, &str)> = self
-                .graph
-                .dependency_edges()
-                .iter()
-                .filter(|edge| edge.target == feature_id)
-                .filter_map(|edge| {
-                    output_hashes
-                        .get(&edge.source)
-                        .map(|hash: &String| (edge.source.as_str(), hash.as_str()))
-                })
-                .collect();
-            upstream_hashes.sort_unstable();
-            let source_sketch = match &node.definition {
-                FeatureDefinition::Sketch(definition) => self.sketches.get(&definition.sketch_id),
-                _ => None,
-            };
-            let output_identity = (
-                "opencad.logical-feature-output.v1",
-                feature_id.as_str(),
-                &node.definition,
-                source_sketch,
-                node.suppressed,
-                output.body.is_some(),
-                upstream_hashes,
+
+            report.trace = RegenerationTrace::observed(
+                report.regenerated.clone(),
+                report.skipped_suppressed.clone(),
+                solver_call_count,
+                counted_kernel.call_count(),
+                u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+                output_hashes,
             );
-            let output_hash = sha256_hex(&serde_json::to_vec(&output_identity)?);
-            output_hashes.insert(feature_id.clone(), output_hash);
-            self.outputs.insert(feature_id.clone(), output);
-            report.regenerated.push(feature_id);
+
+            if !refs.is_empty() {
+                report.reference_provenance = resolve_all_reference_provenance(
+                    refs,
+                    &report.face_history,
+                    if face_discoveries.is_empty() {
+                        None
+                    } else {
+                        Some(&face_discoveries)
+                    },
+                    if edge_discoveries.is_empty() {
+                        None
+                    } else {
+                        Some(&edge_discoveries)
+                    },
+                    TopoRefTolerancePolicy::default(),
+                );
+            }
+
+            Ok(report)
+        })();
+        if result.is_err() {
+            self.outputs = previous_outputs;
         }
-
-        report.trace = RegenerationTrace::observed(
-            report.regenerated.clone(),
-            report.skipped_suppressed.clone(),
-            solver_call_count,
-            counted_kernel.call_count(),
-            u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
-            output_hashes,
-        );
-
-        Ok(report)
+        result
     }
 
     pub fn active_body(&self) -> Option<&KernelBody> {
@@ -1469,6 +1570,739 @@ pub fn robot_joint_actuator_housing() -> Result<PartModel> {
     Ok(model)
 }
 
+// ---------------------------------------------------------------------------
+// Robot arm flagship assembly parts
+// ---------------------------------------------------------------------------
+
+/// Circle sketch centered on a literal 2D point.
+fn robot_arm_circle_sketch(
+    id: &str,
+    name: impl Into<String>,
+    prefix: &str,
+    center: [f64; 2],
+    radius_expr: &str,
+) -> Result<Sketch> {
+    use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+    use opencad_sketch::{
+        constraint::Constraint,
+        entity::{CircleEntity, Coord, EntityBase, PointEntity, SketchEntity},
+        workplane::Workplane,
+    };
+
+    let center_id = format!("ent:{prefix}_center");
+    let circle_id = format!("ent:{prefix}_circle");
+    let mut sketch = Sketch::new(SketchId::new(id)?, name, Workplane::xy());
+    sketch.add_entity(SketchEntity::Point(PointEntity {
+        base: EntityBase {
+            id: EntityId::new(&center_id)?,
+            construction: false,
+        },
+        x: Coord::literal(center[0]),
+        y: Coord::literal(center[1]),
+    }))?;
+    sketch.add_entity(SketchEntity::Circle(CircleEntity {
+        base: EntityBase {
+            id: EntityId::new(&circle_id)?,
+            construction: false,
+        },
+        center: EntityId::new(&center_id)?,
+        radius: Coord::expr(radius_expr)?,
+    }))?;
+    sketch.add_constraint(Constraint::Radius {
+        id: ConstraintId::new(format!("con:{prefix}_radius"))?,
+        target: EntityId::new(circle_id)?,
+        expr: Expression::new(radius_expr)?,
+    })?;
+    Ok(sketch)
+}
+
+/// Circle sketch centered at `(0, offset)` driven by a vertical construction line.
+fn robot_arm_offset_circle_sketch(
+    id: &str,
+    name: impl Into<String>,
+    prefix: &str,
+    initial_offset: f64,
+    offset_expr: &str,
+    radius_expr: &str,
+) -> Result<Sketch> {
+    use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+    use opencad_sketch::{
+        constraint::{Constraint, DistanceTarget},
+        entity::{CircleEntity, Coord, EntityBase, LineEntity, PointEntity, SketchEntity},
+        workplane::Workplane,
+    };
+
+    let origin_id = format!("ent:{prefix}_origin");
+    let center_id = format!("ent:{prefix}_center");
+    let circle_id = format!("ent:{prefix}_circle");
+    let line_id = format!("ent:{prefix}_offset_line");
+    let mut sketch = Sketch::new(SketchId::new(id)?, name, Workplane::xy());
+    sketch.add_entity(SketchEntity::Point(PointEntity {
+        base: EntityBase {
+            id: EntityId::new(&origin_id)?,
+            construction: true,
+        },
+        x: Coord::literal(0.0),
+        y: Coord::literal(0.0),
+    }))?;
+    sketch.add_entity(SketchEntity::Point(PointEntity {
+        base: EntityBase {
+            id: EntityId::new(&center_id)?,
+            construction: false,
+        },
+        x: Coord::literal(0.0),
+        y: Coord::literal(initial_offset),
+    }))?;
+    sketch.add_entity(SketchEntity::Circle(CircleEntity {
+        base: EntityBase {
+            id: EntityId::new(&circle_id)?,
+            construction: false,
+        },
+        center: EntityId::new(&center_id)?,
+        radius: Coord::expr(radius_expr)?,
+    }))?;
+    sketch.add_entity(SketchEntity::Line(LineEntity {
+        base: EntityBase {
+            id: EntityId::new(&line_id)?,
+            construction: true,
+        },
+        start: EntityId::new(&origin_id)?,
+        end: EntityId::new(&center_id)?,
+    }))?;
+    sketch.add_constraint(Constraint::Vertical {
+        id: ConstraintId::new(format!("con:{prefix}_vertical"))?,
+        line: EntityId::new(&line_id)?,
+    })?;
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new(format!("con:{prefix}_offset"))?,
+        target: DistanceTarget::LineLength {
+            line: EntityId::new(&line_id)?,
+        },
+        expr: Expression::new(offset_expr)?,
+    })?;
+    sketch.add_constraint(Constraint::Radius {
+        id: ConstraintId::new(format!("con:{prefix}_radius"))?,
+        target: EntityId::new(&circle_id)?,
+        expr: Expression::new(radius_expr)?,
+    })?;
+    Ok(sketch)
+}
+
+/// Circle sketch centered at `(x_expr, y_expr)` via two construction lines.
+fn robot_arm_xy_circle_sketch(
+    id: &str,
+    name: impl Into<String>,
+    prefix: &str,
+    initial_center: [f64; 2],
+    x_expr: &str,
+    y_expr: &str,
+    radius_expr: &str,
+) -> Result<Sketch> {
+    use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+    use opencad_sketch::{
+        constraint::{Constraint, DistanceTarget},
+        entity::{CircleEntity, Coord, EntityBase, LineEntity, PointEntity, SketchEntity},
+        workplane::Workplane,
+    };
+
+    let origin_id = format!("ent:{prefix}_origin");
+    let axis_id = format!("ent:{prefix}_y_axis");
+    let center_id = format!("ent:{prefix}_center");
+    let circle_id = format!("ent:{prefix}_circle");
+    let vertical_line_id = format!("ent:{prefix}_y_line");
+    let horizontal_line_id = format!("ent:{prefix}_x_line");
+    let mut sketch = Sketch::new(SketchId::new(id)?, name, Workplane::xy());
+    for (point_id, x, y, construction) in [
+        (&origin_id, 0.0, 0.0, true),
+        (&axis_id, 0.0, initial_center[1], true),
+        (&center_id, initial_center[0], initial_center[1], false),
+    ] {
+        sketch.add_entity(SketchEntity::Point(PointEntity {
+            base: EntityBase {
+                id: EntityId::new(point_id)?,
+                construction,
+            },
+            x: Coord::literal(x),
+            y: Coord::literal(y),
+        }))?;
+    }
+    sketch.add_entity(SketchEntity::Circle(CircleEntity {
+        base: EntityBase {
+            id: EntityId::new(&circle_id)?,
+            construction: false,
+        },
+        center: EntityId::new(&center_id)?,
+        radius: Coord::expr(radius_expr)?,
+    }))?;
+    for (line_id, start, end) in [
+        (&vertical_line_id, &origin_id, &axis_id),
+        (&horizontal_line_id, &axis_id, &center_id),
+    ] {
+        sketch.add_entity(SketchEntity::Line(LineEntity {
+            base: EntityBase {
+                id: EntityId::new(line_id)?,
+                construction: true,
+            },
+            start: EntityId::new(start)?,
+            end: EntityId::new(end)?,
+        }))?;
+    }
+    sketch.add_constraint(Constraint::Vertical {
+        id: ConstraintId::new(format!("con:{prefix}_y_vertical"))?,
+        line: EntityId::new(&vertical_line_id)?,
+    })?;
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new(format!("con:{prefix}_y_offset"))?,
+        target: DistanceTarget::LineLength {
+            line: EntityId::new(&vertical_line_id)?,
+        },
+        expr: Expression::new(y_expr)?,
+    })?;
+    sketch.add_constraint(Constraint::Horizontal {
+        id: ConstraintId::new(format!("con:{prefix}_x_horizontal"))?,
+        line: EntityId::new(&horizontal_line_id)?,
+    })?;
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new(format!("con:{prefix}_x_offset"))?,
+        target: DistanceTarget::LineLength {
+            line: EntityId::new(&horizontal_line_id)?,
+        },
+        expr: Expression::new(x_expr)?,
+    })?;
+    sketch.add_constraint(Constraint::Radius {
+        id: ConstraintId::new(format!("con:{prefix}_radius"))?,
+        target: EntityId::new(&circle_id)?,
+        expr: Expression::new(radius_expr)?,
+    })?;
+    Ok(sketch)
+}
+
+/// Rectangle bar running along `+Y` from the origin, centered on the Y axis.
+fn robot_arm_bar_sketch(
+    id: &str,
+    name: impl Into<String>,
+    prefix: &str,
+    initial_size: [f64; 2],
+    length_expr: &str,
+    width_expr: &str,
+) -> Result<Sketch> {
+    use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
+    use opencad_sketch::{
+        constraint::{Constraint, DistanceTarget},
+        entity::{Coord, EntityBase, LineEntity, PointEntity, SketchEntity},
+        workplane::Workplane,
+    };
+
+    let half_width = initial_size[1] / 2.0;
+    let corners = [
+        (format!("ent:{prefix}_c0"), -half_width, 0.0),
+        (format!("ent:{prefix}_c1"), -half_width, initial_size[0]),
+        (format!("ent:{prefix}_c2"), half_width, initial_size[0]),
+        (format!("ent:{prefix}_c3"), half_width, 0.0),
+    ];
+    let edges = [
+        format!("ent:{prefix}_e0"),
+        format!("ent:{prefix}_e1"),
+        format!("ent:{prefix}_e2"),
+        format!("ent:{prefix}_e3"),
+    ];
+    let mut sketch = Sketch::new(SketchId::new(id)?, name, Workplane::xy());
+    for (corner_id, x, y) in &corners {
+        sketch.add_entity(SketchEntity::Point(PointEntity {
+            base: EntityBase {
+                id: EntityId::new(corner_id)?,
+                construction: false,
+            },
+            x: Coord::literal(*x),
+            y: Coord::literal(*y),
+        }))?;
+    }
+    for (index, (start, end)) in [(0usize, 1usize), (1, 2), (2, 3), (3, 0)]
+        .iter()
+        .enumerate()
+    {
+        sketch.add_entity(SketchEntity::Line(LineEntity {
+            base: EntityBase {
+                id: EntityId::new(&edges[index])?,
+                construction: false,
+            },
+            start: EntityId::new(&corners[*start].0)?,
+            end: EntityId::new(&corners[*end].0)?,
+        }))?;
+    }
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new(format!("con:{prefix}_length"))?,
+        target: DistanceTarget::LineLength {
+            line: EntityId::new(&edges[0])?,
+        },
+        expr: Expression::new(length_expr)?,
+    })?;
+    sketch.add_constraint(Constraint::Distance {
+        id: ConstraintId::new(format!("con:{prefix}_width"))?,
+        target: DistanceTarget::LineLength {
+            line: EntityId::new(&edges[1])?,
+        },
+        expr: Expression::new(width_expr)?,
+    })?;
+    Ok(sketch)
+}
+
+fn robot_arm_add_sketch_feature(
+    model: &mut PartModel,
+    sketch: Sketch,
+    feature_id: &str,
+    feature_name: impl Into<String>,
+) -> Result<()> {
+    let sketch_id = sketch.id.as_str().to_string();
+    model.sketches.insert(sketch_id.clone(), sketch);
+    model.add_node(FeatureNode::new(
+        feature_id,
+        feature_name,
+        FeatureDefinition::Sketch(SketchFeatureDef { sketch_id }),
+    ))
+}
+
+struct RobotArmLinkSpec<'a> {
+    prefix: &'a str,
+    link_name: &'a str,
+    length_expr: &'a str,
+    width_expr: &'a str,
+    thickness_expr: &'a str,
+    proximal_hub_radius_expr: &'a str,
+    proximal_bore_radius_expr: &'a str,
+    distal_hub_radius_expr: &'a str,
+    distal_bore_radius_expr: &'a str,
+    proximal_hub_name: &'a str,
+    distal_hub_name: &'a str,
+    initial_length: f64,
+    initial_width: f64,
+    initial_thickness: f64,
+}
+
+fn robot_arm_link(spec: RobotArmLinkSpec<'_>, parameters: &ParamGraph) -> Result<PartModel> {
+    let prefix = spec.prefix;
+    let mut model = PartModel::new();
+
+    let sketch_bar = format!("sketch:{prefix}_bar");
+    let feature_sketch_bar = format!("feature:sketch_{prefix}_bar");
+    let feature_extrude = format!("feature:{prefix}_extrude");
+    robot_arm_add_sketch_feature(
+        &mut model,
+        robot_arm_bar_sketch(
+            &sketch_bar,
+            format!("{} Bar", spec.link_name),
+            &format!("{prefix}_bar"),
+            [spec.initial_length, spec.initial_width],
+            spec.length_expr,
+            spec.width_expr,
+        )?,
+        &feature_sketch_bar,
+        format!("{} Bar Sketch", spec.link_name),
+    )?;
+    model.add_node(FeatureNode::new(
+        &feature_extrude,
+        format!("{} Body", spec.link_name),
+        FeatureDefinition::Extrude(ExtrudeFeature {
+            sketch_feature: feature_sketch_bar.clone(),
+            profile_ref: format!("{sketch_bar}/profile:outer"),
+            extent: ExtrudeExtent::Distance {
+                length: Length::from_meters(spec.initial_thickness),
+            },
+            operation: opencad_geometry::ExtrudeOperation::NewBody,
+            length_expr: Some(spec.thickness_expr.into()),
+            target_feature: None,
+        }),
+    ))?;
+    model.add_dependency(&feature_sketch_bar, &feature_extrude)?;
+
+    let mut body = feature_extrude.clone();
+
+    for (role, hub_radius_expr, hub_name, offset_expr, initial_offset) in [
+        (
+            "proximal",
+            spec.proximal_hub_radius_expr,
+            spec.proximal_hub_name,
+            "0 mm",
+            0.0,
+        ),
+        (
+            "distal",
+            spec.distal_hub_radius_expr,
+            spec.distal_hub_name,
+            spec.length_expr,
+            spec.initial_length,
+        ),
+    ] {
+        let sketch_id = format!("sketch:{prefix}_{role}_hub");
+        let feature_sketch = format!("feature:sketch_{prefix}_{role}_hub");
+        let feature_hub = format!("feature:{prefix}_{role}_hub");
+        let hub_sketch = if role == "proximal" {
+            robot_arm_circle_sketch(
+                &sketch_id,
+                format!("{hub_name} Hub"),
+                &format!("{prefix}_{role}_hub"),
+                [0.0, initial_offset],
+                hub_radius_expr,
+            )?
+        } else {
+            robot_arm_offset_circle_sketch(
+                &sketch_id,
+                format!("{hub_name} Hub"),
+                &format!("{prefix}_{role}_hub"),
+                initial_offset,
+                offset_expr,
+                hub_radius_expr,
+            )?
+        };
+        robot_arm_add_sketch_feature(
+            &mut model,
+            hub_sketch,
+            &feature_sketch,
+            format!("{hub_name} Hub Sketch"),
+        )?;
+        let mut hub = ExtrudeFeature::join(
+            feature_sketch.clone(),
+            format!("{sketch_id}/profile:outer"),
+            body.clone(),
+            ExtrudeExtent::Distance {
+                length: Length::from_meters(spec.initial_thickness),
+            },
+        );
+        hub.length_expr = Some(spec.thickness_expr.into());
+        model.add_node(FeatureNode::new(
+            &feature_hub,
+            format!("{hub_name} Hub"),
+            FeatureDefinition::Extrude(hub),
+        ))?;
+        model.add_dependency(&feature_sketch, &feature_hub)?;
+        model.add_dependency(&body, &feature_hub)?;
+        body = feature_hub;
+    }
+
+    for (role, bore_radius_expr, bore_name, initial_offset) in [
+        (
+            "proximal",
+            spec.proximal_bore_radius_expr,
+            spec.proximal_hub_name,
+            0.0,
+        ),
+        (
+            "distal",
+            spec.distal_bore_radius_expr,
+            spec.distal_hub_name,
+            spec.initial_length,
+        ),
+    ] {
+        let sketch_id = format!("sketch:{prefix}_{role}_bore");
+        let feature_sketch = format!("feature:sketch_{prefix}_{role}_bore");
+        let feature_bore = format!("feature:{prefix}_{role}_bore");
+        let bore_sketch = if role == "proximal" {
+            robot_arm_circle_sketch(
+                &sketch_id,
+                format!("{bore_name} Bore"),
+                &format!("{prefix}_{role}_bore"),
+                [0.0, initial_offset],
+                bore_radius_expr,
+            )?
+        } else {
+            robot_arm_offset_circle_sketch(
+                &sketch_id,
+                format!("{bore_name} Bore"),
+                &format!("{prefix}_{role}_bore"),
+                initial_offset,
+                spec.length_expr,
+                bore_radius_expr,
+            )?
+        };
+        robot_arm_add_sketch_feature(
+            &mut model,
+            bore_sketch,
+            &feature_sketch,
+            format!("{bore_name} Bore Sketch"),
+        )?;
+        let mut bore = HoleFeature::through(
+            feature_sketch.clone(),
+            format!("{sketch_id}/profile:outer"),
+            ExtrudeExtent::Distance {
+                length: Length::from_meters(spec.initial_thickness),
+            },
+            body.clone(),
+        );
+        bore.depth_expr = Some(spec.thickness_expr.into());
+        model.add_node(FeatureNode::new(
+            &feature_bore,
+            format!("{bore_name} Bore"),
+            FeatureDefinition::Hole(bore),
+        ))?;
+        model.add_dependency(&feature_sketch, &feature_bore)?;
+        model.add_dependency(&body, &feature_bore)?;
+        body = feature_bore;
+    }
+
+    apply_parameters(&mut model, parameters)?;
+    Ok(model)
+}
+
+/// Robot-arm base pedestal: round mounting plate, turret column, and bolt circle.
+pub fn robot_arm_base() -> Result<PartModel> {
+    use crate::pattern::CircularPatternFeature;
+
+    let parameters = opencad_graph::robot_arm_base_parameters();
+    let mut model = PartModel::new();
+
+    robot_arm_add_sketch_feature(
+        &mut model,
+        robot_arm_circle_sketch(
+            "sketch:base_plate",
+            "Base Plate",
+            "base_plate",
+            [0.0, 0.0],
+            "base_plate_diameter / 2",
+        )?,
+        "feature:sketch_base_plate",
+        "Base Plate Sketch",
+    )?;
+    model.add_node(FeatureNode::new(
+        "feature:base_plate",
+        "Base Plate",
+        FeatureDefinition::Extrude(ExtrudeFeature {
+            sketch_feature: "feature:sketch_base_plate".into(),
+            profile_ref: "sketch:base_plate/profile:outer".into(),
+            extent: ExtrudeExtent::Distance {
+                length: Length::from_meters(0.010),
+            },
+            operation: opencad_geometry::ExtrudeOperation::NewBody,
+            length_expr: Some("base_plate_thickness".into()),
+            target_feature: None,
+        }),
+    ))?;
+    model.add_dependency("feature:sketch_base_plate", "feature:base_plate")?;
+
+    robot_arm_add_sketch_feature(
+        &mut model,
+        robot_arm_circle_sketch(
+            "sketch:turret",
+            "Turret Column",
+            "turret",
+            [0.0, 0.0],
+            "turret_diameter / 2",
+        )?,
+        "feature:sketch_turret",
+        "Turret Column Sketch",
+    )?;
+    let mut turret = ExtrudeFeature::join(
+        "feature:sketch_turret",
+        "sketch:turret/profile:outer",
+        "feature:base_plate",
+        ExtrudeExtent::Distance {
+            length: Length::from_meters(0.030),
+        },
+    );
+    turret.length_expr = Some("turret_height".into());
+    model.add_node(FeatureNode::new(
+        "feature:turret",
+        "Turret Column",
+        FeatureDefinition::Extrude(turret),
+    ))?;
+    model.add_dependency("feature:sketch_turret", "feature:turret")?;
+    model.add_dependency("feature:base_plate", "feature:turret")?;
+
+    robot_arm_add_sketch_feature(
+        &mut model,
+        robot_arm_circle_sketch(
+            "sketch:bolt_hole",
+            "Bolt Hole Tool",
+            "bolt_hole",
+            [0.050, 0.0],
+            "bolt_hole_diameter / 2",
+        )?,
+        "feature:sketch_bolt_hole",
+        "Bolt Hole Sketch",
+    )?;
+    model.add_node(FeatureNode::new(
+        "feature:bolt_hole_tool",
+        "Bolt Hole Tool",
+        FeatureDefinition::Extrude(ExtrudeFeature {
+            sketch_feature: "feature:sketch_bolt_hole".into(),
+            profile_ref: "sketch:bolt_hole/profile:outer".into(),
+            extent: ExtrudeExtent::Distance {
+                length: Length::from_meters(0.010),
+            },
+            operation: opencad_geometry::ExtrudeOperation::NewBody,
+            length_expr: Some("base_plate_thickness".into()),
+            target_feature: None,
+        }),
+    ))?;
+    model.add_node(FeatureNode::new(
+        "feature:bolt_circle",
+        "Four Hole Bolt Circle",
+        FeatureDefinition::CircularPattern(CircularPatternFeature::cut(
+            "feature:bolt_hole_tool",
+            "feature:turret",
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            4,
+        )),
+    ))?;
+    model.add_dependency("feature:sketch_bolt_hole", "feature:bolt_hole_tool")?;
+    model.add_dependency("feature:bolt_hole_tool", "feature:bolt_circle")?;
+    model.add_dependency("feature:turret", "feature:bolt_circle")?;
+
+    apply_parameters(&mut model, &parameters)?;
+    Ok(model)
+}
+
+/// Robot-arm upper link with a shoulder hub and an elbow hub.
+pub fn robot_arm_upper_arm() -> Result<PartModel> {
+    robot_arm_link(
+        RobotArmLinkSpec {
+            prefix: "upper_arm",
+            link_name: "Upper Arm",
+            length_expr: "upper_arm_length",
+            width_expr: "upper_arm_width",
+            thickness_expr: "upper_arm_thickness",
+            proximal_hub_radius_expr: "shoulder_hub_diameter / 2",
+            proximal_bore_radius_expr: "shoulder_bore_diameter / 2",
+            distal_hub_radius_expr: "upper_arm_elbow_hub_diameter / 2",
+            distal_bore_radius_expr: "upper_arm_elbow_bore_diameter / 2",
+            proximal_hub_name: "Shoulder",
+            distal_hub_name: "Elbow",
+            initial_length: 0.160,
+            initial_width: 0.026,
+            initial_thickness: 0.014,
+        },
+        &opencad_graph::robot_arm_upper_arm_parameters(),
+    )
+}
+
+/// Robot-arm forearm link with an elbow hub and a wrist hub.
+pub fn robot_arm_forearm() -> Result<PartModel> {
+    robot_arm_link(
+        RobotArmLinkSpec {
+            prefix: "forearm",
+            link_name: "Forearm",
+            length_expr: "forearm_length",
+            width_expr: "forearm_width",
+            thickness_expr: "forearm_thickness",
+            proximal_hub_radius_expr: "forearm_elbow_hub_diameter / 2",
+            proximal_bore_radius_expr: "forearm_elbow_bore_diameter / 2",
+            distal_hub_radius_expr: "wrist_hub_diameter / 2",
+            distal_bore_radius_expr: "wrist_bore_diameter / 2",
+            proximal_hub_name: "Elbow",
+            distal_hub_name: "Wrist",
+            initial_length: 0.110,
+            initial_width: 0.024,
+            initial_thickness: 0.012,
+        },
+        &opencad_graph::robot_arm_forearm_parameters(),
+    )
+}
+
+/// Robot-arm wrist gripper: body block, wrist bore, and two gripper fingers.
+pub fn robot_arm_gripper() -> Result<PartModel> {
+    let parameters = opencad_graph::robot_arm_gripper_parameters();
+    let mut model = PartModel::new();
+
+    robot_arm_add_sketch_feature(
+        &mut model,
+        robot_arm_bar_sketch(
+            "sketch:gripper_body",
+            "Gripper Body",
+            "gripper_body",
+            [0.040, 0.036],
+            "gripper_length",
+            "gripper_width",
+        )?,
+        "feature:sketch_gripper_body",
+        "Gripper Body Sketch",
+    )?;
+    model.add_node(FeatureNode::new(
+        "feature:gripper_body",
+        "Gripper Body",
+        FeatureDefinition::Extrude(ExtrudeFeature {
+            sketch_feature: "feature:sketch_gripper_body".into(),
+            profile_ref: "sketch:gripper_body/profile:outer".into(),
+            extent: ExtrudeExtent::Distance {
+                length: Length::from_meters(0.014),
+            },
+            operation: opencad_geometry::ExtrudeOperation::NewBody,
+            length_expr: Some("gripper_thickness".into()),
+            target_feature: None,
+        }),
+    ))?;
+    model.add_dependency("feature:sketch_gripper_body", "feature:gripper_body")?;
+
+    robot_arm_add_sketch_feature(
+        &mut model,
+        robot_arm_circle_sketch(
+            "sketch:wrist_bore",
+            "Wrist Bore",
+            "wrist_bore",
+            [0.0, 0.0],
+            "gripper_wrist_bore_diameter / 2",
+        )?,
+        "feature:sketch_wrist_bore",
+        "Wrist Bore Sketch",
+    )?;
+    let mut wrist_bore = HoleFeature::through(
+        "feature:sketch_wrist_bore",
+        "sketch:wrist_bore/profile:outer",
+        ExtrudeExtent::Distance {
+            length: Length::from_meters(0.014),
+        },
+        "feature:gripper_body",
+    );
+    wrist_bore.depth_expr = Some("gripper_thickness".into());
+    model.add_node(FeatureNode::new(
+        "feature:wrist_bore",
+        "Wrist Bore",
+        FeatureDefinition::Hole(wrist_bore),
+    ))?;
+    model.add_dependency("feature:sketch_wrist_bore", "feature:wrist_bore")?;
+    model.add_dependency("feature:gripper_body", "feature:wrist_bore")?;
+
+    let mut body = "feature:wrist_bore".to_string();
+    for (side, label, initial_x) in [("left", "Left", -0.008), ("right", "Right", 0.008)] {
+        let sketch_id = format!("sketch:finger_{side}");
+        let feature_sketch = format!("feature:sketch_finger_{side}");
+        let feature_finger = format!("feature:finger_{side}");
+        robot_arm_add_sketch_feature(
+            &mut model,
+            robot_arm_xy_circle_sketch(
+                &sketch_id,
+                format!("{label} Finger"),
+                &format!("finger_{side}"),
+                [initial_x, 0.040],
+                "finger_spacing / 2",
+                "gripper_length",
+                "finger_diameter / 2",
+            )?,
+            &feature_sketch,
+            format!("{label} Finger Sketch"),
+        )?;
+        let mut finger = ExtrudeFeature::join(
+            feature_sketch.clone(),
+            format!("{sketch_id}/profile:outer"),
+            body.clone(),
+            ExtrudeExtent::Distance {
+                length: Length::from_meters(0.018),
+            },
+        );
+        finger.length_expr = Some("finger_length".into());
+        model.add_node(FeatureNode::new(
+            &feature_finger,
+            format!("{label} Finger"),
+            FeatureDefinition::Extrude(finger),
+        ))?;
+        model.add_dependency(&feature_sketch, &feature_finger)?;
+        model.add_dependency(&body, &feature_finger)?;
+        body = feature_finger;
+    }
+
+    apply_parameters(&mut model, &parameters)?;
+    Ok(model)
+}
+
 /// Bracket plate with a pin boss sketched on the top face via `face_ref` workplane.
 pub fn bracket_face_pin() -> Result<PartModel> {
     use opencad_core::{ConstraintId, EntityId, Expression, SketchId};
@@ -2072,6 +2906,273 @@ mod tests {
         assert!(report.trace.geometry_kernel_call_count > 0);
         assert_eq!(report.trace.output_hashes_sha256.len(), 22);
         assert!(!report.trace.trace_hash_sha256.is_empty());
+    }
+
+    #[test]
+    fn regenerates_four_part_robot_arm_models() {
+        let kernel = MockGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+
+        let mut base = robot_arm_base().expect("base model");
+        let base_report = base
+            .regenerate(
+                &kernel,
+                &registry,
+                Some(&opencad_graph::robot_arm_base_parameters()),
+                None,
+            )
+            .expect("base regen");
+        assert_eq!(base_report.regenerated.len(), 7);
+        assert!(base.active_body().is_some());
+
+        let mut upper = robot_arm_upper_arm().expect("upper arm model");
+        let upper_report = upper
+            .regenerate(
+                &kernel,
+                &registry,
+                Some(&opencad_graph::robot_arm_upper_arm_parameters()),
+                None,
+            )
+            .expect("upper arm regen");
+        assert_eq!(upper_report.regenerated.len(), 10);
+        assert_eq!(
+            upper_report.regenerated.last().map(String::as_str),
+            Some("feature:upper_arm_distal_bore")
+        );
+        assert!(upper.active_body().is_some());
+
+        let mut forearm = robot_arm_forearm().expect("forearm model");
+        let forearm_report = forearm
+            .regenerate(
+                &kernel,
+                &registry,
+                Some(&opencad_graph::robot_arm_forearm_parameters()),
+                None,
+            )
+            .expect("forearm regen");
+        assert_eq!(forearm_report.regenerated.len(), 10);
+        assert_eq!(
+            forearm_report.regenerated.last().map(String::as_str),
+            Some("feature:forearm_distal_bore")
+        );
+        assert!(forearm.active_body().is_some());
+
+        let mut gripper = robot_arm_gripper().expect("gripper model");
+        let gripper_report = gripper
+            .regenerate(
+                &kernel,
+                &registry,
+                Some(&opencad_graph::robot_arm_gripper_parameters()),
+                None,
+            )
+            .expect("gripper regen");
+        assert_eq!(gripper_report.regenerated.len(), 8);
+        assert_eq!(
+            gripper_report.regenerated.last().map(String::as_str),
+            Some("feature:finger_right")
+        );
+        assert!(gripper.active_body().is_some());
+    }
+
+    #[test]
+    fn incremental_regeneration_serves_every_unchanged_node_from_cache() {
+        let kernel = MockGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+        let mut model = robot_joint_actuator_housing().expect("model");
+        let params = opencad_graph::robot_joint_housing_parameters();
+        let mut cache = RegenerationCache::with_backend("mock");
+
+        let cold = model
+            .regenerate_with_cache(&kernel, &registry, Some(&params), None, &mut cache)
+            .expect("cold regen");
+        assert_eq!(cold.regenerated.len(), 22);
+        assert!(cold.cached_nodes.is_empty());
+        assert!(cold.trace.geometry_kernel_call_count > 0);
+
+        let warm = model
+            .regenerate_with_cache(&kernel, &registry, Some(&params), None, &mut cache)
+            .expect("warm regen");
+        assert_eq!(
+            warm.regenerated.len(),
+            0,
+            "unchanged nodes must not re-execute"
+        );
+        assert_eq!(warm.cached_nodes.len(), 22);
+        assert_eq!(
+            warm.trace.geometry_kernel_call_count, 0,
+            "no kernel calls for cached nodes"
+        );
+        assert_eq!(
+            cold.trace.output_hashes_sha256, warm.trace.output_hashes_sha256,
+            "cached outputs must have identical content hashes"
+        );
+    }
+
+    #[test]
+    fn incremental_upper_hub_change_only_recomputes_downstream() {
+        let kernel = MockGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+        let mut model = robot_joint_actuator_housing().expect("model");
+        let mut params = opencad_graph::robot_joint_housing_parameters();
+        let mut cache = RegenerationCache::with_backend("mock");
+
+        model
+            .regenerate_with_cache(&kernel, &registry, Some(&params), None, &mut cache)
+            .expect("cold regen");
+
+        params
+            .set_expr("param:upper_hub_height", "42 mm")
+            .expect("edit upper hub height");
+        let report = model
+            .regenerate_with_cache(&kernel, &registry, Some(&params), None, &mut cache)
+            .expect("incremental regen");
+
+        assert!(
+            report
+                .regenerated
+                .iter()
+                .any(|id| id == "feature:upper_hub"),
+            "upper hub must re-execute"
+        );
+        assert!(
+            report
+                .cached_nodes
+                .iter()
+                .any(|id| id == "feature:joint_base"),
+            "base plate must be served from cache"
+        );
+        assert!(
+            report
+                .cached_nodes
+                .iter()
+                .any(|id| id == "feature:lower_hub"),
+            "lower hub must be served from cache"
+        );
+        assert!(
+            !report
+                .regenerated
+                .iter()
+                .any(|id| id == "feature:joint_base"),
+            "base plate must not re-execute"
+        );
+    }
+
+    #[test]
+    fn incremental_bolt_circle_change_recomputes_pattern_downstream_only() {
+        let kernel = MockGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+        let mut model = robot_joint_actuator_housing().expect("model");
+        let mut params = opencad_graph::robot_joint_housing_parameters();
+        let mut cache = RegenerationCache::with_backend("mock");
+
+        model
+            .regenerate_with_cache(&kernel, &registry, Some(&params), None, &mut cache)
+            .expect("cold regen");
+
+        params
+            .set_expr("param:bolt_circle_radius", "50 mm")
+            .expect("edit bolt circle radius");
+        let report = model
+            .regenerate_with_cache(&kernel, &registry, Some(&params), None, &mut cache)
+            .expect("incremental regen");
+
+        assert!(
+            report
+                .regenerated
+                .iter()
+                .any(|id| id == "feature:pcd_fasteners"),
+            "PCD pattern must re-execute"
+        );
+        assert!(
+            report
+                .cached_nodes
+                .iter()
+                .any(|id| id == "feature:joint_base"),
+            "base plate must be served from cache"
+        );
+        assert!(
+            report
+                .cached_nodes
+                .iter()
+                .any(|id| id == "feature:shaft_bore"),
+            "shaft bore must be served from cache"
+        );
+        assert!(
+            !report
+                .regenerated
+                .iter()
+                .any(|id| id == "feature:shaft_bore"),
+            "shaft bore must not re-execute"
+        );
+    }
+
+    #[test]
+    fn failed_incremental_regeneration_preserves_previous_outputs() {
+        let kernel = MockGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+        let mut model = bracket_with_hole().expect("model");
+        model
+            .regenerate(&kernel, &registry, None, None)
+            .expect("cold regen");
+        let previous = model.outputs.clone();
+
+        // A node referencing a missing sketch makes execution fail.
+        model
+            .add_node(FeatureNode::new(
+                "feature:broken",
+                "Broken Extrude",
+                FeatureDefinition::Extrude(ExtrudeFeature {
+                    sketch_feature: "feature:missing_sketch".into(),
+                    profile_ref: "sketch:missing/profile:outer".into(),
+                    extent: ExtrudeExtent::Distance {
+                        length: Length::from_meters(0.01),
+                    },
+                    operation: opencad_geometry::ExtrudeOperation::NewBody,
+                    length_expr: None,
+                    target_feature: None,
+                }),
+            ))
+            .expect("add broken node");
+        model
+            .add_dependency("feature:extrude_base", "feature:broken")
+            .expect("add dependency");
+
+        let result = model.regenerate(&kernel, &registry, None, None);
+        assert!(result.is_err(), "broken model must fail regeneration");
+        assert_eq!(
+            model.outputs, previous,
+            "failed regeneration must restore the previous document outputs"
+        );
+    }
+
+    #[test]
+    fn robot_arm_upper_arm_elbow_position_follows_length_param() {
+        let mut model = robot_arm_upper_arm().expect("model");
+        let mut params = opencad_graph::robot_arm_upper_arm_parameters();
+        params
+            .set_expr("param:upper_arm_length", "200 mm")
+            .expect("edit length");
+        crate::param_apply::apply_parameters(&mut model, &params).expect("apply");
+
+        let sketch = model
+            .sketches
+            .get("sketch:upper_arm_distal_hub")
+            .expect("distal hub sketch");
+        let center = sketch
+            .find_entity("ent:upper_arm_distal_hub_center")
+            .and_then(|entity| match entity {
+                opencad_sketch::SketchEntity::Point(point) => {
+                    match (point.x.clone(), point.y.clone()) {
+                        (opencad_sketch::Coord::Literal(x), opencad_sketch::Coord::Literal(y)) => {
+                            Some((x, y))
+                        }
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+            .expect("distal hub center");
+        assert!((center.1 - 0.200).abs() < 1e-6, "distal hub y {}", center.1);
     }
 
     #[test]

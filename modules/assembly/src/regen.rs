@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use opencad_core::{DocumentId, InstanceId, OpenCadError, Result};
 use opencad_feature::{FeatureRegistry, PartModel};
 use opencad_geometry::{
-    BooleanOp, BoundingBox, GeometryKernel, KernelBody, MassProperties, MeshSet, RigidTransform,
+    BoundingBox, GeometryKernel, KernelBody, MassProperties, MeshSet, RigidTransform,
     TessellationSettings,
 };
 use opencad_graph::ParamGraph;
@@ -166,12 +166,7 @@ pub fn detect_interferences_with_tolerance<K: GeometryKernel>(
             if separated {
                 continue;
             }
-            let common = kernel.boolean(
-                first_body.clone(),
-                second_body.clone(),
-                BooleanOp::Intersect,
-            )?;
-            let volume = kernel.mass_properties(&common, 1.0)?.volume_m3;
+            let volume = kernel.intersection_volume(first_body, second_body)?;
             if volume > tolerance.volume_tolerance_m3 {
                 result.push(AssemblyInterference {
                     first: first.instance_id.clone(),

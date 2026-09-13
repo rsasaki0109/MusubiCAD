@@ -16,7 +16,8 @@ pub use diff::{
 pub use feature_graph::{FeatureEntry, FeatureGraph};
 pub use param_eval::{
     bearing_carrier_parameters, bracket_parameters, eval_angle_expr, eval_length_expr,
-    evaluate_param_graph, parameter_names_in_expr, revolve_parameters,
+    evaluate_param_graph, parameter_names_in_expr, revolve_parameters, robot_arm_base_parameters,
+    robot_arm_forearm_parameters, robot_arm_gripper_parameters, robot_arm_upper_arm_parameters,
     robot_joint_housing_parameters,
 };
 pub use param_graph::{ParamGraph, ParameterEntry};

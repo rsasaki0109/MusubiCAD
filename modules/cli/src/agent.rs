@@ -1457,6 +1457,7 @@ mod tests {
             feature_graph: opencad_graph::FeatureGraph::new(),
             feature_nodes: Vec::new(),
             semantic_refs: Vec::new(),
+            assertions: Vec::new(),
             assembly: Some(
                 AssemblyModel {
                     components: vec![Component::new(

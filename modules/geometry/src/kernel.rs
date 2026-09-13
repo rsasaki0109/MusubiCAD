@@ -174,6 +174,18 @@ pub trait GeometryKernel {
 
     fn boolean(&self, lhs: KernelBody, rhs: KernelBody, op: BooleanOp) -> Result<KernelBody>;
 
+    /// Exact common-solid volume in cubic meters.
+    ///
+    /// The default implementation intersects the two bodies and reads the volume
+    /// of the single result. Kernels whose intersection can be empty or split
+    /// into several disconnected pieces (for example OCCT) must override this to
+    /// sum the piece volumes and return `0.0` for an empty intersection instead
+    /// of failing.
+    fn intersection_volume(&self, lhs: &KernelBody, rhs: &KernelBody) -> Result<f64> {
+        let common = self.boolean(lhs.clone(), rhs.clone(), BooleanOp::Intersect)?;
+        Ok(self.mass_properties(&common, 1.0)?.volume_m3)
+    }
+
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet>;
 
     /// Face derivation pairs `(post_id, src_id)` from the kernel's last modifying op.

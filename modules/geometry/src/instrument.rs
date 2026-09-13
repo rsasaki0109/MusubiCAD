@@ -65,6 +65,11 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.boolean(lhs, rhs, op)
     }
 
+    fn intersection_volume(&self, lhs: &KernelBody, rhs: &KernelBody) -> Result<f64> {
+        self.record();
+        self.inner.intersection_volume(lhs, rhs)
+    }
+
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
         self.record();
         self.inner.tessellate(body, settings)

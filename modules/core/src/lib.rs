@@ -1,6 +1,7 @@
 //! OpenCAD core types: stable IDs, units, errors, document metadata, and
 //! transaction primitives.
 
+pub mod assertions;
 pub mod document;
 pub mod error;
 pub mod id;
@@ -10,6 +11,7 @@ pub mod transaction;
 pub mod units;
 pub mod validation;
 
+pub use assertions::{Assertion, AssertionKind, AssertionSeverity};
 pub use document::{DocumentKind, DocumentMetadata};
 pub use error::{OpenCadError, Result};
 pub use id::{

@@ -280,6 +280,27 @@ mod tests {
     }
 
     #[test]
+    fn robot_arm_assembly_drawing_exports_deterministic_svg() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|parent| parent.parent())
+            .expect("workspace root");
+        let path = root.join("examples/robot_arm_assembly_drawing.ocad.d");
+        let doc = read_ocad(&path).expect("read drawing");
+
+        let (first, segments) =
+            render_drawing_svg(path.to_str().expect("path"), &doc).expect("render");
+        let (second, _) =
+            render_drawing_svg(path.to_str().expect("path"), &doc).expect("render second");
+        assert_eq!(first, second, "drawing SVG must be deterministic");
+        assert!(segments > 0, "arm drawing must produce wire segments");
+        assert!(
+            first.contains("160.00 mm"),
+            "arm drawing must carry the model-driven upper-arm dimension"
+        );
+    }
+
+    #[test]
     fn exports_drawing_to_svg() {
         use opencad_core::{SheetId, ViewId};
         use opencad_drawing::{DrawingModel, DrawingView, ModelReference, ProjectionKind, Sheet};

@@ -34,6 +34,59 @@ layer owns `.ocad` persistence through the `robot-joint` template.
 `RegenReport.trace` records deterministic execution evidence; see
 [Change impact and regeneration trace](change-impact-and-regeneration-trace.md).
 
+## Robot-arm assembly parts
+
+`robot_arm_base()`, `robot_arm_upper_arm()`, `robot_arm_forearm()`, and
+`robot_arm_gripper()` build the four parametric parts behind
+`examples/robot_arm_assembly.ocad.d`. Each part constructor applies its own
+explicit-unit parameter graph (`robot_arm_base_parameters()` and friends) and
+performs no I/O. The assembly model itself is built by
+`opencad_assembly::robot_arm_assembly_model()`, which places the four parts,
+declares six named connectors, and adds three concentric revolute joints at
+the shoulder, elbow, and wrist. The authored -45° elbow/wrist pose satisfies
+every mate with zero initial residual, and links are stacked along `+Z` so the
+joint hubs touch with zero interference; regeneration is deterministic and
+leaves the pose unchanged.
+
+```rust
+let mut model = opencad_feature::robot_arm_upper_arm()?;
+let parameters = opencad_graph::robot_arm_upper_arm_parameters();
+let report = model.regenerate(&kernel, &registry, Some(&parameters), None)?;
+assert_eq!(report.regenerated.len(), 10);
+```
+
+## Incremental content-addressed regeneration
+
+`PartModel::regenerate` performs a cold full regeneration. For repeated edits,
+`PartModel::regenerate_with_cache` reuses unchanged outputs through an
+in-memory, disposable `RegenerationCache` (MCAD-P6-002):
+
+```rust
+let kernel = OcctGeometryKernel::new();
+let registry = opencad_feature::FeatureRegistry::with_defaults();
+let mut model = opencad_feature::robot_joint_actuator_housing()?;
+let mut cache = opencad_feature::RegenerationCache::with_backend("occt");
+let mut parameters = opencad_graph::robot_joint_housing_parameters();
+
+model.regenerate_with_cache(&kernel, &registry, Some(&parameters), None, &mut cache)?;
+parameters.set_expr("param:upper_hub_height", "42 mm")?;
+let report = model.regenerate_with_cache(&kernel, &registry, Some(&parameters), None, &mut cache)?;
+assert!(report.cached_nodes.iter().any(|id| id == "feature:joint_base"));
+```
+
+- Each feature output has a versioned content key over its definition, solved
+  source sketch, upstream output identity, and the kernel backend tag; a cached
+  output is reused only when its whole derivation is unchanged.
+- Cached nodes are reported in `RegenReport.cached_nodes` and make zero
+  geometry-kernel calls; `RegenerationTrace.output_hashes_sha256` is identical
+  to a cold run, so mass, bounds, and content hashes match.
+- The cache and kernel must be reused together across calls; cache data is
+  disposable and never written into `.ocad`.
+- A failed incremental regeneration restores the previous document outputs.
+- Checked-in 22/100/250-node chain benchmarks
+  (`modules/feature/tests/incremental_benchmarks.rs`) gate deterministic call
+  counts and cold/incremental equivalence.
+
 ## Feature-build animation
 
 `opencad animate-features` regenerates a part, omits standalone pattern-tool
