@@ -13,6 +13,9 @@ This guide is served to MCP clients as the resource
    it; it is the best source of correct examples.
 3. Write one `DesignPatch` and send it to `patch_dry_run`. Fix every reported
    problem. Errors list every dependent or missing reference by stable ID.
+   A `sketch_under_constrained` warning means that sketch can skew on a
+   later parameter edit. Add horizontal/vertical and dimension constraints
+   until the warning disappears.
 4. Optionally, `review_patch` writes a before/after HTML review with images
    and mass and bounds changes.
 5. `patch_apply` validates the patch again and writes the document. A failed

@@ -506,6 +506,15 @@ Rules shared by every structural operation:
 
   For example, setting `thickness` to `0 mm` fails at dry-run and names every
   affected feature. Suppressed features are skipped.
+- **Under-constrained sketches.** Dry-run adds a `sketch_under_constrained`
+  warning, targeting the sketch ID, for a sketch that still has degrees of
+  freedom after solving with the new parameter values. It checks only
+  sketches the patch adds or edits, and sketches that use a parameter whose
+  value changes.
+
+  Warnings do not reject the patch. They flag geometry that can move or skew
+  on a later edit: for example, the bracket's base sketch, which only its
+  side lengths constrain, warns when `width` changes.
 - **Limits.** A patch holds at most 10,000 operations.
 - **Complete state required.** Structural operations run only through
   `build_patch_candidate` / `DesignPatch::apply_to_state` and the document,

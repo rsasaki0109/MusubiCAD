@@ -398,6 +398,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-006 | Feature value validation | Dry-run rejection of degenerate lengths, counts, directions, and revolve angles for every patch and in whole-state validation | Complete |
 | MCAD-P7-007 | Shell feature | [ADR-017](../adr/ADR-017-shell-feature.md); `shell` with inward uniform wall, fail-closed open-face references resolved on the target body, `thickness_expr`, OCCT volume-loss guard, Mock stand-in, enclosure example | Complete |
 | MCAD-P7-008 | Parameter-stable authoring | Authoring examples constrain rectangle edges horizontal/vertical so parameter edits keep the shape; the MCP authoring guide requires shape constraints; OCCT regression test edits width/depth of authored parts | Complete |
+| MCAD-P7-009 | Sketch freedom warnings | Dry-run warns `sketch_under_constrained` for added, edited, or parameter-driven sketches that keep degrees of freedom | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

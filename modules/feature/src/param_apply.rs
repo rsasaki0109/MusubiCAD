@@ -27,6 +27,18 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
     Ok(())
 }
 
+/// Solve a copy of `sketch` with the parameter `values` (metres / radians by
+/// name) and return its constraint state.  The sketch itself is unchanged.
+pub fn sketch_solve_state(
+    sketch: &Sketch,
+    values: &IndexMap<String, f64>,
+) -> Result<opencad_sketch::SolveState> {
+    let mut copy = sketch.clone();
+    resolve_sketch_constraints(&mut copy, values)?;
+    solve_sketch(&mut copy, &SolverOptions::default())?;
+    Ok(copy.solve_state)
+}
+
 pub fn apply_feature_parameters(
     model: &mut PartModel,
     values: &indexmap::IndexMap<String, f64>,
