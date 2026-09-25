@@ -6,6 +6,7 @@
 pub mod backend;
 pub mod convert;
 pub mod ffi;
+pub mod step;
 pub mod store;
 
 pub use backend::OcctGeometryKernel;

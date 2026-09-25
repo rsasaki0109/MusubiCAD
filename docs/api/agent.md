@@ -228,6 +228,22 @@ opencad regen bracket.ocad.d --sync-topo-refs
 }
 ```
 
+The output extension selects the format:
+
+| Extension | Format | Source |
+|---|---|---|
+| `.stl` | Binary STL mesh | Part or assembly |
+| `.step` / `.stp` | STEP (ISO 10303-21, AP214) B-rep in millimetres | Part (active body) or assembly (every placed instance, with mates solved) |
+| `.svg` | Drawing sheet | Drawing |
+
+STEP output is deterministic: the header time stamp is fixed at
+`1970-01-01T00:00:00` and the product is named `MusubiCAD`. For STEP,
+`triangles` is `0` and `bytes` reports the file size:
+
+```json
+{ "format": "step", "triangles": 0, "output": "bracket.step", "bytes": 137102 }
+```
+
 ### `RegenResult`
 
 ```json

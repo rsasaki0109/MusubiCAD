@@ -21,16 +21,21 @@ pub use opencad_desktop::tessellate_active_body_detailed;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExportSummary {
     pub format: String,
+    /// Triangles written (STL), drawing segments (SVG), or 0 (STEP).
     pub triangles: usize,
     pub output: String,
+    /// Bytes written, for formats without a triangle count (STEP).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bytes: Option<usize>,
 }
 
 pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
     match Path::new(output).extension().and_then(|ext| ext.to_str()) {
         Some("stl") => export_stl(input, output),
         Some("svg") => export_svg(input, output),
+        Some("step" | "stp") => export_step(input, output),
         _ => Err(OpenCadError::validation(
-            "export output must use .stl or .svg extension",
+            "export output must use .stl, .step/.stp, or .svg extension",
         )),
     }
 }
@@ -63,6 +68,7 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
         format: "stl".into(),
         triangles: mesh.triangle_count(),
         output: output.to_string(),
+        bytes: None,
     })
 }
 
@@ -82,7 +88,68 @@ pub fn export_svg(input: &str, output: &str) -> Result<ExportSummary> {
         format: "svg".into(),
         triangles: segments,
         output: output.to_string(),
+        bytes: None,
     })
+}
+
+/// Export a part or assembly as millimetre STEP (AP214) B-rep geometry.
+///
+/// Parts export their regenerated active body; assemblies export every
+/// placed instance as one compound.  Output is deterministic.
+pub fn export_step(input: &str, output: &str) -> Result<ExportSummary> {
+    let doc = read_ocad(input)?;
+    if doc.drawing.is_some() {
+        return Err(OpenCadError::validation(
+            "drawings export as SVG; STEP export needs a part or assembly",
+        ));
+    }
+
+    #[cfg(feature = "occt")]
+    {
+        use opencad_geometry::GeometryKernel;
+
+        let kernel = OcctGeometryKernel::new();
+        let registry = FeatureRegistry::with_defaults();
+        let body =
+            if let Some(assembly) = &doc.assembly {
+                let assembly_id = opencad_core::DocumentId::new(doc.metadata.id.as_str())?;
+                let report = regenerate_assembly(
+                    assembly,
+                    &assembly_id,
+                    &assembly_root(input),
+                    &kernel,
+                    &registry,
+                    &mut load_child_document,
+                )?;
+                report.scene.compound_body.ok_or_else(|| {
+                    OpenCadError::validation("assembly has no placed solid to export")
+                })?
+            } else {
+                let parameters = doc.parameters.clone();
+                let semantic_refs = doc.semantic_refs.clone();
+                let mut model = doc.into_part_model();
+                model.regenerate(&kernel, &registry, Some(&parameters), Some(&semantic_refs))?;
+                model.active_body().cloned().ok_or_else(|| {
+                    OpenCadError::validation("document has no solid body to export")
+                })?
+            };
+        let step = kernel.export_step(&body)?;
+        fs::write(output, &step).map_err(|err| OpenCadError::Other(err.to_string()))?;
+        Ok(ExportSummary {
+            format: "step".into(),
+            triangles: 0,
+            output: output.to_string(),
+            bytes: Some(step.len()),
+        })
+    }
+
+    #[cfg(not(feature = "occt"))]
+    {
+        let _ = (doc, output);
+        Err(OpenCadError::Other(
+            "STEP export requires OCCT; rebuild with --features occt".into(),
+        ))
+    }
 }
 
 pub(crate) fn render_drawing_svg(input: &str, doc: &OcadDocument) -> Result<(String, usize)> {
@@ -244,6 +311,8 @@ pub fn print_summary(summary: &ExportSummary) {
     println!("format: {}", summary.format);
     if summary.format == "svg" {
         println!("wire segments: {}", summary.triangles);
+    } else if let Some(bytes) = summary.bytes {
+        println!("bytes: {bytes}");
     } else {
         println!("triangles: {}", summary.triangles);
     }

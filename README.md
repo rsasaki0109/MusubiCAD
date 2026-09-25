@@ -179,7 +179,7 @@ transactions; `modules/render` consumes disposable tessellation. See the
   assembly components/instances/mates, and drawing sheets/views/dimensions through `DesignPatch`
 - **MCP server:** `opencad mcp` exposes inspection, authoring, dry-run, review, and apply to agent hosts
 - **Git-native review:** deterministic JSON/HTML/GIF artifacts, policy checks, patch rebase, three-way semantic merge
-- **Headless output:** PNG/GIF rendering plus STL and SVG export
+- **Headless output:** PNG/GIF rendering plus STEP (millimetre B-rep), STL, and SVG export
 
 Every desktop UI command is also available through the CLI or Agent API. See the
 [Agent API reference](docs/api/agent.md) and
