@@ -157,8 +157,12 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
         &combined_bounds,
         REVIEW_WIDTH_PX as f32 / REVIEW_HEIGHT_PX as f32,
     );
-    let before_image = render_review_image(&renderer, &before_scene, &camera)?;
     let after_image = render_review_image(&renderer, &after_scene, &camera)?;
+    let before_image = if before_scene.meshes.is_empty() {
+        blank_like(&after_image)
+    } else {
+        render_review_image(&renderer, &before_scene, &camera)?
+    };
     let expected_effects = check_expected_effects(
         &patch.expected_effects,
         &before,
@@ -255,6 +259,12 @@ fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option
             })?)?;
         return Ok((data.scene, None));
     }
+    // A part authored from an empty document has no body before the patch;
+    // review it against an empty scene.  A part that has features but no body
+    // is still an error.
+    if doc.feature_nodes.is_empty() {
+        return Ok((RenderScene::empty()?, None));
+    }
     let parameters = doc.parameters.clone();
     let refs = doc.semantic_refs.clone();
     let mut model = doc.clone().into_part_model();
@@ -322,6 +332,22 @@ fn document_assertion_results(doc: &OcadDocument) -> Vec<AssertionResult> {
         interference_count: None,
     };
     evaluate_assertions(&doc.assertions, &context)
+}
+
+/// A frame of `image`'s size filled with its top-left (background) pixel,
+/// used as the "before" view of a design that had no body yet.
+fn blank_like(image: &RenderImage) -> RenderImage {
+    let background: [u8; 4] = image
+        .rgba
+        .get(0..4)
+        .and_then(|pixel| pixel.try_into().ok())
+        .unwrap_or([0, 0, 0, 255]);
+    RenderImage {
+        width: image.width,
+        height: image.height,
+        rgba: background.repeat((image.width * image.height) as usize),
+        non_background_pixels: 0,
+    }
 }
 
 fn render_review_image(

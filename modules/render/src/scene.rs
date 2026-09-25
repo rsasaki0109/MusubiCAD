@@ -42,7 +42,16 @@ impl BoundingBox {
         }
     }
 
+    /// Whether no point has been included yet.
+    pub fn is_empty(&self) -> bool {
+        (0..3).any(|axis| self.min[axis] > self.max[axis])
+    }
+
     pub fn merge(&mut self, other: &Self) {
+        // Merging an empty box must not widen this one to infinity.
+        if other.is_empty() {
+            return;
+        }
         self.include(other.min);
         self.include(other.max);
     }
@@ -115,6 +124,16 @@ impl RenderScene {
 
     pub fn from_mesh_set(mesh_set: &MeshSet) -> Result<Self> {
         Self::from_mesh_sets(std::slice::from_ref(mesh_set))
+    }
+
+    /// A scene with no geometry, such as a design that has no body yet.
+    pub fn empty() -> Result<Self> {
+        let bounds = BoundingBox::empty();
+        Ok(Self {
+            meshes: Vec::new(),
+            face_catalog: FaceCatalog::from_meshes(&[], &bounds)?,
+            bounds,
+        })
     }
 
     pub fn triangle_count(&self) -> usize {
