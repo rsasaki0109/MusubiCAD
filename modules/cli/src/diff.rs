@@ -237,6 +237,27 @@ fn print_change(change: &SemanticChange) {
         SemanticChange::AssertionChanged { id, before, after } => {
             println!("  assertion {id}: {before} -> {after}");
         }
+        SemanticChange::FeatureMoved { id, before, after } => {
+            println!("  feature moved {id}: position {before} -> {after}");
+        }
+        SemanticChange::SketchAdded { id } => {
+            println!("  sketch added {id}");
+        }
+        SemanticChange::SketchRemoved { id } => {
+            println!("  sketch removed {id}");
+        }
+        SemanticChange::SketchEntityAdded { sketch_id, id } => {
+            println!("  sketch entity added {sketch_id}/{id}");
+        }
+        SemanticChange::SketchEntityRemoved { sketch_id, id } => {
+            println!("  sketch entity removed {sketch_id}/{id}");
+        }
+        SemanticChange::SketchConstraintAdded { sketch_id, id } => {
+            println!("  sketch constraint added {sketch_id}/{id}");
+        }
+        SemanticChange::SketchConstraintRemoved { sketch_id, id } => {
+            println!("  sketch constraint removed {sketch_id}/{id}");
+        }
     }
 }
 

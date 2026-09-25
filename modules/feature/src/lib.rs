@@ -7,6 +7,7 @@ pub mod extrude;
 pub mod face_discover;
 pub mod feature;
 pub mod fillet;
+pub mod graph_derive;
 pub mod hole;
 pub mod param_apply;
 pub mod pattern;
@@ -22,6 +23,7 @@ pub use chamfer::{ChamferFeature, ChamferFeatureExecutor};
 pub use extrude::{ExtrudeFeature, ExtrudeFeatureExecutor};
 pub use feature::{Feature, FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
 pub use fillet::{FilletFeature, FilletFeatureExecutor};
+pub use graph_derive::derive_feature_graph;
 pub use hole::{HoleFeature, HoleFeatureExecutor};
 pub use param_apply::apply_parameters;
 pub use pattern::{
@@ -40,6 +42,6 @@ pub use registry::FeatureRegistry;
 pub use revolve::{RevolveFeature, RevolveFeatureExecutor};
 pub use sketch_bridge::{
     extrude_direction_for_sketch, placement_from_workplane, prepare_sketch, profile_to_solved,
-    profile_to_solved_with_context,
+    profile_to_solved_with_context, resolve_sketch_profile,
 };
 pub use sketch_feature::{SketchFeature, SketchFeatureDef};

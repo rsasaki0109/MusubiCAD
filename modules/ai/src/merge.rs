@@ -17,6 +17,8 @@ pub enum ConflictKind {
     Assembly,
     Drawing,
     Assertion,
+    Sketch,
+    SemanticReference,
     UnsupportedStructure,
 }
 
@@ -227,7 +229,11 @@ pub fn rebase_patch(
                     *expr = current.expr.clone();
                 }
             }
-            PatchPrecondition::FeatureExists { .. } | PatchPrecondition::TopoRefExists { .. } => {}
+            PatchPrecondition::FeatureExists { .. }
+            | PatchPrecondition::TopoRefExists { .. }
+            | PatchPrecondition::SketchExists { .. }
+            | PatchPrecondition::SketchEntityExists { .. }
+            | PatchPrecondition::AssertionExists { .. } => {}
         }
     }
     Ok(rebased)
@@ -248,6 +254,41 @@ fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
             (ConflictKind::Assertion, assertion.id.clone())
         }
         PatchOperation::RemoveAssertion { id } => (ConflictKind::Assertion, id.clone()),
+        PatchOperation::AddSketch { id, .. } | PatchOperation::RemoveSketch { id } => {
+            (ConflictKind::Sketch, id.clone())
+        }
+        PatchOperation::AddFeature { node, .. } => (ConflictKind::Feature, node.id.clone()),
+        PatchOperation::RemoveFeature { id }
+        | PatchOperation::MoveFeature { id, .. }
+        | PatchOperation::SetFeatureSuppressed { id, .. }
+        | PatchOperation::ReplaceFeatureDefinition { id, .. } => {
+            (ConflictKind::Feature, id.clone())
+        }
+        PatchOperation::AddSemanticRef { topo_ref } => (
+            ConflictKind::SemanticReference,
+            topo_ref.ref_id.as_str().to_string(),
+        ),
+        PatchOperation::RemoveSemanticRef { ref_id } => {
+            (ConflictKind::SemanticReference, ref_id.clone())
+        }
+        PatchOperation::AddSketchEntity { sketch_id, entity } => {
+            (ConflictKind::Sketch, format!("{sketch_id}/{}", entity.id()))
+        }
+        PatchOperation::RemoveSketchEntity {
+            sketch_id,
+            entity_id,
+        } => (ConflictKind::Sketch, format!("{sketch_id}/{entity_id}")),
+        PatchOperation::AddSketchConstraint {
+            sketch_id,
+            constraint,
+        } => (
+            ConflictKind::Sketch,
+            format!("{sketch_id}/{}", constraint.id()),
+        ),
+        PatchOperation::RemoveSketchConstraint {
+            sketch_id,
+            constraint_id,
+        } => (ConflictKind::Sketch, format!("{sketch_id}/{constraint_id}")),
         PatchOperation::SetFeatureExpr { feature_id, .. }
         | PatchOperation::SetFeatureRef { feature_id, .. } => {
             (ConflictKind::Feature, feature_id.clone())
@@ -268,6 +309,26 @@ fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
         }
     };
     Some(PatchTarget { kind, id })
+}
+
+/// A feature node with its display position, so a concurrent move of the
+/// same feature is observed as a change.
+fn feature_with_position<'a>(
+    state: &'a DesignState,
+    id: &str,
+) -> Option<(&'a FeatureNode, Option<usize>)> {
+    state
+        .feature_nodes
+        .iter()
+        .find(|node| node.id == id)
+        .map(|node| (node, state.feature_order.iter().position(|item| item == id)))
+}
+
+fn find_sketch<'a>(state: &'a DesignState, id: &str) -> Option<&'a opencad_sketch::Sketch> {
+    state
+        .sketches
+        .iter()
+        .find(|sketch| sketch.id.as_str() == id)
 }
 
 #[derive(Debug, Clone)]
@@ -292,6 +353,58 @@ fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSna
         PatchOperation::RemoveAssertion { id } => {
             snapshot(state.assertions.iter().find(|item| item.id == *id))
         }
+        PatchOperation::AddSketch { id, .. } | PatchOperation::RemoveSketch { id } => {
+            snapshot(find_sketch(state, id))
+        }
+        PatchOperation::AddFeature { node, .. } => {
+            snapshot(feature_with_position(state, &node.id).as_ref())
+        }
+        PatchOperation::RemoveFeature { id }
+        | PatchOperation::MoveFeature { id, .. }
+        | PatchOperation::SetFeatureSuppressed { id, .. }
+        | PatchOperation::ReplaceFeatureDefinition { id, .. } => {
+            snapshot(feature_with_position(state, id).as_ref())
+        }
+        PatchOperation::AddSemanticRef { topo_ref } => snapshot(
+            state
+                .semantic_refs
+                .iter()
+                .find(|item| item.ref_id == topo_ref.ref_id),
+        ),
+        PatchOperation::RemoveSemanticRef { ref_id } => snapshot(
+            state
+                .semantic_refs
+                .iter()
+                .find(|item| item.ref_id.as_str() == ref_id),
+        ),
+        PatchOperation::AddSketchEntity { sketch_id, entity } => snapshot(
+            find_sketch(state, sketch_id)
+                .and_then(|sketch| sketch.find_entity(entity.id().as_str())),
+        ),
+        PatchOperation::RemoveSketchEntity {
+            sketch_id,
+            entity_id,
+        } => {
+            snapshot(find_sketch(state, sketch_id).and_then(|sketch| sketch.find_entity(entity_id)))
+        }
+        PatchOperation::AddSketchConstraint {
+            sketch_id,
+            constraint,
+        } => snapshot(find_sketch(state, sketch_id).and_then(|sketch| {
+            sketch
+                .constraints
+                .iter()
+                .find(|item| item.id() == constraint.id())
+        })),
+        PatchOperation::RemoveSketchConstraint {
+            sketch_id,
+            constraint_id,
+        } => snapshot(find_sketch(state, sketch_id).and_then(|sketch| {
+            sketch
+                .constraints
+                .iter()
+                .find(|item| item.id().as_str() == constraint_id)
+        })),
         PatchOperation::SetFeatureExpr { feature_id, .. }
         | PatchOperation::SetFeatureRef { feature_id, .. } => snapshot(
             state

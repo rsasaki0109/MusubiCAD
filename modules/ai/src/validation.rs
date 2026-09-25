@@ -62,6 +62,16 @@ pub fn dry_run_patch_state_with_context(
     };
 
     let diff = DesignDiff::semantic(summary, diff.changes);
+    // A patch that changes Feature Graph inputs is predicted against the
+    // derived candidate graph, so added features appear in the dirty suffix.
+    let derived_graph = patch
+        .changes_feature_graph()
+        .then(|| after.derive_feature_graph().ok())
+        .flatten();
+    let context = ImpactContext {
+        feature_graph: derived_graph.as_ref().or(context.feature_graph),
+        sketches: context.sketches,
+    };
     let impact = predict_change_impact(before, &after, &diff, context);
     PatchDryRunReport {
         validation,

@@ -1,0 +1,37 @@
+{
+  "intent": "Sketch a circular boss outline on the bracket",
+  "rationale": "A later extrude will join the boss to the base plate; the radius tracks the mounting hole size",
+  "operations": [
+    {
+      "type": "add_sketch",
+      "id": "sketch:boss",
+      "name": "Boss Sketch",
+      "workplane": { "type": "global", "plane": "XY" }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:boss",
+      "entity": { "type": "point", "id": "ent:boss_center", "x": 0.04, "y": 0.03 }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:boss",
+      "entity": {
+        "type": "circle",
+        "id": "ent:boss_circle",
+        "center": "ent:boss_center",
+        "radius": "hole_diameter"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:boss",
+      "constraint": {
+        "type": "radius",
+        "id": "con:boss_radius",
+        "target": "ent:boss_circle",
+        "expr": "hole_diameter"
+      }
+    }
+  ]
+}

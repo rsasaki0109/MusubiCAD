@@ -3,14 +3,17 @@
 pub mod agent_api;
 pub mod assembly;
 pub mod assertions;
+pub mod authoring;
 pub mod drawing;
 pub mod explain;
+pub mod feature_patch;
 pub mod impact;
 pub mod intent;
 pub mod merge;
 pub mod patch;
 pub mod policy;
 pub mod query;
+pub mod sketch_patch;
 pub mod state;
 pub mod validation;
 
@@ -26,11 +29,13 @@ pub use assertions::{
     evaluate_assertion, evaluate_assertions, required_assertions_pass, AssertionContext,
     AssertionResult,
 };
+pub use authoring::authoring_patch;
 pub use drawing::{
     diff_drawing_models, get_drawing_sheet, get_drawing_view, list_drawing_sheets,
     list_drawing_views,
 };
 pub use explain::{explain_design, DesignExplanation, ExplainParams};
+pub use feature_patch::{FeatureOrderEnd, FeaturePosition};
 pub use impact::{
     predict_change_impact, ChangeImpact, ChangedInput, ChangedInputKind, ImpactContext,
     CHANGE_IMPACT_VERSION,

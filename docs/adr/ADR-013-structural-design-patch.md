@@ -65,16 +65,30 @@ this ADR does not introduce new numeric fields.
 | | `move_feature` | `id`, `position` |
 | | `set_feature_suppressed` | `id`, `suppressed` |
 | | `replace_feature_definition` | `id`, `definition` (same `feature_type` only) |
-| References | `remove_semantic_ref` | `ref_id` |
+| References | `add_semantic_ref` | `topo_ref` (existing `TopoRef` JSON) |
+| | `remove_semantic_ref` | `ref_id` |
 | Assertions | `add_assertion` | `assertion` (existing `Assertion` JSON) |
 | | `remove_assertion` | `id` |
 
-`position` is one of `{"at": "end"}`, `{"after": "<feature id>"}`, or
-`{"before": "<feature id>"}`.
+`position` is one of `{"at": "start"}`, `{"at": "end"}`,
+`{"after": "<feature id>"}`, or `{"before": "<feature id>"}`.
+
+`add_semantic_ref` exists because `assign_face_ref` can only author face
+references; rebuilding an existing part also needs edge references with their
+full stored shape. Semantic reference IDs keep their existing `ref:` form
+rather than the grammar in section 2.
 
 Structural assembly operations (add/remove component instance and mate) and
 drawing operations (add/remove view) use the same rules and are specified in a
 follow-up slice of this ADR's roadmap task rather than a new ADR.
+
+Sketch `profiles` and `solve_state` are derived data. Every sketch a patch
+touches has its profiles re-detected from its entities and its solve state
+reset to `unknown`; regeneration re-solves it. Final-state validation checks
+profile consumers with the same `profile_ref` lookup that regeneration uses, on
+a prepared copy of the sketch, so a patch that opens an extruded outline is
+rejected before any kernel call. Rectangle `corner_ids` and `edge_ids` are
+author-chosen and share the sketch's entity-ID namespace.
 
 Rename operations are intentionally absent. IDs are identities; a display
 `name` can change through a future `set_*_name` operation without touching
@@ -101,10 +115,13 @@ helper is not part of patch semantics.
 
 ### 3. Sequential staging, whole-candidate validation
 
-Operations apply in order to the single staged candidate already used by
-`build_patch_candidate`. Each operation performs only **local** checks: the
-payload deserializes and validates on its own, the object it mutates or removes
-exists, and a created ID is free.
+Operations apply to the single staged candidate already used by
+`build_patch_candidate`. Structural sketch, feature, and reference operations
+are staged first, in patch order, followed by the existing value-edit
+operations, so a value edit may target an object created by the same patch.
+Each operation performs only **local** checks: the payload deserializes and
+validates on its own, the object it mutates or removes exists, and a created ID
+is free.
 
 **Referential and structural validation runs once, on the final candidate,**
 before commit:
@@ -130,23 +147,38 @@ input and is part of validation, not transport.
 
 ### 4. The feature graph is derived, not authored
 
-`feature_nodes` order is the authored construction order. `feature_graph.edges`
-and `feature_graph.order` become a **derived projection** computed from
-`feature_nodes` by one pure function in `modules/graph`:
+Documents store `feature_nodes` sorted by ID; the authored construction
+(display) order is `feature_graph.order`. That order is the only independent
+input of the persisted Feature Graph, so `DesignState` carries it as
+`feature_order` (section 6). `feature_graph.edges` and its entries become a
+**derived projection** computed by one pure function,
+`opencad_feature::derive_feature_graph` (it lives in `modules/feature` because
+it reads `FeatureDefinition`):
 
-- edges are produced from each definition's declared inputs, in feature order,
-  then input-field order, with duplicates removed;
-- `order` equals the `feature_nodes` order;
+- entries follow `feature_order` and copy each node's name, type, and
+  suppression;
+- edges come from each definition's `sketch_feature`, `source_feature`, and
+  `target_feature` inputs, emitted in display order of the consuming feature
+  and then that field order, with duplicates removed;
+- a consumed semantic reference (`face_ref`, `edge_ref`, `plane_face_ref`, or
+  the `face_ref` workplane of a consumed sketch) adds an edge from its
+  `created_by` feature only when that feature is not already upstream through
+  direct inputs. A sketch's workplane reference belongs to the sketch's
+  consumer, because the geometry-free sketch feature never resolves it;
 - the function is the only writer of `feature_graph`; patches cannot set it.
+  The file layer re-derives the persisted graph only when a patch changes
+  Feature Graph inputs, so value edits never rewrite `graph/features.json`.
+
+Regeneration order depends only on the edge set: the topological sort
+re-sorts ready nodes by ID after every step. Edge order is therefore cosmetic.
+The derivation reproduces the order, entries, and edge set of every checked-in
+part example; eight match byte-for-byte, and five pattern templates list their
+two pattern inputs target-first. Those five goldens are left unchanged rather
+than regenerated (`modules/file/tests/feature_graph_derivation.rs`).
 
 `add_feature` and `move_feature` place the node at `position`. If the result
-places a feature before any of its inputs, validation fails and names the first
+places a feature before any of its inputs, validation fails and names every
 violating edge. There is no automatic reordering.
-
-Before this derivation is switched on, the implementation must prove that it
-reproduces the persisted `feature_graph` of every checked-in example and fixture
-byte-for-byte. A disagreement is a bug in either the derivation or the fixture
-and must be resolved explicitly, not by regenerating goldens.
 
 ### 5. Removal fails closed and never cascades
 
@@ -166,14 +198,17 @@ it cannot explain rather than repairing it silently.
 
 ### 6. `DesignState` v2 and revision preconditions
 
-`DesignState` gains `sketches` and `assertions`. It does not carry
-`feature_graph`: section 4 makes it a pure function of `feature_nodes`, so
-hashing it would add no information and would couple the digest to the
+`DesignState` gains `sketches`, `assertions`, and `feature_order`. It does
+not carry the rest of `feature_graph`: section 4 makes its entries and edges a
+pure function of `feature_nodes`, `feature_order`, sketches, and references, so
+hashing them would add no information and would couple the digest to the
 derivation code. The canonical revision representation becomes
 `musubicad.design-state.v2`, using the same envelope, key canonicalization,
-and SHA-256 rules as ADR-008. v2 always serializes both new arrays, even when
-empty; v1 bytes remain byte-identical to ADR-008, so recorded v1 digests keep
-verifying.
+and SHA-256 rules as ADR-008. v2 always serializes the three new arrays, even
+when empty; v1 bytes remain byte-identical to ADR-008, so recorded v1 digests
+keep verifying. Feature operations require `feature_order` to list every
+feature; in-memory callers that do not transport it are refused rather than
+given an invented order.
 
 - `RevisionEquals` with version `v2` is verified against the v2 canonical bytes.
 - `RevisionEquals` with version `v1` is still accepted, but **only** for patches
@@ -188,9 +223,11 @@ verifying.
 
 - `DesignDiff` reports `added`, `removed`, and `moved` entries per kind with
   stable IDs, in sorted order, in addition to today's value changes. The review
-  HTML and GitHub summary render them. `ChangeImpact` treats an added or moved
-  feature, and every feature after it, as dirty; a removed feature dirties its
-  former downstream suffix.
+  HTML and GitHub summary render them. `ChangeImpact` is predicted against the
+  derived candidate graph: an added or replaced feature dirties itself and its
+  dependency suffix. A removed feature has no remaining consumers (section 5).
+  A move changes only the display order and dirties nothing, because
+  regeneration order depends only on dependencies (section 4).
 - `rebase_patch` extends conflict detection:
   - an add whose ID now exists with different canonical content produces an
     `add_add` conflict; identical content rebases to a no-op;
@@ -228,8 +265,11 @@ field is added.
   No new geometry operation is introduced, so the ADR-012 admission gate is not
   triggered.
 - The work stays within the existing module rules: operation types and
-  validation live in `modules/ai`; graph derivation lives in `modules/graph`;
-  `modules/file` persists the result; no OCCT types are involved.
+  validation live in `modules/ai`; graph derivation lives in `modules/feature`
+  next to the definitions it reads; `modules/file` persists the result; no
+  OCCT types are involved.
+- `opencad_ai::authoring_patch` expresses an existing part as one structural
+  patch. It is the executable form of the rebuild acceptance test.
 
 ## Alternatives considered
 
@@ -264,13 +304,17 @@ Each slice is one PR with its own tests and docs:
 
 ## Acceptance evidence
 
-- **Rebuild from nothing.** Starting from an empty part document, one patch
-  per slice-4 capability rebuilds `examples/bracket.ocad.d`. The resulting
-  `graph/*.json` must equal the checked-in files as canonical bytes.
-- **The flagship through patches.** The 22-node `robot_joint_actuator` Feature
-  Graph is reproduced by a checked-in patch sequence, and its regenerated mass
-  and bounds match the P5-005 golden within the existing unit-labelled
-  tolerances (OCCT integration test).
+- **Rebuild from nothing.** Starting from an empty part document, the patch
+  produced by `authoring_patch` rebuilds `examples/bracket.ocad.d`. Every
+  serialized file equals the checked-in bytes except `graph/sketches.json`,
+  whose derived solve state is compared semantically, and the checksum
+  manifest that digests it (delivered).
+- **The flagship through patches.** Every part example, including the 22-node
+  `robot_joint_actuator`, is rebuilt the same way. Source data matches
+  exactly, the Feature Graph matches up to cosmetic edge order, and OCCT
+  regeneration of the rebuilt document matches the checked-in document's
+  volume within `1e-12 m³` and bounds within `1e-9 m` (delivered:
+  `modules/file/tests/authoring_rebuild.rs`, an OCCT integration test).
 - **Atomicity.** For every new operation, a failure-injection test proves that
   a failing final validation leaves the document, history, and revision digest
   unchanged.

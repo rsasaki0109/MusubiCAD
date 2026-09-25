@@ -21,16 +21,18 @@ pub const DESIGN_STATE_REVISION_VERSION: &str = DESIGN_STATE_REVISION_VERSION_V2
 /// Legacy representation covering parameters, feature nodes, semantic
 /// references, assembly, and drawing only (ADR-008).
 pub const DESIGN_STATE_REVISION_VERSION_V1: &str = "musubicad.design-state.v1";
-/// Representation that also covers sketches and design assertions (ADR-013).
+/// Representation that also covers sketches, design assertions, and the
+/// authored feature display order (ADR-013).
 pub const DESIGN_STATE_REVISION_VERSION_V2: &str = "musubicad.design-state.v2";
 
 /// Fields that exist only in the v2 canonical representation.
-const V2_ONLY_FIELDS: [&str; 2] = ["assertions", "sketches"];
+const V2_ONLY_FIELDS: [&str; 3] = ["assertions", "feature_order", "sketches"];
 
 /// Serializable design intent used by in-memory agent operations.
 ///
-/// The persisted `feature_graph` is intentionally absent: it is a projection
-/// of `feature_nodes` and carries no independent intent (ADR-013).
+/// The persisted `feature_graph` is intentionally absent: its entries and
+/// edges are a projection of `feature_nodes`, and its only independent input,
+/// the authored display order, is carried as `feature_order` (ADR-013).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct DesignState {
     pub parameters: ParamGraph,
@@ -42,6 +44,10 @@ pub struct DesignState {
     pub sketches: Vec<Sketch>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub assertions: Vec<Assertion>,
+    /// Authored feature display order.  Empty for in-memory callers that do
+    /// not transport it; feature operations then refuse to run.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub feature_order: Vec<String>,
 }
 
 /// Compute the deterministic revision for the complete state exposed to
@@ -91,6 +97,10 @@ pub fn canonical_design_state_bytes_for_version(
             canonical_state.insert(
                 "assertions".into(),
                 serde_json::to_value(&state.assertions)?,
+            );
+            canonical_state.insert(
+                "feature_order".into(),
+                serde_json::to_value(&state.feature_order)?,
             );
         }
         other => {
@@ -142,6 +152,7 @@ impl DesignState {
             drawing: None,
             sketches: Vec::new(),
             assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
     }
 
@@ -158,6 +169,7 @@ impl DesignState {
             drawing: None,
             sketches: Vec::new(),
             assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
     }
 
@@ -175,6 +187,7 @@ impl DesignState {
             drawing: None,
             sketches: Vec::new(),
             assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
     }
 
@@ -193,6 +206,7 @@ impl DesignState {
             drawing,
             sketches: Vec::new(),
             assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
     }
 
@@ -201,6 +215,21 @@ impl DesignState {
         self.sketches = sketches;
         self.assertions = assertions;
         self
+    }
+
+    /// Attach the authored feature display order (ADR-013).
+    pub fn with_feature_order(mut self, feature_order: Vec<String>) -> Self {
+        self.feature_order = feature_order;
+        self
+    }
+
+    /// Derive this state's Feature Graph (ADR-013 §4).
+    pub fn derive_feature_graph(&self) -> Result<opencad_graph::FeatureGraph> {
+        crate::feature_patch::derived_feature_graph(self).unwrap_or_else(|| {
+            Err(OpenCadError::validation(
+                "feature order must list every feature node exactly once",
+            ))
+        })
     }
 }
 
@@ -223,6 +252,14 @@ pub fn diff_design_state(before: &DesignState, after: &DesignState) -> DesignDif
         changes.extend(crate::drawing::diff_drawing_models(before_drawing, after_drawing).changes);
     }
     changes.extend(diff_assertions(&before.assertions, &after.assertions));
+    changes.extend(crate::feature_patch::diff_feature_order(
+        &before.feature_order,
+        &after.feature_order,
+    ));
+    changes.extend(crate::sketch_patch::diff_sketches(
+        &before.sketches,
+        &after.sketches,
+    ));
     DesignDiff::semantic(build_summary(&changes), changes)
 }
 

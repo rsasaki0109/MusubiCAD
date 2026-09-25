@@ -331,8 +331,10 @@ See `examples/agent/plane_face_ref_patch.json`.
 ### Structural operations (ADR-013)
 
 Structural operations create or remove Design Graph objects instead of editing
-existing values. MCAD-P7-001 currently delivers parameters and design
-assertions; sketches and features follow in later slices.
+existing values. MCAD-P7-001 delivers parameters, design assertions,
+sketches, features, and semantic references, so a complete part can be authored
+from an empty document; assembly and drawing structure follows in a later
+slice.
 
 | type | fields | effect |
 |---|---|---|
@@ -340,22 +342,74 @@ assertions; sketches and features follow in later slices.
 | `remove_parameter` | `id` | Remove a parameter and its dependency edges |
 | `add_assertion` | `assertion` (the `graph/assertions.json` entry shape) | Create a design assertion |
 | `remove_assertion` | `id` | Remove a design assertion |
+| `add_sketch` | `id`, `name`, `workplane` | Create an empty sketch |
+| `remove_sketch` | `id` | Remove a sketch no sketch feature uses |
+| `add_sketch_entity` | `sketch_id`, `entity` (the `graph/sketches.json` entity shape) | Add a point, line, circle, arc, or rectangle |
+| `remove_sketch_entity` | `sketch_id`, `entity_id` | Remove an entity nothing references |
+| `add_sketch_constraint` | `sketch_id`, `constraint` (the `graph/sketches.json` constraint shape) | Add a sketch constraint |
+| `remove_sketch_constraint` | `sketch_id`, `constraint_id` | Remove a sketch constraint |
+| `add_feature` | `node` (the `graph/features.json` node shape), `position` | Create a feature in the display order |
+| `remove_feature` | `id` | Remove a feature nothing consumes |
+| `move_feature` | `id`, `position` | Move a feature in the display order |
+| `set_feature_suppressed` | `id`, `suppressed` | Suppress or unsuppress a feature |
+| `replace_feature_definition` | `id`, `definition` | Replace a definition with one of the same feature type |
+| `add_semantic_ref` | `topo_ref` (the `graph/semantic_refs.json` entry shape) | Create a semantic topology reference |
+| `remove_semantic_ref` | `ref_id` | Remove a semantic reference nothing consumes |
+
+`position` is `{"at": "start"}`, `{"at": "end"}`, `{"after": "<feature id>"}`,
+or `{"before": "<feature id>"}`, resolved against the order at that point in
+the patch.
 
 Rules shared by every structural operation:
 
 - **Author-chosen IDs.** The patch names every new object. IDs match
-  `<prefix>:[a-z0-9_]+(.[a-z0-9_]+)*`, at most 128 bytes (`param:` for
-  parameters, `assertion:` for assertions). An existing ID, or one removed
-  earlier in the same patch, is rejected. Parameter names must be unique
-  expression identifiers.
-- **Final-state validation.** Operations apply in order to one staged
-  candidate. References are checked once, on the final state, so a patch may
-  add parameters that refer to each other in any order, or remove a parameter
-  and rewrite its consumers in the same patch.
+  `<prefix>:[a-z0-9_]+(.[a-z0-9_]+)*`, at most 128 bytes (`param:`,
+  `assertion:`, `sketch:`, `ent:`, `con:`, `feature:`). Semantic reference IDs
+  keep their existing `ref:` form. Rectangle `corner_ids` and
+  `edge_ids` follow the same rule and share the sketch's entity namespace. An
+  existing ID, or one removed earlier in the same patch, is rejected.
+  Parameter names must be unique expression identifiers.
+- **Final-state validation.** Operations apply to one staged candidate.
+  Structural sketch, feature, and reference operations are staged first, in
+  patch order, followed by value edits, so a value edit may target an object
+  the same patch creates. References are checked once, on the final state, so
+  a patch may add objects that refer to each other in any order, or remove an
+  object together with its consumers.
 - **No cascading removal.** Removing a parameter whose name is still used fails
   and lists every dependent in sorted order (`assertion …`, `feature …`,
   `parameter …`, `sketch …`). Added `parameter_range` and `required_reference`
   assertions must name an existing parameter or semantic reference.
+- **Sketch integrity.** In every sketch the patch touches, line endpoints and
+  circle/arc centers must name point entities (or rectangle corners),
+  constraints must name existing entities, dimensions must keep their
+  constraint, every coordinate and constraint expression must use existing
+  parameters, and a `face_ref` workplane must name an existing semantic
+  reference. A sketch still used by a sketch feature cannot be removed.
+- **Profiles stay consumable.** Every extrude, hole, and revolve whose sketch
+  was touched must still resolve its `profile_ref` to a closed profile, using
+  the same lookup as regeneration. Removing an edge of an extruded outline is
+  therefore rejected at dry-run, before any kernel call.
+- **Derived sketch data.** A touched sketch's `profiles` are re-detected from
+  its entities and its `solve_state` is reset to `unknown`; regeneration solves
+  it again. Custom workplanes must be finite, with normal and x axis at least
+  `1e-9` long and perpendicular within `|cos| <= 1e-6` (dimensionless).
+- **Derived Feature Graph.** `graph/features.json` edges and entries are
+  never authored. They are derived from each definition's
+  `sketch_feature`/`source_feature`/`target_feature` inputs, plus the creator
+  of every consumed semantic reference (including a consumed sketch's
+  `face_ref` workplane) when that creator is not already upstream. A patch is
+  rejected when an input names an unknown feature, when dependencies form a
+  cycle, or when the display order places a feature before one of its inputs.
+  The persisted graph is re-derived only when a patch adds, removes, moves,
+  suppresses, or replaces a feature, or adds or removes a semantic reference;
+  value edits never rewrite it.
+- **Features stay regenerable.** Added or replaced features must reference an
+  existing sketch, existing semantic references, and existing parameters, and
+  every extrude, hole, and revolve must resolve its `profile_ref` to a closed
+  profile. Removing a feature or semantic reference that anything still
+  consumes fails and lists every consumer. Feature operations need the
+  authored display order, so in-memory `opencad.patch_*` requests without it
+  are rejected.
 - **Limits.** A patch holds at most 10,000 operations.
 - **Complete state required.** Structural operations run only through
   `build_patch_candidate` / `DesignPatch::apply_to_state` and the document,
@@ -382,13 +436,35 @@ Rules shared by every structural operation:
 }
 ```
 
-See `examples/agent/add_rib_depth_patch.json`. Parameter additions and
+See `examples/agent/add_rib_depth_patch.json`,
+`examples/agent/add_boss_sketch_patch.json`, and
+`examples/agent/add_top_fillet_feature_patch.json`. Parameter additions and
 removals appear in semantic diffs as `parameter_changed` with an empty
 `before` or `after`. Assertion changes appear as `assertion_added`,
 `assertion_removed`, or `assertion_changed`, and in change impact as an
-`assertion` input with no dirty Feature Graph nodes. Rebase reports
-concurrent changes to the same parameter or assertion ID as `parameter` or
-`assertion` conflicts.
+`assertion` input with no dirty Feature Graph nodes. Sketch changes appear as
+`sketch_added`, `sketch_removed`, `sketch_entity_added`,
+`sketch_entity_removed`, `sketch_constraint_added`, or
+`sketch_constraint_removed`; change impact reports a `sketch` input and dirties
+the consuming sketch feature and its downstream suffix. Feature additions,
+removals, and replacements appear as `feature_added`, `feature_removed`, or
+`feature_modified` and dirty the feature and its suffix in the derived
+candidate graph; `feature_moved` reports a display-order change and dirties
+nothing, because regeneration order depends only on dependencies. Rebase
+reports concurrent changes to the same parameter, assertion, sketch,
+`<sketch>/<member>`, feature, or semantic reference ID as `parameter`,
+`assertion`, `sketch`, `feature`, or `semantic_reference` conflicts; a feature
+conflict also covers a concurrent display-order change.
+
+Rust callers can express an existing part as one structural patch with
+`opencad_ai::authoring_patch(&DesignState)`. Applying it to an empty part
+document rebuilds every checked-in part example; source data matches exactly
+and derived sketch profiles and solve state are recomputed.
+
+The preconditions `sketch_exists` (`id`), `sketch_entity_exists`
+(`sketch_id`, `entity_id`), and `assertion_exists` (`id`) guard patches that
+depend on those objects. They need the complete design state, so they are
+evaluated by `build_patch_candidate` and the paths built on it.
 
 ### Assembly patch operations
 

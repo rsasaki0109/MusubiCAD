@@ -169,15 +169,20 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
 }
 
 fn find_profile<'a>(sketch: &'a Sketch, profile_ref: &str) -> Result<&'a Profile> {
-    sketch
-        .profiles
-        .iter()
-        .find(|p| {
-            p.profile_ref.as_deref() == Some(profile_ref)
-                || p.id == profile_ref
-                || format!("{}/profile:outer", sketch.id) == profile_ref
-        })
+    resolve_sketch_profile(sketch, profile_ref)
         .ok_or_else(|| OpenCadError::not_found(format!("profile '{profile_ref}'")))
+}
+
+/// Resolve a feature `profile_ref` against a prepared sketch's profiles.
+///
+/// This is the lookup used by extrude, hole, and revolve regeneration, so
+/// patch validation can prove a reference resolves before any kernel call.
+pub fn resolve_sketch_profile<'a>(sketch: &'a Sketch, profile_ref: &str) -> Option<&'a Profile> {
+    sketch.profiles.iter().find(|p| {
+        p.profile_ref.as_deref() == Some(profile_ref)
+            || p.id == profile_ref
+            || format!("{}/profile:outer", sketch.id) == profile_ref
+    })
 }
 
 fn point_coord(sketch: &Sketch, point_id: &EntityId) -> Result<[f64; 2]> {

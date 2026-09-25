@@ -50,11 +50,17 @@ pub fn document_design_state(doc: &OcadDocument) -> DesignState {
         doc.drawing.clone(),
     )
     .with_authoring(doc.sketches.clone(), doc.assertions.clone())
+    .with_feature_order(doc.feature_graph.ordered_ids().to_vec())
 }
 
 fn apply_patch_to_document_in_place(doc: &mut OcadDocument, patch: &DesignPatch) -> Result<()> {
     let state = document_design_state(doc);
     let next = build_patch_candidate(&state, patch)?;
+    // The persisted Feature Graph is re-derived only when its inputs change,
+    // so value edits never rewrite `graph/features.json` edge order.
+    if patch.changes_feature_graph() {
+        doc.feature_graph = next.derive_feature_graph()?;
+    }
     doc.parameters = next.parameters;
     doc.feature_nodes = next.feature_nodes;
     doc.semantic_refs = next.semantic_refs;

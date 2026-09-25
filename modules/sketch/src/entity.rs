@@ -98,6 +98,45 @@ impl SketchEntity {
         }
     }
 
+    /// Point entities this entity is built on (line endpoints, centers).
+    pub fn point_refs(&self) -> Vec<&EntityId> {
+        match self {
+            Self::Line(line) => vec![&line.start, &line.end],
+            Self::Circle(circle) => vec![&circle.center],
+            Self::Arc(arc) => vec![&arc.center],
+            Self::Point(_) | Self::Rectangle(_) => Vec::new(),
+        }
+    }
+
+    /// IDs this entity introduces: its own ID plus rectangle-generated
+    /// corner and edge IDs.
+    pub fn defined_ids(&self) -> Vec<&EntityId> {
+        let mut ids = vec![self.id()];
+        if let Self::Rectangle(rectangle) = self {
+            ids.extend(rectangle.corner_ids.iter());
+            ids.extend(rectangle.edge_ids.iter());
+        }
+        ids
+    }
+
+    /// Parametric coordinate expressions used by this entity.
+    pub fn expressions(&self) -> Vec<&Expression> {
+        let coords: Vec<&Coord> = match self {
+            Self::Point(point) => vec![&point.x, &point.y],
+            Self::Line(_) => Vec::new(),
+            Self::Circle(circle) => vec![&circle.radius],
+            Self::Arc(arc) => vec![&arc.radius, &arc.start_angle, &arc.end_angle],
+            Self::Rectangle(rectangle) => rectangle.origin.iter().chain(&rectangle.size).collect(),
+        };
+        coords
+            .into_iter()
+            .filter_map(|coord| match coord {
+                Coord::Expr(expr) => Some(expr),
+                Coord::Literal(_) => None,
+            })
+            .collect()
+    }
+
     pub fn is_construction(&self) -> bool {
         match self {
             Self::Point(e) => e.base.construction,
@@ -201,6 +240,46 @@ mod tests {
 
     fn ent(id: &str) -> EntityId {
         EntityId::new(id).expect("valid id")
+    }
+
+    #[test]
+    fn reference_helpers_report_points_ids_and_expressions() {
+        let arc = SketchEntity::Arc(ArcEntity {
+            base: EntityBase {
+                id: ent("ent:arc"),
+                construction: false,
+            },
+            center: ent("ent:center"),
+            radius: Coord::expr("hole_diameter / 2").expect("expr"),
+            start_angle: Coord::literal(0.0),
+            end_angle: Coord::expr("sweep").expect("expr"),
+        });
+        assert_eq!(arc.point_refs(), vec![&ent("ent:center")]);
+        assert_eq!(arc.defined_ids(), vec![&ent("ent:arc")]);
+        assert_eq!(
+            arc.expressions()
+                .iter()
+                .map(|expr| expr.as_str())
+                .collect::<Vec<_>>(),
+            vec!["hole_diameter / 2", "sweep"]
+        );
+
+        let rectangle = SketchEntity::Rectangle(RectangleEntity {
+            base: EntityBase {
+                id: ent("ent:rect"),
+                construction: false,
+            },
+            origin: [Coord::literal(0.0), Coord::literal(0.0)],
+            size: [Coord::expr("width").expect("expr"), Coord::literal(0.01)],
+            corner_ids: vec![ent("ent:rect_c0")],
+            edge_ids: vec![ent("ent:rect_e0")],
+        });
+        assert!(rectangle.point_refs().is_empty());
+        assert_eq!(
+            rectangle.defined_ids(),
+            vec![&ent("ent:rect"), &ent("ent:rect_c0"), &ent("ent:rect_e0")]
+        );
+        assert_eq!(rectangle.expressions().len(), 1);
     }
 
     #[test]

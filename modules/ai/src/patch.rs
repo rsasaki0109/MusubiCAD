@@ -6,9 +6,14 @@ use opencad_core::{Assertion, AssertionKind, OpenCadError, Result, TopoRefId};
 use opencad_feature::{FeatureDefinition, FeatureNode};
 use opencad_geometry::{assign_named_face_ref, TopoRef};
 use opencad_graph::{evaluate_param_graph, parameter_names_in_expr, ParamGraph, ParameterEntry};
+use opencad_sketch::{Constraint, SketchEntity, Workplane};
 use serde::{Deserialize, Serialize};
 
+use crate::feature_patch::{
+    apply_feature_operations, changes_feature_graph, validate_feature_candidate, FeaturePosition,
+};
 use crate::impact::serialized_value_uses_parameter;
+use crate::sketch_patch::{apply_sketch_operations, validate_sketch_candidate};
 use crate::state::{
     design_state_revision, design_state_revision_for_version, DesignState,
     DESIGN_STATE_REVISION_ALGORITHM, DESIGN_STATE_REVISION_VERSION,
@@ -146,6 +151,70 @@ pub enum PatchOperation {
     RemoveAssertion {
         id: String,
     },
+    /// Create an empty sketch on a workplane (ADR-013).
+    AddSketch {
+        id: String,
+        name: String,
+        workplane: Workplane,
+    },
+    /// Remove a sketch; fails while a sketch feature still uses it.
+    RemoveSketch {
+        id: String,
+    },
+    /// Add an entity to a sketch.  Rectangle corner and edge IDs are
+    /// author-chosen like the entity ID itself.
+    AddSketchEntity {
+        sketch_id: String,
+        entity: SketchEntity,
+    },
+    /// Remove an entity; fails while an entity or constraint references it.
+    RemoveSketchEntity {
+        sketch_id: String,
+        entity_id: String,
+    },
+    /// Add a constraint to a sketch.
+    AddSketchConstraint {
+        sketch_id: String,
+        constraint: Constraint,
+    },
+    /// Remove a constraint from a sketch.
+    RemoveSketchConstraint {
+        sketch_id: String,
+        constraint_id: String,
+    },
+    /// Create a feature at a display position (ADR-013).  Its dependency
+    /// edges are derived from the definition, never authored.
+    AddFeature {
+        node: FeatureNode,
+        position: FeaturePosition,
+    },
+    /// Remove a feature; fails while any feature or reference still uses it.
+    RemoveFeature {
+        id: String,
+    },
+    /// Move a feature in the display order; its inputs must stay before it.
+    MoveFeature {
+        id: String,
+        position: FeaturePosition,
+    },
+    /// Suppress or unsuppress a feature.
+    SetFeatureSuppressed {
+        id: String,
+        suppressed: bool,
+    },
+    /// Replace a feature definition with one of the same feature type.
+    ReplaceFeatureDefinition {
+        id: String,
+        definition: FeatureDefinition,
+    },
+    /// Create a semantic topology reference with its full stored shape.
+    AddSemanticRef {
+        topo_ref: TopoRef,
+    },
+    /// Remove a semantic topology reference nothing consumes.
+    RemoveSemanticRef {
+        ref_id: String,
+    },
 }
 
 impl PatchOperation {
@@ -158,6 +227,19 @@ impl PatchOperation {
                 | Self::RemoveParameter { .. }
                 | Self::AddAssertion { .. }
                 | Self::RemoveAssertion { .. }
+                | Self::AddSketch { .. }
+                | Self::RemoveSketch { .. }
+                | Self::AddSketchEntity { .. }
+                | Self::RemoveSketchEntity { .. }
+                | Self::AddSketchConstraint { .. }
+                | Self::RemoveSketchConstraint { .. }
+                | Self::AddFeature { .. }
+                | Self::RemoveFeature { .. }
+                | Self::MoveFeature { .. }
+                | Self::SetFeatureSuppressed { .. }
+                | Self::ReplaceFeatureDefinition { .. }
+                | Self::AddSemanticRef { .. }
+                | Self::RemoveSemanticRef { .. }
         )
     }
 }
@@ -169,7 +251,7 @@ pub const MAX_PATCH_OPERATIONS: usize = 10_000;
 const MAX_STABLE_ID_BYTES: usize = 128;
 
 /// Validate an author-chosen ID against `<prefix>:[a-z0-9_]+(\.[a-z0-9_]+)*`.
-fn validate_stable_id(id: &str, prefix: &str) -> Result<()> {
+pub(crate) fn validate_stable_id(id: &str, prefix: &str) -> Result<()> {
     let segment_ok = |segment: &str| {
         !segment.is_empty()
             && segment
@@ -188,6 +270,15 @@ fn validate_stable_id(id: &str, prefix: &str) -> Result<()> {
             "invalid id '{id}': expected '{prefix}:' followed by lowercase letters, digits, '_' or '.'-separated segments, at most {MAX_STABLE_ID_BYTES} bytes"
         )))
     }
+}
+
+/// Precondition failure for a check that needs the complete design state.
+fn state_required(key: String) -> (String, String) {
+    (
+        key,
+        "patch precondition failed: complete design state is required for sketch and assertion checks"
+            .to_string(),
+    )
 }
 
 /// Validate a parameter name usable as an expression identifier.
@@ -225,6 +316,15 @@ pub enum PatchPrecondition {
     FeatureExists { id: String },
     /// Require a semantic topology reference to exist.
     TopoRefExists { ref_id: String },
+    /// Require a sketch to exist (ADR-013).
+    SketchExists { id: String },
+    /// Require a sketch entity to exist in a sketch (ADR-013).
+    SketchEntityExists {
+        sketch_id: String,
+        entity_id: String,
+    },
+    /// Require a design assertion to exist (ADR-013).
+    AssertionExists { id: String },
 }
 
 impl PatchPrecondition {
@@ -505,6 +605,51 @@ impl DesignPatch {
                         ));
                     }
                 }
+                PatchPrecondition::SketchExists { id } => match state {
+                    None => failures.push(state_required(format!("sketch:{id}"))),
+                    Some(state) => {
+                        if !state.sketches.iter().any(|sketch| sketch.id.as_str() == id) {
+                            failures.push((
+                                format!("sketch:{id}"),
+                                format!("patch precondition failed: sketch '{id}' does not exist"),
+                            ));
+                        }
+                    }
+                },
+                PatchPrecondition::SketchEntityExists {
+                    sketch_id,
+                    entity_id,
+                } => match state {
+                    None => failures.push(state_required(format!("sketch:{sketch_id}"))),
+                    Some(state) => {
+                        let exists = state
+                            .sketches
+                            .iter()
+                            .find(|sketch| sketch.id.as_str() == sketch_id)
+                            .is_some_and(|sketch| sketch.find_entity(entity_id).is_some());
+                        if !exists {
+                            failures.push((
+                                format!("sketch:{sketch_id}/{entity_id}"),
+                                format!(
+                                    "patch precondition failed: entity '{entity_id}' does not exist in sketch '{sketch_id}'"
+                                ),
+                            ));
+                        }
+                    }
+                },
+                PatchPrecondition::AssertionExists { id } => match state {
+                    None => failures.push(state_required(format!("assertion:{id}"))),
+                    Some(state) => {
+                        if !state.assertions.iter().any(|assertion| assertion.id == *id) {
+                            failures.push((
+                                format!("assertion:{id}"),
+                                format!(
+                                    "patch precondition failed: assertion '{id}' does not exist"
+                                ),
+                            ));
+                        }
+                    }
+                },
             }
         }
         failures.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));
@@ -525,6 +670,12 @@ impl DesignPatch {
     /// Whether any operation creates or removes structure (ADR-013).
     pub fn is_structural(&self) -> bool {
         self.operations.iter().any(PatchOperation::is_structural)
+    }
+
+    /// Whether any operation changes Feature Graph inputs, so persisted
+    /// `feature_graph` data must be re-derived after applying the patch.
+    pub fn changes_feature_graph(&self) -> bool {
+        self.operations.iter().any(changes_feature_graph)
     }
 
     pub fn apply_to_parameters(&self, graph: &mut ParamGraph) -> Result<()> {
@@ -570,7 +721,20 @@ impl DesignPatch {
                 | PatchOperation::SetDrawingViewScale { .. }
                 | PatchOperation::SetDrawingViewOrigin { .. }
                 | PatchOperation::AddAssertion { .. }
-                | PatchOperation::RemoveAssertion { .. } => {}
+                | PatchOperation::RemoveAssertion { .. }
+                | PatchOperation::AddSketch { .. }
+                | PatchOperation::RemoveSketch { .. }
+                | PatchOperation::AddSketchEntity { .. }
+                | PatchOperation::RemoveSketchEntity { .. }
+                | PatchOperation::AddSketchConstraint { .. }
+                | PatchOperation::RemoveSketchConstraint { .. }
+                | PatchOperation::AddFeature { .. }
+                | PatchOperation::RemoveFeature { .. }
+                | PatchOperation::MoveFeature { .. }
+                | PatchOperation::SetFeatureSuppressed { .. }
+                | PatchOperation::ReplaceFeatureDefinition { .. }
+                | PatchOperation::AddSemanticRef { .. }
+                | PatchOperation::RemoveSemanticRef { .. } => {}
             }
         }
         // Dependency edges for new parameters are derived once, after every
@@ -651,6 +815,11 @@ impl DesignPatch {
         self.validate_preconditions_for_state(state)?;
         self.validate_document_context(state.assembly.as_ref(), state.drawing.as_ref())?;
         let mut next = state.clone();
+        // Structural sketch, feature, and reference operations are staged
+        // before value edits, so a value edit may target an object created
+        // earlier in the same patch.
+        apply_sketch_operations(&self.operations, &mut next.sketches)?;
+        apply_feature_operations(&self.operations, &mut next)?;
         self.apply_to_document_in_place(
             &mut next.parameters,
             &mut next.feature_nodes,
@@ -758,6 +927,9 @@ impl DesignPatch {
                 _ => {}
             }
         }
+
+        validate_sketch_candidate(&self.operations, after, &mut failures);
+        validate_feature_candidate(&self.operations, after, &mut failures);
 
         if failures.is_empty() {
             Ok(())

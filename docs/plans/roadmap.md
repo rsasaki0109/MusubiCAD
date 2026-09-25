@@ -390,7 +390,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 
 | ID | Scope | Deliverables | Status |
 |---|---|---|---|
-| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | In progress (ADR proposed; slice 1 delivered) |
+| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | In progress (ADR proposed; slices 1–4 delivered) |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph
@@ -407,6 +407,37 @@ share `opencad_file::document_design_state`; assertion changes are diffed,
 rendered by CLI diff/review, and rebased by stable ID. Coverage is in
 `modules/ai/tests/structural_patch.rs` and
 `modules/file/tests/structural_patch.rs`.
+
+Slice 2 is delivered: add/remove sketch, sketch entity, and sketch constraint
+operations plus `sketch_exists`, `sketch_entity_exists`, and
+`assertion_exists` preconditions. Final-state validation covers point and
+entity references, dimension/constraint pairing, parameter use in coordinate
+and constraint expressions, `face_ref` workplanes, sketch-feature users, and
+closed-profile resolution for every extrude, hole, and revolve on a touched
+sketch. Touched sketches get re-detected profiles and an `unknown` solve state.
+Sketch changes are diffed, dirty the consuming sketch feature suffix, render in
+CLI diff/review, and rebase per `<sketch>/<member>` ID. Coverage is in
+`modules/file/tests/sketch_patch.rs`, including regeneration of an edited
+fixture.
+
+Slice 3 is delivered: `opencad_feature::derive_feature_graph` derives Feature
+Graph entries and edges from definitions and the authored display order. It
+reproduces the order, entries, edge set, and regeneration order of all 13 part
+examples; eight match byte-for-byte and five pattern templates differ only in
+cosmetic edge order (`modules/file/tests/feature_graph_derivation.rs`). A
+registration test fails if a definition gains an unregistered input field.
+
+Slice 4 is delivered: add, remove, move, suppress, and replace feature
+operations plus add/remove semantic reference operations. `DesignState` carries
+`feature_order` in revision v2; the file layer re-derives `feature_graph` only
+when Feature Graph inputs change. Removal lists every consumer; added features
+must resolve sketches, references, parameters, and closed profiles; moves may
+not place a feature before its inputs. `feature_moved` is diffed and dirties
+nothing. `opencad_ai::authoring_patch` expresses a part as one structural
+patch, and the definition of done below is met by
+`modules/file/tests/authoring_rebuild.rs`; an OCCT review of
+`examples/agent/add_top_fillet_feature_patch.json` regenerates the added
+fillet. Coverage is in `modules/file/tests/feature_patch.rs`.
 
 **Definition of done:** starting from an empty part document, a checked-in
 patch sequence rebuilds `examples/bracket.ocad.d` with canonical-equal

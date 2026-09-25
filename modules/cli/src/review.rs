@@ -686,6 +686,35 @@ fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
         SemanticChange::AssertionChanged { id, before, after } => {
             (format!("Assertion {id}"), before.clone(), after.clone())
         }
+        SemanticChange::FeatureMoved { id, before, after } => (
+            format!("Feature {id} position"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::SketchAdded { id } => (format!("Sketch {id}"), "—".into(), "Added".into()),
+        SemanticChange::SketchRemoved { id } => {
+            (format!("Sketch {id}"), "Present".into(), "Removed".into())
+        }
+        SemanticChange::SketchEntityAdded { sketch_id, id } => (
+            format!("Sketch entity {sketch_id}/{id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::SketchEntityRemoved { sketch_id, id } => (
+            format!("Sketch entity {sketch_id}/{id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::SketchConstraintAdded { sketch_id, id } => (
+            format!("Sketch constraint {sketch_id}/{id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::SketchConstraintRemoved { sketch_id, id } => (
+            format!("Sketch constraint {sketch_id}/{id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
     }
 }
 
