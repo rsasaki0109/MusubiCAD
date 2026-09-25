@@ -59,6 +59,16 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
 4. **Driving constraints.**
    - `{"type": "add_sketch_constraint", "sketch_id": "sketch:base", "constraint": {"type": "distance", "id": "con:width", "target": {"line": "ent:e0"}, "expr": "width"}}`
    - `{"type": "radius", "id": "con:hole_radius", "target": "ent:hole_circle", "expr": "hole_diameter / 2"}`
+   - **Shape constraints.** Constrain every rectangle edge horizontal or
+     vertical:
+     `{"type": "horizontal", "id": "con:e0_horizontal", "line": "ent:e0"}`
+     and `{"type": "vertical", "id": "con:e1_vertical", "line": "ent:e1"}`.
+     The solver anchors a sketch's first point, so four edges, two
+     lengths, and four horizontal/vertical constraints leave no freedom.
+     With lengths alone the rectangle regenerates correctly while its
+     starting coordinates match the parameters. Once a length parameter
+     changes, it skews: a 60 mm plate edited to 90 mm came out 88.9 mm
+     wide.
 5. **A sketch feature per sketch.**
    `{"type": "add_feature", "position": {"at": "end"}, "node": {"id": "feature:sketch_base", "name": "Base Sketch", "definition": {"type": "sketch", "sketch_id": "sketch:base"}}}`
 6. **Solid features.**
