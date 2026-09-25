@@ -195,6 +195,23 @@ pub trait GeometryKernel {
 
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox>;
 
+    /// Serialize a body as STEP (ISO 10303-21) text whose length unit is the
+    /// millimetre, the STEP convention.  Kernel lengths are metres, so
+    /// implementations scale by 1000 on export.  The output must be
+    /// deterministic for identical geometry.
+    fn export_step(&self, _body: &KernelBody) -> Result<Vec<u8>> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not support STEP export",
+        ))
+    }
+
+    /// Import every solid of a millimetre STEP file as one body in metres.
+    fn import_step(&self, _step: &[u8]) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not support STEP import",
+        ))
+    }
+
     fn assign_face_ref(
         &self,
         body: &KernelBody,

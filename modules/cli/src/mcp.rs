@@ -153,6 +153,19 @@ fn tools() -> Vec<Tool> {
             schema: path_schema,
         },
         Tool {
+            name: "export_document",
+            description: "Regenerate and export geometry: .step/.stp (millimetre B-rep for other CAD/CAM tools), .stl (mesh), or .svg (drawing sheet).",
+            handler: Handler::Agent("opencad.export"),
+            schema: || json!({
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string", "description": "Source .ocad file or .ocad.d directory" },
+                    "output": { "type": "string", "description": "Output file; the extension selects the format" }
+                },
+                "required": ["path", "output"]
+            }),
+        },
+        Tool {
             name: "diff_document",
             description: "Semantic diff between two documents, or between a document and a patch result.",
             handler: Handler::Agent("opencad.diff_document"),
@@ -447,7 +460,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 11);
+        assert_eq!(tools.len(), 12);
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
             assert!(tool["description"]

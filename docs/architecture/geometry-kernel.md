@@ -24,8 +24,22 @@ pub trait GeometryKernel {
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet>;
     fn mass_properties(&self, body: &KernelBody, density: f64) -> Result<MassProperties>;
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox>;
+    fn export_step(&self, body: &KernelBody) -> Result<Vec<u8>>;   // default: unsupported
+    fn import_step(&self, step: &[u8]) -> Result<KernelBody>;      // default: unsupported
 }
 ```
+
+## STEP exchange
+
+STEP crosses the kernel boundary as bytes, so no OCCT type leaves
+`modules/kernel-occt`. Kernel lengths are metres and STEP files are written in
+millimetres: the OCCT backend scales by 1000 on export and by 1/1000 on
+import. `opencad_kernel_occt::step::normalize_step_header` replaces the
+wall-clock header time stamp and OCCT's per-process product counter, so
+identical geometry exports identical bytes. The Mock backend reports STEP as
+unsupported. A round-trip integration test verifies the millimetre
+coordinates, determinism, volume within `1e-12 m³`, and bounds within
+`1e-6 m`.
 
 ## Handles
 

@@ -165,12 +165,12 @@ fn cmd_regen(path: Option<&str>, extra_args: &[String]) -> Result<()> {
 fn cmd_export(input: Option<&str>, output: Option<&str>) -> Result<()> {
     let input = input.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad export <input> <output.stl|output.svg>",
+            "usage: opencad export <input> <output.stl|output.step|output.svg>",
         )
     })?;
     let output = output.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad export <input> <output.stl|output.svg>",
+            "usage: opencad export <input> <output.stl|output.step|output.svg>",
         )
     })?;
     let summary = export::export_document(input, output)?;

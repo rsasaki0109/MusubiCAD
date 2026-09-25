@@ -14,6 +14,10 @@ use crate::store::KernelStore;
 #[cfg(feature = "occt")]
 use cadrum::{DMat3, DQuat, DVec3, Edge, ProfileOrient, Solid};
 
+/// STEP files use millimetres; kernel lengths are metres.
+#[cfg(feature = "occt")]
+const MILLIMETRES_PER_METRE: f64 = 1000.0;
+
 #[cfg(feature = "occt")]
 fn rotation_matrix_to_axis_angle(rotation: [[f64; 3]; 3]) -> (DVec3, f64) {
     let matrix = DMat3::from_cols(
@@ -761,6 +765,59 @@ impl GeometryKernel for OcctGeometryKernel {
         {
             let _ = (body, transform);
             Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
+    fn export_step(&self, body: &KernelBody) -> Result<Vec<u8>> {
+        #[cfg(feature = "occt")]
+        {
+            let solids = collect_body_solids(&self.store.borrow(), body.0)?;
+            // Kernel lengths are metres; STEP files are written in millimetres.
+            let scaled: Vec<Solid> = solids
+                .into_iter()
+                .map(|solid| solid.scale(DVec3::ZERO, MILLIMETRES_PER_METRE))
+                .collect();
+            let mut bytes = Vec::new();
+            Solid::write_step(scaled.iter(), &mut bytes).map_err(map_occt_error)?;
+            Ok(crate::step::normalize_step_header(&bytes))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = body;
+            Err(OpenCadError::Other(
+                "STEP export requires the occt feature".into(),
+            ))
+        }
+    }
+
+    fn import_step(&self, step: &[u8]) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let solids =
+                Solid::read_step(&mut std::io::Cursor::new(step)).map_err(map_occt_error)?;
+            if solids.is_empty() {
+                return Err(OpenCadError::validation("STEP file contains no solids"));
+            }
+            let mut store = self.store.borrow_mut();
+            let ids: Vec<u64> = solids
+                .into_iter()
+                .map(|solid| {
+                    store.insert_body(solid.scale(DVec3::ZERO, 1.0 / MILLIMETRES_PER_METRE))
+                })
+                .collect();
+            let id = if let [single] = ids.as_slice() {
+                *single
+            } else {
+                store.insert_compound(ids)
+            };
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = step;
+            Err(OpenCadError::Other(
+                "STEP import requires the occt feature".into(),
+            ))
         }
     }
 
