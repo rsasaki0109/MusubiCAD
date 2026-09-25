@@ -3,6 +3,7 @@
 pub mod agent_api;
 pub mod assembly;
 pub mod assertions;
+pub mod attachment_patch;
 pub mod authoring;
 pub mod drawing;
 pub mod explain;

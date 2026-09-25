@@ -55,6 +55,7 @@ pub fn run() -> Result<()> {
         Some("review") => cmd_review(args.collect()),
         Some("merge") => git_workflow::merge(args.collect()),
         Some("rebase-patch") => git_workflow::rebase(args.collect()),
+        Some("import-step") => crate::import::cmd_import_step(args.collect()),
         Some("check") => policy_check::check(args.collect()),
         Some("agent") => cmd_agent(args.collect()),
         Some("mcp") => cmd_mcp(args.collect()),
@@ -545,6 +546,7 @@ COMMANDS:
     review      Generate a self-contained DesignPatch review directory
     merge       Semantically merge base/ours/theirs Design Graph documents
     rebase-patch Rebase a DesignPatch onto a newer document state
+    import-step Import a STEP file into a part as a fixed imported solid
     check       Evaluate an engineering policy as a CI gate
     agent       JSON-RPC 2.0 server on stdio for programmatic access
     mcp         Model Context Protocol server on stdio for agent hosts

@@ -755,6 +755,23 @@ fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
             before.clone(),
             after.clone(),
         ),
+        SemanticChange::AttachmentAdded { path } => {
+            (format!("Attachment {path}"), "—".into(), "Added".into())
+        }
+        SemanticChange::AttachmentRemoved { path } => (
+            format!("Attachment {path}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AttachmentChanged {
+            path,
+            before,
+            after,
+        } => (
+            format!("Attachment {path} sha256"),
+            before.clone(),
+            after.clone(),
+        ),
         SemanticChange::FeatureMoved { id, before, after } => (
             format!("Feature {id} position"),
             before.clone(),

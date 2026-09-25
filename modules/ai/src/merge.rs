@@ -21,6 +21,7 @@ pub enum ConflictKind {
     Assertion,
     Sketch,
     SemanticReference,
+    Attachment,
     UnsupportedStructure,
 }
 
@@ -114,6 +115,7 @@ pub fn semantic_three_way_merge(
         |assertion| assertion.id.clone(),
         &mut conflicts,
     );
+    merged.attachments = merge_attachments(base, ours, theirs, &mut conflicts);
     let merged_features: BTreeSet<String> = merged
         .feature_nodes
         .iter()
@@ -629,7 +631,54 @@ struct PatchTarget {
     id: String,
 }
 
+/// Merge attachments by path, comparing contents by SHA-256.
+fn merge_attachments(
+    base: &DesignState,
+    ours: &DesignState,
+    theirs: &DesignState,
+    conflicts: &mut Vec<SemanticConflict>,
+) -> BTreeMap<String, Vec<u8>> {
+    let digests = crate::attachment_patch::attachment_digests;
+    let (b, o, t) = (
+        digests(&base.attachments),
+        digests(&ours.attachments),
+        digests(&theirs.attachments),
+    );
+    let mut merged = BTreeMap::new();
+    let paths: BTreeSet<&String> = b.keys().chain(o.keys()).chain(t.keys()).collect();
+    for path in paths {
+        let (bd, od, td) = (b.get(path), o.get(path), t.get(path));
+        let source = if od == td || td == bd {
+            &ours.attachments
+        } else if od == bd {
+            &theirs.attachments
+        } else {
+            conflicts.push(SemanticConflict {
+                kind: ConflictKind::Attachment,
+                id: path.clone(),
+                base: bd.cloned(),
+                ours: od.cloned(),
+                theirs: td.cloned(),
+                reason: conflict_reason(bd.is_some(), od.is_some(), td.is_some()),
+            });
+            &ours.attachments
+        };
+        if let Some(bytes) = source.get(path) {
+            merged.insert(path.clone(), bytes.clone());
+        }
+    }
+    merged
+}
+
 fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
+    if let PatchOperation::AddAttachment { path, .. } | PatchOperation::RemoveAttachment { path } =
+        operation
+    {
+        return Some(PatchTarget {
+            kind: ConflictKind::Attachment,
+            id: path.clone(),
+        });
+    }
     if let Some((kind, id)) = model_structure_target(operation) {
         return Some(PatchTarget {
             kind,
@@ -830,6 +879,15 @@ fn model_object_snapshot(state: &DesignState, kind: &ConflictKind, id: &str) -> 
 }
 
 fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSnapshot {
+    if let PatchOperation::AddAttachment { path, .. } | PatchOperation::RemoveAttachment { path } =
+        operation
+    {
+        let digest = state
+            .attachments
+            .get(path)
+            .map(|bytes| opencad_core::sha256_hex(bytes));
+        return snapshot(digest.as_ref());
+    }
     if let Some((kind, id)) = model_structure_target(operation) {
         return model_object_snapshot(state, &kind, id);
     }

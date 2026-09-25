@@ -264,6 +264,19 @@ fn print_change(change: &SemanticChange) {
         SemanticChange::DrawingDimensionChanged { id, before, after } => {
             println!("  drawing dimension {id}: {before} -> {after}");
         }
+        SemanticChange::AttachmentAdded { path } => {
+            println!("  attachment added {path}");
+        }
+        SemanticChange::AttachmentRemoved { path } => {
+            println!("  attachment removed {path}");
+        }
+        SemanticChange::AttachmentChanged {
+            path,
+            before,
+            after,
+        } => {
+            println!("  attachment {path}: sha256 {before} -> {after}");
+        }
         SemanticChange::FeatureMoved { id, before, after } => {
             println!("  feature moved {id}: position {before} -> {after}");
         }

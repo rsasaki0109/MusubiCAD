@@ -9,6 +9,7 @@ pub mod feature;
 pub mod fillet;
 pub mod graph_derive;
 pub mod hole;
+pub mod imported;
 pub mod param_apply;
 pub mod pattern;
 pub mod regenerate;
@@ -25,6 +26,7 @@ pub use feature::{Feature, FeatureDefinition, FeatureNode, FeatureOutput, RegenC
 pub use fillet::{FilletFeature, FilletFeatureExecutor};
 pub use graph_derive::derive_feature_graph;
 pub use hole::{HoleFeature, HoleFeatureExecutor};
+pub use imported::{ImportedSolidExecutor, ImportedSolidFeature};
 pub use param_apply::apply_parameters;
 pub use pattern::{
     CircularPatternFeature, CircularPatternFeatureExecutor, LinearPatternFeature,

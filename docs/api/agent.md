@@ -379,6 +379,22 @@ its kind.
 | `add_sheet` / `remove_sheet` | `sheet` / `id` | Add an empty sheet, or remove a sheet with the views and dimensions it owns |
 | `add_drawing_view` / `remove_drawing_view` | `sheet_id`, `view` / `view_id` | Add a view, or remove one no dimension uses |
 | `add_drawing_dimension` / `remove_drawing_dimension` | `sheet_id`, `dimension` / `id` | Add or remove a linear dimension |
+| `add_attachment` / `remove_attachment` | `path`, `sha256`, `content_base64` / `path` | Add a STEP file under `imports/` (decoded bytes must match `sha256`), or remove one no imported solid uses |
+
+An `imported_solid` feature places a STEP attachment as a fixed solid
+([ADR-016](../adr/ADR-016-imported-step-solids.md)):
+
+```json
+{ "type": "imported_solid", "source": "imports/motor.step", "sha256": "<64 hex>",
+  "transform": { "translation_m": [0.1, 0.0, 0.0], "rotation": [[1,0,0],[0,1,0],[0,0,1]] },
+  "operation": "cut", "target_feature": "feature:plate" }
+```
+
+Regeneration verifies the attachment digest and fails closed on a mismatch.
+The rotation must be proper and orthonormal within `1e-9`. `join` and `cut`
+need `target_feature`. `opencad import-step <doc> <file.step> --id <feature:id>
+[--operation new_body|join|cut] [--target <feature:id>] [--translate-mm x,y,z]`
+builds and applies this patch; it reuses an existing identical attachment.
 
 Assembly and drawing objects use the stored JSON shapes of
 `graph/assemblies.json` and `graph/drawings.json`, with IDs under the

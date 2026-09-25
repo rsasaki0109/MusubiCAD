@@ -99,6 +99,7 @@ fn write_two_brackets_example() {
         assertions: Vec::new(),
         assembly: Some(assembly),
         drawing: None,
+        attachments: Default::default(),
     };
 
     write_expanded_dir(&example_root, &assembly_doc).expect("write assembly");

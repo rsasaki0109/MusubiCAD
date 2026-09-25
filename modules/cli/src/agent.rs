@@ -1484,6 +1484,7 @@ mod tests {
                 .sorted_deterministic(),
             ),
             drawing: None,
+            attachments: Default::default(),
         };
         write_expanded_dir(&doc_path, &doc).expect("write");
 

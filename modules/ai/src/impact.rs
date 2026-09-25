@@ -22,6 +22,7 @@ pub enum ChangedInputKind {
     Drawing,
     Assertion,
     Sketch,
+    Attachment,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -100,6 +101,19 @@ pub fn predict_change_impact(
             | SemanticChange::TopoRefModified { ref_id, .. } => {
                 for node in &after.feature_nodes {
                     if serialized_value_contains(&node.definition, ref_id) {
+                        direct.insert(node.id.clone());
+                    }
+                }
+            }
+            // An attachment change dirties the imported solids that read it.
+            SemanticChange::AttachmentAdded { path }
+            | SemanticChange::AttachmentRemoved { path }
+            | SemanticChange::AttachmentChanged { path, .. } => {
+                for node in &after.feature_nodes {
+                    if matches!(
+                        &node.definition,
+                        FeatureDefinition::ImportedSolid(def) if def.source == *path
+                    ) {
                         direct.insert(node.id.clone());
                     }
                 }
@@ -186,6 +200,11 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
             | SemanticChange::AssertionChanged { id, .. } => (ChangedInputKind::Assertion, id),
             SemanticChange::SketchAdded { id } | SemanticChange::SketchRemoved { id } => {
                 (ChangedInputKind::Sketch, id)
+            }
+            SemanticChange::AttachmentAdded { path }
+            | SemanticChange::AttachmentRemoved { path }
+            | SemanticChange::AttachmentChanged { path, .. } => {
+                (ChangedInputKind::Attachment, path)
             }
             SemanticChange::SketchEntityAdded { sketch_id, .. }
             | SemanticChange::SketchEntityRemoved { sketch_id, .. }

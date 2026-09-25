@@ -84,6 +84,7 @@ fn write_robot_arm_example() {
         assertions: Vec::new(),
         assembly: Some(assembly),
         drawing: None,
+        attachments: Default::default(),
     };
     write_expanded_dir(&example_root, &doc).expect("write assembly");
 }

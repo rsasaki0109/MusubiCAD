@@ -70,7 +70,9 @@
             "remove_drawing_view",
             "remove_drawing_dimension",
             "add_drawing_view",
-            "add_drawing_dimension"
+            "add_drawing_dimension",
+            "add_attachment",
+            "remove_attachment"
           ]
         }
       },
@@ -404,6 +406,27 @@
           }
         },
         {
+          "if": { "properties": { "type": { "const": "add_attachment" } } },
+          "then": {
+            "required": ["type", "path", "sha256", "content_base64"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^imports/[a-z0-9_]+([.-][a-z0-9_]+)*[.](step|stp)$"
+              },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "content_base64": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_attachment" } } },
+          "then": {
+            "required": ["type", "path"],
+            "properties": { "path": { "type": "string", "pattern": "^imports/" } }
+          }
+        },
+        {
           "if": { "properties": { "type": { "const": "remove_drawing_dimension" } } },
           "then": {
             "required": ["type", "id"],
@@ -454,7 +477,8 @@
             "chamfer",
             "linear_pattern",
             "circular_pattern",
-            "mirror_pattern"
+            "mirror_pattern",
+            "imported_solid"
           ]
         }
       }

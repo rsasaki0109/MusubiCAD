@@ -38,6 +38,8 @@ pub struct PartModel {
     pub nodes: IndexMap<String, FeatureNode>,
     pub sketches: IndexMap<String, Sketch>,
     pub outputs: IndexMap<String, FeatureOutput>,
+    /// Document attachments by path, such as imported STEP files (ADR-016).
+    pub attachments: std::collections::BTreeMap<String, Vec<u8>>,
 }
 
 /// Summary of a regeneration pass.
@@ -125,6 +127,7 @@ pub struct RegenSession<'a, K: GeometryKernel> {
     pub face_history: &'a [FaceDerivation],
     pub face_discoveries: &'a [FaceRefDiscovery],
     pub edge_discoveries: &'a [EdgeRefDiscovery],
+    pub attachments: &'a std::collections::BTreeMap<String, Vec<u8>>,
 }
 
 /// Content-addressable key for one feature output (MCAD-P6-002).
@@ -193,6 +196,13 @@ impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
 
     fn edge_discoveries(&self) -> &[opencad_geometry::EdgeRefDiscovery] {
         self.edge_discoveries
+    }
+
+    fn attachment(&self, path: &str) -> Result<&[u8]> {
+        self.attachments
+            .get(path)
+            .map(Vec::as_slice)
+            .ok_or_else(|| OpenCadError::not_found(format!("attachment '{path}'")))
     }
 }
 
@@ -344,6 +354,7 @@ impl PartModel {
                     face_history: &report.face_history,
                     face_discoveries: &face_discoveries,
                     edge_discoveries: &edge_discoveries,
+                    attachments: &self.attachments,
                 };
 
                 let output = registry.execute(node, &session)?;

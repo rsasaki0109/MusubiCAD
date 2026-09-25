@@ -44,6 +44,7 @@ pub fn merge(args: Vec<String>) -> Result<()> {
     output.semantic_refs = merged.semantic_refs;
     output.sketches = merged.sketches;
     output.assertions = merged.assertions;
+    output.attachments = merged.attachments;
     output.assembly = merged.assembly;
     output.drawing = merged.drawing;
     write_ocad(&args[3], &output)?;

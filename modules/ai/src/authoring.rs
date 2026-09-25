@@ -64,6 +64,14 @@ pub fn authoring_patch(state: &DesignState) -> Result<DesignPatch> {
             });
         }
     }
+    for (path, bytes) in &state.attachments {
+        use base64::Engine as _;
+        operations.push(PatchOperation::AddAttachment {
+            path: path.clone(),
+            sha256: opencad_core::sha256_hex(bytes),
+            content_base64: base64::engine::general_purpose::STANDARD.encode(bytes),
+        });
+    }
     for id in &state.feature_order {
         let node = state
             .feature_nodes

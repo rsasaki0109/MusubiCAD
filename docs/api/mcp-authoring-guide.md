@@ -66,7 +66,9 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
    - Hole: `{"type": "hole", "sketch_feature": "feature:sketch_hole", "profile_ref": "sketch:hole/profile:outer", "depth": {"type": "distance", "length": {"value_si": 0.005}}, "target_feature": "feature:plate", "depth_expr": "thickness"}`
 
 Other feature types are `revolve`, `fillet`, `chamfer`, `linear_pattern`,
-`circular_pattern`, and `mirror_pattern`. Call `authoring_patch` on the
+`circular_pattern`, `mirror_pattern`, and `imported_solid`. To place a
+purchased part from a STEP file, use the `import_step` tool rather than
+writing its base64 attachment by hand. Call `authoring_patch` on the
 examples to see each one. Extrude and revolve `operation` is `new_body`,
 `cut`, or `join`; pattern `operation` is `union` or `cut`.
 

@@ -17,6 +17,8 @@ bracket.ocad.d/
     assemblies.json
     materials.json
     semantic_refs.json
+  imports/                # optional attachment files (ADR-016)
+    motor.step            # STEP bytes used by an imported_solid feature
 ```
 
 Zip archives use the same paths inside `bracket.ocad`.
@@ -34,7 +36,10 @@ let restored = validate_ocad("bracket.ocad.d")?;
 ## Determinism
 
 - JSON is pretty-printed with stable key order where required
-- `checksums.json` covers every payload file
+- `checksums.json` covers every payload file, including `imports/` attachments
+- Attachments are opaque bytes referenced by an `imported_solid` feature
+  through their path and SHA-256; documents without attachments serialize
+  exactly as before
 - Regeneration outputs (`KernelBody`) are not stored in `.ocad`
 - Equal line/radius targets use explicit `{ "line": ... }` or
   `{ "radius": ... }` objects in canonical JSON; legacy bare target strings

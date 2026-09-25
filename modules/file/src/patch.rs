@@ -65,6 +65,7 @@ pub fn document_design_state(doc: &OcadDocument) -> DesignState {
     )
     .with_authoring(doc.sketches.clone(), doc.assertions.clone())
     .with_feature_order(doc.feature_graph.ordered_ids().to_vec())
+    .with_attachments(doc.attachments.clone())
 }
 
 fn apply_patch_to_document_in_place(doc: &mut OcadDocument, patch: &DesignPatch) -> Result<()> {
@@ -102,6 +103,7 @@ fn apply_patch_to_document_in_place(doc: &mut OcadDocument, patch: &DesignPatch)
     doc.drawing = next.drawing;
     doc.sketches = next.sketches;
     doc.assertions = next.assertions;
+    doc.attachments = next.attachments;
 
     for operation in &patch.operations {
         let PatchOperation::AssignFaceRef {

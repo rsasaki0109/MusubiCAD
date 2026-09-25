@@ -29,6 +29,8 @@ const MATERIALS_FILE: &str = "graph/materials.json";
 const SEMANTIC_REFS_FILE: &str = "graph/semantic_refs.json";
 const ASSERTIONS_FILE: &str = "graph/assertions.json";
 const DRAWINGS_FILE: &str = "graph/drawings.json";
+/// Directory holding opaque attachment files (ADR-016).
+pub const ATTACHMENTS_DIR: &str = "imports/";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct DocumentEnvelope {
@@ -210,6 +212,15 @@ pub fn serialize_document_files(doc: &OcadDocument) -> Result<BTreeMap<String, V
         );
     }
 
+    for (path, bytes) in &doc.attachments {
+        if !path.starts_with(ATTACHMENTS_DIR) {
+            return Err(OpenCadError::validation(format!(
+                "attachment '{path}' must live under '{ATTACHMENTS_DIR}'"
+            )));
+        }
+        files.insert(path.clone(), bytes.clone());
+    }
+
     let checksums = ChecksumManifest::compute(&files);
     files.insert(
         CHECKSUMS_FILE.into(),
@@ -246,6 +257,11 @@ pub(crate) fn parse_document_files(files: &BTreeMap<String, Vec<u8>>) -> Result<
         assertions: assertions.assertions,
         assembly: assemblies.assembly,
         drawing: drawings.drawing,
+        attachments: files
+            .iter()
+            .filter(|(path, _)| path.starts_with(ATTACHMENTS_DIR))
+            .map(|(path, bytes)| (path.clone(), bytes.clone()))
+            .collect(),
     })
 }
 

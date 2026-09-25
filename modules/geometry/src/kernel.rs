@@ -271,6 +271,16 @@ impl MockGeometryKernel {
 }
 
 impl GeometryKernel for MockGeometryKernel {
+    /// A deterministic stand-in body derived from the byte length, so
+    /// imported-solid pipelines run without OCCT (ADR-016).  Mock export
+    /// stays unsupported.
+    fn import_step(&self, step: &[u8]) -> Result<KernelBody> {
+        if step.is_empty() {
+            return Err(OpenCadError::validation("STEP file contains no solids"));
+        }
+        Ok(KernelBody::new((step.len() as u64 % 97).max(1)))
+    }
+
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire> {
         if sketch.points.len() < 2 {
             return Err(OpenCadError::validation(
