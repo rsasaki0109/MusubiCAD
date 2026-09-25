@@ -3,6 +3,7 @@ mod animate;
 mod commands;
 mod diff;
 mod export;
+mod git_driver;
 mod git_workflow;
 mod mesh;
 mod new;

@@ -219,7 +219,10 @@ pub fn serialize_document_files(doc: &OcadDocument) -> Result<BTreeMap<String, V
     Ok(files)
 }
 
-pub(crate) fn parse_document_files(files: &BTreeMap<String, Vec<u8>>) -> Result<OcadDocument> {
+/// Parse a document from its files keyed by path inside the document.
+///
+/// Checksums are not verified here; see [`validate_expanded_dir`].
+pub fn parse_document_files(files: &BTreeMap<String, Vec<u8>>) -> Result<OcadDocument> {
     let envelope: DocumentEnvelope = read_json(files, DOCUMENT_FILE)?;
     let parameters = read_json(files, PARAMETERS_FILE).unwrap_or_default();
     let sketches_file: SketchesFile = read_json(files, SKETCHES_FILE)?;

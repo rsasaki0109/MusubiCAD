@@ -329,7 +329,7 @@ non-goals are defined in the
 | MCAD-P6-002 | Incremental content-addressed regeneration | Dirty-subgraph execution, disposable versioned cache, cold-regeneration equivalence, 22/100/250-node benchmarks | Complete |
 | MCAD-P6-003 | Semantic reference provenance | Exact/derived/fingerprint/ambiguous/missing status, candidate evidence, fail-closed repair patches | Complete |
 | MCAD-P6-004 | Executable design assertions | Typed unit-explicit engineering assertions evaluated by dry-run and regeneration | Complete |
-| MCAD-P6-005 | Git-native semantic merge | CLI merge driver, stable semantic conflicts, DesignPatch resolution, branch/merge golden workflow | Planned |
+| MCAD-P6-005 | Git-native semantic merge | CLI merge driver, stable semantic conflicts, DesignPatch resolution, branch/merge golden workflow | Complete |
 | MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | Planned |
 
 MCAD-P6-003 is complete: `ReferenceProvenance` classifies every face/edge
@@ -360,6 +360,16 @@ restores the previous document outputs, and OCCT regressions prove that editing
 `upper_hub_height` re-executes only the hub and downstream while changing
 `bolt_circle_radius` leaves the base and hubs cached. Checked-in 22/100/250-node
 chain benchmarks gate deterministic call counts and cold/incremental equivalence.
+
+MCAD-P6-005 is complete: `opencad merge-driver` resolves `git merge` of
+expanded `.ocad.d` documents semantically
+([ADR-015](../adr/ADR-015-git-merge-driver.md)). For each changed file it
+reconstructs the complete base, ours, and theirs documents from Git, runs the
+whole-state merge from MCAD-P7-001, and writes that file of the merged result,
+so the directory stays checksum-consistent. Conflicting intent stops the merge
+with typed conflicts, which `opencad conflicts` lists again. Uncertain cases
+fail closed to Git's ordinary conflicts. `modules/cli/tests/git_merge_driver.rs`
+merges real branches in a temporary repository on every CI run.
 
 **Definition of done:** the flagship model can undergo adversarial edits and
 concurrent branch changes while MusubiCAD deterministically explains the exact
