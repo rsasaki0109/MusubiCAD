@@ -4,6 +4,7 @@ mod commands;
 mod diff;
 mod export;
 mod git_workflow;
+mod mcp;
 mod mesh;
 mod new;
 mod patch;

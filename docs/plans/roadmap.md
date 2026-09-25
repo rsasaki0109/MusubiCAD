@@ -391,6 +391,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | ID | Scope | Deliverables | Status |
 |---|---|---|---|
 | MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | Complete (ADR accepted; slices 1–6 delivered) |
+| MCAD-P7-002 | MCP server | [ADR-014](../adr/ADR-014-mcp-server.md); `opencad mcp` over stdio delegating to the Agent API, authoring guide and patch schema resources, stdio end-to-end test authoring a part from an empty document | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

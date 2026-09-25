@@ -57,6 +57,7 @@ pub fn run() -> Result<()> {
         Some("rebase-patch") => git_workflow::rebase(args.collect()),
         Some("check") => policy_check::check(args.collect()),
         Some("agent") => cmd_agent(args.collect()),
+        Some("mcp") => cmd_mcp(args.collect()),
         Some(cmd) => Err(opencad_core::OpenCadError::Other(format!(
             "unknown command '{cmd}'; run 'opencad help' for usage"
         ))),
@@ -454,6 +455,29 @@ fn cmd_agent(args: Vec<String>) -> Result<()> {
     agent::serve_stdio()
 }
 
+fn cmd_mcp(args: Vec<String>) -> Result<()> {
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        println!(
+            r"opencad mcp — Model Context Protocol server on stdio (ADR-014)
+
+USAGE:
+    opencad mcp
+
+Register it with an MCP host, for example:
+    claude mcp add musubicad -- opencad mcp
+
+Tools delegate to the Agent API; every change is a validated DesignPatch."
+        );
+        return Ok(());
+    }
+    if !args.is_empty() {
+        return Err(opencad_core::OpenCadError::validation(
+            "usage: opencad mcp   (serves MCP over stdin/stdout)",
+        ));
+    }
+    crate::mcp::serve_stdio()
+}
+
 fn print_agent_help() {
     println!(
         r"opencad agent — JSON-RPC 2.0 server on stdio
@@ -523,6 +547,7 @@ COMMANDS:
     rebase-patch Rebase a DesignPatch onto a newer document state
     check       Evaluate an engineering policy as a CI gate
     agent       JSON-RPC 2.0 server on stdio for programmatic access
+    mcp         Model Context Protocol server on stdio for agent hosts
 
 OPTIONS (patch):
     --dry-run   Validate and preview changes without writing

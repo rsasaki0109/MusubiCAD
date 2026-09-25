@@ -130,6 +130,22 @@ reposes elbow and wrist joints from -45° to -75° and checks the result stays i
 The [Design Review workflow](.github/workflows/design-review.yml) dogfoods these examples in CI,
 regenerating the README bundle (`./docs/assets/generate-review-demo.sh`) and failing on drift.
 
+## Design with an AI agent (MCP)
+
+`opencad mcp` is a [Model Context Protocol](docs/api/mcp.md) server, so agent hosts such as
+Claude Code can create, dry-run, review, and apply designs directly:
+
+```bash
+claude mcp add musubicad -- opencad mcp
+```
+
+Agents author new parts, assemblies, and drawings from empty documents with structural
+`DesignPatch` operations, such as `add_sketch`, `add_feature`, and `add_instance`, and repair
+their patches from dry-run errors that name every broken reference. Every change still passes
+the same validation, review, and transaction path as a hand-written patch. See the
+[authoring guide](docs/api/mcp-authoring-guide.md) and a complete
+[plate-from-scratch patch](examples/agent/author_plate_from_empty_patch.json).
+
 ## How it works
 
 ```mermaid
@@ -159,6 +175,9 @@ transactions; `modules/render` consumes disposable tessellation. See the
 - **Semantic topology:** stable face references with fingerprint fallback across regeneration
 - **Assemblies and drawings:** instances, connectors, mates, orthographic SVG, hidden lines, model-driven dimensions
 - **Agent API:** JSON-RPC query, explain, patch, diff, dry-run, regenerate, pick, export
+- **Structural authoring:** create and remove parameters, sketches, features, references,
+  assembly components/instances/mates, and drawing sheets/views/dimensions through `DesignPatch`
+- **MCP server:** `opencad mcp` exposes inspection, authoring, dry-run, review, and apply to agent hosts
 - **Git-native review:** deterministic JSON/HTML/GIF artifacts, policy checks, patch rebase, three-way semantic merge
 - **Headless output:** PNG/GIF rendering plus STL and SVG export
 
