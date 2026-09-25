@@ -375,3 +375,27 @@ fn rebase_detects_concurrent_edits_to_the_same_feature() {
     assert_eq!(conflicts[0].kind, ConflictKind::Feature);
     assert_eq!(conflicts[0].id, "feature:hole_mount");
 }
+
+/// MCAD-P7-006: impossible feature values are rejected at dry-run, including
+/// value edits that make an existing feature degenerate.
+#[test]
+fn degenerate_feature_values_are_rejected_before_regeneration() {
+    let doc = bracket();
+    let zero = dry_run_patch_document(&doc, &DesignPatch::set_parameter("param:thickness", "0 mm"));
+    assert!(!zero.validation.is_ok());
+    let text = format!("{:?}", zero.validation);
+    assert!(text.contains("extrude length must be at least"), "{text}");
+    assert!(text.contains("hole depth must be at least"), "{text}");
+
+    let mut flat_fillet = top_fillet();
+    flat_fillet["node"]["definition"]["radius_expr"] = json!("0 mm");
+    let message = rejection(&doc, json!([flat_fillet]));
+    assert!(
+        message.contains("fillet radius must be at least"),
+        "{message}"
+    );
+
+    // A valid value edit still passes.
+    let ok = dry_run_patch_document(&doc, &DesignPatch::set_parameter("param:thickness", "8 mm"));
+    assert!(ok.validation.is_ok(), "{:?}", ok.validation);
+}

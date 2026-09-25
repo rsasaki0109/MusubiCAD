@@ -379,6 +379,32 @@ pub(crate) fn validate_stable_id(id: &str, prefix: &str) -> Result<()> {
     }
 }
 
+/// Reject feature values regeneration cannot use (MCAD-P7-006), for every
+/// feature, so a value edit such as a zero thickness fails at dry-run.
+pub(crate) fn validate_feature_values(
+    state: &DesignState,
+    scope: &indexmap::IndexMap<String, f64>,
+) -> Result<()> {
+    let failures: BTreeSet<String> = state
+        .feature_nodes
+        .iter()
+        .filter(|node| !node.suppressed)
+        .filter_map(|node| {
+            node.definition
+                .validate_values(scope)
+                .err()
+                .map(|error| format!("feature '{}': {error}", node.id))
+        })
+        .collect();
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(OpenCadError::validation(
+            failures.into_iter().collect::<Vec<_>>().join("; "),
+        ))
+    }
+}
+
 /// Precondition failure for a check that needs the complete design state.
 fn state_required(key: String) -> (String, String) {
     (
@@ -943,7 +969,8 @@ impl DesignPatch {
         // Structural checks run first so a dangling reference is reported
         // with its complete dependent list rather than as an evaluation error.
         self.validate_structural_candidate(state, &next)?;
-        evaluate_param_graph(&next.parameters)?;
+        let scope = evaluate_param_graph(&next.parameters)?;
+        validate_feature_values(&next, &scope)?;
         *state = next;
         Ok(())
     }

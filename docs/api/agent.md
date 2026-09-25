@@ -460,6 +460,18 @@ Rules shared by every structural operation:
   consumes fails and lists every consumer. Feature operations need the
   authored display order, so in-memory `opencad.patch_*` requests without it
   are rejected.
+- **Feature values.** Every patch, including value edits, rejects feature
+  values regeneration cannot use, evaluated the way regeneration will
+  (expression first, stored value otherwise):
+  - extrude lengths, hole depths, fillet radii, chamfer distances, and
+    pattern spacings below `1e-9 m`;
+  - pattern counts of `0`;
+  - zero or non-finite axes, directions, and plane normals;
+  - revolve angles outside `(0, 2π]`;
+  - invalid imported-solid placements.
+
+  For example, setting `thickness` to `0 mm` fails at dry-run and names every
+  affected feature. Suppressed features are skipped.
 - **Limits.** A patch holds at most 10,000 operations.
 - **Complete state required.** Structural operations run only through
   `build_patch_candidate` / `DesignPatch::apply_to_state` and the document,

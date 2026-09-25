@@ -18,6 +18,7 @@ pub mod revolve;
 pub mod sketch_bridge;
 pub mod sketch_feature;
 pub mod topo_resolve;
+pub mod values;
 
 pub use cache::{CachedFeature, RegenerationCache};
 pub use chamfer::{ChamferFeature, ChamferFeatureExecutor};
