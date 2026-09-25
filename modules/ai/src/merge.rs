@@ -275,7 +275,23 @@ fn merge_by_id<T: Clone + Serialize>(
             chosen.insert(id.clone(), value.clone());
         }
     }
-    // Retained IDs keep base order; additions follow in ID order.
+    // When the merged content equals exactly one side, keep that side's
+    // collection verbatim, so a collection only one branch changed merges
+    // to that branch's bytes (Git takes such files without a driver; see
+    // ADR-015).  Otherwise retained IDs keep base order and additions follow
+    // in ID order; both rules are symmetric in ours/theirs.
+    let identities = |items: &BTreeMap<String, T>| -> BTreeMap<String, Vec<u8>> {
+        items
+            .iter()
+            .map(|(id, item)| (id.clone(), identity(item)))
+            .collect()
+    };
+    let merged = identities(&chosen);
+    match (merged == identities(&o), merged == identities(&t)) {
+        (true, false) => return ours.clone(),
+        (false, true) => return theirs.clone(),
+        _ => {}
+    }
     let mut result = Vec::with_capacity(chosen.len());
     for item in base {
         if let Some(value) = chosen.remove(&id_of(item)) {
@@ -306,12 +322,24 @@ fn merge_parameters(
             })
             .collect()
     };
+    let first_new_conflict = conflicts.len();
     let entries = merge_by_id(
         ConflictKind::Parameter,
         [&authored(base), &authored(ours), &authored(theirs)],
         |entry| entry.id.clone(),
         conflicts,
     );
+    // Parameter conflicts show the expression, as value conflicts always did.
+    for conflict in &mut conflicts[first_new_conflict..] {
+        for side in [&mut conflict.base, &mut conflict.ours, &mut conflict.theirs] {
+            if let Some(entry) = side
+                .as_deref()
+                .and_then(|text| serde_json::from_str::<ParameterEntry>(text).ok())
+            {
+                *side = Some(entry.expr);
+            }
+        }
+    }
     let edges = |state: &DesignState| -> Vec<(String, String)> {
         state
             .parameters
@@ -352,7 +380,35 @@ fn merge_parameters(
     for (source, target) in merged_edges {
         let _ = graph.add_dependency(source, target);
     }
-    graph
+    // As in `merge_by_id`, a result equal to exactly one side keeps that
+    // side's graph verbatim (entry and edge order included).
+    let authored_graph = |graph: &ParamGraph| -> Vec<u8> {
+        let mut entries: Vec<ParameterEntry> = graph
+            .entries()
+            .cloned()
+            .map(|mut entry| {
+                entry.dirty = false;
+                entry
+            })
+            .collect();
+        entries.sort_by(|left, right| left.id.cmp(&right.id));
+        let mut edges: Vec<(String, String)> = graph
+            .dependency_edges()
+            .iter()
+            .map(|edge| (edge.source.clone(), edge.target.clone()))
+            .collect();
+        edges.sort();
+        identity(&(entries, edges))
+    };
+    let merged = authored_graph(&graph);
+    match (
+        merged == authored_graph(&ours.parameters),
+        merged == authored_graph(&theirs.parameters),
+    ) {
+        (true, false) => ours.parameters.clone(),
+        (false, true) => theirs.parameters.clone(),
+        _ => graph,
+    }
 }
 
 /// Merge the authored feature display order.

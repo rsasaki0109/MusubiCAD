@@ -56,6 +56,8 @@ pub fn run() -> Result<()> {
         Some("merge") => git_workflow::merge(args.collect()),
         Some("rebase-patch") => git_workflow::rebase(args.collect()),
         Some("import-step") => crate::import::cmd_import_step(args.collect()),
+        Some("merge-driver") => git_workflow::merge_driver(args.collect()),
+        Some("conflicts") => git_workflow::conflicts(args.collect()),
         Some("check") => policy_check::check(args.collect()),
         Some("agent") => cmd_agent(args.collect()),
         Some("mcp") => cmd_mcp(args.collect()),
@@ -547,6 +549,8 @@ COMMANDS:
     merge       Semantically merge base/ours/theirs Design Graph documents
     rebase-patch Rebase a DesignPatch onto a newer document state
     import-step Import a STEP file into a part as a fixed imported solid
+    merge-driver Git merge driver for .ocad.d documents (`merge-driver install` to set up)
+    conflicts   Typed semantic conflicts of an unfinished git merge
     check       Evaluate an engineering policy as a CI gate
     agent       JSON-RPC 2.0 server on stdio for programmatic access
     mcp         Model Context Protocol server on stdio for agent hosts
