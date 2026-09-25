@@ -1,8 +1,8 @@
 # ADR-013: Structural DesignPatch operations
 
-Status: Proposed  
+Status: Accepted  
 Date: 2026-09-25  
-Roadmap: MCAD-P7-001 (proposed)
+Roadmap: MCAD-P7-001
 
 ## Context
 
