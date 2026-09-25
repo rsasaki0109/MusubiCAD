@@ -34,36 +34,59 @@ fn rotation_matrix_to_axis_angle(rotation: [[f64; 3]; 3]) -> (DVec3, f64) {
 #[cfg(feature = "occt")]
 const SHELL_MIN_VOLUME_LOSS: f64 = 1e-9;
 
-/// Largest distance from a face pick's point to the face's plane (the
-/// offset along the face normal at the nearest face point), in metres.
+/// Largest distance from a face boundary point to a face pick's plane, in
+/// metres.
 #[cfg(feature = "occt")]
 const FACE_PICK_PLANE_TOLERANCE_M: f64 = 1e-6;
 
-/// Smallest cosine between a face pick's normal and the face normal.  Picks
-/// come from single-precision tessellation normals, so this allows about
-/// 2.6 degrees.
+/// Chordal deflection used to sample face boundary edges for picking, in
+/// metres.
 #[cfg(feature = "occt")]
-const FACE_PICK_MIN_NORMAL_COS: f64 = 0.999;
+const FACE_PICK_SAMPLE_DEFLECTION_M: f64 = 1e-5;
 
-/// Find the one face of `solid` matching `pick`: the pick point lies in the
-/// face's plane at its nearest point, the normals agree, and among such
-/// faces the nearest wins.  Two equally near faces are ambiguous and fail.
+/// Find the one face of `solid` matching `pick`.
+///
+/// A face matches when every sampled point of its boundary edges lies within
+/// `FACE_PICK_PLANE_TOLERANCE_M` of the plane through `pick.point_m` with
+/// normal `pick.normal`, so picks select planar faces.  Among matches, the
+/// face whose boundary-sample centroid is nearest the pick point wins; two
+/// equally near faces are ambiguous and fail.  (`Face::project` is avoided:
+/// cadrum panics when OCCT cannot project onto a face.)
 #[cfg(feature = "occt")]
 fn pick_face<'a>(solid: &'a Solid, pick: &FacePick) -> Result<&'a cadrum::Face> {
     let point = DVec3::from_array(pick.point_m);
-    let hint = DVec3::from_array(pick.normal).normalize_or_zero();
+    let normal = DVec3::from_array(pick.normal).normalize_or_zero();
+    if normal == DVec3::ZERO {
+        return Err(OpenCadError::validation(
+            "face pick normal must be non-zero",
+        ));
+    }
+    let sampling = cadrum::Tessellation {
+        deflection_linear: FACE_PICK_SAMPLE_DEFLECTION_M,
+        deflection_angular: 0.1,
+        relative_linear: false,
+    };
     let mut best: Option<(f64, &cadrum::Face)> = None;
     let mut tied = false;
     for face in solid.iter_face() {
-        let (nearest, normal) = face.project(point);
-        let normal = normal.normalize_or_zero();
-        let offset = point - nearest;
-        if offset.dot(normal).abs() > FACE_PICK_PLANE_TOLERANCE_M
-            || normal.dot(hint) < FACE_PICK_MIN_NORMAL_COS
+        let samples: Vec<DVec3> = face
+            .iter_edge()
+            .flat_map(|edge| {
+                let mut points = edge.approximation_segments(sampling);
+                points.push(edge.start_point());
+                points.push(edge.end_point());
+                points
+            })
+            .collect();
+        if samples.is_empty()
+            || samples
+                .iter()
+                .any(|sample| (*sample - point).dot(normal).abs() > FACE_PICK_PLANE_TOLERANCE_M)
         {
             continue;
         }
-        let distance = offset.length();
+        let centroid = samples.iter().copied().sum::<DVec3>() / samples.len() as f64;
+        let distance = (centroid - point).length();
         match best {
             Some((best_distance, _))
                 if (distance - best_distance).abs() <= FACE_PICK_PLANE_TOLERANCE_M =>
@@ -84,7 +107,7 @@ fn pick_face<'a>(solid: &'a Solid, pick: &FacePick) -> Result<&'a cadrum::Face> 
             pick.point_m
         ))),
         (None, _) => Err(OpenCadError::validation(format!(
-            "face pick at {:?} m with normal {:?} matches no face of the body",
+            "face pick at {:?} m with normal {:?} matches no planar face of the body",
             pick.point_m, pick.normal
         ))),
     }

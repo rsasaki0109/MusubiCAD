@@ -691,6 +691,19 @@ Holes accept `face_ref` for semantic targeting; pass `semantic_refs` during rege
 }
 ```
 
+Fillet and chamfer `face_ref` currently works only on top faces in the OCCT
+backend.
+- A top face (role `top`) falls back to the top perimeter.
+- Any other face fails regeneration with "selector matched no edges".
+
+Faces resolved from tessellation carry face IDs of a deep copy, which do not
+name faces of the stored body. Picking the perimeter by geometry selects the
+right edges, but OCCT's fillet and chamfer builders then fail
+nondeterministically on side-face perimeters: 3–8 of 10 identical runs
+succeed. Deterministic regeneration takes priority, so geometric picking is
+not enabled for fillet and chamfer. To round a single top edge, use `edge_ref`
+with a `top@±x` or `top@±y` role. Other edges are not selectable yet.
+
 `spacing_expr` is evaluated during regeneration (same timing as `length_expr` on extrude). Use `set_feature_expr` with `field: "spacing_expr"` to patch it parametrically.
 
 ## Linked plugin discovery and invocation

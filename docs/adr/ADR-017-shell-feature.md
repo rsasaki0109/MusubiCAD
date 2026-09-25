@@ -97,15 +97,17 @@ Faces are picked by geometry rather than by kernel face ID, for two reasons:
   not name faces of the stored solid.
 
 - **OCCT.** Wraps `cadrum::Solid::shell` (`BRepOffsetAPI_MakeThickSolid`)
-  with a negative thickness, so the wall grows inward. Each pick selects the
-  stored solid's face that satisfies all of the following:
-  - the pick point lies within `1e-6 m` of the face's plane, measured at the
-    nearest face point;
-  - the face normal is within cosine `0.999` of the pick normal (about 2.6°,
-    because tessellation normals are single precision);
-  - the face is the nearest such face.
+  with a negative thickness, so the wall grows inward. Each pick selects
+  the stored solid's planar face whose boundary lies in the pick plane:
+  - every sampled point of the face's boundary edges must lie within
+    `1e-6 m` of the plane through the pick point with the pick normal
+    (edges are sampled at `1e-5 m` chordal deflection);
+  - among matching faces, the one whose boundary-sample centroid is nearest
+    the pick point wins.
 
   If no face matches, or two faces are equally near, the pick fails.
+  `Face::project` is not used, because cadrum panics when OCCT cannot
+  project a point onto a face (observed on cylindrical hole faces).
 - **Mock.** Returns a deterministic body derived from the inputs, so pipeline
   tests run without OCCT.
 

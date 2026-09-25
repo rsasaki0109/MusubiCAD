@@ -129,3 +129,42 @@ fn a_wall_thicker_than_the_part_fails_regeneration() {
         "{error}"
     );
 }
+
+/// Picking the open face walks every face of the body, including the
+/// mounting hole's cylindrical face.  Projection-based picking panicked
+/// inside cadrum there; the pick must instead fail or succeed normally.
+/// Shelling this body then fails in OCCT (a through hole pierces the open
+/// face, ADR-017 §4), which must surface as an error, not a panic.
+#[test]
+fn a_holed_body_reports_an_error_instead_of_panicking() {
+    let kernel = OcctGeometryKernel::new();
+    let mut model = opencad_feature::bracket_with_hole().expect("bracket");
+    model
+        .add_node(FeatureNode::new(
+            "feature:shell",
+            "Shell",
+            FeatureDefinition::Shell(ShellFeature::new(
+                "feature:hole_mount",
+                Length::from_meters(0.001),
+                None,
+                vec!["ref:face:bracket_top".into()],
+            )),
+        ))
+        .expect("shell");
+    model
+        .add_dependency("feature:hole_mount", "feature:shell")
+        .expect("edge");
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        model.regenerate(
+            &kernel,
+            &FeatureRegistry::with_defaults(),
+            Some(&opencad_graph::bracket_parameters()),
+            Some(&bracket_semantic_refs()),
+        )
+    }));
+    let regenerated = result.expect("regeneration must not panic");
+    assert!(
+        regenerated.is_err(),
+        "OCCT cannot shell a pierced open face"
+    );
+}
