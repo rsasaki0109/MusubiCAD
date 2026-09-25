@@ -482,7 +482,8 @@
             "linear_pattern",
             "circular_pattern",
             "mirror_pattern",
-            "imported_solid"
+            "imported_solid",
+            "shell"
           ]
         }
       }

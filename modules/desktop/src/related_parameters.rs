@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use opencad_feature::{
     ChamferFeature, CircularPatternFeature, ExtrudeFeature, FeatureDefinition, FeatureNode,
     FilletFeature, HoleFeature, LinearPatternFeature, MirrorPatternFeature, RevolveFeature,
+    ShellFeature,
 };
 use opencad_graph::parameter_names_in_expr;
 use opencad_sketch::{Constraint, DistanceTarget, Sketch, SketchEntity};
@@ -150,7 +151,8 @@ fn source_feature_ids(node: &FeatureNode) -> Vec<String> {
             vec![source_feature.clone()]
         }
         FeatureDefinition::Fillet(FilletFeature { target_feature, .. })
-        | FeatureDefinition::Chamfer(ChamferFeature { target_feature, .. }) => {
+        | FeatureDefinition::Chamfer(ChamferFeature { target_feature, .. })
+        | FeatureDefinition::Shell(ShellFeature { target_feature, .. }) => {
             vec![target_feature.clone()]
         }
         _ => Vec::new(),
@@ -171,6 +173,9 @@ fn exprs_from_feature(node: &FeatureNode) -> Vec<String> {
         }
         FeatureDefinition::Chamfer(ChamferFeature { distance_expr, .. }) => {
             push_expr_option(&mut exprs, distance_expr);
+        }
+        FeatureDefinition::Shell(ShellFeature { thickness_expr, .. }) => {
+            push_expr_option(&mut exprs, thickness_expr);
         }
         FeatureDefinition::LinearPattern(LinearPatternFeature { spacing_expr, .. }) => {
             push_expr_option(&mut exprs, spacing_expr);

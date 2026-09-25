@@ -31,6 +31,7 @@ pub enum FeatureExprField {
     RadiusExpr,
     DistanceExpr,
     SpacingExpr,
+    ThicknessExpr,
 }
 
 /// Supported semantic ref fields for patch operations.
@@ -68,6 +69,7 @@ impl FeatureExprField {
             Self::RadiusExpr => "radius_expr",
             Self::DistanceExpr => "distance_expr",
             Self::SpacingExpr => "spacing_expr",
+            Self::ThicknessExpr => "thickness_expr",
         }
     }
 
@@ -78,8 +80,9 @@ impl FeatureExprField {
             "radius_expr" => Ok(Self::RadiusExpr),
             "distance_expr" => Ok(Self::DistanceExpr),
             "spacing_expr" => Ok(Self::SpacingExpr),
+            "thickness_expr" => Ok(Self::ThicknessExpr),
             _ => Err(OpenCadError::validation(format!(
-                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', or 'spacing_expr'"
+                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', or 'thickness_expr'"
             ))),
         }
     }
@@ -1301,6 +1304,10 @@ fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &st
         }
         (FeatureDefinition::LinearPattern(pattern), FeatureExprField::SpacingExpr) => {
             pattern.spacing_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::Shell(shell), FeatureExprField::ThicknessExpr) => {
+            shell.thickness_expr = Some(expr.to_string());
             Ok(())
         }
         (definition, field) => Err(OpenCadError::validation(format!(

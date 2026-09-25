@@ -315,6 +315,7 @@ STEP output is deterministic: the header time stamp is fixed at
 | `radius_expr` | `fillet` | `radius` |
 | `distance_expr` | `chamfer` | `distance` |
 | `spacing_expr` | `linear_pattern` | `spacing` |
+| `thickness_expr` | `shell` | `thickness` |
 
 ### `set_feature_ref` fields
 
@@ -395,6 +396,28 @@ The rotation must be proper and orthonormal within `1e-9`. `join` and `cut`
 need `target_feature`. `opencad import-step <doc> <file.step> --id <feature:id>
 [--operation new_body|join|cut] [--target <feature:id>] [--translate-mm x,y,z]`
 builds and applies this patch; it reuses an existing identical attachment.
+
+A `shell` feature hollows a body to a uniform inward wall and removes the
+listed faces to form openings
+([ADR-017](../adr/ADR-017-shell-feature.md)):
+
+```json
+{ "type": "shell", "target_feature": "feature:box",
+  "thickness": { "value_si": 0.002 }, "thickness_expr": "wall",
+  "open_face_refs": ["ref:face:box_top"] }
+```
+
+- The thickness must be greater than `1e-6 m`.
+- At least one open face is required. Each must be a unique, existing
+  `ref:face:` reference.
+- Every open face is resolved on the target body itself. If one does not
+  resolve, regeneration fails; there is no role fallback.
+- A wall that does not fit the part fails regeneration.
+- Known limitation: OCCT cannot shell a body whose open face is pierced by a
+  through hole. Shell before cutting the hole.
+
+`examples/agent/add_shell_patch.json` authors a 60 × 40 × 20 mm enclosure
+with 2 mm walls from an empty document.
 
 Assembly and drawing objects use the stored JSON shapes of
 `graph/assemblies.json` and `graph/drawings.json`, with IDs under the

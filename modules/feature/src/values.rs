@@ -149,6 +149,17 @@ impl FeatureDefinition {
                 Ok(())
             }
             Self::ImportedSolid(def) => def.validate(),
+            Self::Shell(def) => {
+                def.validate()?;
+                let thickness = match &def.thickness_expr {
+                    Some(expr) => match eval_length_expr(expr, scope) {
+                        Ok(value) => value,
+                        Err(_) => return Ok(()),
+                    },
+                    None => def.thickness.meters(),
+                };
+                crate::shell::validate_thickness(thickness)
+            }
         }
     }
 }

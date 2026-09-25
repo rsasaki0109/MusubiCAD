@@ -194,6 +194,11 @@ impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
         self.face_discoveries
     }
 
+    fn face_discoveries_on(&self, body: &KernelBody) -> Result<Vec<FaceRefDiscovery>> {
+        let nodes: Vec<FeatureNode> = self.nodes.values().cloned().collect();
+        discover_face_refs_from_body(self.kernel, body, &nodes)
+    }
+
     fn edge_discoveries(&self) -> &[opencad_geometry::EdgeRefDiscovery] {
         self.edge_discoveries
     }

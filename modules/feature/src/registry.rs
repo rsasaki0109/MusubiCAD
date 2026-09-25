@@ -38,6 +38,7 @@ impl FeatureRegistry {
         registry.register(Box::new(CircularPatternFeatureExecutor));
         registry.register(Box::new(MirrorPatternFeatureExecutor));
         registry.register(Box::new(crate::imported::ImportedSolidExecutor));
+        registry.register(Box::new(crate::shell::ShellFeatureExecutor));
         registry
     }
 

@@ -15,6 +15,7 @@ pub mod pattern;
 pub mod regenerate;
 pub mod registry;
 pub mod revolve;
+pub mod shell;
 pub mod sketch_bridge;
 pub mod sketch_feature;
 pub mod topo_resolve;
@@ -43,6 +44,7 @@ pub use regenerate::{
 };
 pub use registry::FeatureRegistry;
 pub use revolve::{RevolveFeature, RevolveFeatureExecutor};
+pub use shell::{ShellFeature, ShellFeatureExecutor, SHELL_MIN_THICKNESS_M};
 pub use sketch_bridge::{
     extrude_direction_for_sketch, placement_from_workplane, prepare_sketch, profile_to_solved,
     profile_to_solved_with_context, resolve_sketch_profile,
