@@ -64,6 +64,19 @@ The persisted input is the semantic references, never kernel face IDs.
 - **Known limitation.** OCCT cannot shell a body whose open face is pierced
   by a through hole. Users shell first and cut the hole afterwards.
 - **New faces.** Faces created by the shell receive no semantic roles.
+- **Opened faces in reference provenance.** Reference provenance
+  (`references:` in `opencad regen`) resolves every semantic reference
+  against the final body. An opened face no longer exists there. Its
+  semantic description (for example the `top` face of `feature:box`) then
+  matches two faces equally: the open rim and the inner floor. So the
+  reference is reported as `Ambiguous`, and no face is chosen.
+  - The shell itself is unaffected, because it resolves its open faces on
+    the target body.
+  - A `required_reference` assertion on an opened face fails closed, so do
+    not add one.
+  - Resolving references against their creating feature's output would
+    remove this report, but it changes reference semantics and needs its
+    own ADR. The report is accepted for now.
 
 ## 5. Transaction and DesignPatch contract
 

@@ -415,6 +415,17 @@ listed faces to form openings
 - A wall that does not fit the part fails regeneration.
 - Known limitation: OCCT cannot shell a body whose open face is pierced by a
   through hole. Shell before cutting the hole.
+- After a shell, regeneration reports each opened face reference as
+  `Ambiguous` in `references:`. For example: `ref:face:box_top Ambiguous 2
+  candidates tie`.
+  - The cause: references are checked against the final body, where the
+    opened face is gone and both the rim and the inner floor match its
+    description.
+  - The shell geometry is correct.
+  - Do not put a `required_reference` assertion on an opened face; it
+    would fail.
+
+  See ADR-017 §4.
 
 `examples/agent/add_shell_patch.json` authors a 60 × 40 × 20 mm enclosure
 with 2 mm walls from an empty document.
