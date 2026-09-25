@@ -38,6 +38,7 @@ the public model carry explicit units.
 | 4 | Plugin API | 0, 3 | Versioned, deterministic extension boundary with an example |
 | 5 | CAD reference and output quality | 2, 3, existing assembly/drawing | Stable references and end-to-end regression coverage |
 | 6 | Intent Integrity | 3, 5 | Fail-closed, explainable, incremental, Git-native regeneration |
+| 7 | Design authoring | 3, 6 | New designs authored end-to-end through validated, reviewable `DesignPatch` operations |
 
 Phase 1 and Phase 2 may proceed in parallel after Phase 0. Phase 3 is the
 integration gate for mutating workflows; Phase 4 depends on that gate so plugins
@@ -373,6 +374,44 @@ GitHub review goldens.
 
 **Known risks:** incomplete cache keys, overly strict reference rejection,
 assertion-language scope creep, benchmark noise, and review DTO/schema growth.
+
+## Phase 7 — Design authoring
+
+**Objective:** let humans and agents create new designs, not only edit the
+parameters of built-in templates, through the same `DesignPatch`, transaction,
+history, review, and merge contracts.
+
+**Dependencies:** Phase 3 (atomic patch boundary) and Phase 6 (provenance,
+assertions, trace, and merge consume structural changes).
+
+Today every `PatchOperation` mutates an existing value, and new documents come
+only from Rust-coded `DocumentTemplate` variants. No supported surface can add,
+remove, or reorder parameters, sketches, constraints, or features.
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | In progress (ADR proposed) |
+
+MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
+with parameter/assertion operations; sketch operations; feature-graph
+derivation proven against every fixture; feature operations with diff, impact,
+and review rendering; structural rebase conflicts; and assembly/drawing
+structural operations.
+
+**Definition of done:** starting from an empty part document, a checked-in
+patch sequence rebuilds `examples/bracket.ocad.d` with canonical-equal
+`graph/*.json`, and the 22-node actuator is reproduced by patches with mass and
+bounds matching the P5-005 golden within its tolerances; every failed structural
+patch leaves the document, history, and revision unchanged.
+
+**Tests:** per-operation local validation; final-state referential validation;
+failure-injection atomicity; dry-run/apply parity; derivation-equals-fixture
+checks; removal dependent listing; v1/v2 revision rules; rebase conflict and
+merge-order determinism fixtures; patch schema validation; OCCT integration for
+the flagship rebuild.
+
+**Known risks:** feature input fields missing from graph derivation, verbose
+removal patches, larger revision payloads, and ID-naming burden on agents.
 
 ## Cross-phase verification matrix
 
