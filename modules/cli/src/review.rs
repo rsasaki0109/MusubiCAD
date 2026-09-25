@@ -675,6 +675,89 @@ fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
         SemanticChange::DrawingViewChanged { id, before, after } => {
             (format!("Drawing view {id}"), before.clone(), after.clone())
         }
+        SemanticChange::AssertionAdded { id } => {
+            (format!("Assertion {id}"), "—".into(), "Added".into())
+        }
+        SemanticChange::AssertionRemoved { id } => (
+            format!("Assertion {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssertionChanged { id, before, after } => {
+            (format!("Assertion {id}"), before.clone(), after.clone())
+        }
+        SemanticChange::AssemblyComponentAdded { id } => (
+            format!("Assembly component {id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::AssemblyComponentRemoved { id } => (
+            format!("Assembly component {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssemblyComponentChanged { id, before, after } => (
+            format!("Assembly component {id}"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::AssemblyPatternAdded { id } => {
+            (format!("Assembly pattern {id}"), "—".into(), "Added".into())
+        }
+        SemanticChange::AssemblyPatternRemoved { id } => (
+            format!("Assembly pattern {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssemblyPatternChanged { id, before, after } => (
+            format!("Assembly pattern {id}"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::DrawingDimensionAdded { id } => (
+            format!("Drawing dimension {id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::DrawingDimensionRemoved { id } => (
+            format!("Drawing dimension {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::DrawingDimensionChanged { id, before, after } => (
+            format!("Drawing dimension {id}"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::FeatureMoved { id, before, after } => (
+            format!("Feature {id} position"),
+            before.clone(),
+            after.clone(),
+        ),
+        SemanticChange::SketchAdded { id } => (format!("Sketch {id}"), "—".into(), "Added".into()),
+        SemanticChange::SketchRemoved { id } => {
+            (format!("Sketch {id}"), "Present".into(), "Removed".into())
+        }
+        SemanticChange::SketchEntityAdded { sketch_id, id } => (
+            format!("Sketch entity {sketch_id}/{id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::SketchEntityRemoved { sketch_id, id } => (
+            format!("Sketch entity {sketch_id}/{id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::SketchConstraintAdded { sketch_id, id } => (
+            format!("Sketch constraint {sketch_id}/{id}"),
+            "—".into(),
+            "Added".into(),
+        ),
+        SemanticChange::SketchConstraintRemoved { sketch_id, id } => (
+            format!("Sketch constraint {sketch_id}/{id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
     }
 }
 

@@ -38,6 +38,7 @@ the public model carry explicit units.
 | 4 | Plugin API | 0, 3 | Versioned, deterministic extension boundary with an example |
 | 5 | CAD reference and output quality | 2, 3, existing assembly/drawing | Stable references and end-to-end regression coverage |
 | 6 | Intent Integrity | 3, 5 | Fail-closed, explainable, incremental, Git-native regeneration |
+| 7 | Design authoring | 3, 6 | New designs authored end-to-end through validated, reviewable `DesignPatch` operations |
 
 Phase 1 and Phase 2 may proceed in parallel after Phase 0. Phase 3 is the
 integration gate for mutating workflows; Phase 4 depends on that gate so plugins
@@ -373,6 +374,106 @@ GitHub review goldens.
 
 **Known risks:** incomplete cache keys, overly strict reference rejection,
 assertion-language scope creep, benchmark noise, and review DTO/schema growth.
+
+## Phase 7 — Design authoring
+
+**Objective:** let humans and agents create new designs, not only edit the
+parameters of built-in templates, through the same `DesignPatch`, transaction,
+history, review, and merge contracts.
+
+**Dependencies:** Phase 3 (atomic patch boundary) and Phase 6 (provenance,
+assertions, trace, and merge consume structural changes).
+
+Today every `PatchOperation` mutates an existing value, and new documents come
+only from Rust-coded `DocumentTemplate` variants. No supported surface can add,
+remove, or reorder parameters, sketches, constraints, or features.
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | Complete (ADR accepted; slices 1–6 delivered) |
+
+MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
+with parameter/assertion operations; sketch operations; feature-graph
+derivation proven against every fixture; feature operations with diff, impact,
+and review rendering; structural rebase conflicts; and assembly/drawing
+structural operations.
+
+Slice 1 is delivered: `add_parameter`, `remove_parameter`, `add_assertion`,
+and `remove_assertion` with ID grammar, final-state validation, sorted
+dependent listing on removal, and derived parameter dependency edges.
+`DesignState` carries sketches and assertions; revision v2 hashes them and v1
+remains accepted only for value-edit patches. Document, CLI, and Agent paths
+share `opencad_file::document_design_state`; assertion changes are diffed,
+rendered by CLI diff/review, and rebased by stable ID. Coverage is in
+`modules/ai/tests/structural_patch.rs` and
+`modules/file/tests/structural_patch.rs`.
+
+Slice 2 is delivered: add/remove sketch, sketch entity, and sketch constraint
+operations plus `sketch_exists`, `sketch_entity_exists`, and
+`assertion_exists` preconditions. Final-state validation covers point and
+entity references, dimension/constraint pairing, parameter use in coordinate
+and constraint expressions, `face_ref` workplanes, sketch-feature users, and
+closed-profile resolution for every extrude, hole, and revolve on a touched
+sketch. Touched sketches get re-detected profiles and an `unknown` solve state.
+Sketch changes are diffed, dirty the consuming sketch feature suffix, render in
+CLI diff/review, and rebase per `<sketch>/<member>` ID. Coverage is in
+`modules/file/tests/sketch_patch.rs`, including regeneration of an edited
+fixture.
+
+Slice 3 is delivered: `opencad_feature::derive_feature_graph` derives Feature
+Graph entries and edges from definitions and the authored display order. It
+reproduces the order, entries, edge set, and regeneration order of all 13 part
+examples; eight match byte-for-byte and five pattern templates differ only in
+cosmetic edge order (`modules/file/tests/feature_graph_derivation.rs`). A
+registration test fails if a definition gains an unregistered input field.
+
+Slice 4 is delivered: add, remove, move, suppress, and replace feature
+operations plus add/remove semantic reference operations. `DesignState` carries
+`feature_order` in revision v2; the file layer re-derives `feature_graph` only
+when Feature Graph inputs change. Removal lists every consumer; added features
+must resolve sketches, references, parameters, and closed profiles; moves may
+not place a feature before its inputs. `feature_moved` is diffed and dirties
+nothing. `opencad_ai::authoring_patch` expresses a part as one structural
+patch, and the definition of done below is met by
+`modules/file/tests/authoring_rebuild.rs`; an OCCT review of
+`examples/agent/add_top_fillet_feature_patch.json` regenerates the added
+fillet. Coverage is in `modules/file/tests/feature_patch.rs`.
+
+Slice 5 is delivered: structural conflicts carry a reason (`add_add`,
+`remove_modify`, `anchor_missing`, `order`, `invalid_result`). Rebase drops
+additions the new base already contains and requires the rebased patch to
+apply to the new base. `semantic_three_way_merge` merges the complete v2 state
+by stable ID, merges feature display order with ID-ordered same-anchor
+inserts, and is independent of which side is "ours". The result must pass
+`validate_design_state`. `opencad merge` now writes back sketches, assertions,
+and a re-derived Feature Graph; before this change the other side's sketch and
+assertion edits were silently dropped. Coverage is in
+`modules/file/tests/structural_merge.rs`,
+`modules/file/tests/state_validation.rs`, and a CLI merge test.
+
+Slice 6 is delivered: add/remove component, instance, mate, connector
+(remove), assembly pattern, sheet, drawing view, and drawing dimension
+operations with fail-closed removal and document-level validation. Component,
+pattern, and dimension changes are diffed. `authoring_patch` covers
+assemblies and drawings, and all 18 checked-in examples are rebuilt from empty
+documents: the 4 assembly and drawing examples byte-for-byte
+(`modules/file/tests/assembly_drawing_patch.rs`,
+`modules/file/tests/authoring_rebuild.rs`).
+
+**Definition of done:** starting from an empty part document, a checked-in
+patch sequence rebuilds `examples/bracket.ocad.d` with canonical-equal
+`graph/*.json`, and the 22-node actuator is reproduced by patches with mass and
+bounds matching the P5-005 golden within its tolerances; every failed structural
+patch leaves the document, history, and revision unchanged.
+
+**Tests:** per-operation local validation; final-state referential validation;
+failure-injection atomicity; dry-run/apply parity; derivation-equals-fixture
+checks; removal dependent listing; v1/v2 revision rules; rebase conflict and
+merge-order determinism fixtures; patch schema validation; OCCT integration for
+the flagship rebuild.
+
+**Known risks:** feature input fields missing from graph derivation, verbose
+removal patches, larger revision payloads, and ID-naming burden on agents.
 
 ## Cross-phase verification matrix
 

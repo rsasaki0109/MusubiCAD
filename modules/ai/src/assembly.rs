@@ -1,15 +1,17 @@
 //! Assembly query, patch, and diff helpers for the Agent API (M3.3).
 
+use std::collections::BTreeSet;
+
 use opencad_assembly::{
-    validate_connectors, validate_mates, validate_patterns, AssemblyModel, Connector, Instance,
-    Mate,
+    validate_connectors, validate_mates, validate_patterns, AssemblyModel, Component, Connector,
+    Instance, Mate, MateEntity, MateKind,
 };
 use opencad_core::{InstanceId, OpenCadError, Result};
 use opencad_geometry::RigidTransform;
 use opencad_graph::{build_summary, DesignDiff, SemanticChange};
 use serde::{Deserialize, Serialize};
 
-use crate::patch::PatchOperation;
+use crate::patch::{validate_stable_id, PatchOperation};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssemblyInstanceInfo {
@@ -100,12 +102,235 @@ fn mate_kind_name(kind: &opencad_assembly::MateKind) -> String {
     }
 }
 
+/// Reject creating an ID that already exists or was removed earlier in the
+/// same patch (ADR-013 §2).
+fn check_new_id(
+    id: &str,
+    prefix: &str,
+    exists: bool,
+    removed: &BTreeSet<String>,
+    kind: &str,
+) -> Result<()> {
+    validate_stable_id(id, prefix)?;
+    if removed.contains(id) {
+        return Err(OpenCadError::validation(format!(
+            "{kind} id '{id}' was removed earlier in this patch and cannot be reused"
+        )));
+    }
+    if exists {
+        return Err(OpenCadError::validation(format!(
+            "{kind} '{id}' already exists"
+        )));
+    }
+    Ok(())
+}
+
+fn remove_by_id<T>(
+    items: &mut Vec<T>,
+    id: &str,
+    item_id: impl Fn(&T) -> &str,
+    kind: &str,
+    removed: &mut BTreeSet<String>,
+) -> Result<()> {
+    let index = items
+        .iter()
+        .position(|item| item_id(item) == id)
+        .ok_or_else(|| OpenCadError::validation(format!("unknown {kind} '{id}'")))?;
+    items.remove(index);
+    removed.insert(id.to_string());
+    Ok(())
+}
+
+/// The part-attached entities a mate constrains.
+fn mate_entities(kind: &MateKind) -> Vec<&MateEntity> {
+    match kind {
+        MateKind::Coincident { a, b }
+        | MateKind::Concentric { a, b }
+        | MateKind::Distance { a, b, .. }
+        | MateKind::Angle { a, b, .. }
+        | MateKind::Parallel { a, b } => vec![a, b],
+        MateKind::Ground { .. } => Vec::new(),
+    }
+}
+
+/// Instances a mate references.
+fn mate_instances(kind: &MateKind) -> Vec<&InstanceId> {
+    match kind {
+        MateKind::Ground { instance } => vec![instance],
+        _ => mate_entities(kind)
+            .into_iter()
+            .map(|entity| &entity.instance)
+            .collect(),
+    }
+}
+
+/// Final-state checks for structural assembly operations: every reference
+/// resolves, and removed objects have no remaining consumers.
+fn structural_assembly_failures(
+    model: &AssemblyModel,
+    operations: &[PatchOperation],
+) -> Vec<String> {
+    let mut failures = BTreeSet::new();
+    let components: BTreeSet<&str> = model.components.iter().map(|c| c.id.as_str()).collect();
+    for instance in &model.instances {
+        if !components.contains(instance.component.as_str()) {
+            failures.insert(format!(
+                "instance '{}' references unknown component '{}'",
+                instance.id, instance.component
+            ));
+        }
+    }
+    for pattern in &model.patterns {
+        if !components.contains(pattern.component.as_str()) {
+            failures.insert(format!(
+                "pattern '{}' references unknown component '{}'",
+                pattern.id, pattern.component
+            ));
+        }
+    }
+    for operation in operations {
+        let (id, dependents): (&str, BTreeSet<String>) = match operation {
+            PatchOperation::RemoveComponent { id } => (
+                id,
+                model
+                    .instances
+                    .iter()
+                    .filter(|instance| instance.component.as_str() == id)
+                    .map(|instance| format!("instance {}", instance.id))
+                    .chain(
+                        model
+                            .patterns
+                            .iter()
+                            .filter(|pattern| pattern.component.as_str() == id)
+                            .map(|pattern| format!("pattern {}", pattern.id)),
+                    )
+                    .collect(),
+            ),
+            PatchOperation::RemoveInstance { id } => (
+                id,
+                model
+                    .mates
+                    .iter()
+                    .filter(|mate| {
+                        mate_instances(&mate.kind)
+                            .iter()
+                            .any(|instance| instance.as_str() == id)
+                    })
+                    .map(|mate| format!("mate {}", mate.id))
+                    .chain(
+                        model
+                            .connectors
+                            .iter()
+                            .filter(|connector| connector.instance.as_str() == id)
+                            .map(|connector| format!("connector {}", connector.id)),
+                    )
+                    .collect(),
+            ),
+            _ => continue,
+        };
+        if !dependents.is_empty() {
+            failures.insert(format!(
+                "cannot remove '{id}': still used by {}",
+                dependents.into_iter().collect::<Vec<_>>().join(", ")
+            ));
+        }
+    }
+    failures.into_iter().collect()
+}
+
 pub fn apply_assembly_patch(
     model: &mut AssemblyModel,
     operations: &[PatchOperation],
 ) -> Result<()> {
+    let mut removed = BTreeSet::new();
+    // Connectors are referenced by mates through (instance, name); capture
+    // the pairs of removed connectors before they disappear.
+    let mut removed_connectors = Vec::new();
     for operation in operations {
         match operation {
+            PatchOperation::AddComponent { component } => {
+                let id = component.id.as_str();
+                let exists = model.components.iter().any(|item| item.id == component.id);
+                check_new_id(id, "component", exists, &removed, "component")?;
+                Component::validate_source_path(&component.source_path)?;
+                model.components.push(component.clone());
+            }
+            PatchOperation::RemoveComponent { id } => {
+                remove_by_id(
+                    &mut model.components,
+                    id,
+                    |item| item.id.as_str(),
+                    "assembly component",
+                    &mut removed,
+                )?;
+            }
+            PatchOperation::AddInstance { instance } => {
+                let id = instance.id.as_str();
+                let exists = model.instances.iter().any(|item| item.id == instance.id);
+                check_new_id(id, "instance", exists, &removed, "instance")?;
+                if instance.name.trim().is_empty() {
+                    return Err(OpenCadError::validation(format!(
+                        "instance '{id}' must have a non-empty name"
+                    )));
+                }
+                model.instances.push(instance.clone());
+            }
+            PatchOperation::RemoveInstance { id } => {
+                remove_by_id(
+                    &mut model.instances,
+                    id,
+                    |item| item.id.as_str(),
+                    "assembly instance",
+                    &mut removed,
+                )?;
+            }
+            PatchOperation::AddMate { mate } => {
+                let id = mate.id.as_str();
+                let exists = model.mates.iter().any(|item| item.id == mate.id);
+                check_new_id(id, "mate", exists, &removed, "mate")?;
+                model.mates.push(mate.as_ref().clone());
+            }
+            PatchOperation::RemoveMate { id } => {
+                remove_by_id(
+                    &mut model.mates,
+                    id,
+                    |item| item.id.as_str(),
+                    "assembly mate",
+                    &mut removed,
+                )?;
+            }
+            PatchOperation::RemoveConnector { id } => {
+                if let Some(connector) = model.connectors.iter().find(|item| item.id.as_str() == id)
+                {
+                    removed_connectors.push((
+                        connector.instance.clone(),
+                        connector.name.clone(),
+                        id.clone(),
+                    ));
+                }
+                remove_by_id(
+                    &mut model.connectors,
+                    id,
+                    |item| item.id.as_str(),
+                    "connector",
+                    &mut removed,
+                )?;
+            }
+            PatchOperation::AddAssemblyPattern { pattern } => {
+                let id = pattern.id.as_str();
+                let exists = model.patterns.iter().any(|item| item.id == pattern.id);
+                check_new_id(id, "pattern", exists, &removed, "assembly pattern")?;
+                model.patterns.push(pattern.clone());
+            }
+            PatchOperation::RemoveAssemblyPattern { id } => {
+                remove_by_id(
+                    &mut model.patterns,
+                    id,
+                    |item| item.id.as_str(),
+                    "assembly pattern",
+                    &mut removed,
+                )?;
+            }
             PatchOperation::SetInstancePlacement {
                 instance_id,
                 translation_m,
@@ -150,6 +375,40 @@ pub fn apply_assembly_patch(
             }
             _ => {}
         }
+    }
+
+    // Structural checks run before the model validators so a removal is
+    // reported with its complete consumer list.
+    let mut failures = structural_assembly_failures(model, operations);
+    for (instance, name, id) in removed_connectors {
+        if model
+            .connectors
+            .iter()
+            .any(|item| item.instance == instance && item.name == name)
+        {
+            continue;
+        }
+        let users: BTreeSet<String> = model
+            .mates
+            .iter()
+            .filter(|mate| {
+                mate_entities(&mate.kind).iter().any(|entity| {
+                    entity.instance == instance
+                        && entity.connector.as_deref() == Some(name.as_str())
+                })
+            })
+            .map(|mate| format!("mate {}", mate.id))
+            .collect();
+        if !users.is_empty() {
+            failures.push(format!(
+                "cannot remove '{id}': still used by {}",
+                users.into_iter().collect::<Vec<_>>().join(", ")
+            ));
+        }
+    }
+    if !failures.is_empty() {
+        failures.sort();
+        return Err(OpenCadError::validation(failures.join("; ")));
     }
 
     let instance_ids: Vec<_> = model.instances.iter().map(|i| i.id.clone()).collect();
@@ -295,7 +554,56 @@ pub fn diff_assembly_models(before: &AssemblyModel, after: &AssemblyModel) -> De
         }
     }
 
+    diff_items_by_id(
+        &before.components,
+        &after.components,
+        |item| item.id.as_str(),
+        |id| SemanticChange::AssemblyComponentAdded { id },
+        |id| SemanticChange::AssemblyComponentRemoved { id },
+        |id, before, after| SemanticChange::AssemblyComponentChanged { id, before, after },
+        &mut changes,
+    );
+    diff_items_by_id(
+        &before.patterns,
+        &after.patterns,
+        |item| item.id.as_str(),
+        |id| SemanticChange::AssemblyPatternAdded { id },
+        |id| SemanticChange::AssemblyPatternRemoved { id },
+        |id, before, after| SemanticChange::AssemblyPatternChanged { id, before, after },
+        &mut changes,
+    );
+
     DesignDiff::semantic(build_summary(&changes), changes)
+}
+
+/// Report added, removed, and changed items by stable ID, in ID order.
+fn diff_items_by_id<T: serde::Serialize + PartialEq>(
+    before: &[T],
+    after: &[T],
+    id_of: impl Fn(&T) -> &str,
+    added: impl Fn(String) -> SemanticChange,
+    removed: impl Fn(String) -> SemanticChange,
+    changed: impl Fn(String, String, String) -> SemanticChange,
+    changes: &mut Vec<SemanticChange>,
+) {
+    let before: std::collections::BTreeMap<&str, &T> =
+        before.iter().map(|item| (id_of(item), item)).collect();
+    let after: std::collections::BTreeMap<&str, &T> =
+        after.iter().map(|item| (id_of(item), item)).collect();
+    let ids: std::collections::BTreeSet<&str> =
+        before.keys().chain(after.keys()).copied().collect();
+    for id in ids {
+        match (before.get(id), after.get(id)) {
+            (Some(_), None) => changes.push(removed(id.to_string())),
+            (None, Some(_)) => changes.push(added(id.to_string())),
+            (Some(old), Some(new)) if old != new => changes.push(changed(
+                id.to_string(),
+                serde_json::to_string(old).unwrap_or_default(),
+                serde_json::to_string(new).unwrap_or_default(),
+            )),
+            _ => {}
+        }
+    }
 }
 
 #[cfg(test)]

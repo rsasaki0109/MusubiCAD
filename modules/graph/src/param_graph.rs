@@ -57,6 +57,31 @@ impl ParamGraph {
         self.parameters.get(id)
     }
 
+    /// Find a parameter by its expression-visible name.
+    pub fn find_by_name(&self, name: &str) -> Option<&ParameterEntry> {
+        self.parameters.values().find(|entry| entry.name == name)
+    }
+
+    /// All parameter entries in stored order.
+    pub fn entries(&self) -> impl Iterator<Item = &ParameterEntry> {
+        self.parameters.values()
+    }
+
+    /// Remove a parameter and every dependency edge that touches it.
+    ///
+    /// The remaining parameters keep their relative order, so serialization
+    /// stays deterministic.  Callers are responsible for proving that no
+    /// expression still references the removed name.
+    pub fn remove_parameter(&mut self, id: &str) -> Result<ParameterEntry> {
+        let entry = self
+            .parameters
+            .shift_remove(id)
+            .ok_or_else(|| OpenCadError::not_found(format!("parameter '{id}'")))?;
+        self.edges
+            .retain(|edge| edge.source != entry.id && edge.target != entry.id);
+        Ok(entry)
+    }
+
     /// All parameter IDs in deterministic sorted order.
     pub fn parameter_ids(&self) -> Vec<String> {
         let mut ids: Vec<String> = self.parameters.keys().cloned().collect();
@@ -150,6 +175,37 @@ impl ParamGraph {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remove_parameter_drops_entry_and_touching_edges() {
+        let mut graph = ParamGraph::new();
+        graph
+            .add_parameter(ParameterEntry::new("param:width", "width", "80 mm"))
+            .unwrap();
+        graph
+            .add_parameter(ParameterEntry::new("param:height", "height", "width / 2"))
+            .unwrap();
+        graph
+            .add_parameter(ParameterEntry::new("param:depth", "depth", "5 mm"))
+            .unwrap();
+        graph.add_dependency("param:width", "param:height").unwrap();
+
+        let removed = graph.remove_parameter("param:height").unwrap();
+        assert_eq!(removed.name, "height");
+        assert!(graph.dependency_edges().is_empty());
+        assert_eq!(
+            graph
+                .entries()
+                .map(|entry| entry.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["param:width", "param:depth"]
+        );
+        assert_eq!(
+            graph.find_by_name("depth").map(|entry| entry.id.as_str()),
+            Some("param:depth")
+        );
+        assert!(graph.remove_parameter("param:height").is_err());
+    }
 
     #[test]
     fn parameter_evaluation_order() {

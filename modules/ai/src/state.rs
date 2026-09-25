@@ -1,22 +1,38 @@
 //! In-memory design state for agent operations (no file I/O).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use opencad_assembly::AssemblyModel;
-use opencad_core::{sha256_hex, Result};
+use opencad_core::{sha256_hex, Assertion, OpenCadError, Result};
 use opencad_drawing::DrawingModel;
 use opencad_feature::FeatureNode;
 use opencad_geometry::TopoRef;
 use opencad_graph::{build_summary, diff_param_graphs, diff_semantic_refs, DesignDiff, ParamGraph};
+use opencad_sketch::Sketch;
 use serde::Serialize;
 use serde_json::{Map, Value};
 
 /// Digest algorithm used for DesignPatch document revisions.
 pub const DESIGN_STATE_REVISION_ALGORITHM: &str = "sha256";
 /// Versioned canonical representation used by [`design_state_revision`].
-pub const DESIGN_STATE_REVISION_VERSION: &str = "musubicad.design-state.v1";
+///
+/// v2 (ADR-013) adds sketches and design assertions to the hashed state.
+pub const DESIGN_STATE_REVISION_VERSION: &str = DESIGN_STATE_REVISION_VERSION_V2;
+/// Legacy representation covering parameters, feature nodes, semantic
+/// references, assembly, and drawing only (ADR-008).
+pub const DESIGN_STATE_REVISION_VERSION_V1: &str = "musubicad.design-state.v1";
+/// Representation that also covers sketches, design assertions, and the
+/// authored feature display order (ADR-013).
+pub const DESIGN_STATE_REVISION_VERSION_V2: &str = "musubicad.design-state.v2";
+
+/// Fields that exist only in the v2 canonical representation.
+const V2_ONLY_FIELDS: [&str; 3] = ["assertions", "feature_order", "sketches"];
 
 /// Serializable design intent used by in-memory agent operations.
+///
+/// The persisted `feature_graph` is intentionally absent: its entries and
+/// edges are a projection of `feature_nodes`, and its only independent input,
+/// the authored display order, is carried as `feature_order` (ADR-013).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct DesignState {
     pub parameters: ParamGraph,
@@ -24,29 +40,81 @@ pub struct DesignState {
     pub semantic_refs: Vec<TopoRef>,
     pub assembly: Option<AssemblyModel>,
     pub drawing: Option<DrawingModel>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub sketches: Vec<Sketch>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub assertions: Vec<Assertion>,
+    /// Authored feature display order.  Empty for in-memory callers that do
+    /// not transport it; feature operations then refuse to run.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub feature_order: Vec<String>,
 }
 
 /// Compute the deterministic revision for the complete state exposed to
-/// `DesignPatch` operations.
+/// `DesignPatch` operations, using the current representation version.
 ///
 /// The version is included in the hashed envelope so a future canonical
 /// representation cannot silently compare equal to this one. Object keys are
 /// normalized before serialization; vector order is retained because source
 /// ordering can be meaningful to regeneration and document identity.
 pub fn design_state_revision(state: &DesignState) -> Result<String> {
-    let bytes = canonical_design_state_bytes(state)?;
+    design_state_revision_for_version(state, DESIGN_STATE_REVISION_VERSION)
+}
+
+/// Compute the revision for an explicit, supported representation version.
+pub fn design_state_revision_for_version(state: &DesignState, version: &str) -> Result<String> {
+    let bytes = canonical_design_state_bytes_for_version(state, version)?;
     Ok(sha256_hex(&bytes))
 }
 
-/// Serialize the canonical, versioned DesignState revision payload.
+/// Serialize the canonical DesignState revision payload for the current version.
 pub fn canonical_design_state_bytes(state: &DesignState) -> Result<Vec<u8>> {
-    let canonical_state = canonicalize_json(serde_json::to_value(state)?);
+    canonical_design_state_bytes_for_version(state, DESIGN_STATE_REVISION_VERSION)
+}
+
+/// Serialize the canonical DesignState revision payload for `version`.
+///
+/// v1 bytes are identical to the ADR-008 representation, so digests recorded
+/// before ADR-013 keep verifying. v2 always includes the `sketches` and
+/// `assertions` arrays, even when empty, so their absence is never ambiguous.
+pub fn canonical_design_state_bytes_for_version(
+    state: &DesignState,
+    version: &str,
+) -> Result<Vec<u8>> {
+    let Value::Object(mut canonical_state) = serde_json::to_value(state)? else {
+        return Err(OpenCadError::Other(
+            "design state did not serialize to an object".into(),
+        ));
+    };
+    match version {
+        DESIGN_STATE_REVISION_VERSION_V1 => {
+            for field in V2_ONLY_FIELDS {
+                canonical_state.remove(field);
+            }
+        }
+        DESIGN_STATE_REVISION_VERSION_V2 => {
+            canonical_state.insert("sketches".into(), serde_json::to_value(&state.sketches)?);
+            canonical_state.insert(
+                "assertions".into(),
+                serde_json::to_value(&state.assertions)?,
+            );
+            canonical_state.insert(
+                "feature_order".into(),
+                serde_json::to_value(&state.feature_order)?,
+            );
+        }
+        other => {
+            return Err(OpenCadError::validation(format!(
+                "unsupported design-state revision version '{other}'"
+            )))
+        }
+    }
     let mut payload = Map::new();
-    payload.insert("state".into(), canonical_state);
     payload.insert(
-        "version".into(),
-        Value::String(DESIGN_STATE_REVISION_VERSION.into()),
+        "state".into(),
+        canonicalize_json(Value::Object(canonical_state)),
     );
+    payload.insert("version".into(), Value::String(version.into()));
     Ok(serde_json::to_vec(&canonicalize_json(Value::Object(
         payload,
     )))?)
@@ -82,6 +150,9 @@ impl DesignState {
             semantic_refs: Vec::new(),
             assembly: None,
             drawing: None,
+            sketches: Vec::new(),
+            assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
     }
 
@@ -96,6 +167,9 @@ impl DesignState {
             semantic_refs,
             assembly: None,
             drawing: None,
+            sketches: Vec::new(),
+            assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
     }
 
@@ -111,6 +185,9 @@ impl DesignState {
             semantic_refs,
             assembly,
             drawing: None,
+            sketches: Vec::new(),
+            assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
     }
 
@@ -127,7 +204,32 @@ impl DesignState {
             semantic_refs,
             assembly,
             drawing,
+            sketches: Vec::new(),
+            assertions: Vec::new(),
+            feature_order: Vec::new(),
         }
+    }
+
+    /// Attach the authoring collections covered by revision v2 (ADR-013).
+    pub fn with_authoring(mut self, sketches: Vec<Sketch>, assertions: Vec<Assertion>) -> Self {
+        self.sketches = sketches;
+        self.assertions = assertions;
+        self
+    }
+
+    /// Attach the authored feature display order (ADR-013).
+    pub fn with_feature_order(mut self, feature_order: Vec<String>) -> Self {
+        self.feature_order = feature_order;
+        self
+    }
+
+    /// Derive this state's Feature Graph (ADR-013 §4).
+    pub fn derive_feature_graph(&self) -> Result<opencad_graph::FeatureGraph> {
+        crate::feature_patch::derived_feature_graph(self).unwrap_or_else(|| {
+            Err(OpenCadError::validation(
+                "feature order must list every feature node exactly once",
+            ))
+        })
     }
 }
 
@@ -149,7 +251,51 @@ pub fn diff_design_state(before: &DesignState, after: &DesignState) -> DesignDif
     if let (Some(before_drawing), Some(after_drawing)) = (&before.drawing, &after.drawing) {
         changes.extend(crate::drawing::diff_drawing_models(before_drawing, after_drawing).changes);
     }
+    changes.extend(diff_assertions(&before.assertions, &after.assertions));
+    changes.extend(crate::feature_patch::diff_feature_order(
+        &before.feature_order,
+        &after.feature_order,
+    ));
+    changes.extend(crate::sketch_patch::diff_sketches(
+        &before.sketches,
+        &after.sketches,
+    ));
     DesignDiff::semantic(build_summary(&changes), changes)
+}
+
+/// Report added, removed, and changed assertions in stable-ID order.
+fn diff_assertions(
+    before: &[Assertion],
+    after: &[Assertion],
+) -> Vec<opencad_graph::SemanticChange> {
+    use opencad_graph::SemanticChange;
+
+    let before_map: BTreeMap<&str, &Assertion> = before
+        .iter()
+        .map(|assertion| (assertion.id.as_str(), assertion))
+        .collect();
+    let after_map: BTreeMap<&str, &Assertion> = after
+        .iter()
+        .map(|assertion| (assertion.id.as_str(), assertion))
+        .collect();
+    let ids: BTreeSet<&str> = before_map.keys().chain(after_map.keys()).copied().collect();
+
+    let mut changes = Vec::new();
+    for id in ids {
+        match (before_map.get(id), after_map.get(id)) {
+            (Some(_), None) => changes.push(SemanticChange::AssertionRemoved { id: id.into() }),
+            (None, Some(_)) => changes.push(SemanticChange::AssertionAdded { id: id.into() }),
+            (Some(before), Some(after)) if before != after => {
+                changes.push(SemanticChange::AssertionChanged {
+                    id: id.into(),
+                    before: serde_json::to_string(before).unwrap_or_default(),
+                    after: serde_json::to_string(after).unwrap_or_default(),
+                });
+            }
+            _ => {}
+        }
+    }
+    changes
 }
 
 fn diff_feature_nodes(

@@ -112,6 +112,79 @@ pub enum SemanticChange {
         before: String,
         after: String,
     },
+    AssertionAdded {
+        id: String,
+    },
+    AssertionRemoved {
+        id: String,
+    },
+    AssertionChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    SketchAdded {
+        id: String,
+    },
+    SketchRemoved {
+        id: String,
+    },
+    SketchEntityAdded {
+        sketch_id: String,
+        id: String,
+    },
+    SketchEntityRemoved {
+        sketch_id: String,
+        id: String,
+    },
+    SketchConstraintAdded {
+        sketch_id: String,
+        id: String,
+    },
+    SketchConstraintRemoved {
+        sketch_id: String,
+        id: String,
+    },
+    AssemblyComponentAdded {
+        id: String,
+    },
+    AssemblyComponentRemoved {
+        id: String,
+    },
+    AssemblyComponentChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    AssemblyPatternAdded {
+        id: String,
+    },
+    AssemblyPatternRemoved {
+        id: String,
+    },
+    AssemblyPatternChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    DrawingDimensionAdded {
+        id: String,
+    },
+    DrawingDimensionRemoved {
+        id: String,
+    },
+    DrawingDimensionChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    /// A feature changed its position in the authored display order;
+    /// `before` and `after` are zero-based positions among retained features.
+    FeatureMoved {
+        id: String,
+        before: String,
+        after: String,
+    },
 }
 
 /// Geometric diff summary (derived from regeneration).

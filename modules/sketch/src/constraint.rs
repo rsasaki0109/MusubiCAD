@@ -180,6 +180,44 @@ impl Constraint {
             | Self::Equal { id, .. } => id,
         }
     }
+
+    /// Every sketch entity this constraint refers to, in field order.
+    pub fn entity_refs(&self) -> Vec<&EntityId> {
+        fn entity_ref(value: &EntityRef) -> &EntityId {
+            match value {
+                EntityRef::Entity(id) | EntityRef::PointOnLine { line: id, .. } => id,
+            }
+        }
+        fn equal_target(value: &EqualTarget) -> &EntityId {
+            match value {
+                EqualTarget::LineLength(id) | EqualTarget::Radius(id) => id,
+            }
+        }
+        match self {
+            Self::Coincident { a, b, .. } => vec![entity_ref(a), entity_ref(b)],
+            Self::Horizontal { line, .. } | Self::Vertical { line, .. } => vec![line],
+            Self::Parallel { line_a, line_b, .. } | Self::Perpendicular { line_a, line_b, .. } => {
+                vec![line_a, line_b]
+            }
+            Self::Distance { target, .. } => match target {
+                DistanceTarget::PointToPoint { a, b } => vec![a, b],
+                DistanceTarget::LineLength { line } => vec![line],
+                DistanceTarget::RectangleDimension { rectangle, .. } => vec![rectangle],
+            },
+            Self::Radius { target, .. } | Self::Diameter { target, .. } => vec![target],
+            Self::Equal { a, b, .. } => vec![equal_target(a), equal_target(b)],
+        }
+    }
+
+    /// The parametric expression driving this constraint, if any.
+    pub fn expression(&self) -> Option<&Expression> {
+        match self {
+            Self::Distance { expr, .. }
+            | Self::Radius { expr, .. }
+            | Self::Diameter { expr, .. } => Some(expr),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -192,6 +230,41 @@ mod tests {
 
     fn eid(id: &str) -> EntityId {
         EntityId::new(id).expect("valid id")
+    }
+
+    #[test]
+    fn entity_refs_and_expression_cover_every_target_shape() {
+        let coincident = Constraint::Coincident {
+            id: cid("con:c"),
+            a: EntityRef::Entity(eid("ent:p")),
+            b: EntityRef::PointOnLine {
+                line: eid("ent:l"),
+                end: LineEnd::End,
+            },
+        };
+        assert_eq!(coincident.entity_refs(), vec![&eid("ent:p"), &eid("ent:l")]);
+        assert!(coincident.expression().is_none());
+
+        let rectangle_width = Constraint::Distance {
+            id: cid("con:w"),
+            target: DistanceTarget::RectangleDimension {
+                rectangle: eid("ent:rect"),
+                edge: RectangleEdge::Width,
+            },
+            expr: Expression::new("width").expect("expr"),
+        };
+        assert_eq!(rectangle_width.entity_refs(), vec![&eid("ent:rect")]);
+        assert_eq!(
+            rectangle_width.expression().map(Expression::as_str),
+            Some("width")
+        );
+
+        let equal = Constraint::Equal {
+            id: cid("con:eq"),
+            a: EqualTarget::LineLength(eid("ent:a")),
+            b: EqualTarget::Radius(eid("ent:b")),
+        };
+        assert_eq!(equal.entity_refs(), vec![&eid("ent:a"), &eid("ent:b")]);
     }
 
     #[test]

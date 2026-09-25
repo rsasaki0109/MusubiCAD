@@ -18,16 +18,549 @@
     "operations": {
       "type": "array",
       "minItems": 1,
-      "items": {
-        "type": "object",
-        "required": ["type"]
-      }
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/operation" }
     }
   },
   "additionalProperties": false,
   "$defs": {
+    "operation": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "set_parameter",
+            "set_feature_expr",
+            "set_feature_ref",
+            "assign_face_ref",
+            "set_instance_placement",
+            "set_mate_distance",
+            "add_connector",
+            "set_drawing_view_scale",
+            "set_drawing_view_origin",
+            "add_parameter",
+            "remove_parameter",
+            "add_assertion",
+            "remove_assertion",
+            "add_sketch",
+            "remove_sketch",
+            "add_sketch_entity",
+            "remove_sketch_entity",
+            "add_sketch_constraint",
+            "remove_sketch_constraint",
+            "add_feature",
+            "remove_feature",
+            "move_feature",
+            "set_feature_suppressed",
+            "replace_feature_definition",
+            "add_semantic_ref",
+            "remove_semantic_ref",
+            "add_component",
+            "add_instance",
+            "add_mate",
+            "add_assembly_pattern",
+            "add_sheet",
+            "remove_component",
+            "remove_instance",
+            "remove_mate",
+            "remove_connector",
+            "remove_assembly_pattern",
+            "remove_sheet",
+            "remove_drawing_view",
+            "remove_drawing_dimension",
+            "add_drawing_view",
+            "add_drawing_dimension"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "add_parameter" } } },
+          "then": {
+            "required": ["type", "id", "name", "expr"],
+            "properties": {
+              "id": { "$ref": "#/$defs/stable_id_param" },
+              "name": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+              "expr": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_parameter" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^param:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_assertion" } } },
+          "then": {
+            "required": ["type", "assertion"],
+            "properties": {
+              "assertion": {
+                "type": "object",
+                "required": ["id", "name", "severity", "type"],
+                "properties": {
+                  "id": { "$ref": "#/$defs/stable_id_assertion" },
+                  "name": { "type": "string", "minLength": 1 },
+                  "severity": { "enum": ["required", "advisory"] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_assertion" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^assertion:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_sketch" } } },
+          "then": {
+            "required": ["type", "id", "name", "workplane"],
+            "properties": {
+              "id": { "$ref": "#/$defs/stable_id_sketch" },
+              "name": { "type": "string", "minLength": 1 },
+              "workplane": {
+                "type": "object",
+                "required": ["type"],
+                "properties": { "type": { "enum": ["global", "custom", "face_ref"] } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_sketch" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^sketch:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_sketch_entity" } } },
+          "then": {
+            "required": ["type", "sketch_id", "entity"],
+            "properties": {
+              "sketch_id": { "type": "string", "pattern": "^sketch:" },
+              "entity": {
+                "type": "object",
+                "required": ["type", "id"],
+                "properties": {
+                  "type": { "enum": ["point", "line", "circle", "arc", "rectangle"] },
+                  "id": { "$ref": "#/$defs/stable_id_entity" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_sketch_entity" } } },
+          "then": {
+            "required": ["type", "sketch_id", "entity_id"],
+            "properties": {
+              "sketch_id": { "type": "string", "pattern": "^sketch:" },
+              "entity_id": { "type": "string", "pattern": "^ent:" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_sketch_constraint" } } },
+          "then": {
+            "required": ["type", "sketch_id", "constraint"],
+            "properties": {
+              "sketch_id": { "type": "string", "pattern": "^sketch:" },
+              "constraint": {
+                "type": "object",
+                "required": ["type", "id"],
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "coincident",
+                      "horizontal",
+                      "vertical",
+                      "parallel",
+                      "perpendicular",
+                      "distance",
+                      "radius",
+                      "diameter",
+                      "equal"
+                    ]
+                  },
+                  "id": { "$ref": "#/$defs/stable_id_constraint" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_sketch_constraint" } } },
+          "then": {
+            "required": ["type", "sketch_id", "constraint_id"],
+            "properties": {
+              "sketch_id": { "type": "string", "pattern": "^sketch:" },
+              "constraint_id": { "type": "string", "pattern": "^con:" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_feature" } } },
+          "then": {
+            "required": ["type", "node", "position"],
+            "properties": {
+              "node": {
+                "type": "object",
+                "required": ["id", "name", "definition"],
+                "properties": {
+                  "id": { "$ref": "#/$defs/stable_id_feature" },
+                  "name": { "type": "string", "minLength": 1 },
+                  "definition": { "$ref": "#/$defs/feature_definition" },
+                  "suppressed": { "type": "boolean" }
+                }
+              },
+              "position": { "$ref": "#/$defs/feature_position" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_feature" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^feature:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "move_feature" } } },
+          "then": {
+            "required": ["type", "id", "position"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^feature:" },
+              "position": { "$ref": "#/$defs/feature_position" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "set_feature_suppressed" } } },
+          "then": {
+            "required": ["type", "id", "suppressed"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^feature:" },
+              "suppressed": { "type": "boolean" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "replace_feature_definition" } } },
+          "then": {
+            "required": ["type", "id", "definition"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^feature:" },
+              "definition": { "$ref": "#/$defs/feature_definition" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_semantic_ref" } } },
+          "then": {
+            "required": ["type", "topo_ref"],
+            "properties": {
+              "topo_ref": {
+                "type": "object",
+                "required": ["ref_id", "kind", "semantic"],
+                "properties": {
+                  "ref_id": { "type": "string", "pattern": "^ref:" },
+                  "kind": { "enum": ["face", "edge"] },
+                  "semantic": {
+                    "type": "object",
+                    "required": ["created_by"],
+                    "properties": { "created_by": { "type": "string", "pattern": "^feature:" } }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_semantic_ref" } } },
+          "then": {
+            "required": ["type", "ref_id"],
+            "properties": { "ref_id": { "type": "string", "pattern": "^ref:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_component" } } },
+          "then": {
+            "required": ["type", "component"],
+            "properties": {
+              "component": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_component" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_instance" } } },
+          "then": {
+            "required": ["type", "instance"],
+            "properties": {
+              "instance": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_instance" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_mate" } } },
+          "then": {
+            "required": ["type", "mate"],
+            "properties": {
+              "mate": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_mate" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_assembly_pattern" } } },
+          "then": {
+            "required": ["type", "pattern"],
+            "properties": {
+              "pattern": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_pattern" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_sheet" } } },
+          "then": {
+            "required": ["type", "sheet"],
+            "properties": {
+              "sheet": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_sheet" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_component" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^component:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_instance" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^instance:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_mate" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^mate:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_connector" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^connector:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_assembly_pattern" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^pattern:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_sheet" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^sheet:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_drawing_view" } } },
+          "then": {
+            "required": ["type", "view_id"],
+            "properties": { "view_id": { "type": "string", "pattern": "^view:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_drawing_dimension" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^dim:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_drawing_view" } } },
+          "then": {
+            "required": ["type", "sheet_id", "view"],
+            "properties": {
+              "sheet_id": { "type": "string", "pattern": "^sheet:" },
+              "view": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_view" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_drawing_dimension" } } },
+          "then": {
+            "required": ["type", "sheet_id", "dimension"],
+            "properties": {
+              "sheet_id": { "type": "string", "pattern": "^sheet:" },
+              "dimension": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_dim" } }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "feature_definition": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "sketch",
+            "extrude",
+            "revolve",
+            "hole",
+            "fillet",
+            "chamfer",
+            "linear_pattern",
+            "circular_pattern",
+            "mirror_pattern"
+          ]
+        }
+      }
+    },
+    "feature_position": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["at"],
+          "properties": { "at": { "enum": ["start", "end"] } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["after"],
+          "properties": { "after": { "type": "string", "pattern": "^feature:" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["before"],
+          "properties": { "before": { "type": "string", "pattern": "^feature:" } },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "stable_id_component": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^component:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_instance": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^instance:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_mate": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^mate:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_pattern": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^pattern:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_sheet": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^sheet:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_view": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^view:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_dim": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^dim:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_feature": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^feature:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_sketch": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^sketch:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_entity": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^ent:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_constraint": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^con:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_param": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^param:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_assertion": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^assertion:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
     "precondition": {
       "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "algorithm", "version", "digest"],
+          "properties": {
+            "type": { "const": "revision_equals" },
+            "algorithm": { "const": "sha256" },
+            "version": {
+              "enum": ["musubicad.design-state.v1", "musubicad.design-state.v2"]
+            },
+            "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          },
+          "additionalProperties": false
+        },
         {
           "type": "object",
           "required": ["type", "id", "expr"],
@@ -53,6 +586,34 @@
           "properties": {
             "type": { "const": "topo_ref_exists" },
             "ref_id": { "type": "string", "pattern": "^ref:" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "const": "sketch_exists" },
+            "id": { "type": "string", "pattern": "^sketch:" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "sketch_id", "entity_id"],
+          "properties": {
+            "type": { "const": "sketch_entity_exists" },
+            "sketch_id": { "type": "string", "pattern": "^sketch:" },
+            "entity_id": { "type": "string", "pattern": "^ent:" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "const": "assertion_exists" },
+            "id": { "type": "string", "pattern": "^assertion:" }
           },
           "additionalProperties": false
         }

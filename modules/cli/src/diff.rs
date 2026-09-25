@@ -228,6 +228,63 @@ fn print_change(change: &SemanticChange) {
         SemanticChange::DrawingViewChanged { id, before, after } => {
             println!("  drawing view {id}: {before} -> {after}");
         }
+        SemanticChange::AssertionAdded { id } => {
+            println!("  assertion added {id}");
+        }
+        SemanticChange::AssertionRemoved { id } => {
+            println!("  assertion removed {id}");
+        }
+        SemanticChange::AssertionChanged { id, before, after } => {
+            println!("  assertion {id}: {before} -> {after}");
+        }
+        SemanticChange::AssemblyComponentAdded { id } => {
+            println!("  assembly component added {id}");
+        }
+        SemanticChange::AssemblyComponentRemoved { id } => {
+            println!("  assembly component removed {id}");
+        }
+        SemanticChange::AssemblyComponentChanged { id, before, after } => {
+            println!("  assembly component {id}: {before} -> {after}");
+        }
+        SemanticChange::AssemblyPatternAdded { id } => {
+            println!("  assembly pattern added {id}");
+        }
+        SemanticChange::AssemblyPatternRemoved { id } => {
+            println!("  assembly pattern removed {id}");
+        }
+        SemanticChange::AssemblyPatternChanged { id, before, after } => {
+            println!("  assembly pattern {id}: {before} -> {after}");
+        }
+        SemanticChange::DrawingDimensionAdded { id } => {
+            println!("  drawing dimension added {id}");
+        }
+        SemanticChange::DrawingDimensionRemoved { id } => {
+            println!("  drawing dimension removed {id}");
+        }
+        SemanticChange::DrawingDimensionChanged { id, before, after } => {
+            println!("  drawing dimension {id}: {before} -> {after}");
+        }
+        SemanticChange::FeatureMoved { id, before, after } => {
+            println!("  feature moved {id}: position {before} -> {after}");
+        }
+        SemanticChange::SketchAdded { id } => {
+            println!("  sketch added {id}");
+        }
+        SemanticChange::SketchRemoved { id } => {
+            println!("  sketch removed {id}");
+        }
+        SemanticChange::SketchEntityAdded { sketch_id, id } => {
+            println!("  sketch entity added {sketch_id}/{id}");
+        }
+        SemanticChange::SketchEntityRemoved { sketch_id, id } => {
+            println!("  sketch entity removed {sketch_id}/{id}");
+        }
+        SemanticChange::SketchConstraintAdded { sketch_id, id } => {
+            println!("  sketch constraint added {sketch_id}/{id}");
+        }
+        SemanticChange::SketchConstraintRemoved { sketch_id, id } => {
+            println!("  sketch constraint removed {sketch_id}/{id}");
+        }
     }
 }
 

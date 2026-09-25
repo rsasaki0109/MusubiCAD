@@ -1,0 +1,25 @@
+{
+  "intent": "Place a third bracket and ground it",
+  "rationale": "Extends the two-bracket assembly with a fixed third instance of the same component",
+  "operations": [
+    {
+      "type": "add_instance",
+      "instance": {
+        "id": "instance:third",
+        "component": "component:bracket",
+        "placement": {
+          "transform": {
+            "translation_m": [0.3, 0.0, 0.0],
+            "rotation": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+          }
+        },
+        "fixed": false,
+        "name": "Third Bracket"
+      }
+    },
+    {
+      "type": "add_mate",
+      "mate": { "id": "mate:ground_third", "type": "ground", "instance": "instance:third" }
+    }
+  ]
+}

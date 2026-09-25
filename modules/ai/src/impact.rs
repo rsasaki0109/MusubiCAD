@@ -20,6 +20,8 @@ pub enum ChangedInputKind {
     SemanticReference,
     Assembly,
     Drawing,
+    Assertion,
+    Sketch,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -102,6 +104,23 @@ pub fn predict_change_impact(
                     }
                 }
             }
+            // A sketch change dirties the sketch features that consume it;
+            // their downstream suffix follows from the Feature Graph.
+            SemanticChange::SketchAdded { id: sketch_id }
+            | SemanticChange::SketchRemoved { id: sketch_id }
+            | SemanticChange::SketchEntityAdded { sketch_id, .. }
+            | SemanticChange::SketchEntityRemoved { sketch_id, .. }
+            | SemanticChange::SketchConstraintAdded { sketch_id, .. }
+            | SemanticChange::SketchConstraintRemoved { sketch_id, .. } => {
+                for node in &after.feature_nodes {
+                    if matches!(
+                        &node.definition,
+                        FeatureDefinition::Sketch(def) if def.sketch_id == *sketch_id
+                    ) {
+                        direct.insert(node.id.clone());
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -130,7 +149,8 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
             SemanticChange::ParameterChanged { id, .. } => (ChangedInputKind::Parameter, id),
             SemanticChange::FeatureAdded { id, .. }
             | SemanticChange::FeatureRemoved { id }
-            | SemanticChange::FeatureModified { id, .. } => (ChangedInputKind::Feature, id),
+            | SemanticChange::FeatureModified { id, .. }
+            | SemanticChange::FeatureMoved { id, .. } => (ChangedInputKind::Feature, id),
             SemanticChange::ConstraintModified { id, .. } => (ChangedInputKind::Constraint, id),
             SemanticChange::TopoRefAdded { ref_id, .. }
             | SemanticChange::TopoRefRemoved { ref_id }
@@ -145,15 +165,34 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
             | SemanticChange::AssemblyMateChanged { id, .. }
             | SemanticChange::AssemblyConnectorAdded { id }
             | SemanticChange::AssemblyConnectorRemoved { id }
-            | SemanticChange::AssemblyConnectorChanged { id, .. } => {
-                (ChangedInputKind::Assembly, id)
-            }
+            | SemanticChange::AssemblyConnectorChanged { id, .. }
+            | SemanticChange::AssemblyComponentAdded { id }
+            | SemanticChange::AssemblyComponentRemoved { id }
+            | SemanticChange::AssemblyComponentChanged { id, .. }
+            | SemanticChange::AssemblyPatternAdded { id }
+            | SemanticChange::AssemblyPatternRemoved { id }
+            | SemanticChange::AssemblyPatternChanged { id, .. } => (ChangedInputKind::Assembly, id),
             SemanticChange::DrawingSheetAdded { id }
             | SemanticChange::DrawingSheetRemoved { id }
             | SemanticChange::DrawingSheetChanged { id, .. }
             | SemanticChange::DrawingViewAdded { id }
             | SemanticChange::DrawingViewRemoved { id }
-            | SemanticChange::DrawingViewChanged { id, .. } => (ChangedInputKind::Drawing, id),
+            | SemanticChange::DrawingViewChanged { id, .. }
+            | SemanticChange::DrawingDimensionAdded { id }
+            | SemanticChange::DrawingDimensionRemoved { id }
+            | SemanticChange::DrawingDimensionChanged { id, .. } => (ChangedInputKind::Drawing, id),
+            SemanticChange::AssertionAdded { id }
+            | SemanticChange::AssertionRemoved { id }
+            | SemanticChange::AssertionChanged { id, .. } => (ChangedInputKind::Assertion, id),
+            SemanticChange::SketchAdded { id } | SemanticChange::SketchRemoved { id } => {
+                (ChangedInputKind::Sketch, id)
+            }
+            SemanticChange::SketchEntityAdded { sketch_id, .. }
+            | SemanticChange::SketchEntityRemoved { sketch_id, .. }
+            | SemanticChange::SketchConstraintAdded { sketch_id, .. }
+            | SemanticChange::SketchConstraintRemoved { sketch_id, .. } => {
+                (ChangedInputKind::Sketch, sketch_id)
+            }
             SemanticChange::MassChanged { .. } | SemanticChange::BboxChanged { .. } => continue,
         };
         inputs.insert(ChangedInput {
@@ -177,7 +216,7 @@ fn node_uses_parameter(node: &FeatureNode, name: &str, sketches: &[Sketch]) -> b
         .is_some_and(|sketch| serialized_value_uses_parameter(sketch, name))
 }
 
-fn serialized_value_uses_parameter(value: &impl Serialize, name: &str) -> bool {
+pub(crate) fn serialized_value_uses_parameter(value: &impl Serialize, name: &str) -> bool {
     serde_json::to_value(value).ok().is_some_and(|value| {
         json_strings(&value).any(|text| {
             text == name

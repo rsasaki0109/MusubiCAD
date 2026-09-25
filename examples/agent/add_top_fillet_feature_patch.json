@@ -1,0 +1,22 @@
+{
+  "intent": "Round the bracket's top front edge after the mounting hole",
+  "rationale": "The fillet reuses the existing semantic edge reference and the fillet_radius parameter",
+  "operations": [
+    {
+      "type": "add_feature",
+      "position": { "after": "feature:hole_mount" },
+      "node": {
+        "id": "feature:fillet_top_front",
+        "name": "Top Front Fillet",
+        "definition": {
+          "type": "fillet",
+          "target_feature": "feature:hole_mount",
+          "radius": { "value_si": 0.001 },
+          "radius_expr": "fillet_radius",
+          "edge_ref": "ref:edge:bracket_top_front",
+          "edge_selector": "top_perimeter"
+        }
+      }
+    }
+  ]
+}

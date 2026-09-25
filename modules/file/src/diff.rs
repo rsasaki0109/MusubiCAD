@@ -1,28 +1,15 @@
 //! Semantic diff between `.ocad` documents (Task-127+).
 
 use opencad_ai::diff_design_state;
-use opencad_ai::DesignState;
 use opencad_graph::DesignDiff;
 
-use crate::OcadDocument;
+use crate::{document_design_state, OcadDocument};
 
 /// Compare two in-memory documents and return a semantic diff.
 pub fn diff_documents(before: &OcadDocument, after: &OcadDocument) -> DesignDiff {
     diff_design_state(
-        &DesignState::with_models(
-            before.parameters.clone(),
-            before.feature_nodes.clone(),
-            before.semantic_refs.clone(),
-            before.assembly.clone(),
-            before.drawing.clone(),
-        ),
-        &DesignState::with_models(
-            after.parameters.clone(),
-            after.feature_nodes.clone(),
-            after.semantic_refs.clone(),
-            after.assembly.clone(),
-            after.drawing.clone(),
-        ),
+        &document_design_state(before),
+        &document_design_state(after),
     )
 }
 

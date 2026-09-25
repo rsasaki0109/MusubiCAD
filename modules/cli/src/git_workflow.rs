@@ -2,16 +2,10 @@ use std::fs;
 
 use opencad_ai::{rebase_patch, semantic_three_way_merge, DesignState};
 use opencad_core::{OpenCadError, Result};
-use opencad_file::{read_ocad, write_ocad, OcadDocument};
+use opencad_file::{document_design_state, read_ocad, write_ocad, OcadDocument};
 
 fn state(doc: &OcadDocument) -> DesignState {
-    DesignState::with_models(
-        doc.parameters.clone(),
-        doc.feature_nodes.clone(),
-        doc.semantic_refs.clone(),
-        doc.assembly.clone(),
-        doc.drawing.clone(),
-    )
+    document_design_state(doc)
 }
 
 pub fn merge(args: Vec<String>) -> Result<()> {
@@ -34,10 +28,22 @@ pub fn merge(args: Vec<String>) -> Result<()> {
     let merged = result
         .merged
         .ok_or_else(|| OpenCadError::Other("missing merged state".into()))?;
+    let ours_state = state(&ours);
     let mut output = ours;
+    // The persisted Feature Graph is re-derived only when its inputs changed,
+    // so merges that leave features alone never rewrite its edge order.
+    if merged.feature_nodes != ours_state.feature_nodes
+        || merged.feature_order != ours_state.feature_order
+        || merged.semantic_refs != ours_state.semantic_refs
+        || merged.sketches != ours_state.sketches
+    {
+        output.feature_graph = merged.derive_feature_graph()?;
+    }
     output.parameters = merged.parameters;
     output.feature_nodes = merged.feature_nodes;
     output.semantic_refs = merged.semantic_refs;
+    output.sketches = merged.sketches;
+    output.assertions = merged.assertions;
     output.assembly = merged.assembly;
     output.drawing = merged.drawing;
     write_ocad(&args[3], &output)?;

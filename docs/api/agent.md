@@ -48,24 +48,32 @@ after every operation validates; a later operation failure cannot retain an
 earlier operation's mutation.
 
 For optimistic concurrency, a patch may include a complete-state revision
-precondition. The digest covers the canonical serialized patchable state
-(parameters, feature nodes, semantic references, and optional assembly and
-drawing models), not B-Rep or mesh caches:
+precondition. The digest covers the canonical serialized patchable state, not
+B-Rep or mesh caches:
 
 ```json
 {
   "type": "revision_equals",
   "algorithm": "sha256",
-  "version": "musubicad.design-state.v1",
+  "version": "musubicad.design-state.v2",
   "digest": "<64 lowercase hexadecimal characters>"
 }
 ```
 
+| `version` | Covers | Accepted for |
+|---|---|---|
+| `musubicad.design-state.v2` (current) | parameters, feature nodes, semantic references, optional assembly/drawing, sketches, and design assertions | every patch |
+| `musubicad.design-state.v1` (legacy, ADR-008) | parameters, feature nodes, semantic references, optional assembly/drawing | value-edit patches only; a structural patch guarded by v1 is rejected as too weak |
+
 `algorithm` and `version` are validated explicitly. A stale digest is rejected
 before mutation with the same deterministic validation error from dry-run,
 in-memory apply, file apply, and Agent API paths. Rust callers can calculate
-the value with `opencad_ai::design_state_revision` or attach one with
-`PatchPrecondition::revision_equals`.
+the current value with `opencad_ai::design_state_revision`, a specific version
+with `design_state_revision_for_version`, or attach one with
+`PatchPrecondition::revision_equals`. Document-backed paths build the state
+with `opencad_file::document_design_state`, so v2 digests include the
+document's sketches and assertions. In-memory `opencad.patch_*` requests do not
+transport sketches or assertions, so their v2 digests cover empty collections.
 
 The history methods accept and return the serialized `history` value produced
 by a prior backend edit. Clients must treat it as opaque and pass it back
@@ -78,8 +86,8 @@ the document or history value is changed.
 Dry-run and apply share the validated candidate builder. Rust callers that
 need the same contract can use
 `opencad_ai::build_patch_candidate(&DesignState, &DesignPatch)`; it clones the
-Design Graph, applies all operations, and evaluates the resulting parameter
-graph before returning the candidate. Assembly operations require an assembly
+Design Graph, applies all operations, validates the final structural state,
+and evaluates the resulting parameter graph before returning the candidate. Assembly operations require an assembly
 model and drawing operations require a drawing model; missing context is a
 deterministic validation error in both paths.
 
@@ -319,6 +327,191 @@ opencad regen bracket.ocad.d --sync-topo-refs
 ```
 
 See `examples/agent/plane_face_ref_patch.json`.
+
+### Structural operations (ADR-013)
+
+Structural operations create or remove Design Graph objects instead of editing
+existing values. MCAD-P7-001 delivers parameters, design assertions,
+sketches, features, semantic references, and assembly and drawing structure, so
+a complete part, assembly, or drawing can be authored from an empty document of
+its kind.
+
+| type | fields | effect |
+|---|---|---|
+| `add_parameter` | `id`, `name`, `expr` | Create a parameter; dependency edges are derived from `expr` |
+| `remove_parameter` | `id` | Remove a parameter and its dependency edges |
+| `add_assertion` | `assertion` (the `graph/assertions.json` entry shape) | Create a design assertion |
+| `remove_assertion` | `id` | Remove a design assertion |
+| `add_sketch` | `id`, `name`, `workplane` | Create an empty sketch |
+| `remove_sketch` | `id` | Remove a sketch no sketch feature uses |
+| `add_sketch_entity` | `sketch_id`, `entity` (the `graph/sketches.json` entity shape) | Add a point, line, circle, arc, or rectangle |
+| `remove_sketch_entity` | `sketch_id`, `entity_id` | Remove an entity nothing references |
+| `add_sketch_constraint` | `sketch_id`, `constraint` (the `graph/sketches.json` constraint shape) | Add a sketch constraint |
+| `remove_sketch_constraint` | `sketch_id`, `constraint_id` | Remove a sketch constraint |
+| `add_feature` | `node` (the `graph/features.json` node shape), `position` | Create a feature in the display order |
+| `remove_feature` | `id` | Remove a feature nothing consumes |
+| `move_feature` | `id`, `position` | Move a feature in the display order |
+| `set_feature_suppressed` | `id`, `suppressed` | Suppress or unsuppress a feature |
+| `replace_feature_definition` | `id`, `definition` | Replace a definition with one of the same feature type |
+| `add_semantic_ref` | `topo_ref` (the `graph/semantic_refs.json` entry shape) | Create a semantic topology reference |
+| `remove_semantic_ref` | `ref_id` | Remove a semantic reference nothing consumes |
+| `add_component` / `remove_component` | `component` / `id` | Add an assembly component, or remove one no instance or pattern uses |
+| `add_instance` / `remove_instance` | `instance` / `id` | Add a placed instance, or remove one no mate or connector references |
+| `add_mate` / `remove_mate` | `mate` / `id` | Add or remove an assembly mate |
+| `remove_connector` | `id` | Remove a connector no mate references by name (`add_connector` already existed) |
+| `add_assembly_pattern` / `remove_assembly_pattern` | `pattern` / `id` | Add or remove an assembly pattern |
+| `add_sheet` / `remove_sheet` | `sheet` / `id` | Add an empty sheet, or remove a sheet with the views and dimensions it owns |
+| `add_drawing_view` / `remove_drawing_view` | `sheet_id`, `view` / `view_id` | Add a view, or remove one no dimension uses |
+| `add_drawing_dimension` / `remove_drawing_dimension` | `sheet_id`, `dimension` / `id` | Add or remove a linear dimension |
+
+Assembly and drawing objects use the stored JSON shapes of
+`graph/assemblies.json` and `graph/drawings.json`, with IDs under the
+`component:`, `instance:`, `mate:`, `pattern:`, `sheet:`, `view:`, and `dim:`
+prefixes. Instances must name existing components, dimensions must stay on a
+view of their own sheet, views need a finite scale above zero, and the
+existing mate, connector, and pattern validators run on the final model. The
+document layer also runs the document-level validators (component
+self-reference, view sources). An assembly or drawing document without a model
+yet is patched as an empty model of its kind.
+
+`position` is `{"at": "start"}`, `{"at": "end"}`, `{"after": "<feature id>"}`,
+or `{"before": "<feature id>"}`, resolved against the order at that point in
+the patch.
+
+Rules shared by every structural operation:
+
+- **Author-chosen IDs.** The patch names every new object. IDs match
+  `<prefix>:[a-z0-9_]+(.[a-z0-9_]+)*`, at most 128 bytes (`param:`,
+  `assertion:`, `sketch:`, `ent:`, `con:`, `feature:`). Semantic reference IDs
+  keep their existing `ref:` form. Rectangle `corner_ids` and
+  `edge_ids` follow the same rule and share the sketch's entity namespace. An
+  existing ID, or one removed earlier in the same patch, is rejected.
+  Parameter names must be unique expression identifiers.
+- **Final-state validation.** Operations apply to one staged candidate.
+  Structural sketch, feature, and reference operations are staged first, in
+  patch order, followed by value edits, so a value edit may target an object
+  the same patch creates. References are checked once, on the final state, so
+  a patch may add objects that refer to each other in any order, or remove an
+  object together with its consumers.
+- **No cascading removal.** Removing a parameter whose name is still used fails
+  and lists every dependent in sorted order (`assertion …`, `feature …`,
+  `parameter …`, `sketch …`). Added `parameter_range` and `required_reference`
+  assertions must name an existing parameter or semantic reference.
+- **Sketch integrity.** In every sketch the patch touches, line endpoints and
+  circle/arc centers must name point entities (or rectangle corners),
+  constraints must name existing entities, dimensions must keep their
+  constraint, every coordinate and constraint expression must use existing
+  parameters, and a `face_ref` workplane must name an existing semantic
+  reference. A sketch still used by a sketch feature cannot be removed.
+- **Profiles stay consumable.** Every extrude, hole, and revolve whose sketch
+  was touched must still resolve its `profile_ref` to a closed profile, using
+  the same lookup as regeneration. Removing an edge of an extruded outline is
+  therefore rejected at dry-run, before any kernel call.
+- **Derived sketch data.** A touched sketch's `profiles` are re-detected from
+  its entities and its `solve_state` is reset to `unknown`; regeneration solves
+  it again. Custom workplanes must be finite, with normal and x axis at least
+  `1e-9` long and perpendicular within `|cos| <= 1e-6` (dimensionless).
+- **Derived Feature Graph.** `graph/features.json` edges and entries are
+  never authored. They are derived from each definition's
+  `sketch_feature`/`source_feature`/`target_feature` inputs, plus the creator
+  of every consumed semantic reference (including a consumed sketch's
+  `face_ref` workplane) when that creator is not already upstream. A patch is
+  rejected when an input names an unknown feature, when dependencies form a
+  cycle, or when the display order places a feature before one of its inputs.
+  The persisted graph is re-derived only when a patch adds, removes, moves,
+  suppresses, or replaces a feature, or adds or removes a semantic reference;
+  value edits never rewrite it.
+- **Features stay regenerable.** Added or replaced features must reference an
+  existing sketch, existing semantic references, and existing parameters, and
+  every extrude, hole, and revolve must resolve its `profile_ref` to a closed
+  profile. Removing a feature or semantic reference that anything still
+  consumes fails and lists every consumer. Feature operations need the
+  authored display order, so in-memory `opencad.patch_*` requests without it
+  are rejected.
+- **Limits.** A patch holds at most 10,000 operations.
+- **Complete state required.** Structural operations run only through
+  `build_patch_candidate` / `DesignPatch::apply_to_state` and the document,
+  CLI, and Agent paths built on them. The legacy
+  `DesignPatch::apply_to_document` rejects them.
+
+```json
+{
+  "operations": [
+    { "type": "add_parameter", "id": "param:rib_depth", "name": "rib_depth", "expr": "thickness * 2" },
+    {
+      "type": "add_assertion",
+      "assertion": {
+        "id": "assertion:rib_depth_range",
+        "name": "Rib depth range",
+        "severity": "required",
+        "type": "parameter_range",
+        "parameter_name": "rib_depth",
+        "min_m": 0.004,
+        "max_m": 0.02
+      }
+    }
+  ]
+}
+```
+
+See `examples/agent/add_rib_depth_patch.json`,
+`examples/agent/add_boss_sketch_patch.json`, and
+`examples/agent/add_top_fillet_feature_patch.json`. Parameter additions and
+removals appear in semantic diffs as `parameter_changed` with an empty
+`before` or `after`. Assertion changes appear as `assertion_added`,
+`assertion_removed`, or `assertion_changed`, and in change impact as an
+`assertion` input with no dirty Feature Graph nodes. Sketch changes appear as
+`sketch_added`, `sketch_removed`, `sketch_entity_added`,
+`sketch_entity_removed`, `sketch_constraint_added`, or
+`sketch_constraint_removed`; change impact reports a `sketch` input and dirties
+the consuming sketch feature and its downstream suffix. Feature additions,
+removals, and replacements appear as `feature_added`, `feature_removed`, or
+`feature_modified` and dirty the feature and its suffix in the derived
+candidate graph; `feature_moved` reports a display-order change and dirties
+nothing, because regeneration order depends only on dependencies. Assembly
+component and pattern changes appear as `assembly_component_*` and
+`assembly_pattern_*`, and drawing dimension changes as `drawing_dimension_*`.
+
+### Rebase and semantic merge
+
+`opencad rebase-patch` and `opencad_ai::rebase_patch` compare each target by
+stable ID across the old base, the patch result, and the new base.
+Structural conflicts carry a `reason`:
+
+| `reason` | Meaning |
+|---|---|
+| `add_add` | Both sides created the same ID with different content |
+| `remove_modify` | One side removed an object the other side changed |
+| `anchor_missing` | A feature `position` anchor no longer exists in the new base |
+| `order` | Both sides reordered features differently, or the merged order breaks a dependency |
+| `invalid_result` | The combined result fails structural validation |
+
+An addition that the new base already contains with identical content is
+dropped from the rebased patch, and the rebased patch must still apply to the
+new base.
+
+`opencad merge` and `opencad_ai::semantic_three_way_merge` merge every
+collection of the complete design state by stable ID: parameters, features,
+sketches, semantic references, assertions, assembly components, instances,
+mates, connectors, patterns, and drawing sheets. A side equal to base yields to
+the other side's change, addition, or removal; retained objects keep base
+order and additions follow in ID order. Feature display order keeps the
+reordering side's relative order; features that both sides insert at the same
+anchor follow it in order of their first feature ID. The merged result
+therefore does not depend on which side is "ours". The combined state must
+pass `opencad_ai::validate_design_state`. `opencad merge` writes back every
+merged collection and re-derives `graph/features.json` only when features,
+their order, sketches, or semantic references changed.
+
+Rust callers can express an existing design as one structural patch with
+`opencad_ai::authoring_patch(&DesignState)`. Applying it to an empty document
+of the same kind rebuilds every checked-in example. Source data matches
+exactly, and derived sketch profiles and solve state are recomputed.
+
+The preconditions `sketch_exists` (`id`), `sketch_entity_exists`
+(`sketch_id`, `entity_id`), and `assertion_exists` (`id`) guard patches that
+depend on those objects. They need the complete design state, so they are
+evaluated by `build_patch_candidate` and the paths built on it.
 
 ### Assembly patch operations
 
