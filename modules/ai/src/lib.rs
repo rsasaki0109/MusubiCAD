@@ -45,7 +45,8 @@ pub use intent::{
     IntentProvider,
 };
 pub use merge::{
-    rebase_patch, semantic_three_way_merge, ConflictKind, SemanticConflict, SemanticMergeResult,
+    rebase_patch, semantic_three_way_merge, ConflictKind, ConflictReason, SemanticConflict,
+    SemanticMergeResult,
 };
 pub use patch::{
     DesignPatch, ExpectedEffect, FeatureExprField, FeatureRefField, PatchOperation,
@@ -66,5 +67,5 @@ pub use state::{
 };
 pub use validation::{
     build_patch_candidate, dry_run_patch, dry_run_patch_state, dry_run_patch_state_with_context,
-    ensure_patch_valid, PatchDryRunReport,
+    ensure_patch_valid, validate_design_state, PatchDryRunReport,
 };

@@ -4,7 +4,9 @@ use opencad_ai::{
     build_patch_candidate, dry_run_patch_state_with_context, DesignPatch, DesignState,
     ImpactContext, PatchDryRunReport, PatchOperation,
 };
-use opencad_core::Result;
+use opencad_assembly::AssemblyModel;
+use opencad_core::{DocumentKind, Result};
+use opencad_drawing::DrawingModel;
 
 use crate::topo_assign::{apply_assign_face_ref, AssignFaceRefOp};
 use crate::{DocumentHistory, OcadDocument};
@@ -41,13 +43,25 @@ pub fn apply_patch_with_history(
 ///
 /// Every document-backed patch, diff, and revision uses this projection so
 /// that `musubicad.design-state.v2` digests agree across surfaces.
+///
+/// An assembly or drawing document without a model yet (for example a new,
+/// empty one) is projected with an empty model of its kind, so structural
+/// patches can author it from nothing.
 pub fn document_design_state(doc: &OcadDocument) -> DesignState {
+    let assembly = doc
+        .assembly
+        .clone()
+        .or_else(|| (doc.metadata.kind == DocumentKind::Assembly).then(AssemblyModel::new));
+    let drawing = doc
+        .drawing
+        .clone()
+        .or_else(|| (doc.metadata.kind == DocumentKind::Drawing).then(DrawingModel::new));
     DesignState::with_models(
         doc.parameters.clone(),
         doc.feature_nodes.clone(),
         doc.semantic_refs.clone(),
-        doc.assembly.clone(),
-        doc.drawing.clone(),
+        assembly,
+        drawing,
     )
     .with_authoring(doc.sketches.clone(), doc.assertions.clone())
     .with_feature_order(doc.feature_graph.ordered_ids().to_vec())
@@ -64,6 +78,26 @@ fn apply_patch_to_document_in_place(doc: &mut OcadDocument, patch: &DesignPatch)
     doc.parameters = next.parameters;
     doc.feature_nodes = next.feature_nodes;
     doc.semantic_refs = next.semantic_refs;
+    // Structural assembly and drawing edits also run the document-level
+    // validators, which need the document ID (self-reference, view sources).
+    if patch
+        .operations
+        .iter()
+        .any(PatchOperation::is_assembly_structural)
+    {
+        if let Some(assembly) = &next.assembly {
+            assembly.validate(&doc.metadata.id)?;
+        }
+    }
+    if patch
+        .operations
+        .iter()
+        .any(PatchOperation::is_drawing_structural)
+    {
+        if let Some(drawing) = &next.drawing {
+            drawing.validate(&doc.metadata.id)?;
+        }
+    }
     doc.assembly = next.assembly;
     doc.drawing = next.drawing;
     doc.sketches = next.sketches;

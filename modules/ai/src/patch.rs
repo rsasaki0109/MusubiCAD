@@ -2,7 +2,9 @@
 
 use std::collections::BTreeSet;
 
+use opencad_assembly::{AssemblyPattern, Component, Instance, Mate};
 use opencad_core::{Assertion, AssertionKind, OpenCadError, Result, TopoRefId};
+use opencad_drawing::{DrawingView, LinearDimension, Sheet};
 use opencad_feature::{FeatureDefinition, FeatureNode};
 use opencad_geometry::{assign_named_face_ref, TopoRef};
 use opencad_graph::{evaluate_param_graph, parameter_names_in_expr, ParamGraph, ParameterEntry};
@@ -209,11 +211,73 @@ pub enum PatchOperation {
     },
     /// Create a semantic topology reference with its full stored shape.
     AddSemanticRef {
-        topo_ref: TopoRef,
+        topo_ref: Box<TopoRef>,
     },
     /// Remove a semantic topology reference nothing consumes.
     RemoveSemanticRef {
         ref_id: String,
+    },
+    /// Add an assembly component (a child document reference).
+    AddComponent {
+        component: Component,
+    },
+    /// Remove a component no instance or pattern uses.
+    RemoveComponent {
+        id: String,
+    },
+    /// Add a placed instance of a component.
+    AddInstance {
+        instance: Instance,
+    },
+    /// Remove an instance no mate or connector references.
+    RemoveInstance {
+        id: String,
+    },
+    /// Add an assembly mate.
+    AddMate {
+        mate: Box<Mate>,
+    },
+    /// Remove an assembly mate.
+    RemoveMate {
+        id: String,
+    },
+    /// Remove a connector no mate references by name.
+    RemoveConnector {
+        id: String,
+    },
+    /// Add an assembly pattern.
+    AddAssemblyPattern {
+        pattern: AssemblyPattern,
+    },
+    /// Remove an assembly pattern.
+    RemoveAssemblyPattern {
+        id: String,
+    },
+    /// Add an empty drawing sheet.
+    AddSheet {
+        sheet: Sheet,
+    },
+    /// Remove a drawing sheet together with the views and dimensions it owns.
+    RemoveSheet {
+        id: String,
+    },
+    /// Add a view to a drawing sheet.
+    AddDrawingView {
+        sheet_id: String,
+        view: DrawingView,
+    },
+    /// Remove a view no dimension references.
+    RemoveDrawingView {
+        view_id: String,
+    },
+    /// Add a linear dimension to a drawing sheet.
+    AddDrawingDimension {
+        sheet_id: String,
+        dimension: LinearDimension,
+    },
+    /// Remove a drawing dimension.
+    RemoveDrawingDimension {
+        id: String,
     },
 }
 
@@ -240,6 +304,36 @@ impl PatchOperation {
                 | Self::ReplaceFeatureDefinition { .. }
                 | Self::AddSemanticRef { .. }
                 | Self::RemoveSemanticRef { .. }
+        ) || self.is_assembly_structural()
+            || self.is_drawing_structural()
+    }
+
+    /// Whether this operation creates or removes assembly structure.
+    pub fn is_assembly_structural(&self) -> bool {
+        matches!(
+            self,
+            Self::AddComponent { .. }
+                | Self::RemoveComponent { .. }
+                | Self::AddInstance { .. }
+                | Self::RemoveInstance { .. }
+                | Self::AddMate { .. }
+                | Self::RemoveMate { .. }
+                | Self::RemoveConnector { .. }
+                | Self::AddAssemblyPattern { .. }
+                | Self::RemoveAssemblyPattern { .. }
+        )
+    }
+
+    /// Whether this operation creates or removes drawing structure.
+    pub fn is_drawing_structural(&self) -> bool {
+        matches!(
+            self,
+            Self::AddSheet { .. }
+                | Self::RemoveSheet { .. }
+                | Self::AddDrawingView { .. }
+                | Self::RemoveDrawingView { .. }
+                | Self::AddDrawingDimension { .. }
+                | Self::RemoveDrawingDimension { .. }
         )
     }
 }
@@ -735,6 +829,7 @@ impl DesignPatch {
                 | PatchOperation::ReplaceFeatureDefinition { .. }
                 | PatchOperation::AddSemanticRef { .. }
                 | PatchOperation::RemoveSemanticRef { .. } => {}
+                _ => {}
             }
         }
         // Dependency edges for new parameters are derived once, after every
@@ -1065,6 +1160,16 @@ impl DesignPatch {
                 {
                     return Err(OpenCadError::validation(
                         "assembly patch operation requires an assembly model",
+                    ));
+                }
+                operation if operation.is_assembly_structural() && assembly.is_none() => {
+                    return Err(OpenCadError::validation(
+                        "assembly patch operation requires an assembly model",
+                    ));
+                }
+                operation if operation.is_drawing_structural() && drawing.is_none() => {
+                    return Err(OpenCadError::validation(
+                        "drawing patch operation requires a drawing model",
                     ));
                 }
                 PatchOperation::SetDrawingViewScale { .. }

@@ -180,7 +180,7 @@ pub(crate) fn apply_feature_operations(
                         "semantic reference '{ref_id}' already exists"
                     )));
                 }
-                state.semantic_refs.push(topo_ref.clone());
+                state.semantic_refs.push(topo_ref.as_ref().clone());
             }
             PatchOperation::RemoveSemanticRef { ref_id } => {
                 let index = state
@@ -311,36 +311,7 @@ pub(crate) fn validate_feature_candidate(
         .iter()
         .filter(|node| checked.contains(node.id.as_str()))
     {
-        if let FeatureDefinition::Sketch(def) = &node.definition {
-            if !after
-                .sketches
-                .iter()
-                .any(|sketch| sketch.id.as_str() == def.sketch_id)
-            {
-                failures.insert(format!(
-                    "feature '{}' references unknown sketch '{}'",
-                    node.id, def.sketch_id
-                ));
-            }
-        }
-        for (field, ref_id) in node.definition.reference_inputs() {
-            if !ref_ids.contains(ref_id) {
-                failures.insert(format!(
-                    "feature '{}' {field} references unknown semantic reference '{ref_id}'",
-                    node.id
-                ));
-            }
-        }
-        for (field, expr) in node.definition.expressions() {
-            for name in parameter_names_in_expr(expr) {
-                if after.parameters.find_by_name(&name).is_none() {
-                    failures.insert(format!(
-                        "feature '{}' {field} '{expr}' references unknown parameter '{name}'",
-                        node.id
-                    ));
-                }
-            }
-        }
+        check_feature_inputs(node, after, failures);
     }
     validate_profile_consumers(
         after,
@@ -366,6 +337,49 @@ pub(crate) fn validate_feature_candidate(
     if !dependency_failure {
         if let Some(Err(error)) = derived_feature_graph(after) {
             failures.insert(error.to_string());
+        }
+    }
+}
+
+/// Check that a feature's sketch, semantic references, and expression
+/// parameters exist in `state`.
+pub(crate) fn check_feature_inputs(
+    node: &FeatureNode,
+    state: &DesignState,
+    failures: &mut BTreeSet<String>,
+) {
+    if let FeatureDefinition::Sketch(def) = &node.definition {
+        if !state
+            .sketches
+            .iter()
+            .any(|sketch| sketch.id.as_str() == def.sketch_id)
+        {
+            failures.insert(format!(
+                "feature '{}' references unknown sketch '{}'",
+                node.id, def.sketch_id
+            ));
+        }
+    }
+    for (field, ref_id) in node.definition.reference_inputs() {
+        if !state
+            .semantic_refs
+            .iter()
+            .any(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
+        {
+            failures.insert(format!(
+                "feature '{}' {field} references unknown semantic reference '{ref_id}'",
+                node.id
+            ));
+        }
+    }
+    for (field, expr) in node.definition.expressions() {
+        for name in parameter_names_in_expr(expr) {
+            if state.parameters.find_by_name(&name).is_none() {
+                failures.insert(format!(
+                    "feature '{}' {field} '{expr}' references unknown parameter '{name}'",
+                    node.id
+                ));
+            }
         }
     }
 }

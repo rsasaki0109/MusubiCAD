@@ -337,7 +337,7 @@ pub(crate) fn validate_profile_consumers(
     }
 }
 
-fn validate_sketch_references(
+pub(crate) fn validate_sketch_references(
     sketch: &Sketch,
     after: &DesignState,
     failures: &mut BTreeSet<String>,

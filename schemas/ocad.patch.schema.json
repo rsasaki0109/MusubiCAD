@@ -55,7 +55,22 @@
             "set_feature_suppressed",
             "replace_feature_definition",
             "add_semantic_ref",
-            "remove_semantic_ref"
+            "remove_semantic_ref",
+            "add_component",
+            "add_instance",
+            "add_mate",
+            "add_assembly_pattern",
+            "add_sheet",
+            "remove_component",
+            "remove_instance",
+            "remove_mate",
+            "remove_connector",
+            "remove_assembly_pattern",
+            "remove_sheet",
+            "remove_drawing_view",
+            "remove_drawing_dimension",
+            "add_drawing_view",
+            "add_drawing_dimension"
           ]
         }
       },
@@ -273,6 +288,155 @@
             "required": ["type", "ref_id"],
             "properties": { "ref_id": { "type": "string", "pattern": "^ref:" } }
           }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_component" } } },
+          "then": {
+            "required": ["type", "component"],
+            "properties": {
+              "component": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_component" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_instance" } } },
+          "then": {
+            "required": ["type", "instance"],
+            "properties": {
+              "instance": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_instance" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_mate" } } },
+          "then": {
+            "required": ["type", "mate"],
+            "properties": {
+              "mate": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_mate" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_assembly_pattern" } } },
+          "then": {
+            "required": ["type", "pattern"],
+            "properties": {
+              "pattern": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_pattern" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_sheet" } } },
+          "then": {
+            "required": ["type", "sheet"],
+            "properties": {
+              "sheet": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_sheet" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_component" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^component:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_instance" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^instance:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_mate" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^mate:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_connector" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^connector:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_assembly_pattern" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^pattern:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_sheet" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^sheet:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_drawing_view" } } },
+          "then": {
+            "required": ["type", "view_id"],
+            "properties": { "view_id": { "type": "string", "pattern": "^view:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_drawing_dimension" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^dim:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_drawing_view" } } },
+          "then": {
+            "required": ["type", "sheet_id", "view"],
+            "properties": {
+              "sheet_id": { "type": "string", "pattern": "^sheet:" },
+              "view": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_view" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_drawing_dimension" } } },
+          "then": {
+            "required": ["type", "sheet_id", "dimension"],
+            "properties": {
+              "sheet_id": { "type": "string", "pattern": "^sheet:" },
+              "dimension": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "$ref": "#/$defs/stable_id_dim" } }
+              }
+            }
+          }
         }
       ]
     },
@@ -316,6 +480,41 @@
           "additionalProperties": false
         }
       ]
+    },
+    "stable_id_component": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^component:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_instance": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^instance:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_mate": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^mate:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_pattern": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^pattern:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_sheet": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^sheet:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_view": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^view:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_dim": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^dim:[a-z0-9_]+([.][a-z0-9_]+)*$"
     },
     "stable_id_feature": {
       "type": "string",

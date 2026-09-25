@@ -3,10 +3,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use opencad_feature::FeatureNode;
+use opencad_graph::{ParamGraph, ParameterEntry};
 use serde::{Deserialize, Serialize};
 
+use crate::feature_patch::FeaturePosition;
 use crate::state::canonical_json_bytes;
-use crate::validation::build_patch_candidate;
+use crate::validation::{build_patch_candidate, validate_design_state};
 use crate::{design_state_revision, DesignPatch, DesignState, PatchOperation, PatchPrecondition};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -22,6 +24,23 @@ pub enum ConflictKind {
     UnsupportedStructure,
 }
 
+/// Why a structural conflict occurred (ADR-013 §7).  Value conflicts on
+/// an existing object carry no reason.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConflictReason {
+    /// Both sides created the same stable ID with different content.
+    AddAdd,
+    /// One side removed an object the other side changed or kept editing.
+    RemoveModify,
+    /// A feature position anchor no longer exists on the other side.
+    AnchorMissing,
+    /// Feature display orders diverge, or the merged order breaks a dependency.
+    Order,
+    /// The combined result fails structural validation.
+    InvalidResult,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SemanticConflict {
     pub kind: ConflictKind,
@@ -29,6 +48,8 @@ pub struct SemanticConflict {
     pub base: Option<String>,
     pub ours: Option<String>,
     pub theirs: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<ConflictReason>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -37,105 +58,408 @@ pub struct SemanticMergeResult {
     pub conflicts: Vec<SemanticConflict>,
 }
 
-/// Merge independent parameter and feature edits by stable semantic ID.
-/// Structural additions/removals are reported explicitly until graph edge merging is available.
+/// Three-way merge of complete design states by stable semantic ID.
+///
+/// Every collection is merged per ID with the same rule: equal sides agree;
+/// a side equal to base yields to the other side's change, addition, or
+/// removal; any other combination is a conflict (`add_add` when both sides
+/// created the ID, `remove_modify` when one side removed it).  Retained IDs
+/// keep base order and additions follow in ID order, so the result does not
+/// depend on which side is "ours".  The feature display order is merged
+/// separately (see [`merge_feature_order`]), and the combined state must pass
+/// [`validate_design_state`] or the merge reports an `invalid_result`
+/// conflict instead of returning a state.
 pub fn semantic_three_way_merge(
     base: &DesignState,
     ours: &DesignState,
     theirs: &DesignState,
 ) -> SemanticMergeResult {
-    let mut merged = ours.clone();
     let mut conflicts = Vec::new();
-    let ids: BTreeSet<_> = base
-        .parameters
-        .parameter_ids()
-        .into_iter()
-        .chain(ours.parameters.parameter_ids())
-        .chain(theirs.parameters.parameter_ids())
+    let mut merged = ours.clone();
+
+    merged.parameters = merge_parameters(base, ours, theirs, &mut conflicts);
+    merged.feature_nodes = merge_by_id(
+        ConflictKind::Feature,
+        [
+            &base.feature_nodes,
+            &ours.feature_nodes,
+            &theirs.feature_nodes,
+        ],
+        |node| node.id.clone(),
+        &mut conflicts,
+    );
+    // Documents store feature nodes sorted by ID; keep that convention.
+    merged
+        .feature_nodes
+        .sort_by(|left, right| left.id.cmp(&right.id));
+    merged.sketches = merge_by_id(
+        ConflictKind::Sketch,
+        [&base.sketches, &ours.sketches, &theirs.sketches],
+        |sketch| sketch.id.as_str().to_string(),
+        &mut conflicts,
+    );
+    merged.semantic_refs = merge_by_id(
+        ConflictKind::SemanticReference,
+        [
+            &base.semantic_refs,
+            &ours.semantic_refs,
+            &theirs.semantic_refs,
+        ],
+        |topo_ref| topo_ref.ref_id.as_str().to_string(),
+        &mut conflicts,
+    );
+    merged.assertions = merge_by_id(
+        ConflictKind::Assertion,
+        [&base.assertions, &ours.assertions, &theirs.assertions],
+        |assertion| assertion.id.clone(),
+        &mut conflicts,
+    );
+    let merged_features: BTreeSet<String> = merged
+        .feature_nodes
+        .iter()
+        .map(|node| node.id.clone())
         .collect();
-    for id in ids {
-        let values = (
-            base.parameters.get(&id).map(|p| p.expr.as_str()),
-            ours.parameters.get(&id).map(|p| p.expr.as_str()),
-            theirs.parameters.get(&id).map(|p| p.expr.as_str()),
-        );
-        match values {
-            (Some(b), Some(o), Some(t)) if o == b && t != b => {
-                if merged.parameters.set_expr(&id, t).is_err() {
-                    conflicts.push(conflict(ConflictKind::Parameter, &id, values));
-                }
-            }
-            (Some(b), Some(o), Some(t)) if o != b && t != b && o != t => {
-                conflicts.push(conflict(ConflictKind::Parameter, &id, values));
-            }
-            (Some(_), Some(_), Some(_)) => {}
-            _ => conflicts.push(conflict(ConflictKind::UnsupportedStructure, &id, values)),
+    merged.feature_order = merge_feature_order(
+        [
+            &base.feature_order,
+            &ours.feature_order,
+            &theirs.feature_order,
+        ],
+        &merged_features,
+        &mut conflicts,
+    );
+
+    match (&base.assembly, &ours.assembly, &theirs.assembly) {
+        (Some(b), Some(o), Some(t)) => {
+            let mut assembly = o.clone();
+            assembly.components = merge_by_id(
+                ConflictKind::Assembly,
+                [&b.components, &o.components, &t.components],
+                |item| item.id.as_str().to_string(),
+                &mut conflicts,
+            );
+            assembly.instances = merge_by_id(
+                ConflictKind::Assembly,
+                [&b.instances, &o.instances, &t.instances],
+                |item| item.id.as_str().to_string(),
+                &mut conflicts,
+            );
+            assembly.mates = merge_by_id(
+                ConflictKind::Assembly,
+                [&b.mates, &o.mates, &t.mates],
+                |item| item.id.as_str().to_string(),
+                &mut conflicts,
+            );
+            assembly.connectors = merge_by_id(
+                ConflictKind::Assembly,
+                [&b.connectors, &o.connectors, &t.connectors],
+                |item| item.id.as_str().to_string(),
+                &mut conflicts,
+            );
+            assembly.patterns = merge_by_id(
+                ConflictKind::Assembly,
+                [&b.patterns, &o.patterns, &t.patterns],
+                |item| item.id.as_str().to_string(),
+                &mut conflicts,
+            );
+            merged.assembly = Some(assembly);
         }
+        _ => merge_optional_model(
+            "assembly",
+            ConflictKind::Assembly,
+            &base.assembly,
+            &ours.assembly,
+            &theirs.assembly,
+            &mut merged.assembly,
+            &mut conflicts,
+        ),
+    }
+    match (&base.drawing, &ours.drawing, &theirs.drawing) {
+        (Some(b), Some(o), Some(t)) => {
+            let mut drawing = o.clone();
+            drawing.sheets = merge_by_id(
+                ConflictKind::Drawing,
+                [&b.sheets, &o.sheets, &t.sheets],
+                |sheet| sheet.id.as_str().to_string(),
+                &mut conflicts,
+            );
+            merged.drawing = Some(drawing);
+        }
+        _ => merge_optional_model(
+            "drawing",
+            ConflictKind::Drawing,
+            &base.drawing,
+            &ours.drawing,
+            &theirs.drawing,
+            &mut merged.drawing,
+            &mut conflicts,
+        ),
     }
 
-    merge_features(base, ours, theirs, &mut merged, &mut conflicts);
-    merge_optional_model(
-        "assembly",
-        ConflictKind::Assembly,
-        &base.assembly,
-        &ours.assembly,
-        &theirs.assembly,
-        &mut merged.assembly,
-        &mut conflicts,
-    );
-    merge_optional_model(
-        "drawing",
-        ConflictKind::Drawing,
-        &base.drawing,
-        &ours.drawing,
-        &theirs.drawing,
-        &mut merged.drawing,
-        &mut conflicts,
-    );
+    if conflicts.is_empty() {
+        if let Err(error) = validate_design_state(&merged) {
+            conflicts.push(SemanticConflict {
+                kind: ConflictKind::UnsupportedStructure,
+                id: "merged".into(),
+                base: None,
+                ours: None,
+                theirs: Some(error.to_string()),
+                reason: Some(ConflictReason::InvalidResult),
+            });
+        }
+    }
+    sort_conflicts(&mut conflicts);
     SemanticMergeResult {
         merged: conflicts.is_empty().then_some(merged),
         conflicts,
     }
 }
 
-fn merge_features(
-    base: &DesignState,
-    ours: &DesignState,
-    theirs: &DesignState,
-    merged: &mut DesignState,
-    conflicts: &mut Vec<SemanticConflict>,
-) {
-    let maps = [base, ours, theirs].map(|state| {
-        state
-            .feature_nodes
-            .iter()
-            .map(|node| (node.id.as_str(), node))
-            .collect::<BTreeMap<_, _>>()
-    });
-    let ids: BTreeSet<_> = maps.iter().flat_map(|map| map.keys().copied()).collect();
-    for id in ids {
-        match (maps[0].get(id), maps[1].get(id), maps[2].get(id)) {
-            (Some(b), Some(o), Some(t)) if *o == *b && *t != *b => {
-                if let Some(node) = merged.feature_nodes.iter_mut().find(|node| node.id == id) {
-                    *node = (*t).clone();
-                }
-            }
-            (Some(b), Some(o), Some(t)) if *o != *b && *t != *b && *o != *t => {
-                conflicts.push(feature_conflict(ConflictKind::Feature, id, b, o, t));
-            }
-            (Some(_), Some(_), Some(_)) => {}
-            (b, o, t) => conflicts.push(SemanticConflict {
-                kind: ConflictKind::UnsupportedStructure,
-                id: id.to_string(),
-                base: b.and_then(|v| serde_json::to_string(*v).ok()),
-                ours: o.and_then(|v| serde_json::to_string(*v).ok()),
-                theirs: t.and_then(|v| serde_json::to_string(*v).ok()),
-            }),
-        }
+/// Canonical bytes used to compare one object across the three sides.
+fn identity<T: Serialize>(value: &T) -> Vec<u8> {
+    canonical_json_bytes(value).unwrap_or_default()
+}
+
+fn display<T: Serialize>(value: Option<&T>) -> Option<String> {
+    value.and_then(|value| serde_json::to_string(value).ok())
+}
+
+/// Reason for a three-way conflict given which sides hold the object.
+fn conflict_reason(base: bool, ours: bool, theirs: bool) -> Option<ConflictReason> {
+    match (base, ours, theirs) {
+        (false, true, true) => Some(ConflictReason::AddAdd),
+        (true, false, _) | (true, _, false) => Some(ConflictReason::RemoveModify),
+        _ => None,
     }
 }
 
+/// Merge one collection by stable ID (see [`semantic_three_way_merge`]).
+fn merge_by_id<T: Clone + Serialize>(
+    kind: ConflictKind,
+    [base, ours, theirs]: [&Vec<T>; 3],
+    id_of: impl Fn(&T) -> String,
+    conflicts: &mut Vec<SemanticConflict>,
+) -> Vec<T> {
+    let index = |items: &Vec<T>| -> BTreeMap<String, T> {
+        items
+            .iter()
+            .map(|item| (id_of(item), item.clone()))
+            .collect()
+    };
+    let (b, o, t) = (index(base), index(ours), index(theirs));
+    let mut chosen: BTreeMap<String, T> = BTreeMap::new();
+    let ids: BTreeSet<&String> = b.keys().chain(o.keys()).chain(t.keys()).collect();
+    for id in ids {
+        let (bv, ov, tv) = (b.get(id), o.get(id), t.get(id));
+        let (bi, oi, ti) = (bv.map(identity), ov.map(identity), tv.map(identity));
+        let pick = if oi == ti {
+            ov
+        } else if oi == bi {
+            tv
+        } else if ti == bi {
+            ov
+        } else {
+            conflicts.push(SemanticConflict {
+                kind: kind.clone(),
+                id: id.clone(),
+                base: display(bv),
+                ours: display(ov),
+                theirs: display(tv),
+                reason: conflict_reason(bv.is_some(), ov.is_some(), tv.is_some()),
+            });
+            ov
+        };
+        if let Some(value) = pick {
+            chosen.insert(id.clone(), value.clone());
+        }
+    }
+    // Retained IDs keep base order; additions follow in ID order.
+    let mut result = Vec::with_capacity(chosen.len());
+    for item in base {
+        if let Some(value) = chosen.remove(&id_of(item)) {
+            result.push(value);
+        }
+    }
+    result.extend(chosen.into_values());
+    result
+}
+
+/// Merge parameters by ID, comparing authored fields only (the runtime
+/// `dirty` flag is ignored), then keep dependency edges both sides still
+/// agree on plus edges either side added.
+fn merge_parameters(
+    base: &DesignState,
+    ours: &DesignState,
+    theirs: &DesignState,
+    conflicts: &mut Vec<SemanticConflict>,
+) -> ParamGraph {
+    let authored = |state: &DesignState| -> Vec<ParameterEntry> {
+        state
+            .parameters
+            .entries()
+            .cloned()
+            .map(|mut entry| {
+                entry.dirty = false;
+                entry
+            })
+            .collect()
+    };
+    let entries = merge_by_id(
+        ConflictKind::Parameter,
+        [&authored(base), &authored(ours), &authored(theirs)],
+        |entry| entry.id.clone(),
+        conflicts,
+    );
+    let edges = |state: &DesignState| -> Vec<(String, String)> {
+        state
+            .parameters
+            .dependency_edges()
+            .iter()
+            .map(|edge| (edge.source.clone(), edge.target.clone()))
+            .collect()
+    };
+    let (base_edges, ours_edges, theirs_edges) = (edges(base), edges(ours), edges(theirs));
+    let ids: BTreeSet<&str> = entries.iter().map(|entry| entry.id.as_str()).collect();
+    let keep = |edge: &(String, String)| {
+        let (in_base, in_ours, in_theirs) = (
+            base_edges.contains(edge),
+            ours_edges.contains(edge),
+            theirs_edges.contains(edge),
+        );
+        ids.contains(edge.0.as_str())
+            && ((in_ours && in_theirs) || (!in_base && (in_ours || in_theirs)))
+    };
+    let mut merged_edges: Vec<(String, String)> = base_edges
+        .iter()
+        .filter(|edge| keep(edge))
+        .cloned()
+        .collect();
+    let added: BTreeSet<(String, String)> = ours_edges
+        .iter()
+        .chain(&theirs_edges)
+        .filter(|edge| !base_edges.contains(edge) && keep(edge))
+        .cloned()
+        .collect();
+    merged_edges.extend(added);
+
+    let mut graph = ParamGraph::new();
+    for entry in entries {
+        // IDs are unique after the per-ID merge.
+        let _ = graph.add_parameter(entry);
+    }
+    for (source, target) in merged_edges {
+        let _ = graph.add_dependency(source, target);
+    }
+    graph
+}
+
+/// Merge the authored feature display order.
+///
+/// Features present on every side keep one side's relative order: the side
+/// that changed it, or either when both agree.  Diverging reorders conflict
+/// (`order`).  Features added by one side are inserted after the nearest
+/// preceding retained feature in that side's order; runs from both sides at
+/// the same anchor are ordered by their first feature ID, so swapping the
+/// sides yields the same order (ADR-013 §7).
+fn merge_feature_order(
+    [base, ours, theirs]: [&Vec<String>; 3],
+    merged: &BTreeSet<String>,
+    conflicts: &mut Vec<SemanticConflict>,
+) -> Vec<String> {
+    let base_set: BTreeSet<&String> = base.iter().collect();
+    let everywhere = |id: &&String| {
+        merged.contains(*id) && base_set.contains(*id) && ours.contains(id) && theirs.contains(id)
+    };
+    let common =
+        |order: &Vec<String>| -> Vec<String> { order.iter().filter(everywhere).cloned().collect() };
+    let (common_base, common_ours, common_theirs) = (common(base), common(ours), common(theirs));
+    let sequence = if common_ours == common_base || common_ours == common_theirs {
+        common_theirs
+    } else if common_theirs == common_base {
+        common_ours
+    } else {
+        conflicts.push(SemanticConflict {
+            kind: ConflictKind::Feature,
+            id: "feature_order".into(),
+            base: serde_json::to_string(base).ok(),
+            ours: serde_json::to_string(ours).ok(),
+            theirs: serde_json::to_string(theirs).ok(),
+            reason: Some(ConflictReason::Order),
+        });
+        common_ours
+    };
+
+    let retained: BTreeSet<&String> = sequence.iter().collect();
+    // anchor (None = start) -> runs of added features, one run per side.
+    let mut runs: BTreeMap<Option<String>, Vec<Vec<String>>> = BTreeMap::new();
+    for side in [ours, theirs] {
+        let mut anchor: Option<String> = None;
+        let mut run: Vec<String> = Vec::new();
+        for id in side {
+            if retained.contains(id) {
+                if !run.is_empty() {
+                    runs.entry(anchor.clone())
+                        .or_default()
+                        .push(std::mem::take(&mut run));
+                }
+                anchor = Some(id.clone());
+            } else if merged.contains(id) && !base_set.contains(id) {
+                run.push(id.clone());
+            }
+        }
+        if !run.is_empty() {
+            runs.entry(anchor).or_default().push(run);
+        }
+    }
+    let mut placed: BTreeSet<String> = BTreeSet::new();
+    let mut result = Vec::new();
+    let mut place = |id: String, placed: &mut BTreeSet<String>| {
+        if placed.insert(id.clone()) {
+            result.push(id);
+        }
+    };
+    let mut anchors: Vec<Option<String>> = vec![None];
+    anchors.extend(sequence.iter().cloned().map(Some));
+    for anchor in anchors {
+        if let Some(id) = &anchor {
+            place(id.clone(), &mut placed);
+        }
+        if let Some(mut side_runs) = runs.remove(&anchor) {
+            side_runs.sort();
+            for id in side_runs.into_iter().flatten() {
+                place(id, &mut placed);
+            }
+        }
+    }
+    // Retained features missing from `sequence` (possible only after an
+    // order conflict) and any stragglers are appended in ID order.
+    for id in merged {
+        if placed.insert(id.clone()) {
+            result.push(id.clone());
+        }
+    }
+    result
+}
+
+fn sort_conflicts(conflicts: &mut Vec<SemanticConflict>) {
+    conflicts.sort_by(|left, right| {
+        left.kind
+            .cmp(&right.kind)
+            .then_with(|| left.id.cmp(&right.id))
+            .then_with(|| left.base.cmp(&right.base))
+            .then_with(|| left.ours.cmp(&right.ours))
+            .then_with(|| left.theirs.cmp(&right.theirs))
+    });
+    conflicts.dedup();
+}
+
 /// Rebase a patch onto a newer state, rejecting IDs changed since its base.
+///
+/// Structural conflicts carry a [`ConflictReason`].  An add whose object the
+/// new base already contains with identical content is dropped from the
+/// rebased patch.  A feature position anchor missing from the new base is an
+/// `anchor_missing` conflict, and the rebased patch must still apply to the
+/// new base or the rebase reports an `invalid_result` conflict.
 pub fn rebase_patch(
     patch: &DesignPatch,
     old_base: &DesignState,
@@ -154,6 +478,7 @@ pub fn rebase_patch(
                 base: None,
                 ours: None,
                 theirs: Some(error.to_string()),
+                reason: None,
             }]);
         }
     };
@@ -169,17 +494,60 @@ pub fn rebase_patch(
         }
     }
     let mut conflicts = Vec::new();
+    let mut already_applied = BTreeSet::new();
     for (target, operation) in targets {
         let base = target_snapshot(old_base, &operation);
         let ours = target_snapshot(&desired, &operation);
         let theirs = target_snapshot(new_base, &operation);
         if base.identity != theirs.identity && theirs.identity != ours.identity {
+            let reason = conflict_reason(
+                base.display.is_some(),
+                ours.display.is_some(),
+                theirs.display.is_some(),
+            );
             conflicts.push(SemanticConflict {
                 kind: target.kind,
                 id: target.id,
                 base: base.display,
                 ours: ours.display,
                 theirs: theirs.display,
+                reason,
+            });
+        } else if base.display.is_none()
+            && theirs.display.is_some()
+            && theirs.identity == ours.identity
+        {
+            // The new base already contains this exact addition.
+            already_applied.insert(target);
+        }
+    }
+    let created_features: BTreeSet<&str> = patch
+        .operations
+        .iter()
+        .filter_map(|operation| match operation {
+            PatchOperation::AddFeature { node, .. } => Some(node.id.as_str()),
+            _ => None,
+        })
+        .collect();
+    for operation in &patch.operations {
+        let (id, position) = match operation {
+            PatchOperation::AddFeature { node, position } => (node.id.as_str(), position),
+            PatchOperation::MoveFeature { id, position } => (id.as_str(), position),
+            _ => continue,
+        };
+        let (FeaturePosition::After(anchor) | FeaturePosition::Before(anchor)) = position else {
+            continue;
+        };
+        if !created_features.contains(anchor.as_str())
+            && !new_base.feature_order.iter().any(|item| item == anchor)
+        {
+            conflicts.push(SemanticConflict {
+                kind: ConflictKind::Feature,
+                id: id.to_string(),
+                base: Some(anchor.clone()),
+                ours: None,
+                theirs: None,
+                reason: Some(ConflictReason::AnchorMissing),
             });
         }
     }
@@ -205,6 +573,9 @@ pub fn rebase_patch(
     }
 
     let mut rebased = patch.clone();
+    rebased.operations.retain(|operation| {
+        patch_target(operation).map_or(true, |target| !already_applied.contains(&target))
+    });
     for precondition in &mut rebased.preconditions {
         match precondition {
             PatchPrecondition::RevisionEquals {
@@ -221,6 +592,7 @@ pub fn rebase_patch(
                         base: None,
                         ours: None,
                         theirs: Some(error.to_string()),
+                        reason: None,
                     }]
                 })?;
             }
@@ -236,6 +608,18 @@ pub fn rebase_patch(
             | PatchPrecondition::AssertionExists { .. } => {}
         }
     }
+    // Independent targets can still combine into an invalid state, e.g. the
+    // new base added a consumer of an object this patch removes.
+    if let Err(error) = build_patch_candidate(new_base, &rebased) {
+        return Err(vec![SemanticConflict {
+            kind: ConflictKind::UnsupportedStructure,
+            id: "patch".into(),
+            base: None,
+            ours: None,
+            theirs: Some(error.to_string()),
+            reason: Some(ConflictReason::InvalidResult),
+        }]);
+    }
     Ok(rebased)
 }
 
@@ -246,6 +630,12 @@ struct PatchTarget {
 }
 
 fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
+    if let Some((kind, id)) = model_structure_target(operation) {
+        return Some(PatchTarget {
+            kind,
+            id: id.to_string(),
+        });
+    }
     let (kind, id) = match operation {
         PatchOperation::SetParameter { id, .. }
         | PatchOperation::AddParameter { id, .. }
@@ -307,6 +697,8 @@ fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
         | PatchOperation::SetDrawingViewOrigin { view_id, .. } => {
             (ConflictKind::Drawing, view_id.clone())
         }
+        // Handled by `model_structure_target` above.
+        _ => return None,
     };
     Some(PatchTarget { kind, id })
 }
@@ -337,7 +729,110 @@ struct TargetSnapshot {
     display: Option<String>,
 }
 
+/// Stable target of an assembly or drawing structural operation.
+fn model_structure_target(operation: &PatchOperation) -> Option<(ConflictKind, &str)> {
+    let target = match operation {
+        PatchOperation::AddComponent { component } => {
+            (ConflictKind::Assembly, component.id.as_str())
+        }
+        PatchOperation::AddInstance { instance } => (ConflictKind::Assembly, instance.id.as_str()),
+        PatchOperation::AddMate { mate } => (ConflictKind::Assembly, mate.id.as_str()),
+        PatchOperation::AddAssemblyPattern { pattern } => {
+            (ConflictKind::Assembly, pattern.id.as_str())
+        }
+        PatchOperation::RemoveComponent { id }
+        | PatchOperation::RemoveInstance { id }
+        | PatchOperation::RemoveMate { id }
+        | PatchOperation::RemoveConnector { id }
+        | PatchOperation::RemoveAssemblyPattern { id } => (ConflictKind::Assembly, id.as_str()),
+        PatchOperation::AddSheet { sheet } => (ConflictKind::Drawing, sheet.id.as_str()),
+        PatchOperation::AddDrawingView { view, .. } => (ConflictKind::Drawing, view.id.as_str()),
+        PatchOperation::AddDrawingDimension { dimension, .. } => {
+            (ConflictKind::Drawing, dimension.id.as_str())
+        }
+        PatchOperation::RemoveSheet { id } | PatchOperation::RemoveDrawingDimension { id } => {
+            (ConflictKind::Drawing, id.as_str())
+        }
+        PatchOperation::RemoveDrawingView { view_id } => (ConflictKind::Drawing, view_id.as_str()),
+        _ => return None,
+    };
+    Some(target)
+}
+
+/// Canonical snapshot of the assembly or drawing object with `id`, looked
+/// up across every collection that can hold that ID prefix.
+fn model_object_snapshot(state: &DesignState, kind: &ConflictKind, id: &str) -> TargetSnapshot {
+    let value = match kind {
+        ConflictKind::Assembly => state.assembly.as_ref().and_then(|assembly| {
+            let find = |value: Option<serde_json::Value>| value;
+            find(
+                assembly
+                    .components
+                    .iter()
+                    .find(|item| item.id.as_str() == id)
+                    .and_then(|item| serde_json::to_value(item).ok()),
+            )
+            .or_else(|| {
+                assembly
+                    .instances
+                    .iter()
+                    .find(|item| item.id.as_str() == id)
+                    .and_then(|item| serde_json::to_value(item).ok())
+            })
+            .or_else(|| {
+                assembly
+                    .mates
+                    .iter()
+                    .find(|item| item.id.as_str() == id)
+                    .and_then(|item| serde_json::to_value(item).ok())
+            })
+            .or_else(|| {
+                assembly
+                    .connectors
+                    .iter()
+                    .find(|item| item.id.as_str() == id)
+                    .and_then(|item| serde_json::to_value(item).ok())
+            })
+            .or_else(|| {
+                assembly
+                    .patterns
+                    .iter()
+                    .find(|item| item.id.as_str() == id)
+                    .and_then(|item| serde_json::to_value(item).ok())
+            })
+        }),
+        ConflictKind::Drawing => state.drawing.as_ref().and_then(|drawing| {
+            drawing
+                .sheets
+                .iter()
+                .find(|sheet| sheet.id.as_str() == id)
+                .and_then(|sheet| serde_json::to_value(sheet).ok())
+                .or_else(|| {
+                    drawing
+                        .sheets
+                        .iter()
+                        .flat_map(|sheet| sheet.views.iter())
+                        .find(|view| view.id.as_str() == id)
+                        .and_then(|view| serde_json::to_value(view).ok())
+                })
+                .or_else(|| {
+                    drawing
+                        .sheets
+                        .iter()
+                        .flat_map(|sheet| sheet.dimensions.iter())
+                        .find(|dimension| dimension.id.as_str() == id)
+                        .and_then(|dimension| serde_json::to_value(dimension).ok())
+                })
+        }),
+        _ => None,
+    };
+    snapshot(value.as_ref())
+}
+
 fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSnapshot {
+    if let Some((kind, id)) = model_structure_target(operation) {
+        return model_object_snapshot(state, &kind, id);
+    }
     match operation {
         PatchOperation::SetParameter { id, .. } => {
             snapshot_parameter(state.parameters.get(id).map(|entry| &entry.expr))
@@ -452,6 +947,9 @@ fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSna
                     .find(|view| view.id.as_str() == view_id)
             }))
         }
+        // Assembly and drawing structure is snapshotted by
+        // `model_object_snapshot` above.
+        _ => snapshot::<()>(None),
     }
 }
 
@@ -502,37 +1000,8 @@ fn merge_optional_model<T>(
             base: serde_json::to_string(base).ok(),
             ours: serde_json::to_string(ours).ok(),
             theirs: serde_json::to_string(theirs).ok(),
+            reason: None,
         });
-    }
-}
-
-fn conflict(
-    kind: ConflictKind,
-    id: &str,
-    values: (Option<&str>, Option<&str>, Option<&str>),
-) -> SemanticConflict {
-    SemanticConflict {
-        kind,
-        id: id.to_string(),
-        base: values.0.map(str::to_string),
-        ours: values.1.map(str::to_string),
-        theirs: values.2.map(str::to_string),
-    }
-}
-
-fn feature_conflict(
-    kind: ConflictKind,
-    id: &str,
-    base: &FeatureNode,
-    ours: &FeatureNode,
-    theirs: &FeatureNode,
-) -> SemanticConflict {
-    SemanticConflict {
-        kind,
-        id: id.to_string(),
-        base: serde_json::to_string(base).ok(),
-        ours: serde_json::to_string(ours).ok(),
-        theirs: serde_json::to_string(theirs).ok(),
     }
 }
 

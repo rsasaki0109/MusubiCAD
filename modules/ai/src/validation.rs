@@ -22,6 +22,58 @@ pub fn build_patch_candidate(before: &DesignState, patch: &DesignPatch) -> Resul
     Ok(after)
 }
 
+/// Validate every structural invariant of a complete design state.
+///
+/// This is the whole-state form of the final-candidate checks that
+/// structural patches run on the objects they touch (ADR-013 §3).  It is used
+/// where no patch describes the change, such as a semantic merge result.
+pub fn validate_design_state(state: &DesignState) -> Result<()> {
+    use std::collections::BTreeSet;
+
+    let mut failures = BTreeSet::new();
+    if let Err(error) = opencad_graph::evaluate_param_graph(&state.parameters) {
+        failures.insert(error.to_string());
+    }
+    for sketch in &state.sketches {
+        crate::sketch_patch::validate_sketch_references(sketch, state, &mut failures);
+    }
+    crate::sketch_patch::validate_profile_consumers(state, |_, _| true, &mut failures);
+    for node in &state.feature_nodes {
+        crate::feature_patch::check_feature_inputs(node, state, &mut failures);
+    }
+    for topo_ref in &state.semantic_refs {
+        let created_by = topo_ref.semantic.created_by.as_str();
+        if !state.feature_nodes.iter().any(|node| node.id == created_by) {
+            failures.insert(format!(
+                "semantic reference '{}' is created by unknown feature '{created_by}'",
+                topo_ref.ref_id
+            ));
+        }
+    }
+    if !state.feature_nodes.is_empty() || !state.feature_order.is_empty() {
+        if let Err(error) = state.derive_feature_graph() {
+            failures.insert(error.to_string());
+        }
+    }
+    if let Some(assembly) = &state.assembly {
+        if let Err(error) = crate::assembly::apply_assembly_patch(&mut assembly.clone(), &[]) {
+            failures.insert(error.to_string());
+        }
+    }
+    if let Some(drawing) = &state.drawing {
+        if let Err(error) = crate::drawing::apply_drawing_patch(&mut drawing.clone(), &[]) {
+            failures.insert(error.to_string());
+        }
+    }
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(OpenCadError::validation(
+            failures.into_iter().collect::<Vec<_>>().join("; "),
+        ))
+    }
+}
+
 /// Validate that a patch can be applied against a full design state.
 pub fn dry_run_patch_state(before: &DesignState, patch: &DesignPatch) -> PatchDryRunReport {
     dry_run_patch_state_with_context(before, patch, ImpactContext::default())

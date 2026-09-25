@@ -332,9 +332,9 @@ See `examples/agent/plane_face_ref_patch.json`.
 
 Structural operations create or remove Design Graph objects instead of editing
 existing values. MCAD-P7-001 delivers parameters, design assertions,
-sketches, features, and semantic references, so a complete part can be authored
-from an empty document; assembly and drawing structure follows in a later
-slice.
+sketches, features, semantic references, and assembly and drawing structure, so
+a complete part, assembly, or drawing can be authored from an empty document of
+its kind.
 
 | type | fields | effect |
 |---|---|---|
@@ -355,6 +355,24 @@ slice.
 | `replace_feature_definition` | `id`, `definition` | Replace a definition with one of the same feature type |
 | `add_semantic_ref` | `topo_ref` (the `graph/semantic_refs.json` entry shape) | Create a semantic topology reference |
 | `remove_semantic_ref` | `ref_id` | Remove a semantic reference nothing consumes |
+| `add_component` / `remove_component` | `component` / `id` | Add an assembly component, or remove one no instance or pattern uses |
+| `add_instance` / `remove_instance` | `instance` / `id` | Add a placed instance, or remove one no mate or connector references |
+| `add_mate` / `remove_mate` | `mate` / `id` | Add or remove an assembly mate |
+| `remove_connector` | `id` | Remove a connector no mate references by name (`add_connector` already existed) |
+| `add_assembly_pattern` / `remove_assembly_pattern` | `pattern` / `id` | Add or remove an assembly pattern |
+| `add_sheet` / `remove_sheet` | `sheet` / `id` | Add an empty sheet, or remove a sheet with the views and dimensions it owns |
+| `add_drawing_view` / `remove_drawing_view` | `sheet_id`, `view` / `view_id` | Add a view, or remove one no dimension uses |
+| `add_drawing_dimension` / `remove_drawing_dimension` | `sheet_id`, `dimension` / `id` | Add or remove a linear dimension |
+
+Assembly and drawing objects use the stored JSON shapes of
+`graph/assemblies.json` and `graph/drawings.json`, with IDs under the
+`component:`, `instance:`, `mate:`, `pattern:`, `sheet:`, `view:`, and `dim:`
+prefixes. Instances must name existing components, dimensions must stay on a
+view of their own sheet, views need a finite scale above zero, and the
+existing mate, connector, and pattern validators run on the final model. The
+document layer also runs the document-level validators (component
+self-reference, view sources). An assembly or drawing document without a model
+yet is patched as an empty model of its kind.
 
 `position` is `{"at": "start"}`, `{"at": "end"}`, `{"after": "<feature id>"}`,
 or `{"before": "<feature id>"}`, resolved against the order at that point in
@@ -450,16 +468,45 @@ the consuming sketch feature and its downstream suffix. Feature additions,
 removals, and replacements appear as `feature_added`, `feature_removed`, or
 `feature_modified` and dirty the feature and its suffix in the derived
 candidate graph; `feature_moved` reports a display-order change and dirties
-nothing, because regeneration order depends only on dependencies. Rebase
-reports concurrent changes to the same parameter, assertion, sketch,
-`<sketch>/<member>`, feature, or semantic reference ID as `parameter`,
-`assertion`, `sketch`, `feature`, or `semantic_reference` conflicts; a feature
-conflict also covers a concurrent display-order change.
+nothing, because regeneration order depends only on dependencies. Assembly
+component and pattern changes appear as `assembly_component_*` and
+`assembly_pattern_*`, and drawing dimension changes as `drawing_dimension_*`.
 
-Rust callers can express an existing part as one structural patch with
-`opencad_ai::authoring_patch(&DesignState)`. Applying it to an empty part
-document rebuilds every checked-in part example; source data matches exactly
-and derived sketch profiles and solve state are recomputed.
+### Rebase and semantic merge
+
+`opencad rebase-patch` and `opencad_ai::rebase_patch` compare each target by
+stable ID across the old base, the patch result, and the new base.
+Structural conflicts carry a `reason`:
+
+| `reason` | Meaning |
+|---|---|
+| `add_add` | Both sides created the same ID with different content |
+| `remove_modify` | One side removed an object the other side changed |
+| `anchor_missing` | A feature `position` anchor no longer exists in the new base |
+| `order` | Both sides reordered features differently, or the merged order breaks a dependency |
+| `invalid_result` | The combined result fails structural validation |
+
+An addition that the new base already contains with identical content is
+dropped from the rebased patch, and the rebased patch must still apply to the
+new base.
+
+`opencad merge` and `opencad_ai::semantic_three_way_merge` merge every
+collection of the complete design state by stable ID: parameters, features,
+sketches, semantic references, assertions, assembly components, instances,
+mates, connectors, patterns, and drawing sheets. A side equal to base yields to
+the other side's change, addition, or removal; retained objects keep base
+order and additions follow in ID order. Feature display order keeps the
+reordering side's relative order; features that both sides insert at the same
+anchor follow it in order of their first feature ID. The merged result
+therefore does not depend on which side is "ours". The combined state must
+pass `opencad_ai::validate_design_state`. `opencad merge` writes back every
+merged collection and re-derives `graph/features.json` only when features,
+their order, sketches, or semantic references changed.
+
+Rust callers can express an existing design as one structural patch with
+`opencad_ai::authoring_patch(&DesignState)`. Applying it to an empty document
+of the same kind rebuilds every checked-in example. Source data matches
+exactly, and derived sketch profiles and solve state are recomputed.
 
 The preconditions `sketch_exists` (`id`), `sketch_entity_exists`
 (`sketch_id`, `entity_id`), and `assertion_exists` (`id`) guard patches that

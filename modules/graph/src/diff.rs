@@ -145,6 +145,39 @@ pub enum SemanticChange {
         sketch_id: String,
         id: String,
     },
+    AssemblyComponentAdded {
+        id: String,
+    },
+    AssemblyComponentRemoved {
+        id: String,
+    },
+    AssemblyComponentChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    AssemblyPatternAdded {
+        id: String,
+    },
+    AssemblyPatternRemoved {
+        id: String,
+    },
+    AssemblyPatternChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
+    DrawingDimensionAdded {
+        id: String,
+    },
+    DrawingDimensionRemoved {
+        id: String,
+    },
+    DrawingDimensionChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
     /// A feature changed its position in the authored display order;
     /// `before` and `after` are zero-based positions among retained features.
     FeatureMoved {

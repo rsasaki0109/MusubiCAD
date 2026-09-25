@@ -228,19 +228,34 @@ given an invented order.
   dependency suffix. A removed feature has no remaining consumers (section 5).
   A move changes only the display order and dirties nothing, because
   regeneration order depends only on dependencies (section 4).
-- `rebase_patch` extends conflict detection:
+- `rebase_patch` extends conflict detection. `SemanticConflict` gains an
+  optional `reason`; value conflicts on an existing object keep none, so
+  existing conflict output is unchanged.
   - an add whose ID now exists with different canonical content produces an
-    `add_add` conflict; identical content rebases to a no-op;
+    `add_add` conflict; identical content rebases to a no-op (the operation
+    is dropped);
   - removing or replacing an object the new base changed produces a
     `remove_modify` conflict;
   - a `position` anchor missing from the new base produces an `anchor_missing`
-    conflict.
+    conflict;
+  - the rebased patch must still apply to the new base; otherwise the rebase
+    reports `invalid_result` (for example, the new base added a consumer of an
+    object the patch removes).
 - For P6-005 three-way merge, two sides that insert different features at the
   same anchor are ordered by ascending feature ID after the anchor. This makes
   the merge result independent of which side is "ours" and yields identical
   canonical bytes in both merge orders, as P6-005 requires. If that order
   violates a dependency, the merge reports an `order` conflict instead of
   choosing.
+- `semantic_three_way_merge` merges every collection of the complete v2 state
+  by stable ID with one rule (equal sides agree; a side equal to base yields;
+  otherwise `add_add`, `remove_modify`, or a value conflict). Retained objects
+  keep base order and additions follow in ID order. The combined state must
+  pass `validate_design_state`, the whole-state form of the final-candidate
+  checks; otherwise the merge reports `invalid_result`. `opencad merge` writes
+  back every merged collection. Before this change it copied only parameters,
+  features, references, assembly, and drawing, silently dropping the other
+  side's sketch and assertion edits.
 
 ### 8. File format and schemas
 

@@ -96,7 +96,9 @@ fn part_examples() -> Vec<(String, OcadDocument)> {
             (name, read_ocad(&path).expect("read"))
         })
         .filter(|(_, doc)| {
-            !doc.feature_nodes.is_empty() && doc.assembly.is_none() && doc.drawing.is_none()
+            (!doc.feature_nodes.is_empty() || !doc.sketches.is_empty())
+                && doc.assembly.is_none()
+                && doc.drawing.is_none()
         })
         .collect()
 }
@@ -104,7 +106,8 @@ fn part_examples() -> Vec<(String, OcadDocument)> {
 #[test]
 fn every_part_example_is_rebuilt_from_structural_patches() {
     let parts = part_examples();
-    assert_eq!(parts.len(), 13);
+    // 13 feature-bearing parts plus the sketch-only regression fixture.
+    assert_eq!(parts.len(), 14);
     for (name, source) in parts {
         let rebuilt = rebuild(&source);
         assert_eq!(rebuilt.parameters, source.parameters, "{name}: parameters");
@@ -137,6 +140,9 @@ fn every_part_example_is_rebuilt_from_structural_patches() {
             assert_eq!(rebuilt.feature_graph, source.feature_graph, "{name}: graph");
         }
 
+        if source.feature_nodes.is_empty() {
+            continue;
+        }
         let (expected, actual) = (occt_geometry(&source), occt_geometry(&rebuilt));
         assert!(expected.0 > 0.0, "{name}: empty source body");
         assert!(
@@ -153,6 +159,42 @@ fn every_part_example_is_rebuilt_from_structural_patches() {
             );
         }
     }
+}
+
+#[test]
+fn assembly_and_drawing_examples_are_rebuilt_byte_for_byte() {
+    let mut paths: Vec<PathBuf> = std::fs::read_dir(examples())
+        .expect("examples")
+        .map(|entry| entry.expect("entry").path())
+        .filter(|path| path.extension().is_some_and(|ext| ext == "d"))
+        .collect();
+    paths.sort();
+    let mut checked = Vec::new();
+    for path in paths {
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        let source = read_ocad(&path).expect("read");
+        if source.assembly.is_none() && source.drawing.is_none() {
+            continue;
+        }
+        let rebuilt = rebuild(&source);
+        assert_eq!(rebuilt.assembly, source.assembly, "{name}: assembly");
+        assert_eq!(rebuilt.drawing, source.drawing, "{name}: drawing");
+        assert_eq!(
+            serialize_document_files(&rebuilt).expect("serialize"),
+            serialize_document_files(&source).expect("serialize"),
+            "{name}: files"
+        );
+        checked.push(name);
+    }
+    assert_eq!(
+        checked,
+        vec![
+            "assembly_two_brackets.ocad.d",
+            "bracket_front_view.ocad.d",
+            "robot_arm_assembly.ocad.d",
+            "robot_arm_assembly_drawing.ocad.d",
+        ]
+    );
 }
 
 #[test]

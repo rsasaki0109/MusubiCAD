@@ -165,15 +165,22 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
             | SemanticChange::AssemblyMateChanged { id, .. }
             | SemanticChange::AssemblyConnectorAdded { id }
             | SemanticChange::AssemblyConnectorRemoved { id }
-            | SemanticChange::AssemblyConnectorChanged { id, .. } => {
-                (ChangedInputKind::Assembly, id)
-            }
+            | SemanticChange::AssemblyConnectorChanged { id, .. }
+            | SemanticChange::AssemblyComponentAdded { id }
+            | SemanticChange::AssemblyComponentRemoved { id }
+            | SemanticChange::AssemblyComponentChanged { id, .. }
+            | SemanticChange::AssemblyPatternAdded { id }
+            | SemanticChange::AssemblyPatternRemoved { id }
+            | SemanticChange::AssemblyPatternChanged { id, .. } => (ChangedInputKind::Assembly, id),
             SemanticChange::DrawingSheetAdded { id }
             | SemanticChange::DrawingSheetRemoved { id }
             | SemanticChange::DrawingSheetChanged { id, .. }
             | SemanticChange::DrawingViewAdded { id }
             | SemanticChange::DrawingViewRemoved { id }
-            | SemanticChange::DrawingViewChanged { id, .. } => (ChangedInputKind::Drawing, id),
+            | SemanticChange::DrawingViewChanged { id, .. }
+            | SemanticChange::DrawingDimensionAdded { id }
+            | SemanticChange::DrawingDimensionRemoved { id }
+            | SemanticChange::DrawingDimensionChanged { id, .. } => (ChangedInputKind::Drawing, id),
             SemanticChange::AssertionAdded { id }
             | SemanticChange::AssertionRemoved { id }
             | SemanticChange::AssertionChanged { id, .. } => (ChangedInputKind::Assertion, id),

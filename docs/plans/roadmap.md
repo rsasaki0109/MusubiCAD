@@ -390,7 +390,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 
 | ID | Scope | Deliverables | Status |
 |---|---|---|---|
-| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | In progress (ADR proposed; slices 1–4 delivered) |
+| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | Complete (ADR proposed; slices 1–6 delivered) |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph
@@ -438,6 +438,27 @@ patch, and the definition of done below is met by
 `modules/file/tests/authoring_rebuild.rs`; an OCCT review of
 `examples/agent/add_top_fillet_feature_patch.json` regenerates the added
 fillet. Coverage is in `modules/file/tests/feature_patch.rs`.
+
+Slice 5 is delivered: structural conflicts carry a reason (`add_add`,
+`remove_modify`, `anchor_missing`, `order`, `invalid_result`). Rebase drops
+additions the new base already contains and requires the rebased patch to
+apply to the new base. `semantic_three_way_merge` merges the complete v2 state
+by stable ID, merges feature display order with ID-ordered same-anchor
+inserts, and is independent of which side is "ours". The result must pass
+`validate_design_state`. `opencad merge` now writes back sketches, assertions,
+and a re-derived Feature Graph; before this change the other side's sketch and
+assertion edits were silently dropped. Coverage is in
+`modules/file/tests/structural_merge.rs`,
+`modules/file/tests/state_validation.rs`, and a CLI merge test.
+
+Slice 6 is delivered: add/remove component, instance, mate, connector
+(remove), assembly pattern, sheet, drawing view, and drawing dimension
+operations with fail-closed removal and document-level validation. Component,
+pattern, and dimension changes are diffed. `authoring_patch` covers
+assemblies and drawings, and all 18 checked-in examples are rebuilt from empty
+documents: the 4 assembly and drawing examples byte-for-byte
+(`modules/file/tests/assembly_drawing_patch.rs`,
+`modules/file/tests/authoring_rebuild.rs`).
 
 **Definition of done:** starting from an empty part document, a checked-in
 patch sequence rebuilds `examples/bracket.ocad.d` with canonical-equal
