@@ -51,6 +51,33 @@ pub enum Constraint {
         a: EqualTarget,
         b: EqualTarget,
     },
+    /// Directed angle from `line_a` to `line_b`; `expr` is an angle
+    /// expression such as `30 deg` or `angle_param`.
+    Angle {
+        id: ConstraintId,
+        line_a: EntityId,
+        line_b: EntityId,
+        expr: Expression,
+    },
+    /// `point` lies at the midpoint of `line`.
+    Midpoint {
+        id: ConstraintId,
+        point: EntityId,
+        line: EntityId,
+    },
+    /// Points `a` and `b` are mirror images across `line`.
+    Symmetric {
+        id: ConstraintId,
+        a: EntityId,
+        b: EntityId,
+        line: EntityId,
+    },
+    /// `line` is tangent to the circle or arc `curve`.
+    Tangent {
+        id: ConstraintId,
+        line: EntityId,
+        curve: EntityId,
+    },
 }
 
 /// Reference to a point, line, circle, or a sub-element.
@@ -177,7 +204,11 @@ impl Constraint {
             | Self::Distance { id, .. }
             | Self::Radius { id, .. }
             | Self::Diameter { id, .. }
-            | Self::Equal { id, .. } => id,
+            | Self::Equal { id, .. }
+            | Self::Angle { id, .. }
+            | Self::Midpoint { id, .. }
+            | Self::Symmetric { id, .. }
+            | Self::Tangent { id, .. } => id,
         }
     }
 
@@ -196,9 +227,12 @@ impl Constraint {
         match self {
             Self::Coincident { a, b, .. } => vec![entity_ref(a), entity_ref(b)],
             Self::Horizontal { line, .. } | Self::Vertical { line, .. } => vec![line],
-            Self::Parallel { line_a, line_b, .. } | Self::Perpendicular { line_a, line_b, .. } => {
-                vec![line_a, line_b]
-            }
+            Self::Parallel { line_a, line_b, .. }
+            | Self::Perpendicular { line_a, line_b, .. }
+            | Self::Angle { line_a, line_b, .. } => vec![line_a, line_b],
+            Self::Midpoint { point, line, .. } => vec![point, line],
+            Self::Symmetric { a, b, line, .. } => vec![a, b, line],
+            Self::Tangent { line, curve, .. } => vec![line, curve],
             Self::Distance { target, .. } => match target {
                 DistanceTarget::PointToPoint { a, b } => vec![a, b],
                 DistanceTarget::LineLength { line } => vec![line],
@@ -214,7 +248,8 @@ impl Constraint {
         match self {
             Self::Distance { expr, .. }
             | Self::Radius { expr, .. }
-            | Self::Diameter { expr, .. } => Some(expr),
+            | Self::Diameter { expr, .. }
+            | Self::Angle { expr, .. } => Some(expr),
             _ => None,
         }
     }

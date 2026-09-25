@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 
 use opencad_core::{Expression, Length, OpenCadError, Result};
 use opencad_geometry::ExtrudeExtent;
-use opencad_graph::{eval_length_expr, evaluate_param_graph, ParamGraph};
+use opencad_graph::{eval_angle_expr, eval_length_expr, evaluate_param_graph, ParamGraph};
 use opencad_sketch::{solve_sketch, Constraint, Sketch};
 use opencad_solver::SolverOptions;
 
@@ -98,6 +98,11 @@ pub(crate) fn resolve_sketch_constraints(
             | Constraint::Diameter { expr, .. } => {
                 *expr = resolve_expression(expr, scope)?;
             }
+            Constraint::Angle { expr, .. } => {
+                let value_rad = eval_angle_expr(expr.as_str(), scope)?;
+                *expr = Expression::new(format!("{value_rad} rad"))
+                    .map_err(|_| OpenCadError::InvalidExpression(expr.as_str().into()))?;
+            }
             _ => {}
         }
     }
@@ -118,7 +123,8 @@ fn snapshot_dimension_exprs(sketch: &Sketch) -> Vec<(usize, Expression)> {
         .filter_map(|(index, constraint)| match constraint {
             Constraint::Distance { expr, .. }
             | Constraint::Radius { expr, .. }
-            | Constraint::Diameter { expr, .. } => Some((index, expr.clone())),
+            | Constraint::Diameter { expr, .. }
+            | Constraint::Angle { expr, .. } => Some((index, expr.clone())),
             _ => None,
         })
         .collect()
@@ -129,7 +135,8 @@ fn restore_dimension_exprs(sketch: &mut Sketch, originals: &[(usize, Expression)
         if let Some(
             Constraint::Distance { expr: target, .. }
             | Constraint::Radius { expr: target, .. }
-            | Constraint::Diameter { expr: target, .. },
+            | Constraint::Diameter { expr: target, .. }
+            | Constraint::Angle { expr: target, .. },
         ) = sketch.constraints.get_mut(*index)
         {
             *target = expr.clone();
@@ -141,6 +148,34 @@ fn restore_dimension_exprs(sketch: &mut Sketch, originals: &[(usize, Expression)
 mod tests {
     use super::*;
     use opencad_graph::ParamGraph;
+
+    #[test]
+    fn angle_constraint_expressions_resolve_to_radians_and_restore() {
+        use opencad_core::{ConstraintId, EntityId, SketchId};
+        use opencad_sketch::workplane::Workplane;
+
+        let mut sketch = Sketch::new(SketchId::new("sketch:a").unwrap(), "A", Workplane::xy());
+        sketch
+            .add_constraint(Constraint::Angle {
+                id: ConstraintId::new("con:tilt").unwrap(),
+                line_a: EntityId::new("ent:a").unwrap(),
+                line_b: EntityId::new("ent:b").unwrap(),
+                expr: Expression::new("tilt_angle").unwrap(),
+            })
+            .unwrap();
+        let originals = snapshot_dimension_exprs(&sketch);
+        let scope: IndexMap<String, f64> = [("tilt_angle".to_string(), 0.25)].into_iter().collect();
+        resolve_sketch_constraints(&mut sketch, &scope).expect("resolve");
+        let Constraint::Angle { expr, .. } = &sketch.constraints[0] else {
+            panic!("angle")
+        };
+        assert_eq!(expr.as_str(), "0.25 rad");
+        restore_dimension_exprs(&mut sketch, &originals);
+        let Constraint::Angle { expr, .. } = &sketch.constraints[0] else {
+            panic!("angle")
+        };
+        assert_eq!(expr.as_str(), "tilt_angle");
+    }
 
     #[test]
     fn applies_width_parameter_to_bracket_sketch() {

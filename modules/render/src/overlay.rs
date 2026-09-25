@@ -2,7 +2,7 @@
 
 use indexmap::IndexMap;
 use opencad_core::{EntityId, Expression, OpenCadError, Result};
-use opencad_graph::eval_length_expr;
+use opencad_graph::{eval_angle_expr, eval_length_expr};
 use opencad_sketch::{
     constraint::{Constraint, DistanceTarget, EntityRef, EqualTarget, LineEnd, RectangleEdge},
     entity::{Coord, LineEntity, SketchEntity},
@@ -414,10 +414,52 @@ fn append_constraint_labels(
                     up,
                 });
             }
+            Constraint::Angle {
+                line_a,
+                line_b,
+                expr,
+                ..
+            } => {
+                let Some(anchor) = pair_line_anchor(sketch, &points, line_a, line_b, centroid)
+                else {
+                    continue;
+                };
+                let degrees = eval_angle_expr(expr.as_str(), values)?.to_degrees();
+                overlay.labels.push(OverlayLabel {
+                    position: plane_to_world(&sketch.workplane, &anchor),
+                    text: format!("<{}", format_angle_degrees(degrees)),
+                    right,
+                    up,
+                });
+            }
+            Constraint::Midpoint { line, .. }
+            | Constraint::Symmetric { line, .. }
+            | Constraint::Tangent { line, .. } => {
+                let Some((anchor, outward)) = line_anchor(sketch, &points, line, centroid) else {
+                    continue;
+                };
+                let text = match constraint {
+                    Constraint::Midpoint { .. } => "M",
+                    Constraint::Symmetric { .. } => "S",
+                    _ => "T",
+                };
+                overlay.labels.push(OverlayLabel {
+                    position: offset_point(&sketch.workplane, anchor, outward, 0.002),
+                    text: text.to_string(),
+                    right,
+                    up,
+                });
+            }
         }
     }
 
     Ok(())
+}
+
+/// Angle label text in degrees, without trailing zeros (`30`, `22.5`).
+fn format_angle_degrees(degrees: f64) -> String {
+    let text = format!("{degrees:.2}");
+    text.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
 fn format_dimension_expr(expr: &Expression, values: &IndexMap<String, f64>) -> Result<String> {

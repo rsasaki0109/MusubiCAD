@@ -23,12 +23,18 @@ MusubiCAD uses a numeric 2D geometric constraint solver in `opencad-solver`.
 | Distance | `‖p2 - p1‖ - target` |
 | Radius / Diameter | `r - target` (diameter uses `target/2`) |
 | Equal | `length(a) - length(b)` for line lengths and circle/arc radii |
+| Angle | `sin(angle - target)` from the normalized cross/dot products (dimensionless) |
+| Midpoint | `p - (a + b) / 2` per axis (meters) |
+| Symmetric | signed distance of the midpoint of `a`, `b` to the line, and projection of `b - a` onto the line direction (meters) |
+| Tangent | `abs(distance(center, line)) - r` for a line and a circle or arc (meters) |
 | Fixed anchor | `x - x0`, `y - y0` (first point) |
 
 ## Units
 
 - Internal SI: meters.
 - Expression parser accepts `mm`, `cm`, `m`, `in`, or bare numbers (interpreted as meters).
+- Angle expressions accept `deg`, `rad`, or bare numbers (interpreted as radians);
+  parameter references resolve through the angle evaluator before solving.
 - Equal line-length and radius targets are all compared in internal meters; mixed
   line/radius targets are valid because both target kinds represent lengths.
 - Parallel and perpendicular directions normalize the 2D cross or dot product by

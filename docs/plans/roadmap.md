@@ -394,6 +394,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-002 | MCP server | [ADR-014](../adr/ADR-014-mcp-server.md); `opencad mcp` over stdio delegating to the Agent API, authoring guide and patch schema resources, stdio end-to-end test authoring a part from an empty document | Complete |
 | MCAD-P7-003 | STEP export | Kernel-neutral `export_step`/`import_step` with millimetre units and deterministic headers; `opencad export *.step` for parts and assemblies; Agent and MCP parity | Complete |
 | MCAD-P7-004 | STEP import | [ADR-016](../adr/ADR-016-imported-step-solids.md); checksummed `imports/` attachments, `add/remove_attachment`, fail-closed `imported_solid` feature (new body, join, cut), `opencad import-step`, MCP `import_step` | Complete |
+| MCAD-P7-005 | Sketch constraints | Angle, midpoint, symmetric, and tangent constraints with dimensionless or metre residuals, angle-expression resolution, overlays, and schema | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

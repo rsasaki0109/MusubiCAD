@@ -188,7 +188,11 @@
                       "distance",
                       "radius",
                       "diameter",
-                      "equal"
+                      "equal",
+                      "angle",
+                      "midpoint",
+                      "symmetric",
+                      "tangent"
                     ]
                   },
                   "id": { "$ref": "#/$defs/stable_id_constraint" }
