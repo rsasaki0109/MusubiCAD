@@ -2,16 +2,10 @@ use std::fs;
 
 use opencad_ai::{rebase_patch, semantic_three_way_merge, DesignState};
 use opencad_core::{OpenCadError, Result};
-use opencad_file::{read_ocad, write_ocad, OcadDocument};
+use opencad_file::{document_design_state, read_ocad, write_ocad, OcadDocument};
 
 fn state(doc: &OcadDocument) -> DesignState {
-    DesignState::with_models(
-        doc.parameters.clone(),
-        doc.feature_nodes.clone(),
-        doc.semantic_refs.clone(),
-        doc.assembly.clone(),
-        doc.drawing.clone(),
-    )
+    document_design_state(doc)
 }
 
 pub fn merge(args: Vec<String>) -> Result<()> {

@@ -16,6 +16,7 @@ pub enum ConflictKind {
     Feature,
     Assembly,
     Drawing,
+    Assertion,
     UnsupportedStructure,
 }
 
@@ -240,7 +241,13 @@ struct PatchTarget {
 
 fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
     let (kind, id) = match operation {
-        PatchOperation::SetParameter { id, .. } => (ConflictKind::Parameter, id.clone()),
+        PatchOperation::SetParameter { id, .. }
+        | PatchOperation::AddParameter { id, .. }
+        | PatchOperation::RemoveParameter { id } => (ConflictKind::Parameter, id.clone()),
+        PatchOperation::AddAssertion { assertion } => {
+            (ConflictKind::Assertion, assertion.id.clone())
+        }
+        PatchOperation::RemoveAssertion { id } => (ConflictKind::Assertion, id.clone()),
         PatchOperation::SetFeatureExpr { feature_id, .. }
         | PatchOperation::SetFeatureRef { feature_id, .. } => {
             (ConflictKind::Feature, feature_id.clone())
@@ -273,6 +280,17 @@ fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSna
     match operation {
         PatchOperation::SetParameter { id, .. } => {
             snapshot_parameter(state.parameters.get(id).map(|entry| &entry.expr))
+        }
+        // Structural targets compare the whole entry: an add or remove must
+        // conflict with any concurrent change to the same stable ID.
+        PatchOperation::AddParameter { id, .. } | PatchOperation::RemoveParameter { id } => {
+            snapshot(state.parameters.get(id))
+        }
+        PatchOperation::AddAssertion { assertion } => {
+            snapshot(state.assertions.iter().find(|item| item.id == assertion.id))
+        }
+        PatchOperation::RemoveAssertion { id } => {
+            snapshot(state.assertions.iter().find(|item| item.id == *id))
         }
         PatchOperation::SetFeatureExpr { feature_id, .. }
         | PatchOperation::SetFeatureRef { feature_id, .. } => snapshot(

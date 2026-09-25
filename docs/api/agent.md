@@ -48,24 +48,32 @@ after every operation validates; a later operation failure cannot retain an
 earlier operation's mutation.
 
 For optimistic concurrency, a patch may include a complete-state revision
-precondition. The digest covers the canonical serialized patchable state
-(parameters, feature nodes, semantic references, and optional assembly and
-drawing models), not B-Rep or mesh caches:
+precondition. The digest covers the canonical serialized patchable state, not
+B-Rep or mesh caches:
 
 ```json
 {
   "type": "revision_equals",
   "algorithm": "sha256",
-  "version": "musubicad.design-state.v1",
+  "version": "musubicad.design-state.v2",
   "digest": "<64 lowercase hexadecimal characters>"
 }
 ```
 
+| `version` | Covers | Accepted for |
+|---|---|---|
+| `musubicad.design-state.v2` (current) | parameters, feature nodes, semantic references, optional assembly/drawing, sketches, and design assertions | every patch |
+| `musubicad.design-state.v1` (legacy, ADR-008) | parameters, feature nodes, semantic references, optional assembly/drawing | value-edit patches only; a structural patch guarded by v1 is rejected as too weak |
+
 `algorithm` and `version` are validated explicitly. A stale digest is rejected
 before mutation with the same deterministic validation error from dry-run,
 in-memory apply, file apply, and Agent API paths. Rust callers can calculate
-the value with `opencad_ai::design_state_revision` or attach one with
-`PatchPrecondition::revision_equals`.
+the current value with `opencad_ai::design_state_revision`, a specific version
+with `design_state_revision_for_version`, or attach one with
+`PatchPrecondition::revision_equals`. Document-backed paths build the state
+with `opencad_file::document_design_state`, so v2 digests include the
+document's sketches and assertions. In-memory `opencad.patch_*` requests do not
+transport sketches or assertions, so their v2 digests cover empty collections.
 
 The history methods accept and return the serialized `history` value produced
 by a prior backend edit. Clients must treat it as opaque and pass it back
@@ -78,8 +86,8 @@ the document or history value is changed.
 Dry-run and apply share the validated candidate builder. Rust callers that
 need the same contract can use
 `opencad_ai::build_patch_candidate(&DesignState, &DesignPatch)`; it clones the
-Design Graph, applies all operations, and evaluates the resulting parameter
-graph before returning the candidate. Assembly operations require an assembly
+Design Graph, applies all operations, validates the final structural state,
+and evaluates the resulting parameter graph before returning the candidate. Assembly operations require an assembly
 model and drawing operations require a drawing model; missing context is a
 deterministic validation error in both paths.
 
@@ -319,6 +327,68 @@ opencad regen bracket.ocad.d --sync-topo-refs
 ```
 
 See `examples/agent/plane_face_ref_patch.json`.
+
+### Structural operations (ADR-013)
+
+Structural operations create or remove Design Graph objects instead of editing
+existing values. MCAD-P7-001 currently delivers parameters and design
+assertions; sketches and features follow in later slices.
+
+| type | fields | effect |
+|---|---|---|
+| `add_parameter` | `id`, `name`, `expr` | Create a parameter; dependency edges are derived from `expr` |
+| `remove_parameter` | `id` | Remove a parameter and its dependency edges |
+| `add_assertion` | `assertion` (the `graph/assertions.json` entry shape) | Create a design assertion |
+| `remove_assertion` | `id` | Remove a design assertion |
+
+Rules shared by every structural operation:
+
+- **Author-chosen IDs.** The patch names every new object. IDs match
+  `<prefix>:[a-z0-9_]+(.[a-z0-9_]+)*`, at most 128 bytes (`param:` for
+  parameters, `assertion:` for assertions). An existing ID, or one removed
+  earlier in the same patch, is rejected. Parameter names must be unique
+  expression identifiers.
+- **Final-state validation.** Operations apply in order to one staged
+  candidate. References are checked once, on the final state, so a patch may
+  add parameters that refer to each other in any order, or remove a parameter
+  and rewrite its consumers in the same patch.
+- **No cascading removal.** Removing a parameter whose name is still used fails
+  and lists every dependent in sorted order (`assertion …`, `feature …`,
+  `parameter …`, `sketch …`). Added `parameter_range` and `required_reference`
+  assertions must name an existing parameter or semantic reference.
+- **Limits.** A patch holds at most 10,000 operations.
+- **Complete state required.** Structural operations run only through
+  `build_patch_candidate` / `DesignPatch::apply_to_state` and the document,
+  CLI, and Agent paths built on them. The legacy
+  `DesignPatch::apply_to_document` rejects them.
+
+```json
+{
+  "operations": [
+    { "type": "add_parameter", "id": "param:rib_depth", "name": "rib_depth", "expr": "thickness * 2" },
+    {
+      "type": "add_assertion",
+      "assertion": {
+        "id": "assertion:rib_depth_range",
+        "name": "Rib depth range",
+        "severity": "required",
+        "type": "parameter_range",
+        "parameter_name": "rib_depth",
+        "min_m": 0.004,
+        "max_m": 0.02
+      }
+    }
+  ]
+}
+```
+
+See `examples/agent/add_rib_depth_patch.json`. Parameter additions and
+removals appear in semantic diffs as `parameter_changed` with an empty
+`before` or `after`. Assertion changes appear as `assertion_added`,
+`assertion_removed`, or `assertion_changed`, and in change impact as an
+`assertion` input with no dirty Feature Graph nodes. Rebase reports
+concurrent changes to the same parameter or assertion ID as `parameter` or
+`assertion` conflicts.
 
 ### Assembly patch operations
 

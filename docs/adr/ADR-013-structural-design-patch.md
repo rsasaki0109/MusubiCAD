@@ -46,7 +46,7 @@ Two further facts constrain the design:
 
 `PatchOperation` gains the following variants. All IDs are strings with the
 existing namespace prefixes (`param:`, `sketch:`, `ent:`, `con:`, `feature:`,
-`ref:`, `assert:`). All lengths inside embedded definitions follow the existing
+`ref:`, `assertion:`). All lengths inside embedded definitions follow the existing
 DTO conventions (meters, radians, explicitly labelled dimensionless values);
 this ADR does not introduce new numeric fields.
 
@@ -166,9 +166,14 @@ it cannot explain rather than repairing it silently.
 
 ### 6. `DesignState` v2 and revision preconditions
 
-`DesignState` gains `sketches`, the derived `feature_graph`, and `assertions`.
-The canonical revision representation becomes `musubicad.design-state.v2`,
-using the same envelope, key canonicalization, and SHA-256 rules as ADR-008.
+`DesignState` gains `sketches` and `assertions`. It does not carry
+`feature_graph`: section 4 makes it a pure function of `feature_nodes`, so
+hashing it would add no information and would couple the digest to the
+derivation code. The canonical revision representation becomes
+`musubicad.design-state.v2`, using the same envelope, key canonicalization,
+and SHA-256 rules as ADR-008. v2 always serializes both new arrays, even when
+empty; v1 bytes remain byte-identical to ADR-008, so recorded v1 digests keep
+verifying.
 
 - `RevisionEquals` with version `v2` is verified against the v2 canonical bytes.
 - `RevisionEquals` with version `v1` is still accepted, but **only** for patches

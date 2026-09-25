@@ -675,6 +675,17 @@ fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
         SemanticChange::DrawingViewChanged { id, before, after } => {
             (format!("Drawing view {id}"), before.clone(), after.clone())
         }
+        SemanticChange::AssertionAdded { id } => {
+            (format!("Assertion {id}"), "—".into(), "Added".into())
+        }
+        SemanticChange::AssertionRemoved { id } => (
+            format!("Assertion {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssertionChanged { id, before, after } => {
+            (format!("Assertion {id}"), before.clone(), after.clone())
+        }
     }
 }
 

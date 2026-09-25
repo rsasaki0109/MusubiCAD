@@ -20,6 +20,7 @@ pub enum ChangedInputKind {
     SemanticReference,
     Assembly,
     Drawing,
+    Assertion,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -154,6 +155,9 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
             | SemanticChange::DrawingViewAdded { id }
             | SemanticChange::DrawingViewRemoved { id }
             | SemanticChange::DrawingViewChanged { id, .. } => (ChangedInputKind::Drawing, id),
+            SemanticChange::AssertionAdded { id }
+            | SemanticChange::AssertionRemoved { id }
+            | SemanticChange::AssertionChanged { id, .. } => (ChangedInputKind::Assertion, id),
             SemanticChange::MassChanged { .. } | SemanticChange::BboxChanged { .. } => continue,
         };
         inputs.insert(ChangedInput {
@@ -177,7 +181,7 @@ fn node_uses_parameter(node: &FeatureNode, name: &str, sketches: &[Sketch]) -> b
         .is_some_and(|sketch| serialized_value_uses_parameter(sketch, name))
 }
 
-fn serialized_value_uses_parameter(value: &impl Serialize, name: &str) -> bool {
+pub(crate) fn serialized_value_uses_parameter(value: &impl Serialize, name: &str) -> bool {
     serde_json::to_value(value).ok().is_some_and(|value| {
         json_strings(&value).any(|text| {
             text == name

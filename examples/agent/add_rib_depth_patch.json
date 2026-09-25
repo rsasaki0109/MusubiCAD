@@ -1,0 +1,24 @@
+{
+  "intent": "Add a rib depth parameter guarded by a range assertion",
+  "rationale": "Ribs will be authored in a later patch; the depth tracks plate thickness",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:rib_depth",
+      "name": "rib_depth",
+      "expr": "thickness * 2"
+    },
+    {
+      "type": "add_assertion",
+      "assertion": {
+        "id": "assertion:rib_depth_range",
+        "name": "Rib depth range",
+        "severity": "required",
+        "type": "parameter_range",
+        "parameter_name": "rib_depth",
+        "min_m": 0.004,
+        "max_m": 0.02
+      }
+    }
+  ]
+}

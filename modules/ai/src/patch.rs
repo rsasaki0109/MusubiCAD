@@ -1,14 +1,18 @@
 //! DesignPatch operations (Task-142+).
 
-use opencad_core::{OpenCadError, Result, TopoRefId};
+use std::collections::BTreeSet;
+
+use opencad_core::{Assertion, AssertionKind, OpenCadError, Result, TopoRefId};
 use opencad_feature::{FeatureDefinition, FeatureNode};
 use opencad_geometry::{assign_named_face_ref, TopoRef};
-use opencad_graph::ParamGraph;
+use opencad_graph::{evaluate_param_graph, parameter_names_in_expr, ParamGraph, ParameterEntry};
 use serde::{Deserialize, Serialize};
 
+use crate::impact::serialized_value_uses_parameter;
 use crate::state::{
-    design_state_revision, DesignState, DESIGN_STATE_REVISION_ALGORITHM,
-    DESIGN_STATE_REVISION_VERSION,
+    design_state_revision, design_state_revision_for_version, DesignState,
+    DESIGN_STATE_REVISION_ALGORITHM, DESIGN_STATE_REVISION_VERSION,
+    DESIGN_STATE_REVISION_VERSION_V1, DESIGN_STATE_REVISION_VERSION_V2,
 };
 
 /// Supported feature expression fields for patch operations.
@@ -124,6 +128,83 @@ pub enum PatchOperation {
         view_id: String,
         origin_on_sheet_m: [f64; 2],
     },
+    /// Create a parameter with an author-chosen stable ID (ADR-013).
+    AddParameter {
+        id: String,
+        name: String,
+        expr: String,
+    },
+    /// Remove a parameter; fails if anything still references its name.
+    RemoveParameter {
+        id: String,
+    },
+    /// Create a design assertion with an author-chosen stable ID (ADR-013).
+    AddAssertion {
+        assertion: Assertion,
+    },
+    /// Remove a design assertion by stable ID.
+    RemoveAssertion {
+        id: String,
+    },
+}
+
+impl PatchOperation {
+    /// Whether this operation creates or removes Design Graph structure
+    /// (ADR-013) rather than editing an existing value.
+    pub fn is_structural(&self) -> bool {
+        matches!(
+            self,
+            Self::AddParameter { .. }
+                | Self::RemoveParameter { .. }
+                | Self::AddAssertion { .. }
+                | Self::RemoveAssertion { .. }
+        )
+    }
+}
+
+/// Maximum number of operations accepted in one patch (ADR-013).
+pub const MAX_PATCH_OPERATIONS: usize = 10_000;
+
+/// Maximum byte length of an author-chosen stable ID (ADR-013).
+const MAX_STABLE_ID_BYTES: usize = 128;
+
+/// Validate an author-chosen ID against `<prefix>:[a-z0-9_]+(\.[a-z0-9_]+)*`.
+fn validate_stable_id(id: &str, prefix: &str) -> Result<()> {
+    let segment_ok = |segment: &str| {
+        !segment.is_empty()
+            && segment
+                .bytes()
+                .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+    };
+    let valid = id.len() <= MAX_STABLE_ID_BYTES
+        && id
+            .strip_prefix(prefix)
+            .and_then(|rest| rest.strip_prefix(':'))
+            .is_some_and(|rest| rest.split('.').all(segment_ok));
+    if valid {
+        Ok(())
+    } else {
+        Err(OpenCadError::validation(format!(
+            "invalid id '{id}': expected '{prefix}:' followed by lowercase letters, digits, '_' or '.'-separated segments, at most {MAX_STABLE_ID_BYTES} bytes"
+        )))
+    }
+}
+
+/// Validate a parameter name usable as an expression identifier.
+fn validate_parameter_name(name: &str) -> Result<()> {
+    let mut bytes = name.bytes();
+    let valid = bytes
+        .next()
+        .is_some_and(|first| first.is_ascii_alphabetic() || first == b'_')
+        && bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+        && parameter_names_in_expr(name) == [name];
+    if valid {
+        Ok(())
+    } else {
+        Err(OpenCadError::validation(format!(
+            "invalid parameter name '{name}': expected an identifier such as 'wall_thickness'"
+        )))
+    }
 }
 
 /// State assertion that must hold before any patch operation is applied.
@@ -353,7 +434,9 @@ impl DesignPatch {
                         ));
                         continue;
                     }
-                    if version != DESIGN_STATE_REVISION_VERSION {
+                    if version != DESIGN_STATE_REVISION_VERSION_V1
+                        && version != DESIGN_STATE_REVISION_VERSION_V2
+                    {
                         failures.push((
                             "revision:version".to_string(),
                             format!(
@@ -362,7 +445,18 @@ impl DesignPatch {
                         ));
                         continue;
                     }
-                    let actual = design_state_revision(state)?;
+                    // v1 cannot observe sketch or assertion edits, so it may
+                    // not guard a patch that creates or removes structure.
+                    if version == DESIGN_STATE_REVISION_VERSION_V1 && self.is_structural() {
+                        failures.push((
+                            "revision:version".to_string(),
+                            format!(
+                                "patch precondition failed: design-state revision version '{version}' is too weak for structural operations (use '{DESIGN_STATE_REVISION_VERSION_V2}')"
+                            ),
+                        ));
+                        continue;
+                    }
+                    let actual = design_state_revision_for_version(state, version)?;
                     if digest != &actual {
                         failures.push((
                             "revision:digest".to_string(),
@@ -428,7 +522,14 @@ impl DesignPatch {
         }
     }
 
+    /// Whether any operation creates or removes structure (ADR-013).
+    pub fn is_structural(&self) -> bool {
+        self.operations.iter().any(PatchOperation::is_structural)
+    }
+
     pub fn apply_to_parameters(&self, graph: &mut ParamGraph) -> Result<()> {
+        let mut added = Vec::new();
+        let mut removed = BTreeSet::new();
         for operation in &self.operations {
             match operation {
                 PatchOperation::SetParameter { id, expr } => {
@@ -436,17 +537,235 @@ impl DesignPatch {
                         OpenCadError::validation(format!("unknown parameter '{id}'"))
                     })?;
                 }
-                PatchOperation::SetFeatureExpr { .. } => {}
-                PatchOperation::SetFeatureRef { .. } => {}
-                PatchOperation::AssignFaceRef { .. } => {}
-                PatchOperation::SetInstancePlacement { .. }
+                PatchOperation::AddParameter { id, name, expr } => {
+                    validate_stable_id(id, "param")?;
+                    validate_parameter_name(name)?;
+                    if removed.contains(id.as_str()) {
+                        return Err(OpenCadError::validation(format!(
+                            "parameter id '{id}' was removed earlier in this patch and cannot be reused"
+                        )));
+                    }
+                    if let Some(existing) = graph.find_by_name(name) {
+                        return Err(OpenCadError::validation(format!(
+                            "parameter name '{name}' is already used by '{}'",
+                            existing.id
+                        )));
+                    }
+                    graph.add_parameter(ParameterEntry::new(id, name, expr))?;
+                    added.push(id.clone());
+                }
+                PatchOperation::RemoveParameter { id } => {
+                    graph.remove_parameter(id).map_err(|_| {
+                        OpenCadError::validation(format!("unknown parameter '{id}'"))
+                    })?;
+                    added.retain(|added_id| added_id != id);
+                    removed.insert(id.as_str());
+                }
+                PatchOperation::SetFeatureExpr { .. }
+                | PatchOperation::SetFeatureRef { .. }
+                | PatchOperation::AssignFaceRef { .. }
+                | PatchOperation::SetInstancePlacement { .. }
                 | PatchOperation::SetMateDistance { .. }
                 | PatchOperation::AddConnector { .. }
                 | PatchOperation::SetDrawingViewScale { .. }
-                | PatchOperation::SetDrawingViewOrigin { .. } => {}
+                | PatchOperation::SetDrawingViewOrigin { .. }
+                | PatchOperation::AddAssertion { .. }
+                | PatchOperation::RemoveAssertion { .. } => {}
+            }
+        }
+        // Dependency edges for new parameters are derived once, after every
+        // operation, so a patch may add parameters in any order.
+        for id in added {
+            let Some(entry) = graph.get(&id) else {
+                continue;
+            };
+            let sources: Vec<String> = parameter_names_in_expr(&entry.expr)
+                .iter()
+                .filter_map(|name| graph.find_by_name(name))
+                .map(|source| source.id.clone())
+                .filter(|source| *source != id)
+                .collect();
+            for source in sources {
+                graph.add_dependency(source, id.as_str())?;
             }
         }
         Ok(())
+    }
+
+    /// Apply assertion add/remove operations in order.
+    pub fn apply_to_assertions(&self, assertions: &mut Vec<Assertion>) -> Result<()> {
+        let mut removed = BTreeSet::new();
+        for operation in &self.operations {
+            match operation {
+                PatchOperation::AddAssertion { assertion } => {
+                    validate_stable_id(&assertion.id, "assertion")?;
+                    assertion.validate()?;
+                    if removed.contains(assertion.id.as_str()) {
+                        return Err(OpenCadError::validation(format!(
+                            "assertion id '{}' was removed earlier in this patch and cannot be reused",
+                            assertion.id
+                        )));
+                    }
+                    if assertions
+                        .iter()
+                        .any(|existing| existing.id == assertion.id)
+                    {
+                        return Err(OpenCadError::validation(format!(
+                            "assertion '{}' already exists",
+                            assertion.id
+                        )));
+                    }
+                    assertions.push(assertion.clone());
+                }
+                PatchOperation::RemoveAssertion { id } => {
+                    let index = assertions
+                        .iter()
+                        .position(|assertion| assertion.id == *id)
+                        .ok_or_else(|| {
+                            OpenCadError::validation(format!("unknown assertion '{id}'"))
+                        })?;
+                    assertions.remove(index);
+                    removed.insert(id.as_str());
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    /// Apply the patch to a complete design state after verifying its
+    /// preconditions against the unmodified state.
+    ///
+    /// The candidate is staged, parameter-evaluated, and checked with
+    /// [`Self::validate_structural_candidate`] before `state` is replaced, so a
+    /// failure leaves `state` untouched.  This is the only application path
+    /// that accepts structural operations, because removal checks need every
+    /// collection that can hold a reference.
+    pub fn apply_to_state(&self, state: &mut DesignState) -> Result<()> {
+        if self.operations.len() > MAX_PATCH_OPERATIONS {
+            return Err(OpenCadError::validation(format!(
+                "patch has {} operations; at most {MAX_PATCH_OPERATIONS} are allowed",
+                self.operations.len()
+            )));
+        }
+        self.validate_preconditions_for_state(state)?;
+        self.validate_document_context(state.assembly.as_ref(), state.drawing.as_ref())?;
+        let mut next = state.clone();
+        self.apply_to_document_in_place(
+            &mut next.parameters,
+            &mut next.feature_nodes,
+            &mut next.semantic_refs,
+            next.assembly.as_mut(),
+            next.drawing.as_mut(),
+        )?;
+        self.apply_to_assertions(&mut next.assertions)?;
+        // Structural checks run first so a dangling reference is reported
+        // with its complete dependent list rather than as an evaluation error.
+        self.validate_structural_candidate(state, &next)?;
+        evaluate_param_graph(&next.parameters)?;
+        *state = next;
+        Ok(())
+    }
+
+    /// Validate references in the final candidate of a structural patch.
+    ///
+    /// Intermediate states may be invalid; only the final state is checked
+    /// (ADR-013 §3).  Removal never cascades: a removed parameter whose name
+    /// is still referenced fails with every dependent listed in sorted order.
+    pub fn validate_structural_candidate(
+        &self,
+        before: &DesignState,
+        after: &DesignState,
+    ) -> Result<()> {
+        if !self.is_structural() {
+            return Ok(());
+        }
+        let mut failures = BTreeSet::new();
+
+        for operation in &self.operations {
+            let PatchOperation::RemoveParameter { id } = operation else {
+                continue;
+            };
+            let Some(removed) = before.parameters.get(id) else {
+                continue;
+            };
+            let name = removed.name.as_str();
+            if after.parameters.find_by_name(name).is_some() {
+                continue;
+            }
+            let mut dependents = BTreeSet::new();
+            for entry in after.parameters.entries() {
+                if parameter_names_in_expr(&entry.expr)
+                    .iter()
+                    .any(|item| item == name)
+                {
+                    dependents.insert(format!("parameter {}", entry.id));
+                }
+            }
+            for node in &after.feature_nodes {
+                if serialized_value_uses_parameter(&node.definition, name) {
+                    dependents.insert(format!("feature {}", node.id));
+                }
+            }
+            for sketch in &after.sketches {
+                if serialized_value_uses_parameter(sketch, name) {
+                    dependents.insert(format!("sketch {}", sketch.id.as_str()));
+                }
+            }
+            for assertion in &after.assertions {
+                if matches!(
+                    &assertion.kind,
+                    AssertionKind::ParameterRange { parameter_name, .. } if parameter_name == name
+                ) {
+                    dependents.insert(format!("assertion {}", assertion.id));
+                }
+            }
+            if !dependents.is_empty() {
+                failures.insert(format!(
+                    "cannot remove parameter '{id}' ('{name}'): still referenced by {}",
+                    dependents.into_iter().collect::<Vec<_>>().join(", ")
+                ));
+            }
+        }
+
+        for operation in &self.operations {
+            let PatchOperation::AddAssertion { assertion } = operation else {
+                continue;
+            };
+            if !after.assertions.iter().any(|item| item.id == assertion.id) {
+                continue;
+            }
+            match &assertion.kind {
+                AssertionKind::ParameterRange { parameter_name, .. }
+                    if after.parameters.find_by_name(parameter_name).is_none() =>
+                {
+                    failures.insert(format!(
+                        "assertion '{}' references unknown parameter '{parameter_name}'",
+                        assertion.id
+                    ));
+                }
+                AssertionKind::RequiredReference { ref_id }
+                    if !after
+                        .semantic_refs
+                        .iter()
+                        .any(|topo_ref| topo_ref.ref_id.as_str() == ref_id) =>
+                {
+                    failures.insert(format!(
+                        "assertion '{}' references unknown semantic reference '{ref_id}'",
+                        assertion.id
+                    ));
+                }
+                _ => {}
+            }
+        }
+
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(OpenCadError::validation(
+                failures.into_iter().collect::<Vec<_>>().join("; "),
+            ))
+        }
     }
 
     pub fn apply_to_semantic_refs(&self, semantic_refs: &mut Vec<TopoRef>) -> Result<()> {
@@ -520,6 +839,11 @@ impl DesignPatch {
         assembly: Option<&mut opencad_assembly::AssemblyModel>,
         drawing: Option<&mut opencad_drawing::DrawingModel>,
     ) -> Result<()> {
+        if self.is_structural() {
+            return Err(OpenCadError::validation(
+                "structural patch operations require the complete design state; use build_patch_candidate or DesignPatch::apply_to_state",
+            ));
+        }
         let current_state = DesignState::with_models(
             parameters.clone(),
             feature_nodes.to_vec(),

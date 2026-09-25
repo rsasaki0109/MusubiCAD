@@ -228,6 +228,15 @@ fn print_change(change: &SemanticChange) {
         SemanticChange::DrawingViewChanged { id, before, after } => {
             println!("  drawing view {id}: {before} -> {after}");
         }
+        SemanticChange::AssertionAdded { id } => {
+            println!("  assertion added {id}");
+        }
+        SemanticChange::AssertionRemoved { id } => {
+            println!("  assertion removed {id}");
+        }
+        SemanticChange::AssertionChanged { id, before, after } => {
+            println!("  assertion {id}: {before} -> {after}");
+        }
     }
 }
 

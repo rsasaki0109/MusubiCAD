@@ -18,16 +18,104 @@
     "operations": {
       "type": "array",
       "minItems": 1,
-      "items": {
-        "type": "object",
-        "required": ["type"]
-      }
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/operation" }
     }
   },
   "additionalProperties": false,
   "$defs": {
+    "operation": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "set_parameter",
+            "set_feature_expr",
+            "set_feature_ref",
+            "assign_face_ref",
+            "set_instance_placement",
+            "set_mate_distance",
+            "add_connector",
+            "set_drawing_view_scale",
+            "set_drawing_view_origin",
+            "add_parameter",
+            "remove_parameter",
+            "add_assertion",
+            "remove_assertion"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "add_parameter" } } },
+          "then": {
+            "required": ["type", "id", "name", "expr"],
+            "properties": {
+              "id": { "$ref": "#/$defs/stable_id_param" },
+              "name": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+              "expr": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_parameter" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^param:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "add_assertion" } } },
+          "then": {
+            "required": ["type", "assertion"],
+            "properties": {
+              "assertion": {
+                "type": "object",
+                "required": ["id", "name", "severity", "type"],
+                "properties": {
+                  "id": { "$ref": "#/$defs/stable_id_assertion" },
+                  "name": { "type": "string", "minLength": 1 },
+                  "severity": { "enum": ["required", "advisory"] }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_assertion" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^assertion:" } }
+          }
+        }
+      ]
+    },
+    "stable_id_param": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^param:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_assertion": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^assertion:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
     "precondition": {
       "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "algorithm", "version", "digest"],
+          "properties": {
+            "type": { "const": "revision_equals" },
+            "algorithm": { "const": "sha256" },
+            "version": {
+              "enum": ["musubicad.design-state.v1", "musubicad.design-state.v2"]
+            },
+            "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          },
+          "additionalProperties": false
+        },
         {
           "type": "object",
           "required": ["type", "id", "expr"],

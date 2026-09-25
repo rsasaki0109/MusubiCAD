@@ -1,7 +1,7 @@
 //! Patch dry-run validation (Task-146+).
 
 use opencad_core::{OpenCadError, Result, ValidationMessage, ValidationReport};
-use opencad_graph::{build_summary, evaluate_param_graph, DesignDiff, ParamGraph};
+use opencad_graph::{build_summary, DesignDiff, ParamGraph};
 use serde::{Deserialize, Serialize};
 
 use crate::state::{diff_design_state, DesignState};
@@ -18,14 +18,7 @@ pub struct PatchDryRunReport {
 /// Build and validate the candidate state used by both dry-run and apply.
 pub fn build_patch_candidate(before: &DesignState, patch: &DesignPatch) -> Result<DesignState> {
     let mut after = before.clone();
-    patch.apply_to_document(
-        &mut after.parameters,
-        &mut after.feature_nodes,
-        &mut after.semantic_refs,
-        after.assembly.as_mut(),
-        after.drawing.as_mut(),
-    )?;
-    evaluate_param_graph(&after.parameters)?;
+    patch.apply_to_state(&mut after)?;
     Ok(after)
 }
 

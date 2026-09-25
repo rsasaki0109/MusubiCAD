@@ -37,20 +37,31 @@ pub fn apply_patch_with_history(
     Ok(())
 }
 
-fn apply_patch_to_document_in_place(doc: &mut OcadDocument, patch: &DesignPatch) -> Result<()> {
-    let state = DesignState::with_models(
+/// Build the complete patchable [`DesignState`] of a document.
+///
+/// Every document-backed patch, diff, and revision uses this projection so
+/// that `musubicad.design-state.v2` digests agree across surfaces.
+pub fn document_design_state(doc: &OcadDocument) -> DesignState {
+    DesignState::with_models(
         doc.parameters.clone(),
         doc.feature_nodes.clone(),
         doc.semantic_refs.clone(),
         doc.assembly.clone(),
         doc.drawing.clone(),
-    );
+    )
+    .with_authoring(doc.sketches.clone(), doc.assertions.clone())
+}
+
+fn apply_patch_to_document_in_place(doc: &mut OcadDocument, patch: &DesignPatch) -> Result<()> {
+    let state = document_design_state(doc);
     let next = build_patch_candidate(&state, patch)?;
     doc.parameters = next.parameters;
     doc.feature_nodes = next.feature_nodes;
     doc.semantic_refs = next.semantic_refs;
     doc.assembly = next.assembly;
     doc.drawing = next.drawing;
+    doc.sketches = next.sketches;
+    doc.assertions = next.assertions;
 
     for operation in &patch.operations {
         let PatchOperation::AssignFaceRef {
@@ -75,13 +86,7 @@ fn apply_patch_to_document_in_place(doc: &mut OcadDocument, patch: &DesignPatch)
 /// Validate and preview a patch against a document without persisting changes.
 pub fn dry_run_patch_document(before: &OcadDocument, patch: &DesignPatch) -> PatchDryRunReport {
     dry_run_patch_state_with_context(
-        &DesignState::with_models(
-            before.parameters.clone(),
-            before.feature_nodes.clone(),
-            before.semantic_refs.clone(),
-            before.assembly.clone(),
-            before.drawing.clone(),
-        ),
+        &document_design_state(before),
         patch,
         ImpactContext {
             feature_graph: Some(&before.feature_graph),

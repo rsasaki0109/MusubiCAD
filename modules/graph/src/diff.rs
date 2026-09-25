@@ -112,6 +112,17 @@ pub enum SemanticChange {
         before: String,
         after: String,
     },
+    AssertionAdded {
+        id: String,
+    },
+    AssertionRemoved {
+        id: String,
+    },
+    AssertionChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
 }
 
 /// Geometric diff summary (derived from regeneration).

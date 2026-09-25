@@ -390,13 +390,23 @@ remove, or reorder parameters, sketches, constraints, or features.
 
 | ID | Scope | Deliverables | Status |
 |---|---|---|---|
-| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | In progress (ADR proposed) |
+| MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | In progress (ADR proposed; slice 1 delivered) |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph
 derivation proven against every fixture; feature operations with diff, impact,
 and review rendering; structural rebase conflicts; and assembly/drawing
 structural operations.
+
+Slice 1 is delivered: `add_parameter`, `remove_parameter`, `add_assertion`,
+and `remove_assertion` with ID grammar, final-state validation, sorted
+dependent listing on removal, and derived parameter dependency edges.
+`DesignState` carries sketches and assertions; revision v2 hashes them and v1
+remains accepted only for value-edit patches. Document, CLI, and Agent paths
+share `opencad_file::document_design_state`; assertion changes are diffed,
+rendered by CLI diff/review, and rebased by stable ID. Coverage is in
+`modules/ai/tests/structural_patch.rs` and
+`modules/file/tests/structural_patch.rs`.
 
 **Definition of done:** starting from an empty part document, a checked-in
 patch sequence rebuilds `examples/bracket.ocad.d` with canonical-equal
