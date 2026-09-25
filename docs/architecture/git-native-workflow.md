@@ -33,14 +33,45 @@ opencad merge base.ocad.d ours.ocad.d theirs.ocad.d merged.ocad.d
 opencad rebase-patch old-base.ocad.d new-base.ocad.d change.json rebased.json
 ```
 
-Three-way merge compares parameters and features by stable semantic ID. Independent edits are
-merged; divergent edits to the same ID return structured base/ours/theirs conflicts. Structural
-feature and parameter additions/removals currently require manual resolution because their graph
-edges must be reviewed together. Rebase uses canonical serialized source values for each patch
-target, so it never relies on geometry floating-point equality. Independent parameter, feature,
-assembly, and drawing targets are rebased; same-target conflicts are deduplicated and sorted
-deterministically, with `ours` containing the patch's desired value. A `RevisionEquals` precondition
-is updated to the new complete-state digest after a successful rebase.
+Three-way merge compares every collection of the design by stable semantic ID: parameters,
+sketches, features and their display order, semantic references, assertions, and assembly and
+drawing objects. Independent edits, including additions and removals, are merged. Divergent edits
+return structured base/ours/theirs conflicts, with a `reason` for structural cases (`add_add`,
+`remove_modify`, `order`, `invalid_result`). The merged design must pass whole-state validation.
+Rebase uses canonical serialized source values for each patch target, so it never relies on
+geometry floating-point equality. It drops additions the new base already contains, reports
+missing feature anchors, and requires the rebased patch to apply to the new base. A
+`RevisionEquals` precondition is updated to the new complete-state digest after a successful
+rebase.
+
+## Git merge driver
+
+Expanded `.ocad.d` documents merge through plain `git merge` with the MusubiCAD merge driver
+([ADR-015](../adr/ADR-015-git-merge-driver.md)):
+
+```bash
+opencad merge-driver install      # registers merge.musubicad in this repository's git config
+```
+
+Add the printed lines to `.gitattributes`:
+
+```text
+*.ocad.d/*.json merge=musubicad
+*.ocad.d/graph/*.json merge=musubicad
+```
+
+For each changed file of a document, the driver reconstructs the complete base, ours, and theirs
+documents from Git, runs the semantic merge, and writes that file of the merged result. All files
+of the directory therefore stay consistent and `checksums.json` verifies. When the design intent
+conflicts, the merge stops like any Git conflict and prints typed conflicts. List them again with:
+
+```bash
+opencad conflicts path/to/design.ocad.d
+```
+
+Resolve them with a `DesignPatch` or `opencad merge`, then commit. The driver refuses to guess:
+rebase, cherry-pick, octopus and criss-cross merges, or any input that does not match its
+reconstruction fall back to Git's ordinary conflict handling.
 
 ## Agent approval boundary
 
