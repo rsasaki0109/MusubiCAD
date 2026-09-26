@@ -63,6 +63,12 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
      runs counterclockwise from `start_angle` to `end_angle` (ADR-021):
      `{"type": "arc", "id": "ent:right", "center": "ent:c_right", "radius": 0.004, "start_angle": "-90 deg", "end_angle": "90 deg", "start_point": "ent:s1", "end_point": "ent:s2"}`.
      `examples/agent/author_slot_plate_patch.json` authors a slot this way.
+   - Arc angles may name parameters (ADR-024), so a shape can turn with a
+     design angle: `"start_angle": "slot_angle - 90 deg"`. Add `tangent`
+     constraints between the straight sides and the arcs to record the
+     intent: `{"type": "tangent", "id": "con:bottom_tangent", "line": "ent:bottom", "curve": "ent:right"}`.
+     `examples/agent/author_slanted_slot_patch.json` authors a slot at a
+     `slot_angle` this way.
 4. **Driving constraints.**
    - `{"type": "add_sketch_constraint", "sketch_id": "sketch:base", "constraint": {"type": "distance", "id": "con:width", "target": {"line": "ent:e0"}, "expr": "width"}}`
    - `{"type": "radius", "id": "con:hole_radius", "target": "ent:hole_circle", "expr": "hole_diameter / 2"}`

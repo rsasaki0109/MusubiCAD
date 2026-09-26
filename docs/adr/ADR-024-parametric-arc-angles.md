@@ -37,6 +37,13 @@ never reached them.
 
 ## Evidence
 
+A slanted slot (`examples/agent/author_slanted_slot_patch.json`) turns with
+a `slot_angle` parameter. Its arc angles are `slot_angle ± 90 deg`, and
+tangent constraints join the straight sides to the end arcs. It is fully
+constrained. At 30° and again after an edit to 60°, the volume matches
+`(L·w + πr²)·h` within 1e-12 m³. The tessellated extents match
+`L·cos θ + w` and `L·sin θ + w` within 0.1 mm.
+
 A sector test builds two radii and an arc whose end angle is
 `sweep_angle`. The sketch is fully constrained, with no dry-run warnings.
 OCCT matches `θ/2·r²·h` within 1e-12 m³ at 90°, and again after an edit to
