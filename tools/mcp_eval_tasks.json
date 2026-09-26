@@ -91,6 +91,25 @@
       "required_parameters": [],
       "expected_instances": 3,
       "expected_mates": 3
+    },
+    {
+      "id": "bracket_drawing",
+      "document": "drawing.ocad.d",
+      "setup": [
+        [
+          "new",
+          "{workdir}/bracket.ocad.d"
+        ]
+      ],
+      "prompt": "The part document {workdir}/bracket.ocad.d is an 80 mm wide bracket. Create a new drawing document at {document} with one A4 portrait sheet showing the bracket at full scale in a front view and a top view (the drawing references the part by the relative path ../bracket.ocad.d). Add one linear dimension of the bracket's 80 mm overall width on the front view.",
+      "required_parameters": [],
+      "expected_views": [
+        "front",
+        "top"
+      ],
+      "expected_dimension_lengths_m": [
+        0.08
+      ]
     }
   ]
 }

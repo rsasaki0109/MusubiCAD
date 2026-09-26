@@ -79,7 +79,10 @@ result independently:
 - `opencad regen` must report the analytic volume within 0.1 mm³;
 - every required named parameter must exist.
 - for assembly tasks, the instance and active mate counts must match, and
-  `mate_max_error` must be at most 1 µm.
+  `mate_max_error` must be at most 1 µm;
+- for drawing tasks, the view projections and dimension lengths (within
+  1 µm) must match, and `opencad export` must render the drawing to SVG.
+  Drawing tasks have no expected volume.
 
 The report records pass/fail, volume, turns, cost, and duration for each
 task. The tasks are defined in `tools/mcp_eval_tasks.json`:
@@ -95,6 +98,7 @@ task. The tasks are defined in `tools/mcp_eval_tasks.json`:
 | `loft_cone` | Loft a Ø40 mm circle into a Ø20 mm circle 30 mm higher (ADR-022) | 21 991.1 mm³ |
 | `import_step` | Import a STEP file (exported by a `setup` step) as a fixed solid | 28 328.8 mm³ |
 | `fillet_bracket_top` | Round the bracket's top outer edges and hole rim with 1 mm fillets | 28 262.0 mm³ |
+| `bracket_drawing` | Draw the bracket (created by a `new` setup step) in front and top views with an 80 mm width dimension | — |
 | `assembly_third_bracket` | Add a third bracket instance to the two-bracket assembly and place it with a 120 mm distance mate | 84 986.3 mm³ |
 
 `setup` lists `opencad` argument lists that run before the agent starts.
