@@ -416,6 +416,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-014 | Fully constrained examples | Bracket template and 12 example documents constrain base rectangle edges horizontal/vertical (via `examples/agent/constrain_bracket_base_patch.json`); parameter edits keep rectangles; skew-derived goldens corrected | Complete |
 | MCAD-P7-015 | Line and arc profiles | [ADR-021](../adr/ADR-021-line-arc-profiles.md); arcs with endpoint points join loops, solver holds endpoints on arcs, exact line/arc edges in OCCT, slot example and eval task | Complete |
 | MCAD-P7-016 | Canonical example documents | Examples rewritten in the current writer form; `example_canonical_form` test pins it (`MUSUBICAD_BLESS_EXAMPLES=1` rewrites after intentional writer changes) | Complete |
+| MCAD-P7-017 | MCP eval tasks | Harness `setup` steps; `slot_plate`, `import_step`, and `fillet_bracket_top` tasks (six tasks; new ones 3/3 on first run) | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

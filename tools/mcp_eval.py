@@ -80,6 +80,19 @@ def run_task(task: dict, opencad: Path, claude: str, timeout_s: int) -> dict:
     document = workdir / task["document"]
     if "source" in task:
         shutil.copytree(ROOT / task["source"], document)
+    placeholders = {
+        "document": document.as_posix(),
+        "workdir": workdir.as_posix(),
+        "root": ROOT.as_posix(),
+    }
+    # Setup steps are `opencad` argument lists, e.g. exporting a STEP file
+    # the agent must import.  They run before the agent starts.
+    for step in task.get("setup", []):
+        subprocess.run(
+            [str(opencad), *[arg.format(**placeholders) for arg in step]],
+            check=True,
+            capture_output=True,
+        )
     config = workdir / "mcp.json"
     config.write_text(
         json.dumps(
@@ -87,7 +100,7 @@ def run_task(task: dict, opencad: Path, claude: str, timeout_s: int) -> dict:
         ),
         encoding="utf-8",
     )
-    prompt = f"{INSTRUCTIONS}\n\n{task['prompt'].format(document=document.as_posix())}"
+    prompt = f"{INSTRUCTIONS}\n\n{task['prompt'].format(**placeholders)}"
     started = time.monotonic()
     completed = subprocess.run(
         [
@@ -151,8 +164,13 @@ def self_test() -> None:
     assert not passed and "wall" in problems[0]
     tasks = json.loads(TASKS.read_text(encoding="utf-8"))["tasks"]
     assert len({task["id"] for task in tasks}) == len(tasks)
+    placeholders = {"document": "d", "workdir": "w", "root": "r"}
     for task in tasks:
         assert "{document}" in task["prompt"], task["id"]
+        task["prompt"].format(**placeholders)
+        for step in task.get("setup", []):
+            assert all(isinstance(arg, str) for arg in step), task["id"]
+            [arg.format(**placeholders) for arg in step]
     print("self-test passed")
 
 
