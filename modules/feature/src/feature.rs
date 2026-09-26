@@ -9,6 +9,7 @@ use opencad_sketch::Sketch;
 use crate::chamfer::ChamferFeature;
 use crate::extrude::ExtrudeFeature;
 use crate::fillet::FilletFeature;
+use crate::helix_sweep::HelixSweepFeature;
 use crate::hole::HoleFeature;
 use crate::imported::ImportedSolidFeature;
 use crate::loft::LoftFeature;
@@ -35,6 +36,7 @@ pub enum FeatureDefinition {
     Shell(ShellFeature),
     Loft(LoftFeature),
     Sweep(SweepFeature),
+    HelixSweep(HelixSweepFeature),
 }
 
 impl FeatureDefinition {
@@ -53,6 +55,7 @@ impl FeatureDefinition {
             Self::Shell(_) => "shell",
             Self::Loft(_) => "loft",
             Self::Sweep(_) => "sweep",
+            Self::HelixSweep(_) => "helix_sweep",
         }
     }
 }

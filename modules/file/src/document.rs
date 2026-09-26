@@ -85,6 +85,22 @@ impl OcadDocument {
         }
     }
 
+    /// Query parameters over this document's Design Graph (no scene).
+    pub fn into_query_params(self, query: opencad_ai::DesignQuery) -> opencad_ai::QueryParams {
+        opencad_ai::QueryParams {
+            parameters: self.parameters,
+            feature_nodes: self.feature_nodes,
+            feature_graph: Some(self.feature_graph),
+            sketches: self.sketches,
+            scene: None,
+            semantic_refs: self.semantic_refs,
+            assembly: self.assembly,
+            drawing: self.drawing,
+            assertions: self.assertions,
+            query,
+        }
+    }
+
     pub fn into_part_model(self) -> PartModel {
         let mut model = PartModel::new();
         model.graph = self.feature_graph;

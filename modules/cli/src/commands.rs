@@ -32,6 +32,7 @@ pub fn run() -> Result<()> {
         Some("new") => cmd_new(args.next().as_deref(), &args.collect::<Vec<_>>()),
         Some("validate") => cmd_validate(args.next().as_deref()),
         Some("inspect") => cmd_inspect(args.next().as_deref()),
+        Some("intent") => cmd_intent(args.next().as_deref(), &args.collect::<Vec<_>>()),
         Some("params") => cmd_params(args.next().as_deref(), &args.collect::<Vec<_>>()),
         Some("regen") => cmd_regen(args.next().as_deref(), &args.collect::<Vec<_>>()),
         Some("export") => cmd_export(args.next().as_deref(), args.next().as_deref()),
@@ -119,6 +120,88 @@ fn cmd_inspect(path: Option<&str>) -> Result<()> {
         println!("views: {views}");
     } else {
         println!("kind: part");
+    }
+    Ok(())
+}
+
+/// `opencad intent <path> <param:...|ref:...> [--json]` (MCAD-P6-006): what
+/// drives a parameter or reference and what an edit to it would change.
+fn cmd_intent(path: Option<&str>, extra_args: &[String]) -> Result<()> {
+    let usage = || {
+        opencad_core::OpenCadError::validation(
+            "usage: opencad intent <path> <param:...|ref:...> [--json]",
+        )
+    };
+    let path = path.ok_or_else(usage)?;
+    let mut target = None;
+    let mut json = false;
+    for arg in extra_args {
+        match arg.as_str() {
+            "--json" => json = true,
+            _ if target.is_none() && !arg.starts_with("--") => target = Some(arg.clone()),
+            _ => {
+                return Err(opencad_core::OpenCadError::validation(format!(
+                    "unknown intent option '{arg}'"
+                )))
+            }
+        }
+    }
+    let target = target.ok_or_else(usage)?;
+    let query = if target.starts_with("ref:") {
+        opencad_ai::DesignQuery::InspectReference { ref_id: target }
+    } else {
+        opencad_ai::DesignQuery::InspectParameter { id: target }
+    };
+    let result = opencad_ai::run_query(&read_ocad(path)?.into_query_params(query))?;
+    if json {
+        let text = serde_json::to_string_pretty(&result)
+            .map_err(|err| opencad_core::OpenCadError::validation(err.to_string()))?;
+        println!("{text}");
+        return Ok(());
+    }
+    let list = |label: &str, items: &[String]| {
+        println!(
+            "{label}: {}",
+            if items.is_empty() {
+                "-".to_string()
+            } else {
+                items.join(", ")
+            }
+        );
+    };
+    match result {
+        opencad_ai::QueryResult::ParameterIntent { item } => {
+            let value = item
+                .parameter
+                .value_m
+                .map(|value| format!(" = {value} m"))
+                .unwrap_or_default();
+            println!(
+                "parameter: {} ({}) {}{value}",
+                item.parameter.id, item.parameter.name, item.parameter.expr
+            );
+            list("driven by", &item.driven_by);
+            list("drives parameters", &item.drives_parameters);
+            list("sketches", &item.sketches);
+            list(
+                "directly affected features",
+                &item.directly_affected_features,
+            );
+            list("predicted dirty features", &item.predicted_dirty_features);
+            list("assertions", &item.assertions);
+        }
+        opencad_ai::QueryResult::ReferenceIntent { item } => {
+            let role = item.reference.role.as_deref().unwrap_or("-");
+            println!(
+                "reference: {} ({}, created by {}, role {role})",
+                item.reference.ref_id, item.reference.kind, item.reference.created_by
+            );
+            list("consuming features", &item.consuming_features);
+            list("consuming mates", &item.consuming_mates);
+            list("predicted dirty features", &item.predicted_dirty_features);
+            list("assertions", &item.assertions);
+        }
+        _ => {}
     }
     Ok(())
 }
@@ -533,6 +616,7 @@ COMMANDS:
     new         Create a sample bracket document
     validate    Validate a .ocad or .ocad.d document
     inspect     Show document summary
+    intent      Show what drives a parameter or reference and what it changes
     params      List document parameters
     regen       Regenerate features through the geometry kernel
     export      Export the active body to STL or a drawing to SVG

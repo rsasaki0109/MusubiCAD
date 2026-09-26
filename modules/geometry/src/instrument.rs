@@ -6,7 +6,7 @@ use opencad_core::{Result, TopoRefId};
 
 use crate::{
     BooleanOp, BoundingBox, EdgeRefDiscovery, ExtrudeExtent, ExtrudeOperation, FaceDerivation,
-    FilletEdgeSelector, GeometryKernel, KernelBody, KernelWire, MassProperties, MeshSet,
+    FilletEdgeSelector, GeometryKernel, HelixSpec, KernelBody, KernelWire, MassProperties, MeshSet,
     RevolveInput, RigidTransform, SolvedSketch, TessellationSettings,
 };
 
@@ -154,6 +154,11 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
     fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
         self.record();
         self.inner.sweep(profile, path)
+    }
+
+    fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
+        self.record();
+        self.inner.helix_sweep(profile, helix)
     }
 
     fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {

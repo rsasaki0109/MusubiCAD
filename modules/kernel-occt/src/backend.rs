@@ -4,7 +4,7 @@ use opencad_core::{OpenCadError, Result, TopoRefId};
 use opencad_geometry::topo_sync::EdgeRefDiscovery;
 use opencad_geometry::{
     BooleanOp, BoundingBox, ExtrudeExtent, ExtrudeOperation, FacePick, FilletEdgeSelector,
-    GeometryKernel, KernelBody, KernelWire, MassProperties, MeshSet, RevolveInput,
+    GeometryKernel, HelixSpec, KernelBody, KernelWire, MassProperties, MeshSet, RevolveInput,
     RevolveOperation, RigidTransform, SolvedSketch, TessellationSettings,
 };
 
@@ -13,6 +13,33 @@ use crate::store::KernelStore;
 
 #[cfg(feature = "occt")]
 use cadrum::{DMat3, DQuat, DVec3, Edge, ProfileOrient, Solid};
+
+/// Smallest helix radius, in metres, a helical sweep accepts: a profile
+/// centre closer to the axis than this has no defined start direction.
+#[cfg(feature = "occt")]
+const HELIX_MIN_RADIUS_M: f64 = 1e-9;
+
+/// World-space centre of a closed profile: the circle centre, or the mean
+/// of its solved points, mapped through the sketch placement.
+#[cfg(feature = "occt")]
+fn profile_centre_m(profile: &SolvedSketch) -> Result<[f64; 3]> {
+    let placement = profile
+        .placement
+        .unwrap_or(opencad_geometry::SketchPlacement::global_xy());
+    let [u, v] = match profile.circle {
+        Some(circle) => circle.center_m,
+        None if !profile.points.is_empty() => {
+            let n = profile.points.len() as f64;
+            let (u, v) = profile
+                .points
+                .iter()
+                .fold((0.0, 0.0), |(u, v), p| (u + p[0], v + p[1]));
+            [u / n, v / n]
+        }
+        None => return Err(OpenCadError::validation("profile has no points")),
+    };
+    Ok(placement.map_point(u, v))
+}
 
 /// STEP files use millimetres; kernel lengths are metres.
 #[cfg(feature = "occt")]
@@ -961,6 +988,39 @@ impl GeometryKernel for OcctGeometryKernel {
             Err(OpenCadError::Other(
                 "STEP import requires the occt feature".into(),
             ))
+        }
+    }
+
+    fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
+        helix.validate()?;
+        #[cfg(feature = "occt")]
+        {
+            let profile_edges = sketch_to_edges(profile)?;
+            let origin = DVec3::from_array(helix.axis_origin_m);
+            let axis = DVec3::from_array(helix.axis_direction_m).normalize();
+            // The helix runs through the profile centre: its radius and start
+            // direction are the centre's offset from the axis.
+            let centre = DVec3::from_array(profile_centre_m(profile)?);
+            let along = (centre - origin).dot(axis);
+            let radial = centre - origin - axis * along;
+            let radius = radial.length();
+            if radius <= HELIX_MIN_RADIUS_M {
+                return Err(OpenCadError::validation(
+                    "helical sweep profile must lie off the helix axis",
+                ));
+            }
+            let spine = Edge::helix(radius, helix.pitch_m, helix.height_m, axis, radial / radius)
+                .map_err(map_occt_error)?
+                .translate(origin + axis * along);
+            let solid = Solid::sweep(&profile_edges, [&spine], ProfileOrient::Torsion)
+                .map_err(map_occt_error)?;
+            let id = self.store.borrow_mut().insert_body(solid);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = profile;
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
         }
     }
 

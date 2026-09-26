@@ -663,15 +663,8 @@ fn handle_query_document(request: &JsonRpcRequest) -> JsonRpcResponse {
                 None
             };
             let query_params = QueryParams {
-                parameters: doc.parameters,
-                feature_nodes: doc.feature_nodes,
-                feature_graph: Some(doc.feature_graph),
-                sketches: doc.sketches,
                 scene,
-                semantic_refs: doc.semantic_refs,
-                assembly: doc.assembly,
-                drawing: doc.drawing,
-                query: params.query,
+                ..doc.into_query_params(params.query)
             };
             match AgentApi.query(query_params) {
                 Ok(result) => match serde_json::to_value(result) {
@@ -1246,6 +1239,27 @@ mod tests {
         let result = response.result.expect("result");
         assert_eq!(result["kind"], "feature_order");
         assert_eq!(result["order"].as_array().expect("order").len(), 4);
+    }
+
+    #[test]
+    fn query_document_inspects_parameter_intent() {
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: serde_json::json!(8),
+            method: "opencad.query_document".into(),
+            params: serde_json::json!({
+                "path": concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/bracket.ocad.d"),
+                "query": { "kind": "inspect_parameter", "id": "param:thickness" },
+            }),
+        };
+        let response = handle_agent_request(&request);
+        assert!(response.error.is_none(), "{:?}", response.error);
+        let result = response.result.expect("result");
+        assert_eq!(result["kind"], "parameter_intent");
+        assert_eq!(
+            result["item"]["predicted_dirty_features"],
+            serde_json::json!(["feature:extrude_base", "feature:hole_mount"])
+        );
     }
 
     #[test]

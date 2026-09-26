@@ -487,7 +487,8 @@
             "imported_solid",
             "shell",
             "loft",
-            "sweep"
+            "sweep",
+            "helix_sweep"
           ]
         }
       }

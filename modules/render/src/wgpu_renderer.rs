@@ -1,9 +1,11 @@
 //! Headless wgpu renderer for viewport previews and CI.
 
 use std::path::Path;
+use std::sync::Mutex;
 
 use opencad_core::{OpenCadError, Result};
 
+use crate::edges::feature_edge_vertices;
 use crate::overlay::{label_depth_offset_for_bounds, label_scale_for_bounds, SketchOverlay};
 use crate::png::write_png;
 use crate::scene::RenderScene;
@@ -12,11 +14,24 @@ use crate::selection::{
     overlay_pick_vertices, pick_scene, ScenePickContext, SelectionCatalog,
 };
 use crate::solid::{
-    create_depth_texture, create_label_line_pipeline, create_line_buffers, create_line_pipeline,
-    create_mesh_buffers, create_solid_pipeline, create_uniform_bind_group,
-    encode_sketch_overlay_passes, encode_solid_pass, pack_scene, SketchOverlayPass, Uniforms,
-    CLEAR_COLOR,
+    apply_ambient_occlusion, bake_ambient_occlusion, create_depth_texture,
+    create_label_line_pipeline, create_line_bind_group, create_line_buffers, create_line_pipeline,
+    create_mesh_buffers, create_solid_pipeline, create_uniform_bind_group, encode_line_pass,
+    encode_sketch_overlay_passes, encode_solid_pass, pack_scene, GpuVertex, SketchOverlayPass,
+    Uniforms, CLEAR_COLOR, EDGE_LINE_COLOR,
 };
+
+/// Crease angle (degrees) above which a shared edge is drawn as a feature
+/// edge on shaded previews.
+const EDGE_CREASE_ANGLE_DEG: f32 = 25.0;
+
+/// Ambient occlusion baked for one packed mesh.  Occlusion does not depend on
+/// the camera, so orbit animations reuse it for every frame.
+struct AoBake {
+    positions: Vec<[f32; 3]>,
+    indices: Vec<u32>,
+    factors: Option<Vec<f32>>,
+}
 
 /// Tightly packed RGBA8 pixels from an offscreen render.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,6 +72,7 @@ pub struct OffscreenRenderer {
     pick_mesh_pipeline: wgpu::RenderPipeline,
     pick_line_pipeline: wgpu::RenderPipeline,
     pick_uniform_layout: wgpu::BindGroupLayout,
+    ao_bake: Mutex<Option<AoBake>>,
 }
 
 impl OffscreenRenderer {
@@ -111,7 +127,30 @@ impl OffscreenRenderer {
             pick_mesh_pipeline,
             pick_line_pipeline,
             pick_uniform_layout,
+            ao_bake: Mutex::new(None),
         })
+    }
+
+    /// Darken `vertices` by their baked ambient occlusion, reusing the last
+    /// bake when the mesh is unchanged.
+    fn shade_ambient_occlusion(&self, vertices: &mut [GpuVertex], indices: &[u32]) {
+        let positions: Vec<[f32; 3]> = vertices.iter().map(|vertex| vertex.position).collect();
+        let Ok(mut cache) = self.ao_bake.lock() else {
+            return;
+        };
+        let reusable = cache
+            .as_ref()
+            .is_some_and(|bake| bake.positions == positions && bake.indices == indices);
+        if !reusable {
+            *cache = Some(AoBake {
+                factors: bake_ambient_occlusion(vertices, indices),
+                positions,
+                indices: indices.to_vec(),
+            });
+        }
+        if let Some(factors) = cache.as_ref().and_then(|bake| bake.factors.as_ref()) {
+            apply_ambient_occlusion(vertices, factors);
+        }
     }
 
     pub fn render_scene(
@@ -148,7 +187,9 @@ impl OffscreenRenderer {
         height: u32,
         camera: &crate::camera::OrbitCamera,
     ) -> Result<RenderImage> {
-        let (vertices, indices) = pack_scene(scene)?;
+        let (mut vertices, indices) = pack_scene(scene)?;
+        self.shade_ambient_occlusion(&mut vertices, &indices);
+        let edge_vertices = feature_edge_vertices(&vertices, &indices, EDGE_CREASE_ANGLE_DEG);
 
         let mut camera = *camera;
         camera.aspect = width as f32 / height.max(1) as f32;
@@ -212,6 +253,7 @@ impl OffscreenRenderer {
                 label: Some("render-encoder"),
             });
 
+        // Keep depth so feature edges and overlays test against the solid.
         encode_solid_pass(
             &mut encoder,
             &self.pipeline,
@@ -219,7 +261,24 @@ impl OffscreenRenderer {
             &mesh_buffers,
             &color_view,
             &depth_view,
-            has_overlay,
+            true,
+        );
+
+        // Feature edges (boundaries and creases) outline every face.
+        let edge_lines = create_line_buffers(&self.device, &edge_vertices);
+        let edge_bind_group = create_line_bind_group(
+            &self.device,
+            &self.line_uniform_layout,
+            view_proj,
+            EDGE_LINE_COLOR,
+        );
+        encode_line_pass(
+            &mut encoder,
+            &self.label_line_pipeline,
+            &edge_bind_group,
+            &edge_lines,
+            &color_view,
+            &depth_view,
         );
 
         if has_overlay {

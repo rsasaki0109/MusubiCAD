@@ -7,7 +7,9 @@ checked independently by regenerating the document with ``opencad regen``:
 - the solid volume must match the analytic value;
 - the named parameters must exist;
 - for assembly tasks, the instance and mate counts must match and the mates
-  must be satisfied.
+  must be satisfied;
+- for drawing tasks, the view projections and dimension lengths must match,
+  and the drawing must export to SVG.
 
 The harness records turns, cost, and duration for each task.  It calls a
 paid model, so it is never run in CI.  Run it by hand after changes to the
@@ -44,6 +46,9 @@ MATE_ERROR_LINE = re.compile(r"^mate_max_error:\s*([-+0-9.eE]+)\s*$", re.MULTILI
 # Largest mate residual, in metres, an assembly task accepts as satisfied.
 MATE_TOLERANCE_M = 1e-6
 
+# Agreement of a drawing dimension's measured length with the task, in metres.
+DIMENSION_TOLERANCE_M = 1e-6
+
 INSTRUCTIONS = (
     "Use only the musubicad MCP tools. Read the server instructions and the "
     "authoring guide resource first. Always dry-run before applying and fix "
@@ -76,15 +81,31 @@ def assembly_counts(document: Path) -> tuple[int, int]:
     return len(assembly.get("instances", [])), len(mates)
 
 
+def drawing_contents(document: Path) -> tuple[list[str], list[float]]:
+    """(sorted view projections, sorted dimension lengths in metres)."""
+    path = document / "graph" / "drawings.json"
+    if not path.exists():
+        return [], []
+    drawing = json.loads(path.read_text(encoding="utf-8")).get("drawing") or {}
+    projections, lengths = [], []
+    for sheet in drawing.get("sheets", []):
+        projections += [view.get("projection", "") for view in sheet.get("views", [])]
+        for dimension in sheet.get("dimensions", []):
+            start, end = dimension["start_model_m"], dimension["end_model_m"]
+            lengths.append(sum((b - a) ** 2 for a, b in zip(start, end)) ** 0.5)
+    return sorted(projections), sorted(lengths)
+
+
 def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
-    volume = regenerated_volume_mm3(regen_output)
-    expected = task["expected_volume_mm3"]
-    if volume is None:
-        problems.append("regeneration reported no volume")
-    elif abs(volume - expected) > VOLUME_TOLERANCE_MM3:
-        problems.append(f"volume {volume:.3f} mm^3, expected {expected} mm^3")
+    if "expected_volume_mm3" in task:
+        volume = regenerated_volume_mm3(regen_output)
+        expected = task["expected_volume_mm3"]
+        if volume is None:
+            problems.append("regeneration reported no volume")
+        elif abs(volume - expected) > VOLUME_TOLERANCE_MM3:
+            problems.append(f"volume {volume:.3f} mm^3, expected {expected} mm^3")
     missing = set(task.get("required_parameters", [])) - parameter_names(document)
     if missing:
         problems.append(f"missing parameters: {sorted(missing)}")
@@ -99,6 +120,15 @@ def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str
             problems.append("regeneration reported no mate error")
         elif float(match.group(1)) > MATE_TOLERANCE_M:
             problems.append(f"mates unsatisfied: max error {match.group(1)} m")
+    if "expected_views" in task:
+        projections, lengths = drawing_contents(document)
+        if projections != sorted(task["expected_views"]):
+            problems.append(f"views {projections}, expected {sorted(task['expected_views'])}")
+        expected_lengths = sorted(task.get("expected_dimension_lengths_m", []))
+        if len(lengths) != len(expected_lengths) or any(
+            abs(a - b) > DIMENSION_TOLERANCE_M for a, b in zip(lengths, expected_lengths)
+        ):
+            problems.append(f"dimension lengths {lengths} m, expected {expected_lengths} m")
     return not problems, problems
 
 
@@ -161,12 +191,23 @@ def run_task(task: dict, opencad: Path, claude: str, timeout_s: int) -> dict:
         encoding="utf-8",
     )
     passed, problems = check(task, document, regen.stdout)
+    if "expected_views" in task:
+        # The views must resolve their model and project to an SVG sheet.
+        export = subprocess.run(
+            [str(opencad), "export", str(document), str(workdir / "check.svg")],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        if export.returncode != 0:
+            passed = False
+            problems.append(f"SVG export failed: {export.stderr.strip()[-300:]}")
     return {
         "id": task["id"],
         "passed": passed,
         "problems": problems,
         "volume_mm3": regenerated_volume_mm3(regen.stdout),
-        "expected_volume_mm3": task["expected_volume_mm3"],
+        "expected_volume_mm3": task.get("expected_volume_mm3"),
         "turns": host.get("num_turns"),
         "cost_usd": host.get("total_cost_usd"),
         "duration_s": round(elapsed, 1),
@@ -196,6 +237,13 @@ def self_test() -> None:
         {**assembly, "expected_instances": 3}, pair, output + "mate_max_error: 0.01\n"
     )
     assert not passed and "instances" in problems[0] and "unsatisfied" in problems[1]
+    sheet = ROOT / "examples" / "robot_arm_assembly_drawing.ocad.d"
+    drawing = {"expected_views": ["front"], "expected_dimension_lengths_m": [0.16]}
+    assert check(drawing, sheet, "") == (True, [])
+    passed, problems = check(
+        {"expected_views": ["front", "top"], "expected_dimension_lengths_m": [0.08]}, sheet, ""
+    )
+    assert not passed and "views" in problems[0] and "dimension" in problems[1]
     tasks = json.loads(TASKS.read_text(encoding="utf-8"))["tasks"]
     assert len({task["id"] for task in tasks}) == len(tasks)
     placeholders = {"document": "d", "workdir": "w", "root": "r"}

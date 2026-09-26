@@ -13,30 +13,64 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DesignQuery {
     ListParameters,
-    GetParameter { id: String },
+    GetParameter {
+        id: String,
+    },
     ListFeatures,
-    GetFeature { id: String },
+    GetFeature {
+        id: String,
+    },
     FeatureOrder,
     ListSketches,
-    GetSketch { id: String },
-    ListSketchConstraints { sketch_id: String },
-    ListSketchEntities { sketch_id: String },
+    GetSketch {
+        id: String,
+    },
+    ListSketchConstraints {
+        sketch_id: String,
+    },
+    ListSketchEntities {
+        sketch_id: String,
+    },
     FeatureDependencies,
-    GetFeatureDependencies { id: String },
+    GetFeatureDependencies {
+        id: String,
+    },
     ParameterDependencies,
-    GetParameterDependencies { id: String },
+    GetParameterDependencies {
+        id: String,
+    },
     ListOverlayLines,
     ListFaceGroups,
     ListSemanticRefs,
-    GetSemanticRef { ref_id: String },
+    GetSemanticRef {
+        ref_id: String,
+    },
     ListAssemblyInstances,
-    GetAssemblyInstance { id: String },
+    GetAssemblyInstance {
+        id: String,
+    },
     ListAssemblyMates,
     ListConnectors,
     ListDrawingSheets,
-    GetDrawingSheet { id: String },
-    ListDrawingViews { sheet_id: String },
-    GetDrawingView { sheet_id: String, view_id: String },
+    GetDrawingSheet {
+        id: String,
+    },
+    ListDrawingViews {
+        sheet_id: String,
+    },
+    GetDrawingView {
+        sheet_id: String,
+        view_id: String,
+    },
+    /// What drives a parameter and what an edit to it would change
+    /// (MCAD-P6-006).
+    InspectParameter {
+        id: String,
+    },
+    /// A semantic reference's origin and its consumers (MCAD-P6-006).
+    InspectReference {
+        ref_id: String,
+    },
 }
 
 /// In-memory query parameters.
@@ -56,6 +90,9 @@ pub struct QueryParams {
     pub assembly: Option<opencad_assembly::AssemblyModel>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub drawing: Option<opencad_drawing::DrawingModel>,
+    /// Design assertions, reported by the intent inspector queries.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub assertions: Vec<opencad_core::Assertion>,
     pub query: DesignQuery,
 }
 
@@ -242,6 +279,12 @@ pub enum QueryResult {
     DrawingView {
         item: opencad_drawing::DrawingView,
     },
+    ParameterIntent {
+        item: crate::inspector::ParameterIntent,
+    },
+    ReferenceIntent {
+        item: crate::inspector::ReferenceIntent,
+    },
 }
 
 pub fn query_needs_scene(query: &DesignQuery) -> bool {
@@ -363,6 +406,12 @@ pub fn run_query(params: &QueryParams) -> Result<QueryResult> {
         DesignQuery::GetDrawingView { sheet_id, view_id } => Ok(QueryResult::DrawingView {
             item: crate::drawing::get_drawing_view(drawing_context(params)?, sheet_id, view_id)?,
         }),
+        DesignQuery::InspectParameter { id } => Ok(QueryResult::ParameterIntent {
+            item: crate::inspector::inspect_parameter(params, id)?,
+        }),
+        DesignQuery::InspectReference { ref_id } => Ok(QueryResult::ReferenceIntent {
+            item: crate::inspector::inspect_reference(params, ref_id)?,
+        }),
     }
 }
 
@@ -440,7 +489,7 @@ pub(crate) fn list_parameters(
         .collect()
 }
 
-fn parameter_info(
+pub(crate) fn parameter_info(
     graph: &ParamGraph,
     id: &str,
     values: Option<&IndexMap<String, f64>>,
@@ -619,6 +668,7 @@ mod tests {
             semantic_refs: Vec::new(),
             assembly: None,
             drawing: None,
+            assertions: Vec::new(),
             query,
         }
     }

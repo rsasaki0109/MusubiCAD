@@ -330,7 +330,7 @@ non-goals are defined in the
 | MCAD-P6-003 | Semantic reference provenance | Exact/derived/fingerprint/ambiguous/missing status, candidate evidence, fail-closed repair patches | Complete |
 | MCAD-P6-004 | Executable design assertions | Typed unit-explicit engineering assertions evaluated by dry-run and regeneration | Complete |
 | MCAD-P6-005 | Git-native semantic merge | CLI merge driver, stable semantic conflicts, DesignPatch resolution, branch/merge golden workflow | Complete |
-| MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | Planned |
+| MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | In progress: `inspect_parameter` / `inspect_reference` queries (Agent API, MCP `query_document`, `opencad intent`); Desktop panel and failed-regeneration inspection remain |
 
 MCAD-P6-003 is complete: `ReferenceProvenance` classifies every face/edge
 resolution as `exact`, `derived`, `fingerprint`, `ambiguous`, or `missing`,
@@ -424,6 +424,11 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-022 | Sweep feature | [ADR-023](../adr/ADR-023-sweep-feature.md); closed section swept along a line/arc path sketch (new body, join, cut), Pappus-exact elbow test, open-chain sketches allowed, `sweep_elbow` eval task | Complete |
 | MCAD-P7-023 | Parametric arc angles | [ADR-024](../adr/ADR-024-parametric-arc-angles.md); arc start/end angles may name parameters, resolved before solving without being persisted; sector test follows a 90° → 120° edit | Complete |
 | MCAD-P7-024 | Assembly eval task | `assembly_third_bracket` task: add an instance and a distance mate to `assembly_two_brackets`; graded by volume (3 × bracket), instance/mate counts, and `mate_max_error` ≤ 1 µm | Complete |
+| MCAD-P7-025 | Tangent shapes at a design angle | Slanted slot example: arc angles `slot_angle ± 90 deg` with line–arc tangent constraints, fully constrained; volume and extents verified at 30° and 60° | Complete |
+| MCAD-P7-026 | Helical sweep | [ADR-025](../adr/ADR-025-helical-sweep.md); closed section swept along a right-handed helix through its centre (new body, join, cut), parametric pitch and height; coil spring matches the screw-motion volume within 5e-4 relative before and after edits | Complete |
+| MCAD-P7-027 | Drawing eval task | `bracket_drawing` task: a new drawing of a set-up bracket with front/top views and an 80 mm dimension; graded by projections, dimension lengths, and SVG export | Complete |
+| MCAD-P7-028 | Shaded preview cues | Offscreen renders draw feature edges (boundaries, >25° creases) and bake per-vertex ambient occlusion (bounded to 1e8 ray tests, cached across orbit frames); remainder of closed PR #1 | Complete |
+| MCAD-P7-029 | Pin-ring example fix | The pin-ring seed boss moves 18 mm off the circular-pattern axis, so the example is a ring of four bosses rather than four copies stacked on the axis; OCCT volume equals plate + 4 bosses exactly | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

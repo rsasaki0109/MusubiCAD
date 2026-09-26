@@ -65,6 +65,10 @@ impl FeatureDefinition {
             Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Loft(_) => [("", None), ("", None)],
             Self::Sweep(_) => [("", None), ("", None)],
+            Self::HelixSweep(def) => [
+                ("sketch_feature", Some(&def.sketch_feature)),
+                ("target_feature", def.target_feature.as_ref()),
+            ],
             Self::LinearPattern(def) => [
                 ("source_feature", Some(&def.source_feature)),
                 ("target_feature", def.target_feature.as_ref()),
@@ -114,7 +118,8 @@ impl FeatureDefinition {
             | Self::ImportedSolid(_)
             | Self::Shell(_)
             | Self::Loft(_)
-            | Self::Sweep(_) => [("", None), ("", None)],
+            | Self::Sweep(_)
+            | Self::HelixSweep(_) => [("", None), ("", None)],
         };
         present(candidates)
     }
@@ -128,6 +133,9 @@ impl FeatureDefinition {
             Self::Hole(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Revolve(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Sweep(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
+            Self::HelixSweep(def) => {
+                vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())]
+            }
             Self::Loft(def) => def
                 .sections
                 .iter()
@@ -153,6 +161,12 @@ impl FeatureDefinition {
 
     /// Parametric expressions this definition evaluates, as `(field, expr)`.
     pub fn expressions(&self) -> Vec<(&'static str, &str)> {
+        if let Self::HelixSweep(def) = self {
+            return present([
+                ("pitch_expr", def.pitch_expr.as_ref()),
+                ("height_expr", def.height_expr.as_ref()),
+            ]);
+        }
         let (field, expr) = match self {
             Self::Extrude(def) => ("length_expr", def.length_expr.as_ref()),
             Self::Revolve(def) => ("angle_expr", def.angle_expr.as_ref()),
@@ -166,7 +180,8 @@ impl FeatureDefinition {
             | Self::MirrorPattern(_)
             | Self::ImportedSolid(_)
             | Self::Loft(_)
-            | Self::Sweep(_) => return Vec::new(),
+            | Self::Sweep(_)
+            | Self::HelixSweep(_) => return Vec::new(),
         };
         expr.map(|expr| vec![(field, expr.as_str())])
             .unwrap_or_default()
@@ -407,6 +422,18 @@ mod tests {
             operation: opencad_geometry::ExtrudeOperation::Cut,
             target_feature: Some("feature:plate".into()),
         }));
+        samples.push(FeatureDefinition::HelixSweep(crate::HelixSweepFeature {
+            sketch_feature: "feature:sketch_wire".into(),
+            profile_ref: "sketch:wire/profile:outer".into(),
+            axis_origin_m: [0.0, 0.0, 0.0],
+            axis_direction_m: [0.0, 0.0, 1.0],
+            pitch_m: 0.005,
+            pitch_expr: Some("pitch".into()),
+            height_m: 0.02,
+            height_expr: None,
+            operation: opencad_geometry::ExtrudeOperation::Join,
+            target_feature: Some("feature:rod".into()),
+        }));
         samples.push(FeatureDefinition::Loft(crate::LoftFeature {
             sections: vec![
                 crate::LoftSection {
@@ -479,6 +506,7 @@ mod tests {
             "shell",
             "loft",
             "sweep",
+            "helix_sweep",
         ] {
             assert!(
                 covered_types.contains(feature_type),

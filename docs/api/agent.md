@@ -133,6 +133,8 @@ and drawing regeneration continue through their specialized pipelines.
 | `get_drawing_sheet` | Single drawing sheet (`id`) |
 | `list_drawing_views` | Views on a sheet (`sheet_id`) |
 | `get_drawing_view` | Single drawing view (`sheet_id`, `view_id`) |
+| `inspect_parameter` | What drives a parameter and what an edit to it changes (`id`); see below |
+| `inspect_reference` | A semantic reference's origin and consumers (`ref_id`); see below |
 
 Semantic-reference query results preserve the persisted `TopoRef.ref_id` as the
 identity key. Kernel face/edge IDs are regeneration hints; fallback matching
@@ -144,6 +146,34 @@ Assembly query kinds require an `assembly` field in in-memory `opencad.query`, o
 Drawing query kinds require a `drawing` field in in-memory `opencad.query`, or a drawing document path in `opencad.query_document`. Drawing patches support `set_drawing_view_scale` and `set_drawing_view_origin`; origins use meters through `origin_on_sheet_m`.
 
 `list_overlay_lines` and `list_face_groups` require document tessellation. Use `opencad.query_document` (or pass a `scene` context to in-memory `opencad.query`).
+
+### Intent inspector (`inspect_parameter` / `inspect_reference`)
+
+MCAD-P6-006. Both queries read the Design Graph only; they never run the
+geometry kernel. Lists are sorted, and feature lists follow recompute order.
+
+`inspect_parameter` returns `parameter_intent` with:
+
+- `parameter`: id, name, expression, and evaluated `value_m`;
+- `driven_by` / `drives_parameters`: parameters upstream and downstream of
+  it, transitively;
+- `sketches`: sketches naming it or a parameter it drives;
+- `directly_affected_features` / `predicted_dirty_features`: the same
+  prediction as a patch preview's change impact;
+- `assertions`: `parameter_range` assertions on the affected parameters,
+  plus mass, bounding-box, and body-count assertions when any feature would
+  regenerate.
+
+`inspect_reference` returns `reference_intent` with:
+
+- `reference`: the persisted `TopoRef` (creator and role);
+- `consuming_features` and `consuming_mates`;
+- `predicted_dirty_features`;
+- `required_reference` assertions on it.
+
+In-memory `opencad.query` accepts an optional `assertions` array.
+`opencad.query_document` reads assertions from the document.
+The CLI equivalent is `opencad intent <path> <param:...|ref:...> [--json]`.
 
 ### `PickSummary`
 
@@ -452,6 +482,24 @@ A `sweep` feature moves a closed section along a path
   keeps its orientation relative to the path plane's normal.
 - **Example.** `examples/agent/author_sweep_elbow_patch.json` authors a pipe
   elbow.
+
+A `helix_sweep` feature moves a closed section along a helix, for springs
+and helical ribs ([ADR-025](../adr/ADR-025-helical-sweep.md)):
+
+```json
+{ "type": "helix_sweep", "sketch_feature": "feature:sketch_wire",
+  "profile_ref": "sketch:wire/profile:outer",
+  "axis_origin_m": [0, 0, 0], "axis_direction_m": [0, 0, 1],
+  "pitch_m": 0.005, "pitch_expr": "pitch",
+  "height_m": 0.02, "height_expr": "coil_height", "operation": "new_body" }
+```
+
+- **Radius.** The helix passes through the section's centre, so the coil
+  radius is that centre's distance from the axis. Place the section on a
+  plane containing the axis.
+- **Turns.** `height / pitch`, at most 1000. The helix is right-handed.
+- **Example.** `examples/agent/author_coil_spring_patch.json` authors a coil
+  spring.
 
 Assembly and drawing objects use the stored JSON shapes of
 `graph/assemblies.json` and `graph/drawings.json`, with IDs under the

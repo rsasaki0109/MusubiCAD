@@ -1,7 +1,9 @@
 //! Viewport rendering with wgpu.
 
 pub mod animation;
+mod ao;
 pub mod camera;
+mod edges;
 pub mod face_catalog;
 pub mod mesh;
 pub mod overlay;

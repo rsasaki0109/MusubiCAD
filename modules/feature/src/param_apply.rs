@@ -94,6 +94,14 @@ fn resolve_feature_node(
                 pattern.spacing = Length::from_meters(meters);
             }
         }
+        FeatureDefinition::HelixSweep(helix) => {
+            if let Some(expr) = &helix.pitch_expr {
+                helix.pitch_m = eval_length_expr(expr, values)?;
+            }
+            if let Some(expr) = &helix.height_expr {
+                helix.height_m = eval_length_expr(expr, values)?;
+            }
+        }
         FeatureDefinition::Revolve(revolve) => {
             if let Some(expr) = &revolve.angle_expr {
                 let radians = eval_length_expr(expr, values)?;

@@ -104,7 +104,7 @@ fn tools() -> Vec<Tool> {
         },
         Tool {
             name: "query_document",
-            description: "Run a typed design query (for example list_parameters, list_features, semantic references).",
+            description: "Run a typed design query (for example list_parameters, list_features, semantic references, or inspect_parameter / inspect_reference for what drives an item and what an edit to it would change).",
             handler: Handler::Agent("opencad.query_document"),
             schema: || json!({
                 "type": "object",

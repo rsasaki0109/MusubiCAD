@@ -2696,13 +2696,16 @@ pub fn bracket_pin_ring() -> Result<PartModel> {
     let mut model = bracket_base_plate()?;
     apply_parameters(&mut model, &bracket_parameters())?;
 
+    // The seed boss sits 18 mm off the pattern axis (the plate centre), so
+    // the circular pattern makes a ring of four bosses instead of stacking
+    // four copies on the axis.
     let mut pin_sketch = Sketch::new(SketchId::new("sketch:pin")?, "Pin Sketch", Workplane::xy());
     pin_sketch.add_entity(SketchEntity::Point(PointEntity {
         base: EntityBase {
             id: EntityId::new("ent:pin_center")?,
             construction: false,
         },
-        x: Coord::literal(0.04),
+        x: Coord::literal(0.058),
         y: Coord::literal(0.03),
     }))?;
     pin_sketch.add_entity(SketchEntity::Circle(CircleEntity {
