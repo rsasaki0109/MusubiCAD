@@ -36,6 +36,21 @@ pub enum LengthTerm {
 /// Built-in 2D constraint residuals.
 #[derive(Debug, Clone)]
 pub enum ConstraintResidual {
+    /// A point lies at a fixed angle on an arc: `px - (cx + r cos(angle))`,
+    /// in metres (ADR-021).  `cos` is the cosine of the arc end angle.
+    ArcEndpointX {
+        px: VarId,
+        cx: VarId,
+        radius: VarId,
+        cos: f64,
+    },
+    /// `py - (cy + r sin(angle))`, in metres (ADR-021).
+    ArcEndpointY {
+        py: VarId,
+        cy: VarId,
+        radius: VarId,
+        sin: f64,
+    },
     CoincidentX {
         a: VarId,
         b: VarId,
@@ -249,6 +264,8 @@ impl ResidualEquation for ConstraintResidual {
                 ..
             } => vec![*ax1, *ay1, *ax2, *ay2, *bx1, *by1, *bx2, *by2],
             Self::Midpoint { point, a, b } => vec![*point, *a, *b],
+            Self::ArcEndpointX { px, cx, radius, .. } => vec![*px, *cx, *radius],
+            Self::ArcEndpointY { py, cy, radius, .. } => vec![*py, *cy, *radius],
             Self::SymmetricMidpointOnLine {
                 px,
                 py,
@@ -283,6 +300,18 @@ impl ResidualEquation for ConstraintResidual {
 
     fn residual(&self, vars: &VarSet) -> f64 {
         match self {
+            Self::ArcEndpointX {
+                px,
+                cx,
+                radius,
+                cos,
+            } => vars.get(*px) - (vars.get(*cx) + vars.get(*radius) * cos),
+            Self::ArcEndpointY {
+                py,
+                cy,
+                radius,
+                sin,
+            } => vars.get(*py) - (vars.get(*cy) + vars.get(*radius) * sin),
             Self::CoincidentX { a, b } => vars.get(*a) - vars.get(*b),
             Self::CoincidentY { a, b } => vars.get(*a) - vars.get(*b),
             Self::Horizontal { y1, y2, .. } => vars.get(*y1) - vars.get(*y2),

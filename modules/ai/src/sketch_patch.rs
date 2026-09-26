@@ -289,50 +289,46 @@ pub(crate) fn validate_profile_consumers(
         .collect();
     let mut prepared: BTreeMap<&str, std::result::Result<Sketch, String>> = BTreeMap::new();
     for node in &after.feature_nodes {
-        let (sketch_feature, profile_ref) = match &node.definition {
-            FeatureDefinition::Extrude(def) => (&def.sketch_feature, &def.profile_ref),
-            FeatureDefinition::Hole(def) => (&def.sketch_feature, &def.profile_ref),
-            FeatureDefinition::Revolve(def) => (&def.sketch_feature, &def.profile_ref),
-            _ => continue,
-        };
-        let Some(sketch_id) = sketch_of_feature.get(sketch_feature.as_str()).copied() else {
-            continue;
-        };
-        if !select(node, sketch_id) {
-            continue;
-        }
-        let Some(sketch) = after
-            .sketches
-            .iter()
-            .find(|sketch| sketch.id.as_str() == sketch_id)
-        else {
-            continue;
-        };
-        let prepared = prepared.entry(sketch_id).or_insert_with(|| {
-            let mut copy = sketch.clone();
-            prepare_sketch(&mut copy)
-                .map(|()| copy)
-                .map_err(|error| error.to_string())
-        });
-        match prepared {
-            Err(error) => {
-                failures.insert(format!("sketch '{sketch_id}' cannot be prepared: {error}"));
+        for (sketch_feature, profile_ref) in node.definition.profile_inputs() {
+            let Some(sketch_id) = sketch_of_feature.get(sketch_feature).copied() else {
+                continue;
+            };
+            if !select(node, sketch_id) {
+                continue;
             }
-            Ok(prepared) => match resolve_sketch_profile(prepared, profile_ref) {
-                Some(profile) if profile.is_closed() => {}
-                Some(_) => {
-                    failures.insert(format!(
+            let Some(sketch) = after
+                .sketches
+                .iter()
+                .find(|sketch| sketch.id.as_str() == sketch_id)
+            else {
+                continue;
+            };
+            let prepared = prepared.entry(sketch_id).or_insert_with(|| {
+                let mut copy = sketch.clone();
+                prepare_sketch(&mut copy)
+                    .map(|()| copy)
+                    .map_err(|error| error.to_string())
+            });
+            match prepared {
+                Err(error) => {
+                    failures.insert(format!("sketch '{sketch_id}' cannot be prepared: {error}"));
+                }
+                Ok(prepared) => match resolve_sketch_profile(prepared, profile_ref) {
+                    Some(profile) if profile.is_closed() => {}
+                    Some(_) => {
+                        failures.insert(format!(
                         "feature '{}' profile '{profile_ref}' in sketch '{sketch_id}' is not closed",
                         node.id
                     ));
-                }
-                None => {
-                    failures.insert(format!(
+                    }
+                    None => {
+                        failures.insert(format!(
                         "feature '{}' profile '{profile_ref}' does not resolve in sketch '{sketch_id}'",
                         node.id
                     ));
-                }
-            },
+                    }
+                },
+            }
         }
     }
 }

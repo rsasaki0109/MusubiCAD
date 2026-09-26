@@ -159,6 +159,14 @@ fn example_bracket_face_pin_regenerates_with_occt() {
         mass.volume_m3,
         plate_volume
     );
+    // The pin stands on the top face: 6 mm plate plus 12 mm pin.  With the
+    // old custom-workplane axes it lay on its side and reached 11 mm.
+    let bounds = kernel.bounding_box(body).expect("bounds");
+    assert!(
+        (bounds.max[2] - 0.018).abs() < 1e-6,
+        "pin top at {} m",
+        bounds.max[2]
+    );
 }
 
 #[test]

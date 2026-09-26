@@ -4,6 +4,7 @@
     "id": "doc:bracket_hole_ring_001",
     "name": "Bracket with Pin Hole Ring",
     "units": "mm",
+    "kind": "part",
     "created_with": "OpenCAD 0.1.0",
     "schema_version": "opencad.document.v0.1"
   }

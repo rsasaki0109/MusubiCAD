@@ -964,6 +964,27 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            if sections.len() < 2 {
+                return Err(OpenCadError::validation("loft needs at least two sections"));
+            }
+            let wires = sections
+                .iter()
+                .map(sketch_to_edges)
+                .collect::<Result<Vec<_>>>()?;
+            let solid = Solid::loft(wires.iter()).map_err(map_occt_error)?;
+            let id = self.store.borrow_mut().insert_body(solid);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = sections;
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn shell_body(
         &self,
         body: KernelBody,
@@ -1117,6 +1138,7 @@ mod tests {
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
             circle: None,
+            segments: Vec::new(),
             placement: None,
         }
     }
@@ -1260,6 +1282,7 @@ mod tests {
                     center_m: [0.02, 0.03],
                     radius_m: radius,
                 }),
+                segments: Vec::new(),
                 placement: None,
             })
             .expect("wire");

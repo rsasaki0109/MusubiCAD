@@ -26,6 +26,35 @@
         "width",
         "thickness"
       ]
+    },
+    {
+      "id": "slot_plate",
+      "document": "slot.ocad.d",
+      "prompt": "Create a new part document at {document} and author a 60 mm x 40 mm x 5 mm plate with one through slot centred on the plate: 30 mm between the centres of its rounded ends and 8 mm wide, running along the plate's long direction. Keep the plate size, slot length, and slot width as named parameters.",
+      "expected_volume_mm3": 10548.7,
+      "required_parameters": []
+    },
+    {
+      "id": "import_step",
+      "document": "fixture.ocad.d",
+      "setup": [
+        [
+          "export",
+          "{root}/examples/bracket.ocad.d",
+          "{workdir}/bracket.step"
+        ]
+      ],
+      "prompt": "Create a new part document at {document} and bring in the purchased part from the STEP file {workdir}/bracket.step as a fixed solid body, unmodified and unmoved.",
+      "expected_volume_mm3": 28328.8,
+      "required_parameters": []
+    },
+    {
+      "id": "fillet_bracket_top",
+      "document": "bracket.ocad.d",
+      "source": "examples/bracket.ocad.d",
+      "prompt": "The part document at {document} is a bracket plate with a mounting hole. Round every edge of its top face, the four outer edges and the rim of the hole, with a 1 mm fillet.",
+      "expected_volume_mm3": 28262.0,
+      "required_parameters": []
     }
   ]
 }

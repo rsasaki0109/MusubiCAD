@@ -42,6 +42,25 @@ pub fn sketch_to_edges_placed(
             .translate(DVec3::from_array(center));
         return Ok(vec![edge]);
     }
+    // Loops with arcs become exact line and arc edges (ADR-021).
+    if !sketch.segments.is_empty() {
+        let to_world = |p: [f64; 2]| DVec3::from_array(placement.map_point(p[0], p[1]));
+        return sketch
+            .segments
+            .iter()
+            .map(|segment| match *segment {
+                opencad_geometry::ProfileSegment::Line { start_m, end_m } => {
+                    Edge::line(to_world(start_m), to_world(end_m))
+                }
+                opencad_geometry::ProfileSegment::Arc {
+                    start_m,
+                    mid_m,
+                    end_m,
+                } => Edge::arc_3pts(to_world(start_m), to_world(mid_m), to_world(end_m)),
+            })
+            .collect::<std::result::Result<Vec<Edge>, _>>()
+            .map_err(map_occt_error);
+    }
     if sketch.points.len() < 3 {
         return Err(OpenCadError::validation(
             "profile needs at least three points",

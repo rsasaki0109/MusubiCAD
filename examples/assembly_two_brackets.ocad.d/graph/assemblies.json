@@ -4,7 +4,8 @@
       {
         "id": "component:bracket",
         "source_path": "parts/bracket.ocad.d",
-        "source_doc": "doc:bracket_001"
+        "source_doc": "doc:bracket_001",
+        "source_kind": "part"
       }
     ],
     "instances": [

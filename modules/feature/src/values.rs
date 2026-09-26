@@ -149,6 +149,7 @@ impl FeatureDefinition {
                 Ok(())
             }
             Self::ImportedSolid(def) => def.validate(),
+            Self::Loft(def) => def.validate(),
             Self::Shell(def) => {
                 def.validate()?;
                 let thickness = match &def.thickness_expr {

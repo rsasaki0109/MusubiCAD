@@ -3,7 +3,9 @@
 use indexmap::IndexMap;
 
 use opencad_core::{EntityId, OpenCadError, Result};
-use opencad_geometry::{ExtrudeOperation, SketchPlacement, SolvedCircle, SolvedSketch};
+use opencad_geometry::{
+    ExtrudeOperation, ProfileSegment, SketchPlacement, SolvedCircle, SolvedSketch,
+};
 use opencad_sketch::{
     entity::{expand_rectangle, Coord, LineEntity, SketchEntity},
     workplane::{GlobalPlane, Workplane},
@@ -110,10 +112,10 @@ pub fn placement_from_workplane(workplane: &Workplane) -> Result<SketchPlacement
         }),
         Workplane::Custom {
             origin,
-            normal: _,
+            normal,
             x_axis,
         } => {
-            let y_axis = y_axis_from_custom(x_axis);
+            let y_axis = y_axis_from_custom(normal, x_axis);
             Ok(SketchPlacement {
                 origin_m: *origin,
                 x_axis_m: *x_axis,
@@ -126,12 +128,17 @@ pub fn placement_from_workplane(workplane: &Workplane) -> Result<SketchPlacement
     }
 }
 
-fn y_axis_from_custom(x_axis: &[f64; 3]) -> [f64; 3] {
-    let helper = [0.0, 1.0, 0.0];
+/// The in-plane y axis of a custom workplane: `normal × x_axis`, so that
+/// `x × y` points along the workplane normal.
+///
+/// It used to ignore the normal and cross a fixed +y helper with the x axis,
+/// which put sketches on a top face (normal +z) into a vertical plane: a
+/// pin sketched on the bracket's top face stood on its side.
+fn y_axis_from_custom(normal: &[f64; 3], x_axis: &[f64; 3]) -> [f64; 3] {
     let cross = [
-        helper[1] * x_axis[2] - helper[2] * x_axis[1],
-        helper[2] * x_axis[0] - helper[0] * x_axis[2],
-        helper[0] * x_axis[1] - helper[1] * x_axis[0],
+        normal[1] * x_axis[2] - normal[2] * x_axis[1],
+        normal[2] * x_axis[0] - normal[0] * x_axis[2],
+        normal[0] * x_axis[1] - normal[1] * x_axis[0],
     ];
     let len = (cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]).sqrt();
     if len <= 1e-12 {
@@ -148,11 +155,13 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
         )));
     }
 
-    let (points, circle) = if profile.entity_ids.len() == 1 {
+    let (points, circle, segments) = if profile.entity_ids.len() == 1 {
         let circle = circle_profile(sketch, &profile.entity_ids[0])?;
-        (inscribed_polygon(circle), Some(circle))
+        (inscribed_polygon(circle), Some(circle), Vec::new())
+    } else if let Some((points, segments)) = arc_loop(sketch, profile)? {
+        (points, None, segments)
     } else {
-        (line_loop_points(sketch, profile)?, None)
+        (line_loop_points(sketch, profile)?, None, Vec::new())
     };
 
     if points.len() < 3 {
@@ -166,6 +175,7 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
         points,
         closed: true,
         circle,
+        segments,
         placement: None,
     })
 }
@@ -270,6 +280,119 @@ fn line_loop_points(sketch: &Sketch, profile: &Profile) -> Result<Vec<[f64; 2]>>
     }
 
     Ok(ordered)
+}
+
+/// A sampled polygon and the exact segments of a loop with arcs.
+type ArcLoop = (Vec<[f64; 2]>, Vec<ProfileSegment>);
+
+/// Samples per arc in the polygon kept for kernels without curves.
+const ARC_POLYGON_SAMPLES: usize = 16;
+
+/// Ordered exact segments of a loop that contains arcs, with a sampled
+/// polygon (ADR-021).  Returns `None` for line-only loops, which keep the
+/// polygon path.
+fn arc_loop(sketch: &Sketch, profile: &Profile) -> Result<Option<ArcLoop>> {
+    enum Piece<'a> {
+        Line(&'a LineEntity),
+        Arc(&'a opencad_sketch::entity::ArcEntity),
+    }
+    let pieces: Vec<Piece> = profile
+        .entity_ids
+        .iter()
+        .map(|id| match sketch.find_entity(id.as_str()) {
+            Some(SketchEntity::Line(line)) => Ok(Piece::Line(line)),
+            Some(SketchEntity::Arc(arc)) => Ok(Piece::Arc(arc)),
+            _ => Err(OpenCadError::validation(format!(
+                "profile entity '{}' is not a line or arc",
+                id.as_str()
+            ))),
+        })
+        .collect::<Result<_>>()?;
+    if !pieces.iter().any(|piece| matches!(piece, Piece::Arc(_))) {
+        return Ok(None);
+    }
+    let ends = |piece: &Piece| -> Result<(EntityId, EntityId)> {
+        Ok(match piece {
+            Piece::Line(line) => (line.start.clone(), line.end.clone()),
+            Piece::Arc(arc) => match (&arc.start_point, &arc.end_point) {
+                (Some(start), Some(end)) => (start.clone(), end.clone()),
+                _ => {
+                    return Err(OpenCadError::validation(format!(
+                        "arc '{}' needs start_point and end_point to join a loop",
+                        arc.base.id.as_str()
+                    )))
+                }
+            },
+        })
+    };
+
+    let mut remaining: Vec<&Piece> = pieces.iter().collect();
+    let first = remaining.remove(0);
+    let (loop_start, mut current) = ends(first)?;
+    let mut ordered = vec![(first, false)];
+    while current != loop_start {
+        let Some(index) = remaining
+            .iter()
+            .position(|piece| ends(piece).is_ok_and(|(a, b)| a == current || b == current))
+        else {
+            return Err(OpenCadError::validation(
+                "profile loop does not close on the first point",
+            ));
+        };
+        let piece = remaining.remove(index);
+        let (a, b) = ends(piece)?;
+        let reversed = b == current;
+        current = if reversed { a } else { b };
+        ordered.push((piece, reversed));
+    }
+
+    let mut segments = Vec::with_capacity(ordered.len());
+    let mut points = Vec::new();
+    for (piece, reversed) in ordered {
+        let (a, b) = ends(piece)?;
+        let (from, to) = if reversed { (b, a) } else { (a, b) };
+        let (start_m, end_m) = (point_coord(sketch, &from)?, point_coord(sketch, &to)?);
+        points.push(start_m);
+        match piece {
+            Piece::Line(_) => segments.push(ProfileSegment::Line { start_m, end_m }),
+            Piece::Arc(arc) => {
+                let center = point_coord(sketch, &arc.center)?;
+                let radius = match &arc.radius {
+                    Coord::Literal(r) => *r,
+                    _ => {
+                        return Err(OpenCadError::validation(
+                            "arc radius must be a literal after solving",
+                        ))
+                    }
+                };
+                let start_angle = opencad_sketch::solve::arc_angle(arc, &arc.start_angle)?;
+                let end_angle = opencad_sketch::solve::arc_angle(arc, &arc.end_angle)?;
+                let mut sweep = (end_angle - start_angle).rem_euclid(std::f64::consts::TAU);
+                if sweep == 0.0 {
+                    sweep = std::f64::consts::TAU;
+                }
+                let at = |fraction: f64| {
+                    let angle = start_angle + sweep * fraction;
+                    [
+                        center[0] + radius * angle.cos(),
+                        center[1] + radius * angle.sin(),
+                    ]
+                };
+                let mid_m = at(0.5);
+                segments.push(ProfileSegment::Arc {
+                    start_m,
+                    mid_m,
+                    end_m,
+                });
+                // Interior samples, in loop direction.
+                for step in 1..ARC_POLYGON_SAMPLES {
+                    let fraction = step as f64 / ARC_POLYGON_SAMPLES as f64;
+                    points.push(at(if reversed { 1.0 - fraction } else { fraction }));
+                }
+            }
+        }
+    }
+    Ok(Some((points, segments)))
 }
 
 fn circle_profile(sketch: &Sketch, circle_id: &EntityId) -> Result<SolvedCircle> {

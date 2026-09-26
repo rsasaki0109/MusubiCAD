@@ -151,6 +151,11 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.import_step(step)
     }
 
+    fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
+        self.record();
+        self.inner.loft(sections)
+    }
+
     fn shell_body(
         &self,
         body: KernelBody,
@@ -223,6 +228,7 @@ mod tests {
                 points: vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
                 closed: true,
                 circle: None,
+                segments: Vec::new(),
                 placement: Some(SketchPlacement::global_xy()),
             })
             .expect("wire");

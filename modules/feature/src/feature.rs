@@ -11,6 +11,7 @@ use crate::extrude::ExtrudeFeature;
 use crate::fillet::FilletFeature;
 use crate::hole::HoleFeature;
 use crate::imported::ImportedSolidFeature;
+use crate::loft::LoftFeature;
 use crate::pattern::{CircularPatternFeature, LinearPatternFeature, MirrorPatternFeature};
 use crate::revolve::RevolveFeature;
 use crate::shell::ShellFeature;
@@ -31,6 +32,7 @@ pub enum FeatureDefinition {
     MirrorPattern(MirrorPatternFeature),
     ImportedSolid(ImportedSolidFeature),
     Shell(ShellFeature),
+    Loft(LoftFeature),
 }
 
 impl FeatureDefinition {
@@ -47,6 +49,7 @@ impl FeatureDefinition {
             Self::MirrorPattern(_) => "mirror_pattern",
             Self::ImportedSolid(_) => "imported_solid",
             Self::Shell(_) => "shell",
+            Self::Loft(_) => "loft",
         }
     }
 }

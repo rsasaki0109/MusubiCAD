@@ -135,6 +135,9 @@ fn build_problem(sketch: &Sketch) -> Result<SketchProblem> {
             SketchEntity::Arc(a) => {
                 register_point_ref(&mut registry, &mut point_coords, sketch, &a.center)?;
                 radius_var(&mut registry, a.base.id.as_str());
+                for point in [&a.start_point, &a.end_point].into_iter().flatten() {
+                    register_point_ref(&mut registry, &mut point_coords, sketch, point)?;
+                }
             }
             SketchEntity::Rectangle(_) => {}
         }
@@ -151,6 +154,7 @@ fn build_problem(sketch: &Sketch) -> Result<SketchProblem> {
             sketch,
         )?;
     }
+    arc_endpoint_equations(sketch, &registry, &mut equations)?;
 
     Ok((equations, registry, point_coords))
 }
@@ -588,6 +592,66 @@ fn line_endpoints(
     Ok((x1, y1, x2, y2))
 }
 
+/// Hold each arc's endpoint points on the arc (ADR-021).
+fn arc_endpoint_equations(
+    sketch: &Sketch,
+    registry: &VariableRegistry,
+    equations: &mut Vec<ConstraintResidual>,
+) -> Result<()> {
+    for entity in &sketch.entities {
+        let SketchEntity::Arc(arc) = entity else {
+            continue;
+        };
+        let var = |name: String| {
+            registry.get(&name).ok_or_else(|| {
+                OpenCadError::validation(format!("unknown sketch variable '{name}'"))
+            })
+        };
+        let (cx, cy) = (
+            var(format!("{}.x", arc.center.as_str()))?,
+            var(format!("{}.y", arc.center.as_str()))?,
+        );
+        let radius = var(format!("{}.radius", arc.base.id.as_str()))?;
+        for (point, angle) in [
+            (&arc.start_point, &arc.start_angle),
+            (&arc.end_point, &arc.end_angle),
+        ] {
+            let Some(point) = point else {
+                continue;
+            };
+            let angle = arc_angle(arc, angle)?;
+            equations.push(ConstraintResidual::ArcEndpointX {
+                px: var(format!("{}.x", point.as_str()))?,
+                cx,
+                radius,
+                cos: angle.cos(),
+            });
+            equations.push(ConstraintResidual::ArcEndpointY {
+                py: var(format!("{}.y", point.as_str()))?,
+                cy,
+                radius,
+                sin: angle.sin(),
+            });
+        }
+    }
+    Ok(())
+}
+
+/// An arc angle in radians: a literal, or a constant angle expression such
+/// as `90 deg`.  Parameter-driven arc angles are not supported yet.
+pub fn arc_angle(arc: &crate::entity::ArcEntity, angle: &Coord) -> Result<f64> {
+    match angle {
+        Coord::Literal(value) => Ok(*value),
+        Coord::Expr(expr) => parse_angle_expr(expr.as_str()).map_err(|_| {
+            OpenCadError::validation(format!(
+                "arc '{}' angle '{}' must be a literal or constant angle",
+                arc.base.id.as_str(),
+                expr.as_str()
+            ))
+        }),
+    }
+}
+
 fn coord_literal(coord: &Coord) -> Result<f64> {
     match coord {
         Coord::Literal(v) => Ok(*v),
@@ -932,6 +996,8 @@ mod tests {
                 radius: Coord::literal(0.04),
                 start_angle: Coord::literal(0.0),
                 end_angle: Coord::literal(1.0),
+                start_point: None,
+                end_point: None,
             }))
             .expect("arc");
         sketch
@@ -993,6 +1059,8 @@ mod tests {
                 radius: Coord::expr("40 mm").expect("radius"),
                 start_angle: Coord::literal(0.0),
                 end_angle: Coord::literal(1.0),
+                start_point: None,
+                end_point: None,
             }))
             .expect("arc");
 
@@ -1380,6 +1448,64 @@ mod tests {
                 })
                 .expect("distance");
         }
+    }
+
+    /// ADR-021: arc endpoint points are pulled onto the arc at its angles.
+    #[test]
+    fn arc_endpoint_points_lie_on_the_arc() {
+        let mut sketch = Sketch::new(
+            SketchId::new("sketch:arc_ends").expect("id"),
+            "Arc ends",
+            Workplane::xy(),
+        );
+        for (id, x, y) in [
+            ("ent:c", 0.0, 0.0),
+            ("ent:p", 0.03, 0.01),
+            ("ent:q", -0.01, 0.02),
+        ] {
+            sketch
+                .add_entity(SketchEntity::Point(PointEntity {
+                    base: EntityBase {
+                        id: EntityId::new(id).expect("id"),
+                        construction: false,
+                    },
+                    x: Coord::literal(x),
+                    y: Coord::literal(y),
+                }))
+                .expect("point");
+        }
+        sketch
+            .add_entity(SketchEntity::Arc(ArcEntity {
+                base: EntityBase {
+                    id: EntityId::new("ent:arc").expect("id"),
+                    construction: false,
+                },
+                center: EntityId::new("ent:c").expect("id"),
+                radius: Coord::literal(0.02),
+                start_angle: Coord::expr("0 deg").expect("angle"),
+                end_angle: Coord::expr("90 deg").expect("angle"),
+                start_point: Some(EntityId::new("ent:p").expect("id")),
+                end_point: Some(EntityId::new("ent:q").expect("id")),
+            }))
+            .expect("arc");
+        sketch
+            .add_constraint(Constraint::Radius {
+                id: ConstraintId::new("con:r").expect("id"),
+                target: EntityId::new("ent:arc").expect("id"),
+                expr: Expression::new("0.02 m").expect("expression"),
+            })
+            .expect("radius");
+        solve_sketch(&mut sketch, &SolverOptions::default()).expect("solve");
+        let [px, py] = point_coords(&sketch, "ent:p");
+        let [qx, qy] = point_coords(&sketch, "ent:q");
+        assert!(
+            (px - 0.02).abs() < SOLVED_TOLERANCE_M && py.abs() < SOLVED_TOLERANCE_M,
+            "start ({px}, {py})"
+        );
+        assert!(
+            qx.abs() < SOLVED_TOLERANCE_M && (qy - 0.02).abs() < SOLVED_TOLERANCE_M,
+            "end ({qx}, {qy})"
+        );
     }
 
     fn point_coords(sketch: &Sketch, id: &str) -> [f64; 2] {

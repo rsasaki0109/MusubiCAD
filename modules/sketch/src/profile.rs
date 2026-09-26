@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use opencad_core::{EntityId, Result};
 
-use crate::entity::{LineEntity, SketchEntity};
+use crate::entity::SketchEntity;
 
 /// Classification of a detected profile loop.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -63,13 +63,27 @@ pub fn detect_profiles(entities: &[SketchEntity]) -> Result<Vec<Profile>> {
         }
     }
 
-    let lines: Vec<&LineEntity> = entities
+    // Lines and arcs with both endpoint points form loop segments
+    // (ADR-021); both are traced through shared point IDs.
+    let segments: Vec<ChainEdge> = entities
         .iter()
         .filter_map(|e| match e {
-            SketchEntity::Line(l) if !l.base.construction => Some(l),
+            SketchEntity::Line(l) if !l.base.construction => Some(ChainEdge {
+                id: l.base.id.clone(),
+                start: l.start.clone(),
+                end: l.end.clone(),
+                is_arc: false,
+            }),
+            SketchEntity::Arc(a) if !a.base.construction => Some(ChainEdge {
+                id: a.base.id.clone(),
+                start: a.start_point.clone()?,
+                end: a.end_point.clone()?,
+                is_arc: true,
+            }),
             _ => None,
         })
         .collect();
+    let lines: Vec<&ChainEdge> = segments.iter().collect();
 
     if lines.len() >= 2 {
         let mut used = vec![false; lines.len()];
@@ -93,9 +107,27 @@ pub fn detect_profiles(entities: &[SketchEntity]) -> Result<Vec<Profile>> {
     Ok(profiles)
 }
 
-fn trace_chain(start: usize, lines: &[&LineEntity], used: &mut [bool]) -> Option<Vec<EntityId>> {
+/// A loop segment: a line, or an arc with both endpoint points.
+struct ChainEdge {
+    id: EntityId,
+    start: EntityId,
+    end: EntityId,
+    is_arc: bool,
+}
+
+/// Fewest segments that close a loop: three lines, or two segments when one
+/// is an arc (for example a half-circle and its chord).
+fn closes_with(chain: &[EntityId], lines: &[&ChainEdge]) -> bool {
+    chain.len() >= 3
+        || (chain.len() == 2
+            && chain
+                .iter()
+                .any(|id| lines.iter().any(|l| &l.id == id && l.is_arc)))
+}
+
+fn trace_chain(start: usize, lines: &[&ChainEdge], used: &mut [bool]) -> Option<Vec<EntityId>> {
     let start_line = lines[start];
-    let mut chain = vec![start_line.base.id.clone()];
+    let mut chain = vec![start_line.id.clone()];
     let mut current_end = start_line.end.clone();
     used[start] = true;
 
@@ -103,7 +135,7 @@ fn trace_chain(start: usize, lines: &[&LineEntity], used: &mut [bool]) -> Option
     let max_steps = lines.len() + 1;
 
     for _ in 0..max_steps {
-        if current_end == target_start && chain.len() >= 3 {
+        if current_end == target_start && closes_with(&chain, lines) {
             return Some(chain);
         }
 
@@ -113,13 +145,13 @@ fn trace_chain(start: usize, lines: &[&LineEntity], used: &mut [bool]) -> Option
                 continue;
             }
             if line.start == current_end {
-                chain.push(line.base.id.clone());
+                chain.push(line.id.clone());
                 current_end = line.end.clone();
                 used[i] = true;
                 found = true;
                 break;
             } else if line.end == current_end {
-                chain.push(line.base.id.clone());
+                chain.push(line.id.clone());
                 current_end = line.start.clone();
                 used[i] = true;
                 found = true;
@@ -140,19 +172,19 @@ fn trace_chain(start: usize, lines: &[&LineEntity], used: &mut [bool]) -> Option
     None
 }
 
-fn unwind_used(chain: &[EntityId], lines: &[&LineEntity], used: &mut [bool]) {
+fn unwind_used(chain: &[EntityId], lines: &[&ChainEdge], used: &mut [bool]) {
     for (i, u) in used.iter_mut().enumerate() {
-        if chain.iter().any(|id| id == &lines[i].base.id) {
+        if chain.iter().any(|id| id == &lines[i].id) {
             *u = false;
         }
     }
 }
 
-fn classify_chain(entity_ids: &[EntityId], lines: &[&LineEntity]) -> ProfileKind {
+fn classify_chain(entity_ids: &[EntityId], lines: &[&ChainEdge]) -> ProfileKind {
     let mut point_visit_count: indexmap::IndexMap<String, usize> = indexmap::IndexMap::new();
 
     for line_id in entity_ids {
-        let Some(line) = lines.iter().find(|l| &l.base.id == line_id) else {
+        let Some(line) = lines.iter().find(|l| &l.id == line_id) else {
             continue;
         };
         *point_visit_count
@@ -165,16 +197,16 @@ fn classify_chain(entity_ids: &[EntityId], lines: &[&LineEntity]) -> ProfileKind
 
     let start = lines
         .iter()
-        .find(|l| entity_ids.first() == Some(&l.base.id))
+        .find(|l| entity_ids.first() == Some(&l.id))
         .map(|l| l.start.as_str().to_string());
 
     let end = entity_ids
         .last()
-        .and_then(|id| lines.iter().find(|l| &l.base.id == id))
+        .and_then(|id| lines.iter().find(|l| &l.id == id))
         .map(|l| l.end.as_str().to_string());
 
     if let (Some(s), Some(e)) = (start, end) {
-        if s == e && entity_ids.len() >= 3 {
+        if s == e && closes_with(entity_ids, lines) {
             if point_visit_count.values().any(|&c| c > 2) {
                 return ProfileKind::SelfIntersecting;
             }
@@ -205,6 +237,46 @@ pub fn assign_profile_refs(sketch_id: &str, profiles: &mut [Profile]) {
 mod tests {
     use super::*;
     use crate::entity::{CircleEntity, Coord, EntityBase, LineEntity};
+
+    fn base(id: &str) -> EntityBase {
+        EntityBase {
+            id: EntityId::new(id).expect("id"),
+            construction: false,
+        }
+    }
+
+    fn half_disc(with_endpoints: bool) -> Vec<SketchEntity> {
+        let id = |value: &str| EntityId::new(value).expect("id");
+        vec![
+            SketchEntity::Line(LineEntity {
+                base: base("ent:chord"),
+                start: id("ent:a"),
+                end: id("ent:b"),
+            }),
+            SketchEntity::Arc(crate::entity::ArcEntity {
+                base: base("ent:arc"),
+                center: id("ent:c"),
+                radius: Coord::literal(0.01),
+                start_angle: Coord::literal(0.0),
+                end_angle: Coord::literal(std::f64::consts::PI),
+                start_point: with_endpoints.then(|| id("ent:b")),
+                end_point: with_endpoints.then(|| id("ent:a")),
+            }),
+        ]
+    }
+
+    /// ADR-021: an arc with endpoint points closes a loop, even with only
+    /// a chord (two segments); without endpoints it cannot join a loop.
+    #[test]
+    fn arcs_with_endpoints_close_loops() {
+        let profiles = detect_profiles(&half_disc(true)).expect("profiles");
+        assert_eq!(profiles.len(), 1);
+        assert_eq!(profiles[0].kind, ProfileKind::Closed);
+        assert_eq!(profiles[0].entity_ids.len(), 2);
+
+        let profiles = detect_profiles(&half_disc(false)).expect("profiles");
+        assert!(profiles.iter().all(|profile| !profile.is_closed()));
+    }
 
     fn ent(id: &str) -> EntityId {
         EntityId::new(id).expect("valid id")

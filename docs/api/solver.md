@@ -42,6 +42,20 @@ a circle or arc is a validation error.
 { "type": "angle", "id": "con:tilt", "line_a": "ent:e0", "line_b": "ent:e1", "expr": "30 deg" }
 ```
 
+## Arc endpoints
+
+An arc with `start_point` and `end_point` holds those points on the arc
+(ADR-021). For each endpoint, the solver adds the residuals
+`x − (cx + r·cos θ)` and `y − (cy + r·sin θ)`, in metres, where θ is
+`start_angle` or `end_angle`.
+
+- Angles are literals in radians or constant angle expressions such as
+  `90 deg`.
+- The radius stays a solver variable, so radius constraints move the
+  endpoints.
+- Lines, and arcs with both endpoints, form closed profiles through shared
+  point IDs.
+
 ## Equal targets
 
 `EqualTarget` uses an explicit canonical wire representation:

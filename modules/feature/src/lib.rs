@@ -10,6 +10,7 @@ pub mod fillet;
 pub mod graph_derive;
 pub mod hole;
 pub mod imported;
+pub mod loft;
 pub mod param_apply;
 pub mod pattern;
 pub mod regenerate;
@@ -29,6 +30,7 @@ pub use fillet::{FilletFeature, FilletFeatureExecutor};
 pub use graph_derive::derive_feature_graph;
 pub use hole::{HoleFeature, HoleFeatureExecutor};
 pub use imported::{ImportedSolidExecutor, ImportedSolidFeature};
+pub use loft::{LoftFeature, LoftFeatureExecutor, LoftSection};
 pub use param_apply::{apply_parameters, sketch_solve_state};
 pub use pattern::{
     CircularPatternFeature, CircularPatternFeatureExecutor, LinearPatternFeature,

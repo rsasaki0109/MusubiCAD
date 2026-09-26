@@ -202,7 +202,7 @@
           "id": "ent:forearm_distal_hub_circle",
           "construction": false,
           "center": "ent:forearm_distal_hub_center",
-          "radius": 0.014999999850030013
+          "radius": 0.014999999850030012
         },
         {
           "type": "line",

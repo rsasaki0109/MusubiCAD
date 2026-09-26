@@ -59,6 +59,10 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
    - `{"type": "add_sketch_entity", "sketch_id": "sketch:base", "entity": {"type": "point", "id": "ent:c0", "x": 0.0, "y": 0.0}}`
    - `{"type": "add_sketch_entity", "sketch_id": "sketch:base", "entity": {"type": "line", "id": "ent:e0", "start": "ent:c0", "end": "ent:c1"}}`
    - `{"type": "add_sketch_entity", "sketch_id": "sketch:hole", "entity": {"type": "circle", "id": "ent:hole_circle", "center": "ent:hole_center", "radius": 0.005}}`
+   - Arcs join line loops when they name the points at their ends; the arc
+     runs counterclockwise from `start_angle` to `end_angle` (ADR-021):
+     `{"type": "arc", "id": "ent:right", "center": "ent:c_right", "radius": 0.004, "start_angle": "-90 deg", "end_angle": "90 deg", "start_point": "ent:s1", "end_point": "ent:s2"}`.
+     `examples/agent/author_slot_plate_patch.json` authors a slot this way.
 4. **Driving constraints.**
    - `{"type": "add_sketch_constraint", "sketch_id": "sketch:base", "constraint": {"type": "distance", "id": "con:width", "target": {"line": "ent:e0"}, "expr": "width"}}`
    - `{"type": "radius", "id": "con:hole_radius", "target": "ent:hole_circle", "expr": "hole_diameter / 2"}`
@@ -79,7 +83,11 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
    - Hole: `{"type": "hole", "sketch_feature": "feature:sketch_hole", "profile_ref": "sketch:hole/profile:outer", "depth": {"type": "distance", "length": {"value_si": 0.005}}, "target_feature": "feature:plate", "depth_expr": "thickness"}`
 
 Other feature types are `revolve`, `fillet`, `chamfer`, `linear_pattern`,
-`circular_pattern`, `mirror_pattern`, `imported_solid`, and `shell`. A shell
+`circular_pattern`, `mirror_pattern`, `imported_solid`, `shell`, and `loft`.
+A loft skins two or more closed sections, each on its own sketch workplane,
+for example a raised one:
+`{"type": "custom", "origin": [0, 0, 0.03], "normal": [0, 0, 1], "x_axis": [1, 0, 0]}`
+(see `examples/agent/author_loft_frustum_patch.json`). A shell
 needs an `add_semantic_ref` for each face it opens, for example
 `{"type": "add_semantic_ref", "topo_ref": {"ref_id": "ref:face:box_top", "kind": "face", "semantic": {"created_by": "feature:box", "role": "top"}}}`,
 then

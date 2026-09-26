@@ -18,8 +18,8 @@ pub mod transform;
 pub use instrument::CountingGeometryKernel;
 pub use kernel::{
     BooleanOp, ExtrudeExtent, ExtrudeOperation, FacePick, FilletEdgeSelector, GeometryKernel,
-    KernelBody, KernelWire, MockGeometryKernel, ProfilePlane, RevolveInput, RevolveOperation,
-    SketchPlacement, SolvedCircle, SolvedSketch,
+    KernelBody, KernelWire, MockGeometryKernel, ProfilePlane, ProfileSegment, RevolveInput,
+    RevolveOperation, SketchPlacement, SolvedCircle, SolvedSketch,
 };
 pub use mass::{BoundingBox, MassProperties};
 pub use nurbs::NurbsSurface;

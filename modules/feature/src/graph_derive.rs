@@ -24,6 +24,18 @@ impl FeatureDefinition {
     /// Feature IDs this definition consumes directly, as `(field, feature_id)`
     /// in canonical field order: sketch, source, then target.
     pub fn feature_inputs(&self) -> Vec<(&'static str, &str)> {
+        if let Self::Loft(def) = self {
+            return def
+                .sections
+                .iter()
+                .map(|section| ("sections", section.sketch_feature.as_str()))
+                .chain(
+                    def.target_feature
+                        .as_deref()
+                        .map(|id| ("target_feature", id)),
+                )
+                .collect();
+        }
         let candidates: [(&'static str, Option<&String>); 2] = match self {
             Self::Sketch(_) => [("", None), ("", None)],
             Self::Extrude(def) => [
@@ -41,6 +53,7 @@ impl FeatureDefinition {
             Self::Fillet(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
+            Self::Loft(_) => [("", None), ("", None)],
             Self::LinearPattern(def) => [
                 ("source_feature", Some(&def.source_feature)),
                 ("target_feature", def.target_feature.as_ref()),
@@ -88,9 +101,32 @@ impl FeatureDefinition {
             | Self::LinearPattern(_)
             | Self::CircularPattern(_)
             | Self::ImportedSolid(_)
-            | Self::Shell(_) => [("", None), ("", None)],
+            | Self::Shell(_)
+            | Self::Loft(_) => [("", None), ("", None)],
         };
         present(candidates)
+    }
+
+    /// Closed profiles this definition consumes, as `(sketch_feature,
+    /// profile_ref)`: one for extrudes, holes, and revolves, one per loft
+    /// section (ADR-022).
+    pub fn profile_inputs(&self) -> Vec<(&str, &str)> {
+        match self {
+            Self::Extrude(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
+            Self::Hole(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
+            Self::Revolve(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
+            Self::Loft(def) => def
+                .sections
+                .iter()
+                .map(|section| {
+                    (
+                        section.sketch_feature.as_str(),
+                        section.profile_ref.as_str(),
+                    )
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
     }
 
     /// Face references this definition removes from the body, such as shell
@@ -115,7 +151,8 @@ impl FeatureDefinition {
             Self::Sketch(_)
             | Self::CircularPattern(_)
             | Self::MirrorPattern(_)
-            | Self::ImportedSolid(_) => return Vec::new(),
+            | Self::ImportedSolid(_)
+            | Self::Loft(_) => return Vec::new(),
         };
         expr.map(|expr| vec![(field, expr.as_str())])
             .unwrap_or_default()
@@ -349,6 +386,20 @@ mod tests {
                 target_feature: Some("feature:plate".into()),
             },
         ));
+        samples.push(FeatureDefinition::Loft(crate::LoftFeature {
+            sections: vec![
+                crate::LoftSection {
+                    sketch_feature: "feature:sketch_low".into(),
+                    profile_ref: "sketch:low/profile:outer".into(),
+                },
+                crate::LoftSection {
+                    sketch_feature: "feature:sketch_high".into(),
+                    profile_ref: "sketch:high/profile:outer".into(),
+                },
+            ],
+            operation: opencad_geometry::ExtrudeOperation::Join,
+            target_feature: Some("feature:plate".into()),
+        }));
         samples.push(FeatureDefinition::Shell(crate::ShellFeature::new(
             "feature:plate",
             opencad_core::Length::from_meters(0.002),
@@ -405,6 +456,7 @@ mod tests {
             "mirror_pattern",
             "imported_solid",
             "shell",
+            "loft",
         ] {
             assert!(
                 covered_types.contains(feature_type),

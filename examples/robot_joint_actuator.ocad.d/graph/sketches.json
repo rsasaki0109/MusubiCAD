@@ -434,22 +434,22 @@
           "type": "point",
           "id": "ent:rib_c1",
           "construction": false,
-          "x": 0.10600000000000001,
+          "x": 0.106,
           "y": 0.0515
         },
         {
           "type": "point",
           "id": "ent:rib_c2",
           "construction": false,
-          "x": 0.10600000000000001,
-          "y": 0.058499999999999996
+          "x": 0.106,
+          "y": 0.0585
         },
         {
           "type": "point",
           "id": "ent:rib_c3",
           "construction": false,
           "x": 0.068,
-          "y": 0.058499999999999996
+          "y": 0.0585
         },
         {
           "type": "line",
@@ -537,7 +537,7 @@
           "id": "ent:shaft_bore_circle",
           "construction": false,
           "center": "ent:shaft_bore_center",
-          "radius": 0.011999999880024011
+          "radius": 0.011999999880024013
         }
       ],
       "constraints": [
