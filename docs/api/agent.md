@@ -483,6 +483,24 @@ A `sweep` feature moves a closed section along a path
 - **Example.** `examples/agent/author_sweep_elbow_patch.json` authors a pipe
   elbow.
 
+A `helix_sweep` feature moves a closed section along a helix, for springs
+and helical ribs ([ADR-025](../adr/ADR-025-helical-sweep.md)):
+
+```json
+{ "type": "helix_sweep", "sketch_feature": "feature:sketch_wire",
+  "profile_ref": "sketch:wire/profile:outer",
+  "axis_origin_m": [0, 0, 0], "axis_direction_m": [0, 0, 1],
+  "pitch_m": 0.005, "pitch_expr": "pitch",
+  "height_m": 0.02, "height_expr": "coil_height", "operation": "new_body" }
+```
+
+- **Radius.** The helix passes through the section's centre, so the coil
+  radius is that centre's distance from the axis. Place the section on a
+  plane containing the axis.
+- **Turns.** `height / pitch`, at most 1000. The helix is right-handed.
+- **Example.** `examples/agent/author_coil_spring_patch.json` authors a coil
+  spring.
+
 Assembly and drawing objects use the stored JSON shapes of
 `graph/assemblies.json` and `graph/drawings.json`, with IDs under the
 `component:`, `instance:`, `mate:`, `pattern:`, `sheet:`, `view:`, and `dim:`

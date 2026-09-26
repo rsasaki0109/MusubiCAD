@@ -1,0 +1,153 @@
+{
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:wire_diameter",
+      "name": "wire_diameter",
+      "expr": "2 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:coil_radius",
+      "name": "coil_radius",
+      "expr": "10 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:pitch",
+      "name": "pitch",
+      "expr": "5 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:coil_height",
+      "name": "coil_height",
+      "expr": "20 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:wire",
+      "name": "Wire Section",
+      "workplane": {
+        "type": "global",
+        "plane": "XZ"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:wire",
+      "entity": {
+        "type": "point",
+        "id": "ent:axis_origin",
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:wire",
+      "entity": {
+        "type": "point",
+        "id": "ent:wire_center",
+        "x": 0.01,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:wire",
+      "entity": {
+        "type": "line",
+        "id": "ent:coil_radius_line",
+        "start": "ent:axis_origin",
+        "end": "ent:wire_center",
+        "construction": true
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:wire",
+      "entity": {
+        "type": "circle",
+        "id": "ent:wire",
+        "center": "ent:wire_center",
+        "radius": 0.001
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:wire",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:radius_line_horizontal",
+        "line": "ent:coil_radius_line"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:wire",
+      "constraint": {
+        "type": "distance",
+        "id": "con:coil_radius",
+        "target": {
+          "line": "ent:coil_radius_line"
+        },
+        "expr": "coil_radius"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:wire",
+      "constraint": {
+        "type": "diameter",
+        "id": "con:wire_diameter",
+        "target": "ent:wire",
+        "expr": "wire_diameter"
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:sketch_wire",
+        "name": "Wire Sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:wire"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:coil",
+        "name": "Coil",
+        "definition": {
+          "type": "helix_sweep",
+          "sketch_feature": "feature:sketch_wire",
+          "profile_ref": "sketch:wire/profile:outer",
+          "axis_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis_direction_m": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "pitch_m": 0.005,
+          "pitch_expr": "pitch",
+          "height_m": 0.02,
+          "height_expr": "coil_height",
+          "operation": "new_body"
+        }
+      }
+    }
+  ]
+}

@@ -25,6 +25,10 @@ pub const MIN_DIRECTION_NORM: f64 = 1e-12;
 /// allowance for expressions that evaluate a full turn.
 pub const MAX_REVOLVE_ANGLE_RAD: f64 = std::f64::consts::TAU + 1e-9;
 
+/// Most turns a helical sweep may make; more is almost certainly a unit
+/// mistake and would take the kernel a very long time (dimensionless).
+pub const MAX_HELIX_TURNS: f64 = 1000.0;
+
 fn length(
     field: &str,
     expr: Option<&String>,
@@ -151,6 +155,24 @@ impl FeatureDefinition {
             Self::ImportedSolid(def) => def.validate(),
             Self::Loft(def) => def.validate(),
             Self::Sweep(def) => def.validate(),
+            Self::HelixSweep(def) => {
+                let pitch = length("helix pitch", def.pitch_expr.as_ref(), def.pitch_m, scope)?;
+                let height = length(
+                    "helix height",
+                    def.height_expr.as_ref(),
+                    def.height_m,
+                    scope,
+                )?;
+                direction("helix axis_direction_m", &def.axis_direction_m)?;
+                def.validate()?;
+                if height / pitch > MAX_HELIX_TURNS {
+                    return Err(OpenCadError::validation(format!(
+                        "helical sweep must have at most {MAX_HELIX_TURNS} turns, got {} turns",
+                        height / pitch
+                    )));
+                }
+                Ok(())
+            }
             Self::Shell(def) => {
                 def.validate()?;
                 let thickness = match &def.thickness_expr {

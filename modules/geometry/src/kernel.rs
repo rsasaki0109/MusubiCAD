@@ -208,6 +208,38 @@ pub struct RevolveInput {
     pub target: Option<KernelBody>,
 }
 
+/// A right-handed helix around an axis for helical sweeps (ADR-025).  The
+/// helix passes through the profile's centre, so its radius is that centre's
+/// distance from the axis.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct HelixSpec {
+    pub axis_origin_m: [f64; 3],
+    pub axis_direction_m: [f64; 3],
+    /// Axial advance per turn, in metres.
+    pub pitch_m: f64,
+    /// Total axial length, in metres.
+    pub height_m: f64,
+}
+
+impl HelixSpec {
+    /// Reject non-finite, non-positive, or degenerate helix parameters.
+    pub fn validate(&self) -> Result<()> {
+        if !(self.pitch_m.is_finite() && self.pitch_m > 0.0) {
+            return Err(OpenCadError::validation("helix pitch must be positive"));
+        }
+        if !(self.height_m.is_finite() && self.height_m > 0.0) {
+            return Err(OpenCadError::validation("helix height must be positive"));
+        }
+        let [x, y, z] = self.axis_direction_m;
+        if !(x * x + y * y + z * z).is_normal() {
+            return Err(OpenCadError::validation(
+                "helix axis direction must be non-zero",
+            ));
+        }
+        Ok(())
+    }
+}
+
 /// Kernel-neutral geometry operations.
 pub trait GeometryKernel {
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire>;
@@ -269,6 +301,14 @@ pub trait GeometryKernel {
     fn sweep(&self, _profile: &SolvedSketch, _path: &SolvedSketch) -> Result<KernelBody> {
         Err(OpenCadError::validation(
             "this geometry kernel does not support sweeps",
+        ))
+    }
+
+    /// Sweep a closed `profile` along a helix through its centre (ADR-025).
+    /// The profile moves by a screw motion about the helix axis.
+    fn helix_sweep(&self, _profile: &SolvedSketch, _helix: &HelixSpec) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not support helical sweeps",
         ))
     }
 
@@ -371,6 +411,16 @@ impl GeometryKernel for MockGeometryKernel {
         let seed = (profile.points.len() as u64)
             .wrapping_mul(1_000_003)
             .wrapping_add(path.segments.len() as u64);
+        Ok(KernelBody::new(seed.max(1)))
+    }
+
+    /// A deterministic stand-in body derived from the inputs (ADR-025).
+    fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
+        helix.validate()?;
+        let turns = (helix.height_m / helix.pitch_m).ceil() as u64;
+        let seed = (profile.points.len() as u64)
+            .wrapping_mul(1_000_033)
+            .wrapping_add(turns);
         Ok(KernelBody::new(seed.max(1)))
     }
 

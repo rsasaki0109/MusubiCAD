@@ -71,6 +71,18 @@
       "required_parameters": []
     },
     {
+      "id": "coil_spring",
+      "document": "coil.ocad.d",
+      "prompt": "Create a new part document at {document} with a compression spring: a 2 mm diameter round wire coiled around the Z axis at a 10 mm coil radius (axis to wire centre), 5 mm pitch, over a 20 mm helix height. Drive the wire diameter, coil radius, pitch, and height with parameters named wire_diameter, coil_radius, pitch, and coil_height.",
+      "expected_volume_mm3": 789.6,
+      "required_parameters": [
+        "wire_diameter",
+        "coil_radius",
+        "pitch",
+        "coil_height"
+      ]
+    },
+    {
       "id": "assembly_third_bracket",
       "source": "examples/assembly_two_brackets.ocad.d",
       "document": "assembly.ocad.d",
