@@ -12,7 +12,8 @@
       "features": "graph/features.json",
       "assemblies": "graph/assemblies.json",
       "materials": "graph/materials.json",
-      "semantic_refs": "graph/semantic_refs.json"
+      "semantic_refs": "graph/semantic_refs.json",
+      "drawings": "graph/drawings.json"
     },
     "ai": {
       "design_intent": "ai/design_intent.md",

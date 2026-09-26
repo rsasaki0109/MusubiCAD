@@ -26,8 +26,16 @@
           {
             "id": "dim:overall_width",
             "view_id": "view:front",
-            "start_model_m": [0.0, 0.0, 0.0],
-            "end_model_m": [0.08, 0.0, 0.0],
+            "start_model_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "end_model_m": [
+              0.08,
+              0.0,
+              0.0
+            ],
             "offset_m": -0.01
           }
         ]

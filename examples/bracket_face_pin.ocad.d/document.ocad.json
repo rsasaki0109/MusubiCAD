@@ -4,6 +4,7 @@
     "id": "doc:bracket_face_pin_001",
     "name": "Bracket with Face Pin",
     "units": "mm",
+    "kind": "part",
     "created_with": "OpenCAD 0.1.0",
     "schema_version": "opencad.document.v0.1"
   }
