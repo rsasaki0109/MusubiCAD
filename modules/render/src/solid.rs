@@ -95,6 +95,59 @@ pub(crate) fn pack_scene(scene: &RenderScene) -> Result<(Vec<GpuVertex>, Vec<u32
     Ok((vertices, indices))
 }
 
+/// Hemisphere samples per vertex for the baked AO term.
+const AO_SAMPLES: usize = 24;
+/// Occlusion search radius as a fraction of the scene bounding diagonal.
+const AO_RADIUS_FRACTION: f32 = 0.16;
+/// How dark a fully occluded vertex becomes (0 = off, 1 = full).
+const AO_STRENGTH: f32 = 0.85;
+/// Most ray/triangle tests (vertices × samples × triangles) a bake may take.
+/// The bake is brute force, so larger scenes render without occlusion rather
+/// than stall; the cut-off depends only on the mesh, so it is deterministic.
+const AO_MAX_RAY_TESTS: u64 = 100_000_000;
+
+/// Per-vertex ambient occlusion factors for a packed scene, or `None` when
+/// the scene exceeds the bake budget.
+pub(crate) fn bake_ambient_occlusion(vertices: &[GpuVertex], indices: &[u32]) -> Option<Vec<f32>> {
+    let work = vertices.len() as u64 * AO_SAMPLES as u64 * (indices.len() / 3) as u64;
+    if work > AO_MAX_RAY_TESTS {
+        return None;
+    }
+    let positions: Vec<[f32; 3]> = vertices.iter().map(|vertex| vertex.position).collect();
+    let normals: Vec<[f32; 3]> = vertices.iter().map(|vertex| vertex.normal).collect();
+    let radius = mesh_diagonal(&positions) * AO_RADIUS_FRACTION;
+    Some(crate::ao::compute_vertex_ao(
+        &positions,
+        &normals,
+        indices,
+        radius,
+        AO_SAMPLES,
+        AO_STRENGTH,
+    ))
+}
+
+/// Darken each vertex colour by its occlusion factor.
+pub(crate) fn apply_ambient_occlusion(vertices: &mut [GpuVertex], ao: &[f32]) {
+    for (vertex, factor) in vertices.iter_mut().zip(ao) {
+        for channel in &mut vertex.color {
+            *channel *= factor;
+        }
+    }
+}
+
+fn mesh_diagonal(positions: &[[f32; 3]]) -> f32 {
+    let mut min = [f32::INFINITY; 3];
+    let mut max = [f32::NEG_INFINITY; 3];
+    for p in positions {
+        for axis in 0..3 {
+            min[axis] = min[axis].min(p[axis]);
+            max[axis] = max[axis].max(p[axis]);
+        }
+    }
+    let d = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
+    (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt()
+}
+
 fn append_mesh(
     mesh: &RenderMesh,
     vertices: &mut Vec<GpuVertex>,
@@ -322,6 +375,8 @@ fn fs_main() -> @location(0) vec4<f32> {
 }
 "#;
 
+/// Feature edges (boundaries and creases) drawn over shaded previews.
+pub(crate) const EDGE_LINE_COLOR: [f32; 4] = [0.02, 0.025, 0.035, 1.0];
 pub(crate) const MODEL_LINE_COLOR: [f32; 4] = [1.0, 0.55, 0.1, 1.0];
 pub(crate) const CONSTRUCTION_LINE_COLOR: [f32; 4] = [0.55, 0.58, 0.62, 0.85];
 pub(crate) const LABEL_LINE_COLOR: [f32; 4] = [0.95, 0.92, 0.55, 1.0];
