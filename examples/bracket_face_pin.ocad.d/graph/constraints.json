@@ -1,6 +1,38 @@
 {
   "constraints": [
     {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:e0_horizontal",
+        "line": "ent:e0"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:e1_vertical",
+        "line": "ent:e1"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:e2_horizontal",
+        "line": "ent:e2"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:e3_vertical",
+        "line": "ent:e3"
+      }
+    },
+    {
       "sketch_id": "sketch:face_pin",
       "constraint": {
         "type": "radius",

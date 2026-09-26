@@ -20,8 +20,8 @@
     },
     {
       "type": "mass_delta_kg",
-      "min": 0.006,
-      "max": 0.009
+      "min": 0.019,
+      "max": 0.020
     }
   ],
   "operations": [

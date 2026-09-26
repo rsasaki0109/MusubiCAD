@@ -514,6 +514,23 @@ pub fn bracket_base_plate() -> Result<PartModel> {
         },
         expr: Expression::new("height")?,
     })?;
+    // Side lengths alone leave the quadrilateral free to skew once a length
+    // parameter changes; horizontal and vertical edges pin its shape.
+    for (id, edge) in [
+        ("con:e0_horizontal", edges[0]),
+        ("con:e2_horizontal", edges[2]),
+    ] {
+        sketch.add_constraint(Constraint::Horizontal {
+            id: ConstraintId::new(id)?,
+            line: EntityId::new(edge)?,
+        })?;
+    }
+    for (id, edge) in [("con:e1_vertical", edges[1]), ("con:e3_vertical", edges[3])] {
+        sketch.add_constraint(Constraint::Vertical {
+            id: ConstraintId::new(id)?,
+            line: EntityId::new(edge)?,
+        })?;
+    }
     let mut model = PartModel::new();
     model
         .sketches

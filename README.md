@@ -122,7 +122,7 @@ cargo run -p opencad-cli -- review \
 ```
 
 Open `review/review.html` to inspect the hub height (**32 mm → 42 mm**), mass
-(**608.49 g → 653.32 g**), regenerated before/after geometry, the patch intent, and two checked
+(**609.23 g → 654.36 g**), regenerated before/after geometry, the patch intent, and two checked
 expected effects. The source document is unchanged.
 
 The same pipeline works on assemblies—the [robot-arm review](docs/assets/arm-review/review.html)

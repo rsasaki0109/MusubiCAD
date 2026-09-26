@@ -19,7 +19,7 @@
           "type": "point",
           "id": "ent:c1",
           "construction": false,
-          "x": 0.09586236196686777,
+          "x": 0.09586236196686776,
           "y": -0.0051388430054436105
         },
         {
@@ -81,12 +81,31 @@
             "line": "ent:e1"
           },
           "expr": "height"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:e0_horizontal",
+          "line": "ent:e0"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:e2_horizontal",
+          "line": "ent:e2"
+        },
+        {
+          "type": "vertical",
+          "id": "con:e1_vertical",
+          "line": "ent:e1"
+        },
+        {
+          "type": "vertical",
+          "id": "con:e3_vertical",
+          "line": "ent:e3"
         }
       ],
       "dimensions": [],
       "solve_state": {
-        "status": "under_constrained",
-        "dof": 4
+        "status": "unknown"
       },
       "profiles": [
         {
