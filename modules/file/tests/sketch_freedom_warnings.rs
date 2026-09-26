@@ -48,12 +48,21 @@ fn a_parameter_edit_warns_about_the_sketch_it_can_skew() {
     // Without its horizontal/vertical constraints the base sketch is held
     // by its side lengths only, and the same edit warns.
     let mut doc = bracket();
-    let loosen: DesignPatch = serde_json::from_value(serde_json::json!({ "operations": [
-        "con:e0_horizontal", "con:e2_horizontal", "con:e1_vertical", "con:e3_vertical"
-    ].iter().map(|id| serde_json::json!({
-        "type": "remove_sketch_constraint", "sketch_id": "sketch:base", "constraint_id": id
-    })).collect::<Vec<_>>() }))
-    .expect("patch");
+    let operations: Vec<serde_json::Value> = [
+        "con:e0_horizontal",
+        "con:e2_horizontal",
+        "con:e1_vertical",
+        "con:e3_vertical",
+    ]
+    .iter()
+    .map(|id| {
+        serde_json::json!({
+            "type": "remove_sketch_constraint", "sketch_id": "sketch:base", "constraint_id": id
+        })
+    })
+    .collect();
+    let loosen: DesignPatch =
+        serde_json::from_value(serde_json::json!({ "operations": operations })).expect("patch");
     opencad_file::apply_patch_to_document(&mut doc, &loosen).expect("loosen");
     assert_eq!(
         warnings(&doc, &DesignPatch::set_parameter("param:width", "90 mm")),
