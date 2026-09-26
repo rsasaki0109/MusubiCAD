@@ -279,6 +279,17 @@ pub enum PatchOperation {
     RemoveDrawingDimension {
         id: String,
     },
+    /// Add an attachment file under `imports/`; the decoded bytes must match
+    /// `sha256` (ADR-016).
+    AddAttachment {
+        path: String,
+        sha256: String,
+        content_base64: String,
+    },
+    /// Remove an attachment no imported solid uses.
+    RemoveAttachment {
+        path: String,
+    },
 }
 
 impl PatchOperation {
@@ -304,6 +315,8 @@ impl PatchOperation {
                 | Self::ReplaceFeatureDefinition { .. }
                 | Self::AddSemanticRef { .. }
                 | Self::RemoveSemanticRef { .. }
+                | Self::AddAttachment { .. }
+                | Self::RemoveAttachment { .. }
         ) || self.is_assembly_structural()
             || self.is_drawing_structural()
     }
@@ -914,6 +927,10 @@ impl DesignPatch {
         // before value edits, so a value edit may target an object created
         // earlier in the same patch.
         apply_sketch_operations(&self.operations, &mut next.sketches)?;
+        crate::attachment_patch::apply_attachment_operations(
+            &self.operations,
+            &mut next.attachments,
+        )?;
         apply_feature_operations(&self.operations, &mut next)?;
         self.apply_to_document_in_place(
             &mut next.parameters,
@@ -1025,6 +1042,11 @@ impl DesignPatch {
 
         validate_sketch_candidate(&self.operations, after, &mut failures);
         validate_feature_candidate(&self.operations, after, &mut failures);
+        crate::attachment_patch::validate_attachment_candidate(
+            &self.operations,
+            after,
+            &mut failures,
+        );
 
         if failures.is_empty() {
             Ok(())

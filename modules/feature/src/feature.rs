@@ -10,6 +10,7 @@ use crate::chamfer::ChamferFeature;
 use crate::extrude::ExtrudeFeature;
 use crate::fillet::FilletFeature;
 use crate::hole::HoleFeature;
+use crate::imported::ImportedSolidFeature;
 use crate::pattern::{CircularPatternFeature, LinearPatternFeature, MirrorPatternFeature};
 use crate::revolve::RevolveFeature;
 use crate::sketch_feature::SketchFeatureDef;
@@ -27,6 +28,7 @@ pub enum FeatureDefinition {
     LinearPattern(LinearPatternFeature),
     CircularPattern(CircularPatternFeature),
     MirrorPattern(MirrorPatternFeature),
+    ImportedSolid(ImportedSolidFeature),
 }
 
 impl FeatureDefinition {
@@ -41,6 +43,7 @@ impl FeatureDefinition {
             Self::LinearPattern(_) => "linear_pattern",
             Self::CircularPattern(_) => "circular_pattern",
             Self::MirrorPattern(_) => "mirror_pattern",
+            Self::ImportedSolid(_) => "imported_solid",
         }
     }
 }
@@ -99,6 +102,13 @@ pub trait RegenContext {
 
     fn edge_discoveries(&self) -> &[opencad_geometry::EdgeRefDiscovery] {
         &[]
+    }
+
+    /// Bytes of a document attachment such as `imports/motor.step` (ADR-016).
+    fn attachment(&self, path: &str) -> Result<&[u8]> {
+        Err(opencad_core::OpenCadError::not_found(format!(
+            "attachment '{path}'"
+        )))
     }
 }
 

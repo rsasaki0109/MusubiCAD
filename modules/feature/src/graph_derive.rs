@@ -52,6 +52,9 @@ impl FeatureDefinition {
                 ("source_feature", Some(&def.source_feature)),
                 ("target_feature", def.target_feature.as_ref()),
             ],
+            Self::ImportedSolid(def) => {
+                [("target_feature", def.target_feature.as_ref()), ("", None)]
+            }
         };
         present(candidates)
     }
@@ -75,7 +78,8 @@ impl FeatureDefinition {
             | Self::Extrude(_)
             | Self::Revolve(_)
             | Self::LinearPattern(_)
-            | Self::CircularPattern(_) => [("", None), ("", None)],
+            | Self::CircularPattern(_)
+            | Self::ImportedSolid(_) => [("", None), ("", None)],
         };
         present(candidates)
     }
@@ -89,9 +93,10 @@ impl FeatureDefinition {
             Self::Fillet(def) => ("radius_expr", def.radius_expr.as_ref()),
             Self::Chamfer(def) => ("distance_expr", def.distance_expr.as_ref()),
             Self::LinearPattern(def) => ("spacing_expr", def.spacing_expr.as_ref()),
-            Self::Sketch(_) | Self::CircularPattern(_) | Self::MirrorPattern(_) => {
-                return Vec::new()
-            }
+            Self::Sketch(_)
+            | Self::CircularPattern(_)
+            | Self::MirrorPattern(_)
+            | Self::ImportedSolid(_) => return Vec::new(),
         };
         expr.map(|expr| vec![(field, expr.as_str())])
             .unwrap_or_default()
@@ -316,6 +321,15 @@ mod tests {
             .values()
             .map(|node| node.definition.clone())
             .collect();
+        samples.push(FeatureDefinition::ImportedSolid(
+            crate::ImportedSolidFeature {
+                source: "imports/motor.step".into(),
+                sha256: "0".repeat(64),
+                transform: opencad_geometry::RigidTransform::identity(),
+                operation: opencad_geometry::ExtrudeOperation::Cut,
+                target_feature: Some("feature:plate".into()),
+            },
+        ));
         for extra in [
             crate::bracket_edge_fillet(),
             crate::bracket_with_top_chamfer(),
@@ -363,6 +377,7 @@ mod tests {
             "linear_pattern",
             "circular_pattern",
             "mirror_pattern",
+            "imported_solid",
         ] {
             assert!(
                 covered_types.contains(feature_type),

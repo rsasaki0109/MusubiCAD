@@ -33,6 +33,7 @@ the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,
 | `review_patch` | `path`, `patch`, `output_dir` | review artifacts only | `opencad review` |
 | `patch_apply` | `path`, `patch` | yes | `opencad.patch_apply_document` |
 | `regen_document` | `path` | no | `opencad.regen_document` |
+| `import_step` | `path`, `step_path`, `feature_id`, `name`, `operation`, `target_feature`, `translation_mm` | yes | `opencad import-step` |
 | `export_document` | `path`, `output` (`.step`/`.stp`, `.stl`, `.svg`) | output file only | `opencad.export` |
 | `diff_document` | `before`, `after` or `patch`, `geometry` | no | `opencad.diff_document` |
 

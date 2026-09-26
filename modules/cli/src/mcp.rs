@@ -38,6 +38,7 @@ enum Handler {
     Review,
     Authoring,
     NewDocument,
+    ImportStep,
 }
 
 struct Tool {
@@ -151,6 +152,24 @@ fn tools() -> Vec<Tool> {
             description: "Regenerate geometry and report mass, bounds, references, and assertions.",
             handler: Handler::Agent("opencad.regen_document"),
             schema: path_schema,
+        },
+        Tool {
+            name: "import_step",
+            description: "Import a STEP file (millimetres) into a part as a fixed imported solid: new body, or join/cut against target_feature. Writes the document.",
+            handler: Handler::ImportStep,
+            schema: || json!({
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string", "description": "Part .ocad.d or .ocad" },
+                    "step_path": { "type": "string", "description": "STEP file to import" },
+                    "feature_id": { "type": "string", "description": "New feature ID, e.g. feature:motor" },
+                    "name": { "type": "string" },
+                    "operation": { "enum": ["new_body", "join", "cut"] },
+                    "target_feature": { "type": "string" },
+                    "translation_mm": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 }
+                },
+                "required": ["path", "step_path", "feature_id"]
+            }),
         },
         Tool {
             name: "export_document",
@@ -298,6 +317,15 @@ fn call_tool(params: &Value, host: &PluginHost) -> std::result::Result<Value, (i
         Handler::Review => review(&arguments).map_err(|error| error.to_string()),
         Handler::Authoring => authoring(&arguments).map_err(|error| error.to_string()),
         Handler::NewDocument => new_document(&arguments).map_err(|error| error.to_string()),
+        Handler::ImportStep => {
+            serde_json::from_value::<crate::import::ImportStepRequest>(arguments)
+                .map_err(|error| format!("invalid arguments: {error}"))
+                .and_then(|request| {
+                    crate::import::import_step(&request)
+                        .and_then(|summary| Ok(serde_json::to_value(summary)?))
+                        .map_err(|error| error.to_string())
+                })
+        }
     };
     Ok(tool_result(result))
 }
@@ -460,7 +488,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 12);
+        assert_eq!(tools.len(), 13);
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
             assert!(tool["description"]

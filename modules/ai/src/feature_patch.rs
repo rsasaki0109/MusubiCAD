@@ -360,6 +360,26 @@ pub(crate) fn check_feature_inputs(
             ));
         }
     }
+    if let FeatureDefinition::ImportedSolid(def) = &node.definition {
+        if let Err(error) = def.validate() {
+            failures.insert(format!("feature '{}': {error}", node.id));
+        }
+        match state.attachments.get(&def.source) {
+            None => {
+                failures.insert(format!(
+                    "feature '{}' references unknown attachment '{}'",
+                    node.id, def.source
+                ));
+            }
+            Some(bytes) if opencad_core::sha256_hex(bytes) != def.sha256 => {
+                failures.insert(format!(
+                    "feature '{}' expects sha256 {} for '{}', but the attachment differs",
+                    node.id, def.sha256, def.source
+                ));
+            }
+            Some(_) => {}
+        }
+    }
     for (field, ref_id) in node.definition.reference_inputs() {
         if !state
             .semantic_refs

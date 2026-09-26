@@ -1,5 +1,7 @@
 //! In-memory `.ocad` document model.
 
+use std::collections::BTreeMap;
+
 use opencad_assembly::AssemblyModel;
 use opencad_core::{Assertion, DocumentMetadata};
 use opencad_drawing::DrawingModel;
@@ -25,6 +27,10 @@ pub struct OcadDocument {
     pub assembly: Option<AssemblyModel>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub drawing: Option<DrawingModel>,
+    /// Opaque attachment files by path under `imports/`, such as STEP files
+    /// used by imported solids (ADR-016).  Stored as files, checksummed.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub attachments: BTreeMap<String, Vec<u8>>,
 }
 
 impl OcadDocument {
@@ -39,6 +45,7 @@ impl OcadDocument {
             assertions: Vec::new(),
             assembly: None,
             drawing: None,
+            attachments: BTreeMap::new(),
         }
     }
 
@@ -59,6 +66,7 @@ impl OcadDocument {
             assertions: Vec::new(),
             assembly: None,
             drawing: None,
+            attachments: part.attachments.clone(),
         }
     }
 
@@ -73,6 +81,7 @@ impl OcadDocument {
             assertions: Vec::new(),
             assembly: None,
             drawing: Some(drawing),
+            attachments: BTreeMap::new(),
         }
     }
 
@@ -87,6 +96,7 @@ impl OcadDocument {
         for node in self.feature_nodes {
             model.nodes.insert(node.id.clone(), node);
         }
+        model.attachments = self.attachments;
         model
     }
 }

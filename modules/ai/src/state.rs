@@ -48,6 +48,10 @@ pub struct DesignState {
     /// not transport it; feature operations then refuse to run.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub feature_order: Vec<String>,
+    /// Attachment bytes by path (ADR-016).  Revisions hash their digests;
+    /// the bytes themselves are not serialized with the state.
+    #[serde(skip)]
+    pub attachments: BTreeMap<String, Vec<u8>>,
 }
 
 /// Compute the deterministic revision for the complete state exposed to
@@ -102,6 +106,16 @@ pub fn canonical_design_state_bytes_for_version(
                 "feature_order".into(),
                 serde_json::to_value(&state.feature_order)?,
             );
+            // Present only when non-empty, so documents without attachments
+            // keep their pre-ADR-016 digests.
+            if !state.attachments.is_empty() {
+                canonical_state.insert(
+                    "attachments".into(),
+                    serde_json::to_value(crate::attachment_patch::attachment_digests(
+                        &state.attachments,
+                    ))?,
+                );
+            }
         }
         other => {
             return Err(OpenCadError::validation(format!(
@@ -153,6 +167,7 @@ impl DesignState {
             sketches: Vec::new(),
             assertions: Vec::new(),
             feature_order: Vec::new(),
+            attachments: BTreeMap::new(),
         }
     }
 
@@ -170,6 +185,7 @@ impl DesignState {
             sketches: Vec::new(),
             assertions: Vec::new(),
             feature_order: Vec::new(),
+            attachments: BTreeMap::new(),
         }
     }
 
@@ -188,6 +204,7 @@ impl DesignState {
             sketches: Vec::new(),
             assertions: Vec::new(),
             feature_order: Vec::new(),
+            attachments: BTreeMap::new(),
         }
     }
 
@@ -207,6 +224,7 @@ impl DesignState {
             sketches: Vec::new(),
             assertions: Vec::new(),
             feature_order: Vec::new(),
+            attachments: BTreeMap::new(),
         }
     }
 
@@ -220,6 +238,12 @@ impl DesignState {
     /// Attach the authored feature display order (ADR-013).
     pub fn with_feature_order(mut self, feature_order: Vec<String>) -> Self {
         self.feature_order = feature_order;
+        self
+    }
+
+    /// Attach document attachment files by path (ADR-016).
+    pub fn with_attachments(mut self, attachments: BTreeMap<String, Vec<u8>>) -> Self {
+        self.attachments = attachments;
         self
     }
 
@@ -252,6 +276,10 @@ pub fn diff_design_state(before: &DesignState, after: &DesignState) -> DesignDif
         changes.extend(crate::drawing::diff_drawing_models(before_drawing, after_drawing).changes);
     }
     changes.extend(diff_assertions(&before.assertions, &after.assertions));
+    changes.extend(crate::attachment_patch::diff_attachments(
+        &before.attachments,
+        &after.attachments,
+    ));
     changes.extend(crate::feature_patch::diff_feature_order(
         &before.feature_order,
         &after.feature_order,

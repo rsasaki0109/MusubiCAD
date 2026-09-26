@@ -5,6 +5,7 @@ mod diff;
 mod export;
 mod git_driver;
 mod git_workflow;
+mod import;
 mod mcp;
 mod mesh;
 mod new;

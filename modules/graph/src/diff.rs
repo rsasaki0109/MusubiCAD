@@ -178,6 +178,17 @@ pub enum SemanticChange {
         before: String,
         after: String,
     },
+    AttachmentAdded {
+        path: String,
+    },
+    AttachmentRemoved {
+        path: String,
+    },
+    AttachmentChanged {
+        path: String,
+        before: String,
+        after: String,
+    },
     /// A feature changed its position in the authored display order;
     /// `before` and `after` are zero-based positions among retained features.
     FeatureMoved {

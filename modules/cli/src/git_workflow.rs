@@ -47,6 +47,7 @@ pub fn merge_documents(
     output.semantic_refs = merged.semantic_refs;
     output.sketches = merged.sketches;
     output.assertions = merged.assertions;
+    output.attachments = merged.attachments;
     output.assembly = merged.assembly;
     output.drawing = merged.drawing;
     Ok(Ok(output))

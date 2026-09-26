@@ -349,6 +349,7 @@ pub fn create_assembly_two_brackets_document(path: &str) -> Result<()> {
         assertions: Vec::new(),
         assembly: Some(assembly),
         drawing: None,
+        attachments: Default::default(),
     };
 
     write_ocad(path, &doc)
@@ -425,6 +426,7 @@ pub fn create_robot_arm_assembly_document(path: &str) -> Result<()> {
         assertions: Vec::new(),
         assembly: Some(assembly),
         drawing: None,
+        attachments: Default::default(),
     };
 
     write_ocad(path, &doc)

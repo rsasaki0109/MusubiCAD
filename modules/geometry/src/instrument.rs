@@ -140,6 +140,17 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.make_compound(bodies)
     }
 
+    // Methods with default implementations must be forwarded explicitly, or
+    // the wrapper would silently answer with the default.
+    fn export_step(&self, body: &KernelBody) -> Result<Vec<u8>> {
+        self.inner.export_step(body)
+    }
+
+    fn import_step(&self, step: &[u8]) -> Result<KernelBody> {
+        self.record();
+        self.inner.import_step(step)
+    }
+
     fn rotate_body(
         &self,
         body: KernelBody,
@@ -167,6 +178,18 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
 mod tests {
     use super::*;
     use crate::{ProfilePlane, SketchPlacement};
+
+    #[test]
+    fn defaulted_methods_are_forwarded_to_the_inner_kernel() {
+        let inner = crate::MockGeometryKernel::new();
+        let kernel = CountingGeometryKernel::new(&inner);
+        // Mock implements import_step; the trait default would refuse it.
+        assert_eq!(
+            kernel.import_step(b"ISO-10303-21;").expect("forwarded"),
+            inner.import_step(b"ISO-10303-21;").expect("mock")
+        );
+        assert_eq!(kernel.call_count(), 1);
+    }
 
     #[test]
     fn counts_calls_without_changing_mock_results() {

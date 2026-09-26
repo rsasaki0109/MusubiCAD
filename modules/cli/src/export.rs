@@ -30,7 +30,11 @@ pub struct ExportSummary {
 }
 
 pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
-    match Path::new(output).extension().and_then(|ext| ext.to_str()) {
+    let extension = Path::new(output)
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(str::to_ascii_lowercase);
+    match extension.as_deref() {
         Some("stl") => export_stl(input, output),
         Some("svg") => export_svg(input, output),
         Some("step" | "stp") => export_step(input, output),
@@ -44,7 +48,11 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
     let doc = read_ocad(input)?;
     let name = doc.metadata.name.clone();
     let output_path = Path::new(output);
-    if output_path.extension().and_then(|s| s.to_str()) != Some("stl") {
+    if !output_path
+        .extension()
+        .and_then(|s| s.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("stl"))
+    {
         return Err(OpenCadError::validation(
             "export output must use .stl extension",
         ));
@@ -75,7 +83,11 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
 pub fn export_svg(input: &str, output: &str) -> Result<ExportSummary> {
     let doc = read_ocad(input)?;
     let output_path = Path::new(output);
-    if output_path.extension().and_then(|s| s.to_str()) != Some("svg") {
+    if !output_path
+        .extension()
+        .and_then(|s| s.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("svg"))
+    {
         return Err(OpenCadError::validation(
             "export output must use .svg extension",
         ));
