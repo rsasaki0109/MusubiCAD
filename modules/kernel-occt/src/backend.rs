@@ -3,9 +3,9 @@ use std::cell::RefCell;
 use opencad_core::{OpenCadError, Result, TopoRefId};
 use opencad_geometry::topo_sync::EdgeRefDiscovery;
 use opencad_geometry::{
-    BooleanOp, BoundingBox, ExtrudeExtent, ExtrudeOperation, FilletEdgeSelector, GeometryKernel,
-    KernelBody, KernelWire, MassProperties, MeshSet, RevolveInput, RevolveOperation,
-    RigidTransform, SolvedSketch, TessellationSettings,
+    BooleanOp, BoundingBox, ExtrudeExtent, ExtrudeOperation, FacePick, FilletEdgeSelector,
+    GeometryKernel, KernelBody, KernelWire, MassProperties, MeshSet, RevolveInput,
+    RevolveOperation, RigidTransform, SolvedSketch, TessellationSettings,
 };
 
 use crate::convert::{map_occt_error, sketch_to_edges, sketch_to_edges_on_plane};
@@ -27,6 +27,90 @@ fn rotation_matrix_to_axis_angle(rotation: [[f64; 3]; 3]) -> (DVec3, f64) {
     );
     let (axis, angle) = DQuat::from_mat3(&matrix).to_axis_angle();
     (axis, angle)
+}
+
+/// Smallest relative volume loss accepted from a shell operation
+/// (dimensionless).  Smaller losses mean OCCT returned the input unchanged.
+#[cfg(feature = "occt")]
+const SHELL_MIN_VOLUME_LOSS: f64 = 1e-9;
+
+/// Largest distance from a face boundary point to a face pick's plane, in
+/// metres.
+#[cfg(feature = "occt")]
+const FACE_PICK_PLANE_TOLERANCE_M: f64 = 1e-6;
+
+/// Chordal deflection used to sample face boundary edges for picking, in
+/// metres.
+#[cfg(feature = "occt")]
+const FACE_PICK_SAMPLE_DEFLECTION_M: f64 = 1e-5;
+
+/// Find the one face of `solid` matching `pick`.
+///
+/// A face matches when every sampled point of its boundary edges lies within
+/// `FACE_PICK_PLANE_TOLERANCE_M` of the plane through `pick.point_m` with
+/// normal `pick.normal`, so picks select planar faces.  Among matches, the
+/// face whose boundary-sample centroid is nearest the pick point wins; two
+/// equally near faces are ambiguous and fail.  (`Face::project` is avoided:
+/// cadrum panics when OCCT cannot project onto a face.)
+#[cfg(feature = "occt")]
+fn pick_face<'a>(solid: &'a Solid, pick: &FacePick) -> Result<&'a cadrum::Face> {
+    let point = DVec3::from_array(pick.point_m);
+    let normal = DVec3::from_array(pick.normal).normalize_or_zero();
+    if normal == DVec3::ZERO {
+        return Err(OpenCadError::validation(
+            "face pick normal must be non-zero",
+        ));
+    }
+    let sampling = cadrum::Tessellation {
+        deflection_linear: FACE_PICK_SAMPLE_DEFLECTION_M,
+        deflection_angular: 0.1,
+        relative_linear: false,
+    };
+    let mut best: Option<(f64, &cadrum::Face)> = None;
+    let mut tied = false;
+    for face in solid.iter_face() {
+        let samples: Vec<DVec3> = face
+            .iter_edge()
+            .flat_map(|edge| {
+                let mut points = edge.approximation_segments(sampling);
+                points.push(edge.start_point());
+                points.push(edge.end_point());
+                points
+            })
+            .collect();
+        if samples.is_empty()
+            || samples
+                .iter()
+                .any(|sample| (*sample - point).dot(normal).abs() > FACE_PICK_PLANE_TOLERANCE_M)
+        {
+            continue;
+        }
+        let centroid = samples.iter().copied().sum::<DVec3>() / samples.len() as f64;
+        let distance = (centroid - point).length();
+        match best {
+            Some((best_distance, _))
+                if (distance - best_distance).abs() <= FACE_PICK_PLANE_TOLERANCE_M =>
+            {
+                tied = true;
+            }
+            Some((best_distance, _)) if distance > best_distance => {}
+            _ => {
+                best = Some((distance, face));
+                tied = false;
+            }
+        }
+    }
+    match (best, tied) {
+        (Some((_, face)), false) => Ok(face),
+        (Some(_), true) => Err(OpenCadError::validation(format!(
+            "face pick at {:?} m matches more than one face",
+            pick.point_m
+        ))),
+        (None, _) => Err(OpenCadError::validation(format!(
+            "face pick at {:?} m with normal {:?} matches no planar face of the body",
+            pick.point_m, pick.normal
+        ))),
+    }
 }
 
 #[cfg(feature = "occt")]
@@ -818,6 +902,55 @@ impl GeometryKernel for OcctGeometryKernel {
             Err(OpenCadError::Other(
                 "STEP import requires the occt feature".into(),
             ))
+        }
+    }
+
+    fn shell_body(
+        &self,
+        body: KernelBody,
+        thickness_m: f64,
+        open_faces: &[FacePick],
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            if !thickness_m.is_finite() || thickness_m <= 0.0 {
+                return Err(OpenCadError::validation("shell thickness must be positive"));
+            }
+            if open_faces.is_empty() {
+                return Err(OpenCadError::validation(
+                    "shell needs at least one open face",
+                ));
+            }
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?;
+            let faces = open_faces
+                .iter()
+                .map(|pick| pick_face(solid, pick))
+                .collect::<Result<Vec<_>>>()?;
+            // A negative thickness grows the wall inward, keeping the outer
+            // faces (and the bounding box) in place.
+            let shelled = solid.shell(-thickness_m, faces).map_err(map_occt_error)?;
+            // OCCT can hand back the unchanged solid when the wall does not
+            // fit (for example a wall thicker than half the part).  A real
+            // shell always removes material, so require a relative volume
+            // loss above SHELL_MIN_VOLUME_LOSS.
+            let (before, after) = (solid.volume(), shelled.volume());
+            if !(after.is_finite() && after > 0.0 && after < before * (1.0 - SHELL_MIN_VOLUME_LOSS))
+            {
+                return Err(OpenCadError::validation(format!(
+                    "shell of {thickness_m} m did not hollow the body (volume {before} m^3 -> {after} m^3)"
+                )));
+            }
+            drop(store);
+            let id = self.store.borrow_mut().insert_body(shelled);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, thickness_m, open_faces);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
         }
     }
 

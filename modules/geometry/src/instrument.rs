@@ -151,6 +151,16 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.import_step(step)
     }
 
+    fn shell_body(
+        &self,
+        body: KernelBody,
+        thickness_m: f64,
+        open_faces: &[crate::FacePick],
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.shell_body(body, thickness_m, open_faces)
+    }
+
     fn rotate_body(
         &self,
         body: KernelBody,
@@ -188,7 +198,19 @@ mod tests {
             kernel.import_step(b"ISO-10303-21;").expect("forwarded"),
             inner.import_step(b"ISO-10303-21;").expect("mock")
         );
-        assert_eq!(kernel.call_count(), 1);
+        let top = [crate::FacePick {
+            point_m: [0.0, 0.0, 0.02],
+            normal: [0.0, 0.0, 1.0],
+        }];
+        assert_eq!(
+            kernel
+                .shell_body(KernelBody::new(7), 0.002, &top)
+                .expect("forwarded"),
+            inner
+                .shell_body(KernelBody::new(7), 0.002, &top)
+                .expect("mock")
+        );
+        assert_eq!(kernel.call_count(), 2);
     }
 
     #[test]

@@ -31,6 +31,7 @@ pub enum FeatureExprField {
     RadiusExpr,
     DistanceExpr,
     SpacingExpr,
+    ThicknessExpr,
 }
 
 /// Supported semantic ref fields for patch operations.
@@ -68,6 +69,7 @@ impl FeatureExprField {
             Self::RadiusExpr => "radius_expr",
             Self::DistanceExpr => "distance_expr",
             Self::SpacingExpr => "spacing_expr",
+            Self::ThicknessExpr => "thickness_expr",
         }
     }
 
@@ -78,8 +80,9 @@ impl FeatureExprField {
             "radius_expr" => Ok(Self::RadiusExpr),
             "distance_expr" => Ok(Self::DistanceExpr),
             "spacing_expr" => Ok(Self::SpacingExpr),
+            "thickness_expr" => Ok(Self::ThicknessExpr),
             _ => Err(OpenCadError::validation(format!(
-                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', or 'spacing_expr'"
+                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', or 'thickness_expr'"
             ))),
         }
     }
@@ -376,6 +379,32 @@ pub(crate) fn validate_stable_id(id: &str, prefix: &str) -> Result<()> {
         Err(OpenCadError::validation(format!(
             "invalid id '{id}': expected '{prefix}:' followed by lowercase letters, digits, '_' or '.'-separated segments, at most {MAX_STABLE_ID_BYTES} bytes"
         )))
+    }
+}
+
+/// Reject feature values regeneration cannot use (MCAD-P7-006), for every
+/// feature, so a value edit such as a zero thickness fails at dry-run.
+pub(crate) fn validate_feature_values(
+    state: &DesignState,
+    scope: &indexmap::IndexMap<String, f64>,
+) -> Result<()> {
+    let failures: BTreeSet<String> = state
+        .feature_nodes
+        .iter()
+        .filter(|node| !node.suppressed)
+        .filter_map(|node| {
+            node.definition
+                .validate_values(scope)
+                .err()
+                .map(|error| format!("feature '{}': {error}", node.id))
+        })
+        .collect();
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(OpenCadError::validation(
+            failures.into_iter().collect::<Vec<_>>().join("; "),
+        ))
     }
 }
 
@@ -943,7 +972,8 @@ impl DesignPatch {
         // Structural checks run first so a dangling reference is reported
         // with its complete dependent list rather than as an evaluation error.
         self.validate_structural_candidate(state, &next)?;
-        evaluate_param_graph(&next.parameters)?;
+        let scope = evaluate_param_graph(&next.parameters)?;
+        validate_feature_values(&next, &scope)?;
         *state = next;
         Ok(())
     }
@@ -1274,6 +1304,10 @@ fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &st
         }
         (FeatureDefinition::LinearPattern(pattern), FeatureExprField::SpacingExpr) => {
             pattern.spacing_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::Shell(shell), FeatureExprField::ThicknessExpr) => {
+            shell.thickness_expr = Some(expr.to_string());
             Ok(())
         }
         (definition, field) => Err(OpenCadError::validation(format!(

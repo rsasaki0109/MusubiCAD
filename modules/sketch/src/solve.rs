@@ -335,6 +335,91 @@ fn build_constraint(
                 by2: b.3,
             });
         }
+        Constraint::Angle {
+            line_a,
+            line_b,
+            expr,
+            ..
+        } => {
+            let a = line_endpoints(registry, lines, line_a.as_str())?;
+            let b = line_endpoints(registry, lines, line_b.as_str())?;
+            validate_direction_line(line_a.as_str(), lines, point_coords)?;
+            validate_direction_line(line_b.as_str(), lines, point_coords)?;
+            equations.push(ConstraintResidual::Angle {
+                ax1: a.0,
+                ay1: a.1,
+                ax2: a.2,
+                ay2: a.3,
+                bx1: b.0,
+                by1: b.1,
+                bx2: b.2,
+                by2: b.3,
+                target_rad: parse_angle_expr(expr.as_str())?,
+            });
+        }
+        Constraint::Midpoint { point, line, .. } => {
+            let (px, py) = point_xy(registry, point.as_str())?;
+            let endpoints = line_endpoints(registry, lines, line.as_str())?;
+            equations.extend(ConstraintResidual::midpoint(px, py, endpoints));
+        }
+        Constraint::Symmetric { a, b, line, .. } => {
+            let (px, py) = point_xy(registry, a.as_str())?;
+            let (qx, qy) = point_xy(registry, b.as_str())?;
+            let (lx1, ly1, lx2, ly2) = line_endpoints(registry, lines, line.as_str())?;
+            validate_direction_line(line.as_str(), lines, point_coords)?;
+            equations.push(ConstraintResidual::SymmetricMidpointOnLine {
+                px,
+                py,
+                qx,
+                qy,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            });
+            equations.push(ConstraintResidual::SymmetricPerpendicular {
+                px,
+                py,
+                qx,
+                qy,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            });
+        }
+        Constraint::Tangent { line, curve, .. } => {
+            let (lx1, ly1, lx2, ly2) = line_endpoints(registry, lines, line.as_str())?;
+            validate_direction_line(line.as_str(), lines, point_coords)?;
+            let center = sketch
+                .entities
+                .iter()
+                .find_map(|entity| match entity {
+                    SketchEntity::Circle(circle) if circle.base.id == *curve => {
+                        Some(&circle.center)
+                    }
+                    SketchEntity::Arc(arc) if arc.base.id == *curve => Some(&arc.center),
+                    _ => None,
+                })
+                .ok_or_else(|| {
+                    OpenCadError::validation(format!(
+                        "tangent target '{curve}' must be a circle or arc"
+                    ))
+                })?;
+            let (cx, cy) = point_xy(registry, center.as_str())?;
+            let radius = registry
+                .get(&format!("{}.radius", curve.as_str()))
+                .ok_or_else(|| OpenCadError::not_found(format!("radius for '{curve}'")))?;
+            equations.push(ConstraintResidual::TangentLineCircle {
+                cx,
+                cy,
+                radius,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            });
+        }
     }
     Ok(())
 }
@@ -370,7 +455,8 @@ fn validate_solved_direction_lines(
     for constraint in &sketch.constraints {
         let (line_a, line_b) = match constraint {
             Constraint::Parallel { line_a, line_b, .. }
-            | Constraint::Perpendicular { line_a, line_b, .. } => (line_a, line_b),
+            | Constraint::Perpendicular { line_a, line_b, .. }
+            | Constraint::Angle { line_a, line_b, .. } => (line_a, line_b),
             _ => continue,
         };
         for line_id in [line_a, line_b] {
@@ -506,6 +592,23 @@ fn coord_literal(coord: &Coord) -> Result<f64> {
     match coord {
         Coord::Literal(v) => Ok(*v),
         Coord::Expr(expr) => parse_length_expr(expr.as_str()),
+    }
+}
+
+/// Parse simple angle literals in radians: `0.5`, `0.5 rad`, `30 deg`.
+pub fn parse_angle_expr(expr: &str) -> Result<f64> {
+    let trimmed = expr.trim();
+    let (value, unit) = trimmed
+        .split_once(char::is_whitespace)
+        .map(|(value, unit)| (value.trim(), unit.trim()))
+        .unwrap_or((trimmed, "rad"));
+    let value: f64 = value
+        .parse()
+        .map_err(|_| OpenCadError::InvalidExpression(expr.into()))?;
+    match unit {
+        "rad" => Ok(value),
+        "deg" => Ok(value.to_radians()),
+        _ => Err(OpenCadError::InvalidExpression(expr.into())),
     }
 }
 
@@ -961,6 +1064,162 @@ mod tests {
         let [x, y] = point_coords(&sketch, "ent:p3");
         assert!((x - 1.0).abs() < 1e-8);
         assert!(y.abs() < 1e-8);
+    }
+
+    /// Tolerance on solved coordinates, in meters.
+    const SOLVED_TOLERANCE_M: f64 = 1e-8;
+
+    /// Converged, possibly with remaining degrees of freedom (free points
+    /// added by these tests); correctness is asserted on coordinates.
+    fn converged(status: &SolveStatus) -> bool {
+        matches!(
+            status,
+            SolveStatus::Solved { .. } | SolveStatus::UnderConstrained { .. }
+        )
+    }
+
+    fn add_point(sketch: &mut Sketch, id: &str, x: f64, y: f64) {
+        sketch
+            .add_entity(SketchEntity::Point(PointEntity {
+                base: EntityBase {
+                    id: EntityId::new(id).expect("id"),
+                    construction: false,
+                },
+                x: Coord::literal(x),
+                y: Coord::literal(y),
+            }))
+            .expect("point");
+    }
+
+    #[test]
+    fn solves_angle_constraint_in_degrees() {
+        let mut sketch = two_line_sketch((0.5, 0.5));
+        add_direction_support_constraints(&mut sketch);
+        sketch
+            .add_constraint(Constraint::Angle {
+                id: ConstraintId::new("con:angle").expect("id"),
+                line_a: EntityId::new("ent:line_a").expect("id"),
+                line_b: EntityId::new("ent:line_b").expect("id"),
+                expr: Expression::new("30 deg").expect("expression"),
+            })
+            .expect("angle");
+
+        let status = solve_sketch(&mut sketch, &SolverOptions::default()).expect("solve");
+        assert!(status.is_solved());
+        let [x, y] = point_coords(&sketch, "ent:p3");
+        let expected = 30_f64.to_radians();
+        assert!((x - expected.cos()).abs() < SOLVED_TOLERANCE_M, "x {x}");
+        assert!((y - expected.sin()).abs() < SOLVED_TOLERANCE_M, "y {y}");
+    }
+
+    #[test]
+    fn angle_expressions_accept_radians_and_degrees() {
+        assert!((parse_angle_expr("30 deg").unwrap() - 30_f64.to_radians()).abs() < 1e-15);
+        assert!((parse_angle_expr("0.5 rad").unwrap() - 0.5).abs() < 1e-15);
+        assert!((parse_angle_expr("0.5").unwrap() - 0.5).abs() < 1e-15);
+        assert!(parse_angle_expr("30 mm").is_err());
+    }
+
+    #[test]
+    fn solves_midpoint_constraint() {
+        let mut sketch = two_line_sketch((0.5, 0.5));
+        add_direction_support_constraints(&mut sketch);
+        add_point(&mut sketch, "ent:m", 0.3, 0.2);
+        sketch
+            .add_constraint(Constraint::Midpoint {
+                id: ConstraintId::new("con:mid").expect("id"),
+                point: EntityId::new("ent:m").expect("id"),
+                line: EntityId::new("ent:line_a").expect("id"),
+            })
+            .expect("midpoint");
+
+        assert!(converged(
+            &solve_sketch(&mut sketch, &SolverOptions::default()).expect("solve")
+        ));
+        let [p0x, p0y] = point_coords(&sketch, "ent:p0");
+        let [p1x, p1y] = point_coords(&sketch, "ent:p1");
+        let [mx, my] = point_coords(&sketch, "ent:m");
+        assert!((mx - 0.5 * (p0x + p1x)).abs() < SOLVED_TOLERANCE_M);
+        assert!((my - 0.5 * (p0y + p1y)).abs() < SOLVED_TOLERANCE_M);
+    }
+
+    #[test]
+    fn solves_symmetric_constraint() {
+        let mut sketch = two_line_sketch((0.5, 0.5));
+        add_direction_support_constraints(&mut sketch);
+        add_point(&mut sketch, "ent:p", 0.3, 0.4);
+        add_point(&mut sketch, "ent:q", 0.5, -0.1);
+        sketch
+            .add_constraint(Constraint::Symmetric {
+                id: ConstraintId::new("con:sym").expect("id"),
+                a: EntityId::new("ent:p").expect("id"),
+                b: EntityId::new("ent:q").expect("id"),
+                line: EntityId::new("ent:line_a").expect("id"),
+            })
+            .expect("symmetric");
+
+        assert!(converged(
+            &solve_sketch(&mut sketch, &SolverOptions::default()).expect("solve")
+        ));
+        // line_a stays on the x axis, so symmetry mirrors y and keeps x.
+        let [_, line_y] = point_coords(&sketch, "ent:p1");
+        let [px, py] = point_coords(&sketch, "ent:p");
+        let [qx, qy] = point_coords(&sketch, "ent:q");
+        assert!(line_y.abs() < SOLVED_TOLERANCE_M);
+        assert!((px - qx).abs() < SOLVED_TOLERANCE_M, "{px} vs {qx}");
+        assert!((py + qy).abs() < SOLVED_TOLERANCE_M, "{py} vs {qy}");
+    }
+
+    #[test]
+    fn solves_tangent_line_circle_constraint() {
+        let mut sketch = two_line_sketch((0.5, 0.5));
+        add_direction_support_constraints(&mut sketch);
+        add_point(&mut sketch, "ent:c", 0.5, 0.3);
+        sketch
+            .add_entity(SketchEntity::Circle(CircleEntity {
+                base: EntityBase {
+                    id: EntityId::new("ent:circle").expect("id"),
+                    construction: false,
+                },
+                center: EntityId::new("ent:c").expect("id"),
+                radius: Coord::literal(0.2),
+            }))
+            .expect("circle");
+        sketch
+            .add_constraint(Constraint::Radius {
+                id: ConstraintId::new("con:r").expect("id"),
+                target: EntityId::new("ent:circle").expect("id"),
+                expr: Expression::new("0.2 m").expect("expression"),
+            })
+            .expect("radius");
+        sketch
+            .add_constraint(Constraint::Tangent {
+                id: ConstraintId::new("con:tangent").expect("id"),
+                line: EntityId::new("ent:line_a").expect("id"),
+                curve: EntityId::new("ent:circle").expect("id"),
+            })
+            .expect("tangent");
+
+        assert!(converged(
+            &solve_sketch(&mut sketch, &SolverOptions::default()).expect("solve")
+        ));
+        let [_, line_y] = point_coords(&sketch, "ent:p1");
+        let [_, cy] = point_coords(&sketch, "ent:c");
+        assert!(
+            ((cy - line_y).abs() - 0.2).abs() < SOLVED_TOLERANCE_M,
+            "cy {cy}"
+        );
+
+        let mut wrong = two_line_sketch((0.5, 0.5));
+        wrong
+            .add_constraint(Constraint::Tangent {
+                id: ConstraintId::new("con:tangent").expect("id"),
+                line: EntityId::new("ent:line_a").expect("id"),
+                curve: EntityId::new("ent:line_b").expect("id"),
+            })
+            .expect("tangent");
+        let error = solve_sketch(&mut wrong, &SolverOptions::default()).expect_err("not a curve");
+        assert!(error.to_string().contains("must be a circle or arc"));
     }
 
     #[test]

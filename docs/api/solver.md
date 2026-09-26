@@ -22,6 +22,26 @@ a numeric iteration cannot satisfy the relation by collapsing a line. The
 serialized sketch constraint shape is unchanged; only the transient solver
 residual adds direction equations.
 
+## Angle, midpoint, symmetric, and tangent
+
+| Constraint | Fields | Meaning |
+|---|---|---|
+| `angle` | `line_a`, `line_b`, `expr` | Directed angle from `line_a` to `line_b`; `expr` is an angle such as `30 deg` or a parameter |
+| `midpoint` | `point`, `line` | `point` is the midpoint of `line` |
+| `symmetric` | `a`, `b`, `line` | Points `a` and `b` mirror each other across `line` |
+| `tangent` | `line`, `curve` | `line` is tangent to the circle or arc `curve` |
+
+The angle residual is `sin(angle - target)`, which is dimensionless and
+continuous. It also vanishes at `target + π`, the reversed direction, so the
+solver keeps the branch nearest the current sketch. Angle, symmetric, and
+tangent constraints validate their lines against the same `1e-12 m`
+degeneracy tolerance as direction constraints. A tangent `curve` that is not
+a circle or arc is a validation error.
+
+```json
+{ "type": "angle", "id": "con:tilt", "line_a": "ent:e0", "line_b": "ent:e1", "expr": "30 deg" }
+```
+
 ## Equal targets
 
 `EqualTarget` uses an explicit canonical wire representation:

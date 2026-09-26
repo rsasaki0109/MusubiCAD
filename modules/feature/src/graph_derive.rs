@@ -40,6 +40,7 @@ impl FeatureDefinition {
             ],
             Self::Fillet(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
+            Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::LinearPattern(def) => [
                 ("source_feature", Some(&def.source_feature)),
                 ("target_feature", def.target_feature.as_ref()),
@@ -61,6 +62,13 @@ impl FeatureDefinition {
 
     /// Semantic reference IDs this definition consumes, as `(field, ref_id)`.
     pub fn reference_inputs(&self) -> Vec<(&'static str, &str)> {
+        if let Self::Shell(def) = self {
+            return def
+                .open_face_refs
+                .iter()
+                .map(|face_ref| ("open_face_refs", face_ref.as_str()))
+                .collect();
+        }
         let candidates: [(&'static str, Option<&String>); 2] = match self {
             Self::Hole(def) => [("face_ref", def.face_ref.as_ref()), ("", None)],
             Self::Fillet(def) => [
@@ -79,7 +87,8 @@ impl FeatureDefinition {
             | Self::Revolve(_)
             | Self::LinearPattern(_)
             | Self::CircularPattern(_)
-            | Self::ImportedSolid(_) => [("", None), ("", None)],
+            | Self::ImportedSolid(_)
+            | Self::Shell(_) => [("", None), ("", None)],
         };
         present(candidates)
     }
@@ -92,6 +101,7 @@ impl FeatureDefinition {
             Self::Hole(def) => ("depth_expr", def.depth_expr.as_ref()),
             Self::Fillet(def) => ("radius_expr", def.radius_expr.as_ref()),
             Self::Chamfer(def) => ("distance_expr", def.distance_expr.as_ref()),
+            Self::Shell(def) => ("thickness_expr", def.thickness_expr.as_ref()),
             Self::LinearPattern(def) => ("spacing_expr", def.spacing_expr.as_ref()),
             Self::Sketch(_)
             | Self::CircularPattern(_)
@@ -330,6 +340,12 @@ mod tests {
                 target_feature: Some("feature:plate".into()),
             },
         ));
+        samples.push(FeatureDefinition::Shell(crate::ShellFeature::new(
+            "feature:plate",
+            opencad_core::Length::from_meters(0.002),
+            None,
+            vec!["ref:face:plate_top".into()],
+        )));
         for extra in [
             crate::bracket_edge_fillet(),
             crate::bracket_with_top_chamfer(),
@@ -358,7 +374,8 @@ mod tests {
                 .collect();
             for (key, value) in object {
                 let is_input = key.ends_with("_feature") || key.ends_with("_ref");
-                if is_input && value.is_string() && key != "profile_ref" {
+                let is_input_list = key.ends_with("_refs") && value.is_array();
+                if (is_input && value.is_string() && key != "profile_ref") || is_input_list {
                     assert!(
                         registered.contains(key.as_str()),
                         "{} field '{key}' is not registered as a graph input",
@@ -378,6 +395,7 @@ mod tests {
             "circular_pattern",
             "mirror_pattern",
             "imported_solid",
+            "shell",
         ] {
             assert!(
                 covered_types.contains(feature_type),

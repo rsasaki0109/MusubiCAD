@@ -31,8 +31,15 @@ pub fn validate_design_state(state: &DesignState) -> Result<()> {
     use std::collections::BTreeSet;
 
     let mut failures = BTreeSet::new();
-    if let Err(error) = opencad_graph::evaluate_param_graph(&state.parameters) {
-        failures.insert(error.to_string());
+    match opencad_graph::evaluate_param_graph(&state.parameters) {
+        Ok(scope) => {
+            if let Err(error) = crate::patch::validate_feature_values(state, &scope) {
+                failures.insert(error.to_string());
+            }
+        }
+        Err(error) => {
+            failures.insert(error.to_string());
+        }
     }
     for sketch in &state.sketches {
         crate::sketch_patch::validate_sketch_references(sketch, state, &mut failures);

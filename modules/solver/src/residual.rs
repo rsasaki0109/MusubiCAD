@@ -110,9 +110,88 @@ pub enum ConstraintResidual {
         y: VarId,
         value: f64,
     },
+    /// Directed angle from segment `a` to segment `b` equals `target_rad`.
+    ///
+    /// The residual is `sin(angle - target)`: the cross/dot form divided by
+    /// both segment lengths, so it is dimensionless and continuous.  It also
+    /// vanishes at `target + pi` (opposite direction); solving from a nearby
+    /// initial sketch selects the intended branch.
+    Angle {
+        ax1: VarId,
+        ay1: VarId,
+        ax2: VarId,
+        ay2: VarId,
+        bx1: VarId,
+        by1: VarId,
+        bx2: VarId,
+        by2: VarId,
+        target_rad: f64,
+    },
+    /// One coordinate of a point equals the mean of two coordinates
+    /// (a midpoint uses one equation per axis), in meters.
+    Midpoint {
+        point: VarId,
+        a: VarId,
+        b: VarId,
+    },
+    /// The midpoint of `p`–`q` lies on the line `l1`–`l2`: signed distance in
+    /// meters.
+    SymmetricMidpointOnLine {
+        px: VarId,
+        py: VarId,
+        qx: VarId,
+        qy: VarId,
+        lx1: VarId,
+        ly1: VarId,
+        lx2: VarId,
+        ly2: VarId,
+    },
+    /// `p`–`q` is perpendicular to the line `l1`–`l2`: projection of `q - p`
+    /// onto the line direction, in meters.
+    SymmetricPerpendicular {
+        px: VarId,
+        py: VarId,
+        qx: VarId,
+        qy: VarId,
+        lx1: VarId,
+        ly1: VarId,
+        lx2: VarId,
+        ly2: VarId,
+    },
+    /// Distance from a circle center to an infinite line equals the radius,
+    /// in meters.
+    TangentLineCircle {
+        cx: VarId,
+        cy: VarId,
+        radius: VarId,
+        lx1: VarId,
+        ly1: VarId,
+        lx2: VarId,
+        ly2: VarId,
+    },
 }
 
 impl ConstraintResidual {
+    /// Midpoint equations for both axes.
+    pub fn midpoint(
+        px: VarId,
+        py: VarId,
+        (x1, y1, x2, y2): (VarId, VarId, VarId, VarId),
+    ) -> [Self; 2] {
+        [
+            Self::Midpoint {
+                point: px,
+                a: x1,
+                b: x2,
+            },
+            Self::Midpoint {
+                point: py,
+                a: y1,
+                b: y2,
+            },
+        ]
+    }
+
     pub fn coincident(a_x: VarId, a_y: VarId, b_x: VarId, b_y: VarId) -> [Self; 2] {
         [
             Self::CoincidentX { a: a_x, b: b_x },
@@ -158,6 +237,47 @@ impl ResidualEquation for ConstraintResidual {
             }
             Self::FixedX { x, .. } => vec![*x],
             Self::FixedY { y, .. } => vec![*y],
+            Self::Angle {
+                ax1,
+                ay1,
+                ax2,
+                ay2,
+                bx1,
+                by1,
+                bx2,
+                by2,
+                ..
+            } => vec![*ax1, *ay1, *ax2, *ay2, *bx1, *by1, *bx2, *by2],
+            Self::Midpoint { point, a, b } => vec![*point, *a, *b],
+            Self::SymmetricMidpointOnLine {
+                px,
+                py,
+                qx,
+                qy,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            }
+            | Self::SymmetricPerpendicular {
+                px,
+                py,
+                qx,
+                qy,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            } => vec![*px, *py, *qx, *qy, *lx1, *ly1, *lx2, *ly2],
+            Self::TangentLineCircle {
+                cx,
+                cy,
+                radius,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            } => vec![*cx, *cy, *radius, *lx1, *ly1, *lx2, *ly2],
         }
     }
 
@@ -212,8 +332,88 @@ impl ResidualEquation for ConstraintResidual {
             Self::EqualLength { a, b } => length_term_value(*a, vars) - length_term_value(*b, vars),
             Self::FixedX { x, value } => vars.get(*x) - value,
             Self::FixedY { y, value } => vars.get(*y) - value,
+            Self::Angle {
+                ax1,
+                ay1,
+                ax2,
+                ay2,
+                bx1,
+                by1,
+                bx2,
+                by2,
+                target_rad,
+            } => {
+                let sin = normalized_direction_residual(
+                    [*ax1, *ay1, *ax2, *ay2],
+                    [*bx1, *by1, *bx2, *by2],
+                    vars,
+                    false,
+                );
+                let cos = normalized_direction_residual(
+                    [*ax1, *ay1, *ax2, *ay2],
+                    [*bx1, *by1, *bx2, *by2],
+                    vars,
+                    true,
+                );
+                // sin(angle - target) = sin*cos(t) - cos*sin(t)
+                sin * target_rad.cos() - cos * target_rad.sin()
+            }
+            Self::Midpoint { point, a, b } => {
+                vars.get(*point) - 0.5 * (vars.get(*a) + vars.get(*b))
+            }
+            Self::SymmetricMidpointOnLine {
+                px,
+                py,
+                qx,
+                qy,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            } => {
+                let (dx, dy, length) = line_direction(*lx1, *ly1, *lx2, *ly2, vars);
+                let mx = 0.5 * (vars.get(*px) + vars.get(*qx)) - vars.get(*lx1);
+                let my = 0.5 * (vars.get(*py) + vars.get(*qy)) - vars.get(*ly1);
+                (dx * my - dy * mx) / length
+            }
+            Self::SymmetricPerpendicular {
+                px,
+                py,
+                qx,
+                qy,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            } => {
+                let (dx, dy, length) = line_direction(*lx1, *ly1, *lx2, *ly2, vars);
+                let vx = vars.get(*qx) - vars.get(*px);
+                let vy = vars.get(*qy) - vars.get(*py);
+                (vx * dx + vy * dy) / length
+            }
+            Self::TangentLineCircle {
+                cx,
+                cy,
+                radius,
+                lx1,
+                ly1,
+                lx2,
+                ly2,
+            } => {
+                let (dx, dy, length) = line_direction(*lx1, *ly1, *lx2, *ly2, vars);
+                let ox = vars.get(*cx) - vars.get(*lx1);
+                let oy = vars.get(*cy) - vars.get(*ly1);
+                ((dx * oy - dy * ox) / length).abs() - vars.get(*radius)
+            }
         }
     }
+}
+
+/// Direction of a line and its length clamped to the degeneracy tolerance.
+fn line_direction(x1: VarId, y1: VarId, x2: VarId, y2: VarId, vars: &VarSet) -> (f64, f64, f64) {
+    let dx = vars.get(x2) - vars.get(x1);
+    let dy = vars.get(y2) - vars.get(y1);
+    (dx, dy, dx.hypot(dy).max(DIRECTION_DEGENERACY_TOLERANCE_M))
 }
 
 /// Evaluate a normalized direction relation between two 2D line segments.

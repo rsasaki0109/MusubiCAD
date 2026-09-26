@@ -78,6 +78,21 @@ pub enum ExtrudeExtent {
     Symmetric { length: Length },
 }
 
+/// A face picked by geometry: a point on (or in the plane of) the face and
+/// its outward normal, both from the tessellated body.
+///
+/// Kernel face IDs are not reliable across kernels: OCCT faces can share
+/// one underlying surface record (an extrusion's top and bottom faces), and
+/// tessellation reads IDs from a deep copy.  Picks are matched against the
+/// kernel's own faces instead.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FacePick {
+    /// A point on the face or in its plane, in metres.
+    pub point_m: [f64; 3],
+    /// Unit outward normal (dimensionless).
+    pub normal: [f64; 3],
+}
+
 /// Which edges to fillet on a solid body.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -212,6 +227,20 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// Hollow `body` to a uniform inward wall of `thickness_m` metres,
+    /// removing the picked faces to form openings (ADR-017).  Every pick must
+    /// match exactly one face of `body`, or the call fails.
+    fn shell_body(
+        &self,
+        _body: KernelBody,
+        _thickness_m: f64,
+        _open_faces: &[FacePick],
+    ) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not support shelling",
+        ))
+    }
+
     fn assign_face_ref(
         &self,
         body: &KernelBody,
@@ -279,6 +308,41 @@ impl GeometryKernel for MockGeometryKernel {
             return Err(OpenCadError::validation("STEP file contains no solids"));
         }
         Ok(KernelBody::new((step.len() as u64 % 97).max(1)))
+    }
+
+    /// A deterministic stand-in body derived from the inputs, so shell
+    /// pipelines run without OCCT (ADR-017).
+    fn shell_body(
+        &self,
+        body: KernelBody,
+        thickness_m: f64,
+        open_faces: &[FacePick],
+    ) -> Result<KernelBody> {
+        if !thickness_m.is_finite() || thickness_m <= 0.0 {
+            return Err(OpenCadError::validation("shell thickness must be positive"));
+        }
+        if open_faces.is_empty() {
+            return Err(OpenCadError::validation(
+                "shell needs at least one open face",
+            ));
+        }
+        let micrometres = (thickness_m * 1e6).round() as u64;
+        let faces = open_faces.iter().fold(0_u64, |acc, pick| {
+            pick.point_m
+                .iter()
+                .chain(&pick.normal)
+                .fold(acc, |acc, value| {
+                    acc.wrapping_mul(31)
+                        .wrapping_add((value * 1e6).round() as i64 as u64)
+                })
+        });
+        Ok(KernelBody::new(
+            body.0
+                .wrapping_mul(1_000_003)
+                .wrapping_add(micrometres)
+                .wrapping_add(faces)
+                .max(1),
+        ))
     }
 
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire> {

@@ -20,7 +20,7 @@ pub use entity::{
     RectangleEntity, SketchEntity,
 };
 pub use profile::{assign_profile_refs, detect_profiles, Profile, ProfileKind};
-pub use solve::{parse_length_expr, solve_sketch};
+pub use solve::{parse_angle_expr, parse_length_expr, solve_sketch};
 pub use solve_state::SolveState;
 pub use workplane::{GlobalPlane, Workplane};
 

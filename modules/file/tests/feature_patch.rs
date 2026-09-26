@@ -375,3 +375,103 @@ fn rebase_detects_concurrent_edits_to_the_same_feature() {
     assert_eq!(conflicts[0].kind, ConflictKind::Feature);
     assert_eq!(conflicts[0].id, "feature:hole_mount");
 }
+
+/// MCAD-P7-006: impossible feature values are rejected at dry-run, including
+/// value edits that make an existing feature degenerate.
+#[test]
+fn degenerate_feature_values_are_rejected_before_regeneration() {
+    let doc = bracket();
+    let zero = dry_run_patch_document(&doc, &DesignPatch::set_parameter("param:thickness", "0 mm"));
+    assert!(!zero.validation.is_ok());
+    let text = format!("{:?}", zero.validation);
+    assert!(text.contains("extrude length must be at least"), "{text}");
+    assert!(text.contains("hole depth must be at least"), "{text}");
+
+    let mut flat_fillet = top_fillet();
+    flat_fillet["node"]["definition"]["radius_expr"] = json!("0 mm");
+    let message = rejection(&doc, json!([flat_fillet]));
+    assert!(
+        message.contains("fillet radius must be at least"),
+        "{message}"
+    );
+
+    // A valid value edit still passes.
+    let ok = dry_run_patch_document(&doc, &DesignPatch::set_parameter("param:thickness", "8 mm"));
+    assert!(ok.validation.is_ok(), "{:?}", ok.validation);
+}
+
+fn shell_example() -> DesignPatch {
+    serde_json::from_str(
+        &std::fs::read_to_string(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../examples/agent/add_shell_patch.json"),
+        )
+        .expect("read example"),
+    )
+    .expect("patch json")
+}
+
+/// ADR-017 §8: a structural patch authors a shelled box from an empty
+/// document, dry-run predicts the shell dirty, and OCCT regenerates the
+/// analytic volume 60*40*20 - 56*36*18 = 11 712 mm^3 within 1e-9 m^3.
+#[test]
+fn the_shell_example_authors_an_open_enclosure() {
+    use opencad_geometry::GeometryKernel;
+    use opencad_kernel_occt::OcctGeometryKernel;
+
+    let empty = OcadDocument::new(bracket().metadata.clone());
+    let report = dry_run_patch_document(&empty, &shell_example());
+    assert!(report.validation.is_ok(), "{:?}", report.validation);
+    assert!(report.diff.changes.contains(&SemanticChange::FeatureAdded {
+        id: "feature:shell".into(),
+        feature_type: "shell".into()
+    }));
+    assert!(report
+        .impact
+        .predicted_dirty_nodes
+        .contains(&"feature:shell".to_string()));
+
+    let mut doc = empty.clone();
+    apply_patch_to_document(&mut doc, &shell_example()).expect("apply");
+    assert!(doc
+        .feature_graph
+        .dependency_edges()
+        .iter()
+        .any(|edge| edge.source == "feature:box" && edge.target == "feature:shell"));
+
+    let kernel = OcctGeometryKernel::new();
+    let parameters = doc.parameters.clone();
+    let semantic_refs = doc.semantic_refs.clone();
+    let mut model = doc.clone().into_part_model();
+    model
+        .regenerate(
+            &kernel,
+            &FeatureRegistry::with_defaults(),
+            Some(&parameters),
+            Some(&semantic_refs),
+        )
+        .expect("regenerate");
+    let volume = kernel
+        .mass_properties(model.active_body().expect("body"), 1.0)
+        .expect("mass")
+        .volume_m3;
+    let expected = (60.0 * 40.0 * 20.0 - 56.0 * 36.0 * 18.0) * 1e-9;
+    assert!((volume - expected).abs() <= 1e-9, "volume {volume} m^3");
+
+    // A zero wall is rejected at dry-run, before any kernel call.
+    let thin = dry_run_patch_document(&doc, &DesignPatch::set_parameter("param:wall", "0 mm"));
+    assert!(format!("{:?}", thin.validation).contains("shell thickness must be greater than"));
+
+    // Open faces must be existing face references, and at least one.
+    let mut bad = serde_json::to_value(shell_example()).expect("json");
+    let last = bad["operations"].as_array().expect("operations").len() - 1;
+    bad["operations"][last]["node"]["definition"]["open_face_refs"] = json!([]);
+    let message = rejection(&empty, bad["operations"].clone());
+    assert!(message.contains("at least one open face"), "{message}");
+    bad["operations"][last]["node"]["definition"]["open_face_refs"] = json!(["ref:face:nowhere"]);
+    let message = rejection(&empty, bad["operations"].clone());
+    assert!(
+        message.contains("unknown semantic reference 'ref:face:nowhere'"),
+        "{message}"
+    );
+}

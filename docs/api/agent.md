@@ -315,6 +315,7 @@ STEP output is deterministic: the header time stamp is fixed at
 | `radius_expr` | `fillet` | `radius` |
 | `distance_expr` | `chamfer` | `distance` |
 | `spacing_expr` | `linear_pattern` | `spacing` |
+| `thickness_expr` | `shell` | `thickness` |
 
 ### `set_feature_ref` fields
 
@@ -396,6 +397,39 @@ need `target_feature`. `opencad import-step <doc> <file.step> --id <feature:id>
 [--operation new_body|join|cut] [--target <feature:id>] [--translate-mm x,y,z]`
 builds and applies this patch; it reuses an existing identical attachment.
 
+A `shell` feature hollows a body to a uniform inward wall and removes the
+listed faces to form openings
+([ADR-017](../adr/ADR-017-shell-feature.md)):
+
+```json
+{ "type": "shell", "target_feature": "feature:box",
+  "thickness": { "value_si": 0.002 }, "thickness_expr": "wall",
+  "open_face_refs": ["ref:face:box_top"] }
+```
+
+- The thickness must be greater than `1e-6 m`.
+- At least one open face is required. Each must be a unique, existing
+  `ref:face:` reference.
+- Every open face is resolved on the target body itself. If one does not
+  resolve, regeneration fails; there is no role fallback.
+- A wall that does not fit the part fails regeneration.
+- Known limitation: OCCT cannot shell a body whose open face is pierced by a
+  through hole. Shell before cutting the hole.
+- After a shell, regeneration reports each opened face reference as
+  `Ambiguous` in `references:`. For example: `ref:face:box_top Ambiguous 2
+  candidates tie`.
+  - The cause: references are checked against the final body, where the
+    opened face is gone and both the rim and the inner floor match its
+    description.
+  - The shell geometry is correct.
+  - Do not put a `required_reference` assertion on an opened face; it
+    would fail.
+
+  See ADR-017 §4.
+
+`examples/agent/add_shell_patch.json` authors a 60 × 40 × 20 mm enclosure
+with 2 mm walls from an empty document.
+
 Assembly and drawing objects use the stored JSON shapes of
 `graph/assemblies.json` and `graph/drawings.json`, with IDs under the
 `component:`, `instance:`, `mate:`, `pattern:`, `sheet:`, `view:`, and `dim:`
@@ -460,6 +494,18 @@ Rules shared by every structural operation:
   consumes fails and lists every consumer. Feature operations need the
   authored display order, so in-memory `opencad.patch_*` requests without it
   are rejected.
+- **Feature values.** Every patch, including value edits, rejects feature
+  values regeneration cannot use, evaluated the way regeneration will
+  (expression first, stored value otherwise):
+  - extrude lengths, hole depths, fillet radii, chamfer distances, and
+    pattern spacings below `1e-9 m`;
+  - pattern counts of `0`;
+  - zero or non-finite axes, directions, and plane normals;
+  - revolve angles outside `(0, 2π]`;
+  - invalid imported-solid placements.
+
+  For example, setting `thickness` to `0 mm` fails at dry-run and names every
+  affected feature. Suppressed features are skipped.
 - **Limits.** A patch holds at most 10,000 operations.
 - **Complete state required.** Structural operations run only through
   `build_patch_candidate` / `DesignPatch::apply_to_state` and the document,
@@ -655,6 +701,19 @@ Holes accept `face_ref` for semantic targeting; pass `semantic_refs` during rege
   }
 }
 ```
+
+Fillet and chamfer `face_ref` currently works only on top faces in the OCCT
+backend.
+- A top face (role `top`) falls back to the top perimeter.
+- Any other face fails regeneration with "selector matched no edges".
+
+Faces resolved from tessellation carry face IDs of a deep copy, which do not
+name faces of the stored body. Picking the perimeter by geometry selects the
+right edges, but OCCT's fillet and chamfer builders then fail
+nondeterministically on side-face perimeters: 3–8 of 10 identical runs
+succeed. Deterministic regeneration takes priority, so geometric picking is
+not enabled for fillet and chamfer. To round a single top edge, use `edge_ref`
+with a `top@±x` or `top@±y` role. Other edges are not selectable yet.
 
 `spacing_expr` is evaluated during regeneration (same timing as `length_expr` on extrude). Use `set_feature_expr` with `field: "spacing_expr"` to patch it parametrically.
 

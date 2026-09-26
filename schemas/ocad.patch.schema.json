@@ -188,7 +188,11 @@
                       "distance",
                       "radius",
                       "diameter",
-                      "equal"
+                      "equal",
+                      "angle",
+                      "midpoint",
+                      "symmetric",
+                      "tangent"
                     ]
                   },
                   "id": { "$ref": "#/$defs/stable_id_constraint" }
@@ -478,7 +482,8 @@
             "linear_pattern",
             "circular_pattern",
             "mirror_pattern",
-            "imported_solid"
+            "imported_solid",
+            "shell"
           ]
         }
       }

@@ -13,6 +13,7 @@ use crate::hole::HoleFeature;
 use crate::imported::ImportedSolidFeature;
 use crate::pattern::{CircularPatternFeature, LinearPatternFeature, MirrorPatternFeature};
 use crate::revolve::RevolveFeature;
+use crate::shell::ShellFeature;
 use crate::sketch_feature::SketchFeatureDef;
 
 /// Serializable feature definition stored in the design graph.
@@ -29,6 +30,7 @@ pub enum FeatureDefinition {
     CircularPattern(CircularPatternFeature),
     MirrorPattern(MirrorPatternFeature),
     ImportedSolid(ImportedSolidFeature),
+    Shell(ShellFeature),
 }
 
 impl FeatureDefinition {
@@ -44,6 +46,7 @@ impl FeatureDefinition {
             Self::CircularPattern(_) => "circular_pattern",
             Self::MirrorPattern(_) => "mirror_pattern",
             Self::ImportedSolid(_) => "imported_solid",
+            Self::Shell(_) => "shell",
         }
     }
 }
@@ -102,6 +105,17 @@ pub trait RegenContext {
 
     fn edge_discoveries(&self) -> &[opencad_geometry::EdgeRefDiscovery] {
         &[]
+    }
+
+    /// Face discoveries on `body` itself.  [`Self::face_discoveries`]
+    /// describes the most recently regenerated body, which is not `body`
+    /// when a feature consumes an earlier body; its kernel face IDs would
+    /// not name faces of `body`.
+    fn face_discoveries_on(
+        &self,
+        _body: &KernelBody,
+    ) -> Result<Vec<opencad_geometry::FaceRefDiscovery>> {
+        Ok(self.face_discoveries().to_vec())
     }
 
     /// Bytes of a document attachment such as `imports/motor.step` (ADR-016).
