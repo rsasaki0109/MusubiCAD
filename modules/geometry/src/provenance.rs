@@ -34,12 +34,36 @@ pub enum ReferenceStatus {
     Ambiguous,
     /// No candidate satisfied the reference.
     Missing,
+    /// A downstream feature intentionally removed the referenced face, such
+    /// as a shell opening (ADR-019).
+    Consumed,
 }
 
 impl ReferenceStatus {
     /// Whether the status means the reference could not be pinned to one face/edge.
     pub fn is_unresolved(self) -> bool {
-        matches!(self, Self::Ambiguous | Self::Missing)
+        matches!(self, Self::Ambiguous | Self::Missing | Self::Consumed)
+    }
+}
+
+/// Mark references that a feature intentionally removed (ADR-019).
+///
+/// `consumers` pairs a reference ID with the feature that consumes it.
+/// Consumption overrides any other classification: a removed face can only
+/// match the final body by coincidence.  Candidates are kept as evidence.
+pub fn mark_consumed_references(
+    provenance: &mut [ReferenceProvenance],
+    consumers: &[(String, String)],
+) {
+    for record in provenance.iter_mut() {
+        if let Some((_, feature)) = consumers
+            .iter()
+            .find(|(ref_id, _)| *ref_id == record.ref_id)
+        {
+            record.status = ReferenceStatus::Consumed;
+            record.resolved_kernel_id = None;
+            record.reason = format!("opened by {feature}");
+        }
     }
 }
 

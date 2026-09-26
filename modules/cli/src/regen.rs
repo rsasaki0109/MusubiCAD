@@ -418,12 +418,13 @@ pub fn print_summary(summary: &RegenSummary) {
                 .count()
         };
         println!(
-            "references: exact={} derived={} fingerprint={} ambiguous={} missing={}",
+            "references: exact={} derived={} fingerprint={} ambiguous={} missing={} consumed={}",
             count(ReferenceStatus::Exact),
             count(ReferenceStatus::Derived),
             count(ReferenceStatus::Fingerprint),
             count(ReferenceStatus::Ambiguous),
-            count(ReferenceStatus::Missing)
+            count(ReferenceStatus::Missing),
+            count(ReferenceStatus::Consumed)
         );
         for provenance in &summary.report.reference_provenance {
             println!(

@@ -24,7 +24,7 @@ pub use kernel::{
 pub use mass::{BoundingBox, MassProperties};
 pub use nurbs::NurbsSurface;
 pub use provenance::{
-    resolve_all_reference_provenance, resolve_edge_ref_with_provenance,
+    mark_consumed_references, resolve_all_reference_provenance, resolve_edge_ref_with_provenance,
     resolve_face_ref_with_provenance, CandidateEvidence, ReferenceProvenance, ReferenceResolution,
     ReferenceStatus,
 };

@@ -93,6 +93,15 @@ impl FeatureDefinition {
         present(candidates)
     }
 
+    /// Face references this definition removes from the body, such as shell
+    /// openings (ADR-019).  Provenance reports them as consumed.
+    pub fn consumed_face_refs(&self) -> Vec<&str> {
+        match self {
+            Self::Shell(def) => def.open_face_refs.iter().map(String::as_str).collect(),
+            _ => Vec::new(),
+        }
+    }
+
     /// Parametric expressions this definition evaluates, as `(field, expr)`.
     pub fn expressions(&self) -> Vec<(&'static str, &str)> {
         let (field, expr) = match self {

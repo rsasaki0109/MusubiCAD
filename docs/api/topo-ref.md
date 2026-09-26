@@ -90,6 +90,7 @@ match resolution.provenance.status {
     ReferenceStatus::Fingerprint => { /* role/geometric fallback */ }
     ReferenceStatus::Ambiguous => { /* equal best scores; never picked */ }
     ReferenceStatus::Missing => { /* no candidate satisfied the reference */ }
+    ReferenceStatus::Consumed => { /* a feature removed the face (ADR-019) */ }
 }
 ```
 
@@ -102,6 +103,9 @@ match resolution.provenance.status {
   is `ambiguous` and reports no chosen kernel id. Ties are detected from the
   scored candidate set, so the outcome is independent of discovery order.
 - `missing` means no candidate satisfied the reference.
+- `consumed` means an unsuppressed feature intentionally removed the face,
+  such as a shell opening. The reason names the feature, and no kernel ID is
+  chosen (ADR-019). It counts as unresolved for `required_reference`.
 - Setting `required = true` makes `ambiguous` and `missing` return an error,
   so a required reference blocks the commit instead of silently choosing.
 - Each provenance records the source feature, intended role, candidate set
