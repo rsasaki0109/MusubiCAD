@@ -4,6 +4,39 @@ use cadrum::{DVec3, Edge, Error as OcctError};
 use opencad_core::{OpenCadError, Result};
 use opencad_geometry::{ProfilePlane, SketchPlacement, SolvedSketch};
 
+/// Edges of a sweep path: its line and arc segments, open or closed,
+/// placed by the path sketch placement (ADR-023).
+#[cfg(feature = "occt")]
+pub fn path_to_edges(path: &SolvedSketch) -> Result<Vec<Edge>> {
+    if path.segments.is_empty() {
+        return Err(OpenCadError::validation("sweep path has no segments"));
+    }
+    let placement = path.placement.unwrap_or(SketchPlacement::global_xy());
+    segments_to_edges(&path.segments, placement)
+}
+
+#[cfg(feature = "occt")]
+fn segments_to_edges(
+    segments: &[opencad_geometry::ProfileSegment],
+    placement: SketchPlacement,
+) -> Result<Vec<Edge>> {
+    let to_world = |p: [f64; 2]| DVec3::from_array(placement.map_point(p[0], p[1]));
+    segments
+        .iter()
+        .map(|segment| match *segment {
+            opencad_geometry::ProfileSegment::Line { start_m, end_m } => {
+                Edge::line(to_world(start_m), to_world(end_m))
+            }
+            opencad_geometry::ProfileSegment::Arc {
+                start_m,
+                mid_m,
+                end_m,
+            } => Edge::arc_3pts(to_world(start_m), to_world(mid_m), to_world(end_m)),
+        })
+        .collect::<std::result::Result<Vec<Edge>, _>>()
+        .map_err(map_occt_error)
+}
+
 #[cfg(feature = "occt")]
 pub fn sketch_to_edges(sketch: &SolvedSketch) -> Result<Vec<Edge>> {
     let placement = sketch.placement.unwrap_or(SketchPlacement::global_xy());
@@ -44,22 +77,7 @@ pub fn sketch_to_edges_placed(
     }
     // Loops with arcs become exact line and arc edges (ADR-021).
     if !sketch.segments.is_empty() {
-        let to_world = |p: [f64; 2]| DVec3::from_array(placement.map_point(p[0], p[1]));
-        return sketch
-            .segments
-            .iter()
-            .map(|segment| match *segment {
-                opencad_geometry::ProfileSegment::Line { start_m, end_m } => {
-                    Edge::line(to_world(start_m), to_world(end_m))
-                }
-                opencad_geometry::ProfileSegment::Arc {
-                    start_m,
-                    mid_m,
-                    end_m,
-                } => Edge::arc_3pts(to_world(start_m), to_world(mid_m), to_world(end_m)),
-            })
-            .collect::<std::result::Result<Vec<Edge>, _>>()
-            .map_err(map_occt_error);
+        return segments_to_edges(&sketch.segments, placement);
     }
     if sketch.points.len() < 3 {
         return Err(OpenCadError::validation(

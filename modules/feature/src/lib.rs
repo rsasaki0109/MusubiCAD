@@ -19,6 +19,7 @@ pub mod revolve;
 pub mod shell;
 pub mod sketch_bridge;
 pub mod sketch_feature;
+pub mod sweep;
 pub mod topo_resolve;
 pub mod values;
 
@@ -52,3 +53,4 @@ pub use sketch_bridge::{
     profile_to_solved_with_context, resolve_sketch_profile,
 };
 pub use sketch_feature::{SketchFeature, SketchFeatureDef};
+pub use sweep::{SweepFeature, SweepFeatureExecutor};

@@ -62,6 +62,13 @@
       "prompt": "Create a new part document at {document} and author a tapered round boss with a loft: a 40 mm diameter circular base centred on the origin in the XY plane, blending into a 20 mm diameter circle centred 30 mm directly above it.",
       "expected_volume_mm3": 21991.1,
       "required_parameters": []
+    },
+    {
+      "id": "sweep_elbow",
+      "document": "elbow.ocad.d",
+      "prompt": "Create a new part document at {document} and author a solid pipe elbow with a sweep: a 10 mm diameter round section that runs straight up the +Z axis from the origin for 30 mm, then turns through a 90 degree bend of 20 mm centreline radius towards +X.",
+      "expected_volume_mm3": 4823.6,
+      "required_parameters": []
     }
   ]
 }

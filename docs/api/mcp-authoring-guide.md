@@ -83,7 +83,10 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
    - Hole: `{"type": "hole", "sketch_feature": "feature:sketch_hole", "profile_ref": "sketch:hole/profile:outer", "depth": {"type": "distance", "length": {"value_si": 0.005}}, "target_feature": "feature:plate", "depth_expr": "thickness"}`
 
 Other feature types are `revolve`, `fillet`, `chamfer`, `linear_pattern`,
-`circular_pattern`, `mirror_pattern`, `imported_solid`, `shell`, and `loft`.
+`circular_pattern`, `mirror_pattern`, `imported_solid`, `shell`, `loft`, and
+`sweep`. A sweep moves a closed section along a separate path sketch of lines
+and endpoint arcs. Place the section at one end of the path, perpendicular to
+it (see `examples/agent/author_sweep_elbow_patch.json`).
 A loft skins two or more closed sections, each on its own sketch workplane,
 for example a raised one:
 `{"type": "custom", "origin": [0, 0, 0.03], "normal": [0, 0, 1], "x_axis": [1, 0, 0]}`

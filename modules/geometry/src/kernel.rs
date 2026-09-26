@@ -263,6 +263,15 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// Sweep a closed `profile` along `path`, an open or closed chain of
+    /// line and arc segments placed by its own sketch placement (ADR-023).
+    /// The profile keeps its orientation relative to the path plane normal.
+    fn sweep(&self, _profile: &SolvedSketch, _path: &SolvedSketch) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not support sweeps",
+        ))
+    }
+
     /// Skin a solid through two or more closed section profiles, each placed
     /// by its own sketch placement, in order (ADR-022).
     fn loft(&self, _sections: &[SolvedSketch]) -> Result<KernelBody> {
@@ -352,6 +361,17 @@ impl GeometryKernel for MockGeometryKernel {
             return Err(OpenCadError::validation("STEP file contains no solids"));
         }
         Ok(KernelBody::new((step.len() as u64 % 97).max(1)))
+    }
+
+    /// A deterministic stand-in body derived from the inputs (ADR-023).
+    fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
+        if path.segments.is_empty() {
+            return Err(OpenCadError::validation("sweep path has no segments"));
+        }
+        let seed = (profile.points.len() as u64)
+            .wrapping_mul(1_000_003)
+            .wrapping_add(path.segments.len() as u64);
+        Ok(KernelBody::new(seed.max(1)))
     }
 
     /// A deterministic stand-in body derived from the section count and

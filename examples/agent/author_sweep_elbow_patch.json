@@ -1,0 +1,212 @@
+{
+  "intent": "Author a solid pipe elbow: a 5 mm radius section swept up 30 mm, then around a 20 mm quarter bend",
+  "rationale": "A circular section swept along a line-and-arc path; both sketches are fully constrained",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:pipe_radius",
+      "name": "pipe_radius",
+      "expr": "5 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:straight_length",
+      "name": "straight_length",
+      "expr": "30 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:bend_radius",
+      "name": "bend_radius",
+      "expr": "20 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:profile",
+      "name": "Pipe Section",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:profile",
+      "entity": {
+        "type": "point",
+        "id": "ent:section_center",
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:profile",
+      "entity": {
+        "type": "circle",
+        "id": "ent:section",
+        "center": "ent:section_center",
+        "radius": 0.005
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:profile",
+      "constraint": {
+        "type": "radius",
+        "id": "con:section_radius",
+        "target": "ent:section",
+        "expr": "pipe_radius"
+      }
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:path",
+      "name": "Pipe Path",
+      "workplane": {
+        "type": "global",
+        "plane": "XZ"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:path",
+      "entity": {
+        "type": "point",
+        "id": "ent:p0",
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:path",
+      "entity": {
+        "type": "point",
+        "id": "ent:p1",
+        "x": 0.0,
+        "y": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:path",
+      "entity": {
+        "type": "point",
+        "id": "ent:p2",
+        "x": 0.02,
+        "y": 0.05
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:path",
+      "entity": {
+        "type": "point",
+        "id": "ent:bend_center",
+        "x": 0.02,
+        "y": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:path",
+      "entity": {
+        "type": "line",
+        "id": "ent:straight",
+        "start": "ent:p0",
+        "end": "ent:p1"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:path",
+      "entity": {
+        "type": "arc",
+        "id": "ent:bend",
+        "center": "ent:bend_center",
+        "radius": 0.02,
+        "start_angle": "90 deg",
+        "end_angle": "180 deg",
+        "start_point": "ent:p2",
+        "end_point": "ent:p1"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:path",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:straight_vertical",
+        "line": "ent:straight"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:path",
+      "constraint": {
+        "type": "distance",
+        "id": "con:straight_length",
+        "target": {
+          "line": "ent:straight"
+        },
+        "expr": "straight_length"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:path",
+      "constraint": {
+        "type": "radius",
+        "id": "con:bend_radius",
+        "target": "ent:bend",
+        "expr": "bend_radius"
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:sketch_profile",
+        "name": "Pipe Section",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:profile"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:sketch_path",
+        "name": "Pipe Path",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:path"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:pipe",
+        "name": "Pipe",
+        "definition": {
+          "type": "sweep",
+          "sketch_feature": "feature:sketch_profile",
+          "profile_ref": "sketch:profile/profile:outer",
+          "path_sketch_feature": "feature:sketch_path",
+          "operation": "new_body"
+        }
+      }
+    }
+  ]
+}

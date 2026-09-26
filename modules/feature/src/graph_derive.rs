@@ -24,6 +24,16 @@ impl FeatureDefinition {
     /// Feature IDs this definition consumes directly, as `(field, feature_id)`
     /// in canonical field order: sketch, source, then target.
     pub fn feature_inputs(&self) -> Vec<(&'static str, &str)> {
+        if let Self::Sweep(def) = self {
+            return [
+                ("sketch_feature", Some(&def.sketch_feature)),
+                ("path_sketch_feature", Some(&def.path_sketch_feature)),
+                ("target_feature", def.target_feature.as_ref()),
+            ]
+            .into_iter()
+            .filter_map(|(field, id)| id.map(|id| (field, id.as_str())))
+            .collect();
+        }
         if let Self::Loft(def) = self {
             return def
                 .sections
@@ -54,6 +64,7 @@ impl FeatureDefinition {
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Loft(_) => [("", None), ("", None)],
+            Self::Sweep(_) => [("", None), ("", None)],
             Self::LinearPattern(def) => [
                 ("source_feature", Some(&def.source_feature)),
                 ("target_feature", def.target_feature.as_ref()),
@@ -102,7 +113,8 @@ impl FeatureDefinition {
             | Self::CircularPattern(_)
             | Self::ImportedSolid(_)
             | Self::Shell(_)
-            | Self::Loft(_) => [("", None), ("", None)],
+            | Self::Loft(_)
+            | Self::Sweep(_) => [("", None), ("", None)],
         };
         present(candidates)
     }
@@ -115,6 +127,7 @@ impl FeatureDefinition {
             Self::Extrude(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Hole(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Revolve(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
+            Self::Sweep(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Loft(def) => def
                 .sections
                 .iter()
@@ -152,7 +165,8 @@ impl FeatureDefinition {
             | Self::CircularPattern(_)
             | Self::MirrorPattern(_)
             | Self::ImportedSolid(_)
-            | Self::Loft(_) => return Vec::new(),
+            | Self::Loft(_)
+            | Self::Sweep(_) => return Vec::new(),
         };
         expr.map(|expr| vec![(field, expr.as_str())])
             .unwrap_or_default()
@@ -386,6 +400,13 @@ mod tests {
                 target_feature: Some("feature:plate".into()),
             },
         ));
+        samples.push(FeatureDefinition::Sweep(crate::SweepFeature {
+            sketch_feature: "feature:sketch_profile".into(),
+            profile_ref: "sketch:profile/profile:outer".into(),
+            path_sketch_feature: "feature:sketch_path".into(),
+            operation: opencad_geometry::ExtrudeOperation::Cut,
+            target_feature: Some("feature:plate".into()),
+        }));
         samples.push(FeatureDefinition::Loft(crate::LoftFeature {
             sections: vec![
                 crate::LoftSection {
@@ -457,6 +478,7 @@ mod tests {
             "imported_solid",
             "shell",
             "loft",
+            "sweep",
         ] {
             assert!(
                 covered_types.contains(feature_type),

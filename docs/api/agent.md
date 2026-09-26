@@ -437,6 +437,22 @@ in order ([ADR-022](../adr/ADR-022-loft-feature.md)):
 - `join` and `cut` need `target_feature`.
 - `examples/agent/author_loft_frustum_patch.json` authors a square frustum.
 
+A `sweep` feature moves a closed section along a path
+([ADR-023](../adr/ADR-023-sweep-feature.md)):
+
+```json
+{ "type": "sweep", "sketch_feature": "feature:sketch_profile",
+  "profile_ref": "sketch:profile/profile:outer",
+  "path_sketch_feature": "feature:sketch_path", "operation": "new_body" }
+```
+
+- **Path.** The path sketch's lines and endpoint arcs must form one chain.
+  An open path starts at the end nearest the section.
+- **Section.** Place the section perpendicular to the path at that end. It
+  keeps its orientation relative to the path plane's normal.
+- **Example.** `examples/agent/author_sweep_elbow_patch.json` authors a pipe
+  elbow.
+
 Assembly and drawing objects use the stored JSON shapes of
 `graph/assemblies.json` and `graph/drawings.json`, with IDs under the
 `component:`, `instance:`, `mate:`, `pattern:`, `sheet:`, `view:`, and `dim:`

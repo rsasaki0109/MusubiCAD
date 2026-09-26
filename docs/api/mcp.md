@@ -88,6 +88,7 @@ task. The tasks are defined in `tools/mcp_eval_tasks.json`:
 | `two_hole_plate` | Author an 80 × 50 × 6 mm plate with two Ø8 mm through holes | 23 396.8 mm³ |
 | `slot_plate` | Author a 60 × 40 × 5 mm plate with a 30 × 8 mm through slot (lines and arcs, ADR-021) | 10 548.7 mm³ |
 | `edit_bracket` | Widen and thicken the example bracket while keeping it rectangular. Its sketch starts constrained only by side lengths. | 47 371.7 mm³ |
+| `sweep_elbow` | Sweep a Ø10 mm section up 30 mm and around a 20 mm radius quarter bend (ADR-023) | 4 823.6 mm³ |
 | `loft_cone` | Loft a Ø40 mm circle into a Ø20 mm circle 30 mm higher (ADR-022) | 21 991.1 mm³ |
 | `import_step` | Import a STEP file (exported by a `setup` step) as a fixed solid | 28 328.8 mm³ |
 | `fillet_bracket_top` | Round the bracket's top outer edges and hole rim with 1 mm fillets | 28 262.0 mm³ |

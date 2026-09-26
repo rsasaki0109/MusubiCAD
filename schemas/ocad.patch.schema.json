@@ -486,7 +486,8 @@
             "mirror_pattern",
             "imported_solid",
             "shell",
-            "loft"
+            "loft",
+            "sweep"
           ]
         }
       }

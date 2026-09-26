@@ -33,17 +33,15 @@ impl Feature for SketchFeature {
     }
 }
 
-/// Validate that a sketch exists and has at least one closed profile.
+/// Validate that a sketch has at least one profile.
+///
+/// A sketch may hold only an open chain, such as a sweep path (ADR-023).
+/// Consumers that need a closed profile (extrude, hole, revolve, loft,
+/// sweep section) check closure when they resolve their `profile_ref`.
 pub fn validate_sketch(sketch: &Sketch) -> Result<()> {
     if sketch.profiles.is_empty() {
         return Err(OpenCadError::validation(format!(
             "sketch '{}' has no profiles; call update_profiles() after solving",
-            sketch.id
-        )));
-    }
-    if !sketch.profiles.iter().any(|p| p.is_closed()) {
-        return Err(OpenCadError::validation(format!(
-            "sketch '{}' has no closed profile for extrude",
             sketch.id
         )));
     }
