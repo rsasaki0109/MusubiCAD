@@ -179,10 +179,11 @@ Profile sketches use a global workplane (`XY`, `YZ`, or `XZ`).
 
 Semantic topology references retain their `ref_id` and semantic identity across
 supported boolean-hole, fillet, chamfer, and linear-pattern parameter edits.
-Face derivation history is used within a regeneration run. Across separate
-runs, a stored kernel ID is first checked against current discoveries; if it is
-absent, resolution uses the semantic/fingerprint fallback rather than returning
-a stale kernel-local value. The OCCT-backed contract test is
+Kernel IDs are deterministic enumeration indices (ADR-018). A stored kernel ID
+is checked against current discoveries and trusted only while it names a face
+with the reference's role. Otherwise resolution uses the semantic/fingerprint
+fallback rather than returning a stale index. Face derivation history is
+reported per operation but no longer remaps stored IDs. The OCCT-backed contract test is
 `occt_semantic_toporef_survives_boolean_fillet_chamfer_and_linear_pattern_edits`.
 
 ```json

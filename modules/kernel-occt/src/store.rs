@@ -18,6 +18,10 @@ pub struct KernelStore {
     pub bodies: HashMap<u64, Solid>,
     #[cfg(feature = "occt")]
     pub compound_members: HashMap<u64, Vec<u64>>,
+    /// Face derivation history of a body as `(result face index, input face
+    /// index)` pairs, recorded when the modifying operation ran (ADR-018).
+    #[cfg(feature = "occt")]
+    pub face_history: HashMap<u64, Vec<(u64, u64)>>,
 }
 
 impl KernelStore {
@@ -42,6 +46,40 @@ impl KernelStore {
     pub fn insert_body(&mut self, solid: Solid) -> u64 {
         let id = self.alloc_id();
         self.bodies.insert(id, solid);
+        id
+    }
+
+    /// Store an operation result together with its face history, translated
+    /// to enumeration indices (ADR-018).  `input_faces` maps each face
+    /// address of the solid the operation consumed to its index; pairs whose
+    /// source is not in that map (for example a boolean tool body) are
+    /// dropped.
+    #[cfg(feature = "occt")]
+    pub fn insert_derived(&mut self, result: Solid, input_faces: &HashMap<u64, u64>) -> u64 {
+        let mut result_faces: HashMap<u64, Vec<u64>> = HashMap::new();
+        for (index, face) in result.iter_face().enumerate() {
+            result_faces
+                .entry(face.id())
+                .or_default()
+                .push(index as u64 + 1);
+        }
+        let mut pairs: Vec<(u64, u64)> = result
+            .iter_history()
+            .filter_map(|pair| {
+                let source = *input_faces.get(&pair[1])?;
+                Some(
+                    result_faces
+                        .get(&pair[0])?
+                        .iter()
+                        .map(move |post| (*post, source)),
+                )
+            })
+            .flatten()
+            .collect();
+        pairs.sort_unstable();
+        pairs.dedup();
+        let id = self.insert_body(result);
+        self.face_history.insert(id, pairs);
         id
     }
 

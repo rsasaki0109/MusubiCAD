@@ -60,7 +60,8 @@ explains what should be rebound.
 
 Resolution uses this order:
 
-1. persisted kernel ID, remapped through derivation history;
+1. persisted kernel ID (a deterministic enumeration index, ADR-018), trusted
+   only while the discovered face or edge still has the reference's role;
 2. semantic producer/role match;
 3. fingerprint fallback using centroid or midpoint distance and direction
    hints.

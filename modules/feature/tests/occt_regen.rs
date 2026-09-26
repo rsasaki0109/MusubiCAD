@@ -7,8 +7,8 @@ use opencad_feature::{
     profile_to_solved, robot_joint_actuator_housing, FeatureRegistry, PartModel,
 };
 use opencad_geometry::{
-    build_src_to_post_map, resolve_kernel_face_id_for_topo_ref_with_discoveries,
-    sync_semantic_refs_with_history, ExtrudeExtent, ExtrudeOperation, GeometryKernel, TopoRef,
+    resolve_kernel_face_id_for_topo_ref_with_discoveries, sync_semantic_refs_with_history,
+    ExtrudeExtent, ExtrudeOperation, GeometryKernel, TopoRef,
 };
 use opencad_graph::{
     bearing_carrier_parameters, bracket_parameters, robot_joint_housing_parameters,
@@ -243,12 +243,9 @@ fn occt_regen_composes_boolean_and_fillet_history() {
         "composed history should include boolean + fillet steps"
     );
 
-    let composed_map = build_src_to_post_map(&report.face_history);
-    let final_map = build_src_to_post_map(&final_only);
-    assert!(
-        composed_map.len() > final_map.len(),
-        "composed map should track more ancestor face ids"
-    );
+    // History pairs are enumeration indices local to each operation
+    // (ADR-018), so they are not merged into one cross-operation map.
+    assert!(final_only.iter().all(|(post, src)| *post >= 1 && *src >= 1));
 }
 
 #[test]

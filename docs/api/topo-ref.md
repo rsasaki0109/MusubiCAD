@@ -50,12 +50,21 @@ produce no fallback match from the direct matcher. When candidates have the
 same score, the smallest kernel ID wins, so the result does not depend on
 tessellation discovery order.
 
-When current discoveries are supplied, a stored or history-remapped kernel ID
-is accepted only if it is present in those discoveries. This matters across
-separate regeneration runs, where kernel-local IDs can all change and the
-current run's derivation history cannot bridge the prior process-local value.
-An absent stored ID therefore continues through semantic/fingerprint fallback;
-without discoveries, the legacy stored-ID behavior is retained.
+Kernel face and edge IDs are 1-based enumeration indices of the final body
+([ADR-018](../adr/ADR-018-deterministic-kernel-topology-ids.md)). They are
+deterministic for identical inputs, so `opencad regen --sync-topo-refs`
+writes the same file on every run.
+
+When current discoveries are supplied, a stored ID is accepted only if a
+discovered face or edge with that ID still has the reference's role. An index
+can name another face after a topology change. For example, cutting a hole
+inserts faces. A stored ID that fails this check continues through
+semantic/fingerprint fallback. Without discoveries, the stored ID is used as
+is.
+
+Stored IDs are not remapped through face derivation history. History indices
+are local to each operation's bodies, so a single flat map would conflate
+different faces.
 
 ## Reference provenance (fail-closed, MCAD-P6-003)
 
@@ -77,15 +86,17 @@ let resolution = resolve_face_ref_with_provenance(
 )?;
 match resolution.provenance.status {
     ReferenceStatus::Exact => { /* stored kernel id is present */ }
-    ReferenceStatus::Derived => { /* remapped through derivation history */ }
+    ReferenceStatus::Derived => { /* no longer produced (ADR-018) */ }
     ReferenceStatus::Fingerprint => { /* role/geometric fallback */ }
     ReferenceStatus::Ambiguous => { /* equal best scores; never picked */ }
     ReferenceStatus::Missing => { /* no candidate satisfied the reference */ }
 }
 ```
 
-- `exact` accepts the stored (or history-remapped) kernel id present in the
-  regenerated body; `derived` distinguishes the remapped case.
+- `exact` accepts the stored kernel id when the regenerated body still has
+  that face or edge with the reference's role.
+- `derived` is kept for compatibility. It is no longer produced, because
+  stored IDs are not remapped through history (ADR-018).
 - `fingerprint` is a role/geometric fallback pick.
 - When two or more distinct candidates tie for the best score, the resolution
   is `ambiguous` and reports no chosen kernel id. Ties are detected from the
@@ -117,8 +128,10 @@ directory:
 1. Keep each existing `ref_id`, `kind`, `semantic.created_by`, `role`, and
    `intent` unchanged.
 2. Do not promote a kernel face/edge ID into identity; it is a cache hint.
-3. Pass derivation history to the resolver first. If the stored ID is stale or
-   absent, provide current discoveries and an explicit tolerance policy.
+3. Provide current discoveries and an explicit tolerance policy. A stored ID
+   that is stale, including an address-based ID written before ADR-018, falls
+   back to role and fingerprint matching. The resolver still accepts a
+   history argument, but ignores it.
 4. Persist refreshed fingerprint/kernel hints only through the existing sync
    path. Do not rewrite every legacy file merely to record the runtime policy.
 

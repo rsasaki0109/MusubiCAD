@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::refs::{TopoRef, TopoRefKind, TopoRefTolerancePolicy};
 use crate::topo_sync::{
-    build_src_to_post_map, edge_match_candidates, face_match_candidates, EdgeRefDiscovery,
-    FaceDerivation, FaceRefDiscovery,
+    edge_match_candidates, face_match_candidates, EdgeRefDiscovery, FaceDerivation,
+    FaceRefDiscovery,
 };
 
 /// Score distance treated as an exact tie during candidate classification.
@@ -251,11 +251,18 @@ pub fn resolve_face_ref_with_provenance(
         .unwrap_or_default();
 
     if let Some(stored_id) = topo_ref.kernel_face_id() {
-        let remap = build_src_to_post_map(face_history);
-        let resolved_id = remap.get(&stored_id).copied().unwrap_or(stored_id);
-        let derived = resolved_id != stored_id;
+        // Stored IDs are final-body indices (ADR-018) and are not remapped
+        // through per-operation history, so nothing is reported as derived.
+        let _ = face_history;
+        let resolved_id = stored_id;
+        let derived = false;
         let verified = discoveries
-            .map(|discoveries| discoveries.iter().any(|d| d.kernel_face_id == resolved_id))
+            .map(|discoveries| {
+                discoveries.iter().any(|d| {
+                    d.kernel_face_id == resolved_id
+                        && crate::topo_sync::role_agrees(topo_ref, &d.role)
+                })
+            })
             .unwrap_or(true);
         if verified {
             let (status, reason) = if derived {
@@ -336,7 +343,12 @@ pub fn resolve_edge_ref_with_provenance(
 
     if let Some(stored_id) = topo_ref.kernel_edge_id() {
         let verified = discoveries
-            .map(|discoveries| discoveries.iter().any(|d| d.kernel_edge_id == stored_id))
+            .map(|discoveries| {
+                discoveries.iter().any(|d| {
+                    d.kernel_edge_id == stored_id
+                        && crate::topo_sync::role_agrees(topo_ref, &d.role)
+                })
+            })
             .unwrap_or(true);
         if verified {
             let provenance = provenance_from(
@@ -470,7 +482,9 @@ mod tests {
     }
 
     #[test]
-    fn derived_face_is_classified_through_history() {
+    /// ADR-018: stored IDs are final-body indices and are not remapped
+    /// through per-operation history; a stale ID falls back to fingerprints.
+    fn history_does_not_remap_a_stored_face_id() {
         let refs = vec![TopoRef::kernel_face(
             TopoRefId::new("ref:face:top").expect("id"),
             "feature:fillet_top",
@@ -488,8 +502,8 @@ mod tests {
             TopoRefTolerancePolicy::default(),
             true,
         )
-        .expect("derived resolution");
-        assert_eq!(resolution.provenance.status, ReferenceStatus::Derived);
+        .expect("fingerprint resolution");
+        assert_eq!(resolution.provenance.status, ReferenceStatus::Fingerprint);
         assert_eq!(resolution.resolved_kernel_id, Some(200));
     }
 

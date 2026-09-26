@@ -131,12 +131,16 @@ mod tests {
             .any(|topo_ref| topo_ref.ref_id.as_str() == "ref:face:bracket_top"));
     }
 
+    /// ADR-018: kernel IDs are final-body enumeration indices.  A stored ID
+    /// that now names a face with another role is neither trusted nor used
+    /// to relabel the reference; the reference is rebound to the face with
+    /// its role through the fingerprint path.
     #[test]
-    fn sync_topo_refs_rebinds_stale_ids_via_fillet_history() {
+    fn sync_topo_refs_rebinds_a_stale_index_by_role() {
         use opencad_core::{DocumentId, DocumentMetadata, TopoRefId};
         use opencad_feature::bracket_with_top_fillet;
         use opencad_file::OcadDocument;
-        use opencad_geometry::{build_src_to_post_map, sync_semantic_refs_with_history};
+        use opencad_geometry::sync_semantic_refs_with_history;
 
         let part = bracket_with_top_fillet().expect("model");
         let metadata = DocumentMetadata::new(
@@ -144,93 +148,57 @@ mod tests {
             "Fillet Bracket",
         );
         let doc = OcadDocument::from_part_model(metadata, &part);
-        let tessellated = crate::export::tessellate_active_body_detailed(
-            &mut doc.clone().into_part_model(),
-            Some(&doc.parameters),
-            None,
-        )
-        .expect("tessellate");
-        let (post_id, src_id) = tessellated
-            .face_history
+        let mut model = doc.clone().into_part_model();
+        let tessellated =
+            crate::export::tessellate_active_body_detailed(&mut model, Some(&doc.parameters), None)
+                .expect("tessellate");
+        let nodes: Vec<_> = model.nodes.values().cloned().collect();
+        let discoveries = opencad_feature::face_discover::discover_face_refs_from_mesh(
+            &tessellated.mesh_set,
+            &nodes,
+        );
+        let top = discoveries
             .iter()
-            .copied()
-            .find(|(post, src)| post != src)
-            .expect("fillet history pair with changed face id");
-        let expected_id = build_src_to_post_map(&tessellated.face_history)
-            .get(&src_id)
-            .copied()
-            .unwrap_or(post_id);
+            .find(|discovery| discovery.role == "top")
+            .expect("top face");
+        let other = discoveries
+            .iter()
+            .find(|discovery| discovery.role != "top")
+            .expect("a non-top face");
 
         let refs = sync_semantic_refs_with_history(
             &[TopoRef::kernel_face(
                 TopoRefId::new("ref:face:test_rebind").expect("id"),
                 "feature:fillet_top",
                 "top",
-                src_id,
+                other.kernel_face_id,
                 [0.0, 0.0, 1.0],
             )],
             &tessellated.face_history,
-            &[],
+            &discoveries,
         );
-
         let rebound = refs
             .iter()
             .find(|topo_ref| topo_ref.ref_id.as_str() == "ref:face:test_rebind")
             .expect("rebound ref");
-        assert_eq!(rebound.kernel_face_id(), Some(expected_id));
-        assert_ne!(rebound.kernel_face_id(), Some(src_id));
-    }
-
-    #[test]
-    fn sync_topo_refs_rebinds_boolean_era_ids_via_full_chain() {
-        use opencad_core::{DocumentId, DocumentMetadata, TopoRefId};
-        use opencad_feature::bracket_with_top_fillet;
-        use opencad_file::OcadDocument;
-        use opencad_geometry::{build_src_to_post_map, sync_semantic_refs_with_history};
-
-        let fillet_part = bracket_with_top_fillet().expect("fillet model");
-        let fillet_metadata = DocumentMetadata::new(
-            DocumentId::new("doc:fillet_bracket").expect("id"),
-            "Fillet Bracket",
-        );
-        let fillet_doc = OcadDocument::from_part_model(fillet_metadata, &fillet_part);
-        let fillet_tessellated = crate::export::tessellate_active_body_detailed(
-            &mut fillet_doc.clone().into_part_model(),
-            Some(&fillet_doc.parameters),
-            None,
+        assert_eq!(rebound.semantic.role.as_deref(), Some("top"));
+        assert_ne!(rebound.kernel_face_id(), Some(other.kernel_face_id));
+        let resolved = opencad_geometry::resolve_kernel_face_id_for_topo_ref_with_discoveries(
+            &refs,
+            &tessellated.face_history,
+            "ref:face:test_rebind",
+            Some(&discoveries),
         )
-        .expect("fillet tessellate");
-
-        let boolean_src = fillet_tessellated
-            .face_history
-            .iter()
-            .copied()
-            .find(|(post, src)| post != src)
-            .map(|(_, src)| src)
-            .expect("boolean history in composed chain");
-        let expected_id = build_src_to_post_map(&fillet_tessellated.face_history)
-            .get(&boolean_src)
-            .copied()
-            .expect("boolean-era src should map through fillet chain");
-
-        let refs = sync_semantic_refs_with_history(
-            &[TopoRef::kernel_face(
-                TopoRefId::new("ref:face:chain_top").expect("id"),
-                "feature:extrude_base",
-                "top",
-                boolean_src,
-                [0.0, 0.0, 1.0],
-            )],
-            &fillet_tessellated.face_history,
-            &[],
+        .expect("resolve");
+        // A curved fillet face is discovered as several role groups, so check
+        // that the resolved face has a `top` group.
+        assert!(
+            discoveries
+                .iter()
+                .any(|discovery| discovery.kernel_face_id == resolved && discovery.role == "top"),
+            "resolved face {resolved} has no top group (flat top is {})",
+            top.kernel_face_id
         );
-
-        let rebound = refs
-            .iter()
-            .find(|topo_ref| topo_ref.ref_id.as_str() == "ref:face:chain_top")
-            .expect("rebound ref");
-        assert_eq!(rebound.kernel_face_id(), Some(expected_id));
-        assert_ne!(rebound.kernel_face_id(), Some(boolean_src));
     }
 
     #[test]
