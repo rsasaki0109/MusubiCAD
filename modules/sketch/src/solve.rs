@@ -619,7 +619,7 @@ fn arc_endpoint_equations(
             let Some(point) = point else {
                 continue;
             };
-            let angle = arc_angle(arc, angle)?;
+            let angle = resolved_or(arc, angle)?;
             equations.push(ConstraintResidual::ArcEndpointX {
                 px: var(format!("{}.x", point.as_str()))?,
                 cx,
@@ -637,8 +637,34 @@ fn arc_endpoint_equations(
     Ok(())
 }
 
+/// Start and end angles of an arc in radians: the values resolved from
+/// parameter expressions before solving (ADR-024), otherwise literals or
+/// constant angle expressions.
+pub fn arc_angles(arc: &crate::entity::ArcEntity) -> Result<(f64, f64)> {
+    if let Some([start, end]) = arc.resolved_angles_rad {
+        return Ok((start, end));
+    }
+    Ok((
+        arc_angle(arc, &arc.start_angle)?,
+        arc_angle(arc, &arc.end_angle)?,
+    ))
+}
+
+/// One of `arc`'s angles, preferring the parameter-resolved value.
+fn resolved_or(arc: &crate::entity::ArcEntity, angle: &Coord) -> Result<f64> {
+    match arc.resolved_angles_rad {
+        Some([start, end]) => Ok(if std::ptr::eq(angle, &arc.start_angle) {
+            start
+        } else {
+            end
+        }),
+        None => arc_angle(arc, angle),
+    }
+}
+
 /// An arc angle in radians: a literal, or a constant angle expression such
-/// as `90 deg`.  Parameter-driven arc angles are not supported yet.
+/// as `90 deg`.  Parameter-driven angles are resolved beforehand into
+/// `resolved_angles_rad` (ADR-024).
 pub fn arc_angle(arc: &crate::entity::ArcEntity, angle: &Coord) -> Result<f64> {
     match angle {
         Coord::Literal(value) => Ok(*value),
@@ -998,6 +1024,7 @@ mod tests {
                 end_angle: Coord::literal(1.0),
                 start_point: None,
                 end_point: None,
+                resolved_angles_rad: None,
             }))
             .expect("arc");
         sketch
@@ -1061,6 +1088,7 @@ mod tests {
                 end_angle: Coord::literal(1.0),
                 start_point: None,
                 end_point: None,
+                resolved_angles_rad: None,
             }))
             .expect("arc");
 
@@ -1486,6 +1514,7 @@ mod tests {
                 end_angle: Coord::expr("90 deg").expect("angle"),
                 start_point: Some(EntityId::new("ent:p").expect("id")),
                 end_point: Some(EntityId::new("ent:q").expect("id")),
+                resolved_angles_rad: None,
             }))
             .expect("arc");
         sketch

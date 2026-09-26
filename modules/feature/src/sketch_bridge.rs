@@ -402,8 +402,7 @@ fn chain_segments(sketch: &Sketch, ordered: &[(&Piece, bool)], closed: bool) -> 
                         ))
                     }
                 };
-                let start_angle = opencad_sketch::solve::arc_angle(arc, &arc.start_angle)?;
-                let end_angle = opencad_sketch::solve::arc_angle(arc, &arc.end_angle)?;
+                let (start_angle, end_angle) = opencad_sketch::solve::arc_angles(arc)?;
                 let mut sweep = (end_angle - start_angle).rem_euclid(std::f64::consts::TAU);
                 if sweep == 0.0 {
                     sweep = std::f64::consts::TAU;

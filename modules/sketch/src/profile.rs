@@ -261,6 +261,7 @@ mod tests {
                 end_angle: Coord::literal(std::f64::consts::PI),
                 start_point: with_endpoints.then(|| id("ent:b")),
                 end_point: with_endpoints.then(|| id("ent:a")),
+                resolved_angles_rad: None,
             }),
         ]
     }

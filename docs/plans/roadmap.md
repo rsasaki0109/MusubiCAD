@@ -422,6 +422,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-020 | Loft eval task | `loft_cone` task (Ø40 → Ø20 mm over 30 mm, analytic 21 991.1 mm³); passed on its first run | Complete |
 | MCAD-P7-021 | Target-body face refs | Fillet/chamfer/shell face refs resolve on the modified body (unique role on that body identifies the face); unresolved refs fail closed instead of rounding the top perimeter | Complete |
 | MCAD-P7-022 | Sweep feature | [ADR-023](../adr/ADR-023-sweep-feature.md); closed section swept along a line/arc path sketch (new body, join, cut), Pappus-exact elbow test, open-chain sketches allowed, `sweep_elbow` eval task | Complete |
+| MCAD-P7-023 | Parametric arc angles | [ADR-024](../adr/ADR-024-parametric-arc-angles.md); arc start/end angles may name parameters, resolved before solving without being persisted; sector test follows a 90° → 120° edit | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

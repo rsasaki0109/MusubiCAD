@@ -48,8 +48,8 @@ among the most common outlines in real parts, could not be drawn.
 ## Consequences
 
 - Slots and other line–arc outlines extrude and cut with exact areas.
-- Arc angles cannot yet follow parameters. An arc whose angle must change
-  with a parameter needs a future solver variable for the angle.
+- Arc angles did not follow parameters at first. ADR-024 resolves
+  parametric arc angles before solving.
 
 ## Evidence
 

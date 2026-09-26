@@ -109,6 +109,25 @@ pub(crate) fn resolve_sketch_constraints(
     sketch: &mut Sketch,
     scope: &IndexMap<String, f64>,
 ) -> Result<()> {
+    // Arc angles may name parameters (ADR-024).  Their expressions stay on
+    // the entity; the resolved radians drive solving and kernel input.
+    for entity in &mut sketch.entities {
+        let opencad_sketch::SketchEntity::Arc(arc) = entity else {
+            continue;
+        };
+        let parametric = [&arc.start_angle, &arc.end_angle]
+            .iter()
+            .any(|angle| matches!(angle, opencad_sketch::entity::Coord::Expr(_)));
+        arc.resolved_angles_rad = if parametric {
+            let resolve = |angle: &opencad_sketch::entity::Coord| match angle {
+                opencad_sketch::entity::Coord::Literal(value) => Ok(*value),
+                opencad_sketch::entity::Coord::Expr(expr) => eval_angle_expr(expr.as_str(), scope),
+            };
+            Some([resolve(&arc.start_angle)?, resolve(&arc.end_angle)?])
+        } else {
+            None
+        };
+    }
     for constraint in &mut sketch.constraints {
         match constraint {
             Constraint::Distance { expr, .. }
