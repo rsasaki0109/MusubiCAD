@@ -20,10 +20,10 @@
       }
     ],
     "geometry": {
-      "volume_before": 0.00022564173725044792,
-      "volume_after": 0.00024235500983326659,
-      "mass_before": 0.6092326905762094,
-      "mass_after": 0.6543585265498197
+      "volume_before": 0.00022564173725,
+      "volume_after": 0.000242355009833,
+      "mass_before": 0.609232690576,
+      "mass_after": 0.65435852655
     }
   },
   "geometry": {
@@ -73,7 +73,7 @@
         "max": 0.048
       },
       "passed": true,
-      "message": "mass delta is 0.045125835973610307 kg"
+      "message": "mass delta is 0.045125835974 kg"
     }
   ],
   "before_image": "before.png",

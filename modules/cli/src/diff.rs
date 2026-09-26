@@ -73,6 +73,24 @@ pub fn regen_document_summary(doc: &OcadDocument) -> Result<regen::RegenSummary>
     regen::regenerate_part(&mut model, Some(&doc.parameters), Some(&doc.semantic_refs))
 }
 
+/// Significant digits kept for reported volumes and masses.
+///
+/// OCCT's mass integration over curved faces differs between platforms in
+/// the last bits (about 1e-16 relative), which made byte-compared review
+/// artifacts platform dependent.  Twelve significant digits keep sub-nm^3
+/// resolution for parts up to cubic metres while staying reproducible.
+pub(crate) const REPORTED_SIGNIFICANT_DIGITS: i32 = 12;
+
+/// Round `value` to [`REPORTED_SIGNIFICANT_DIGITS`] significant digits.
+pub(crate) fn round_significant(value: f64) -> f64 {
+    if value == 0.0 || !value.is_finite() {
+        return value;
+    }
+    let exponent = value.abs().log10().floor() as i32;
+    let scale = 10f64.powi(REPORTED_SIGNIFICANT_DIGITS - 1 - exponent);
+    (value * scale).round() / scale
+}
+
 fn enrich_geometry(
     diff: &mut DesignDiff,
     before: &OcadDocument,
@@ -82,10 +100,10 @@ fn enrich_geometry(
     let after_summary = regen_document_summary(after)?;
 
     let geometry = GeometricDiff {
-        volume_before: before_summary.volume_m3,
-        volume_after: after_summary.volume_m3,
-        mass_before: before_summary.mass_kg,
-        mass_after: after_summary.mass_kg,
+        volume_before: before_summary.volume_m3.map(round_significant),
+        volume_after: after_summary.volume_m3.map(round_significant),
+        mass_before: before_summary.mass_kg.map(round_significant),
+        mass_after: after_summary.mass_kg.map(round_significant),
     };
 
     if let (Some(before_mass), Some(after_mass)) = (geometry.mass_before, geometry.mass_after) {
@@ -420,5 +438,22 @@ mod tests {
                 after: "100 mm".into(),
             }
         );
+    }
+}
+
+#[cfg(test)]
+mod rounding_tests {
+    use super::round_significant;
+
+    #[test]
+    fn reported_values_keep_twelve_significant_digits() {
+        // Platform-dependent last bits collapse to one reported value.
+        assert_eq!(
+            round_significant(0.00022564173725044798),
+            round_significant(0.00022564173725044792)
+        );
+        assert_eq!(round_significant(0.6543585265498197), 0.65435852655);
+        assert_eq!(round_significant(0.0), 0.0);
+        assert_eq!(round_significant(-1234.56789012345), -1234.56789012);
     }
 }

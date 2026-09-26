@@ -30,6 +30,6 @@
 | Status | Expectation | Evidence |
 |---|---|---|
 | ✅ | Parameter param:upper_hub_height equals 42 mm | parameter 'param:upper_hub_height' expression is 42 mm |
-| ✅ | Mass delta is between 0.043 kg and 0.048 kg | mass delta is 0.045125835973610307 kg |
+| ✅ | Mass delta is between 0.043 kg and 0.048 kg | mass delta is 0.045125835974 kg |
 
 The workflow artifact contains `review.html`, `review.json`, `comparison.gif`, and the before/after images.
