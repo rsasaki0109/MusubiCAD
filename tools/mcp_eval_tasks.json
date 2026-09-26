@@ -69,6 +69,16 @@
       "prompt": "Create a new part document at {document} and author a solid pipe elbow with a sweep: a 10 mm diameter round section that runs straight up the +Z axis from the origin for 30 mm, then turns through a 90 degree bend of 20 mm centreline radius towards +X.",
       "expected_volume_mm3": 4823.6,
       "required_parameters": []
+    },
+    {
+      "id": "assembly_third_bracket",
+      "source": "examples/assembly_two_brackets.ocad.d",
+      "document": "assembly.ocad.d",
+      "prompt": "The assembly {document} places two instances of a bracket part, spaced by a distance mate between their origin faces. Add a third instance of the same bracket component and position it with a new 120 mm distance mate from the right bracket's origin face, in the same way as the existing spacing mate. Keep every mate satisfied.",
+      "expected_volume_mm3": 84986.3,
+      "required_parameters": [],
+      "expected_instances": 3,
+      "expected_mates": 3
     }
   ]
 }

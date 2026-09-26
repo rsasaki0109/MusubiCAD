@@ -423,6 +423,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-021 | Target-body face refs | Fillet/chamfer/shell face refs resolve on the modified body (unique role on that body identifies the face); unresolved refs fail closed instead of rounding the top perimeter | Complete |
 | MCAD-P7-022 | Sweep feature | [ADR-023](../adr/ADR-023-sweep-feature.md); closed section swept along a line/arc path sketch (new body, join, cut), Pappus-exact elbow test, open-chain sketches allowed, `sweep_elbow` eval task | Complete |
 | MCAD-P7-023 | Parametric arc angles | [ADR-024](../adr/ADR-024-parametric-arc-angles.md); arc start/end angles may name parameters, resolved before solving without being persisted; sector test follows a 90° → 120° edit | Complete |
+| MCAD-P7-024 | Assembly eval task | `assembly_third_bracket` task: add an instance and a distance mate to `assembly_two_brackets`; graded by volume (3 × bracket), instance/mate counts, and `mate_max_error` ≤ 1 µm | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph
