@@ -5,8 +5,8 @@ binaries manually.
 
 The Tauri desktop shell has a separate [`Desktop` workflow](../../.github/workflows/desktop.yml).
 It builds and uploads unsigned, versioned installer/archive artifacts for Windows x86-64, Linux
-x86-64, macOS Apple Silicon, and macOS Intel on pull requests, `main`, version tags, and manual
-dispatch. The exact artifact names, bundle formats, and checksum verification are documented in
+x86-64, macOS Apple Silicon, and macOS Intel on `main`, version tags, and manual dispatch. Pull
+requests build and smoke-test Linux only, to keep review feedback fast. The exact artifact names, bundle formats, and checksum verification are documented in
 the [desktop distribution quick start](desktop-releases.md). Desktop artifacts are not published
 by the CLI `publish` job. Credential-gated Windows Authenticode, macOS signing/notarization, and
 desktop release publication are isolated in the separate
@@ -26,8 +26,10 @@ current CI verification status tracked by `MCAD-P1-004`.
   and its review DesignPatch.
 - The release contains a generated `SHA256SUMS` file covering all four archives.
 
-Pull requests that change the release inputs run the complete build matrix but cannot publish a
-release. The `publish` job receives `contents: write` only for a matching tag run after every build
+Pull requests that change the release inputs build and smoke-test the Linux archive and cannot
+publish a release. Version tags run the complete build matrix. Non-Linux compile breakage is caught
+on `main`, where the Desktop workflow builds every platform. In all three workflows, a newer push
+to the same pull request cancels its running checks. The `publish` job receives `contents: write` only for a matching tag run after every build
 passes.
 
 ## Publish a version
