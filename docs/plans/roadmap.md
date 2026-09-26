@@ -418,6 +418,8 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-016 | Canonical example documents | Examples rewritten in the current writer form; `example_canonical_form` test pins it (`MUSUBICAD_BLESS_EXAMPLES=1` rewrites after intentional writer changes) | Complete |
 | MCAD-P7-017 | MCP eval tasks | Harness `setup` steps; `slot_plate`, `import_step`, and `fillet_bracket_top` tasks (six tasks; new ones 3/3 on first run) | Complete |
 | MCAD-P7-018 | Loft feature | [ADR-022](../adr/ADR-022-loft-feature.md); `loft` through two or more workplane sections (new body, join, cut), exact square-frustum test, custom workplane y-axis fix (face-ref sketches were placed vertically) | Complete |
+| MCAD-P7-019 | Designed extents | Face-ref workplanes and mirror planes resolve on the creating feature's body (pin mirror used the pin's own top); `example_extents` test pins every part example's bounding box; review goldens compare line-ending agnostic | Complete |
+| MCAD-P7-020 | Loft eval task | `loft_cone` task (Ø40 → Ø20 mm over 30 mm, analytic 21 991.1 mm³); passed on its first run | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

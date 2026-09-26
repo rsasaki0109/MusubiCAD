@@ -62,6 +62,12 @@ inserts faces. A stored ID that fails this check continues through
 semantic/fingerprint fallback. Without discoveries, the stored ID is used as
 is.
 
+Sketch workplanes on a face reference and mirror planes from a face
+reference are resolved on the output body of the reference's creating
+feature. Before, they used the most recently regenerated body. In
+`bracket_pin_mirror`, a pin extruded above the plate supplied its own top
+face, instead of the bracket's top face, as the mirror plane.
+
 Stored IDs are not remapped through face derivation history. History indices
 are local to each operation's bodies, so a single flat map would conflate
 different faces.

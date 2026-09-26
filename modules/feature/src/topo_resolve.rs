@@ -117,6 +117,23 @@ pub fn edge_selector_for_edge_ref(
 }
 
 /// Resolve a sketch workplane from a persisted face ref and regen discoveries.
+/// Face discoveries on the body of the feature that created a reference.
+///
+/// The session's discoveries describe the most recently regenerated body.
+/// A face reference names a face of its creating feature's output, so a
+/// later body with a face of the same role (for example the top of a pin
+/// extruded above a plate) must not stand in for it.  Falls back to the
+/// session discoveries when the creating body is unavailable.
+fn creator_discoveries(
+    ctx: &dyn RegenContext,
+    created_by: &str,
+) -> Result<Vec<opencad_geometry::FaceRefDiscovery>> {
+    match ctx.body_for_feature(created_by) {
+        Ok(body) => ctx.face_discoveries_on(&body),
+        Err(_) => Ok(ctx.face_discoveries().to_vec()),
+    }
+}
+
 pub fn workplane_for_face_ref(ctx: &dyn RegenContext, face_ref: &str) -> Result<Workplane> {
     let topo_ref = ctx
         .semantic_refs()
@@ -126,8 +143,9 @@ pub fn workplane_for_face_ref(ctx: &dyn RegenContext, face_ref: &str) -> Result<
 
     let role = topo_ref.semantic.role.as_deref().unwrap_or("");
     let created_by = topo_ref.semantic.created_by.as_str();
+    let discoveries = creator_discoveries(ctx, created_by)?;
 
-    if let Some(discovery) = ctx.face_discoveries().iter().find(|discovery| {
+    if let Some(discovery) = discoveries.iter().find(|discovery| {
         discovery.role == role && discovery.feature_id.as_deref() == Some(created_by)
     }) {
         return custom_workplane(
@@ -144,11 +162,7 @@ pub fn workplane_for_face_ref(ctx: &dyn RegenContext, face_ref: &str) -> Result<
         );
     }
 
-    if let Some(discovery) = ctx
-        .face_discoveries()
-        .iter()
-        .find(|discovery| discovery.role == role)
-    {
+    if let Some(discovery) = discoveries.iter().find(|discovery| discovery.role == role) {
         return custom_workplane(
             [
                 discovery.centroid_m[0] as f64,
@@ -231,18 +245,15 @@ pub fn plane_for_face_ref(ctx: &dyn RegenContext, face_ref: &str) -> Result<([f6
 
     let role = topo_ref.semantic.role.as_deref().unwrap_or("");
     let created_by = topo_ref.semantic.created_by.as_str();
+    let discoveries = creator_discoveries(ctx, created_by)?;
 
-    if let Some(discovery) = ctx.face_discoveries().iter().find(|discovery| {
+    if let Some(discovery) = discoveries.iter().find(|discovery| {
         discovery.role == role && discovery.feature_id.as_deref() == Some(created_by)
     }) {
         return Ok(discovery_plane(discovery));
     }
 
-    if let Some(discovery) = ctx
-        .face_discoveries()
-        .iter()
-        .find(|discovery| discovery.role == role)
-    {
+    if let Some(discovery) = discoveries.iter().find(|discovery| discovery.role == role) {
         return Ok(discovery_plane(discovery));
     }
 

@@ -88,6 +88,7 @@ task. The tasks are defined in `tools/mcp_eval_tasks.json`:
 | `two_hole_plate` | Author an 80 × 50 × 6 mm plate with two Ø8 mm through holes | 23 396.8 mm³ |
 | `slot_plate` | Author a 60 × 40 × 5 mm plate with a 30 × 8 mm through slot (lines and arcs, ADR-021) | 10 548.7 mm³ |
 | `edit_bracket` | Widen and thicken the example bracket while keeping it rectangular. Its sketch starts constrained only by side lengths. | 47 371.7 mm³ |
+| `loft_cone` | Loft a Ø40 mm circle into a Ø20 mm circle 30 mm higher (ADR-022) | 21 991.1 mm³ |
 | `import_step` | Import a STEP file (exported by a `setup` step) as a fixed solid | 28 328.8 mm³ |
 | `fillet_bracket_top` | Round the bracket's top outer edges and hole rim with 1 mm fillets | 28 262.0 mm³ |
 
@@ -106,7 +107,8 @@ python tools/mcp_eval.py --self-test   # checker only, no model calls
 The harness calls a paid model, so it is not part of CI.
 
 On 2026-09-26, `slot_plate`, `import_step`, and `fillet_bracket_top`
-passed 3 of 3 on their first run, for $1.75 in total. The agent drew the
+passed 3 of 3 on their first run, for $1.75 in total. `loft_cone` passed on its first run in 8 turns for $0.38; the agent put
+the top circle on a raised custom workplane. The agent drew the
 slot with lines and endpoint arcs. The first baseline run, on 2026-09-26,
 passed 3 of 3 tasks. It cost
 $1.54 in total, and each task took 9–16 turns and 26–144 s. In
