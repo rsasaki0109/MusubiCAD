@@ -112,10 +112,10 @@ pub fn placement_from_workplane(workplane: &Workplane) -> Result<SketchPlacement
         }),
         Workplane::Custom {
             origin,
-            normal: _,
+            normal,
             x_axis,
         } => {
-            let y_axis = y_axis_from_custom(x_axis);
+            let y_axis = y_axis_from_custom(normal, x_axis);
             Ok(SketchPlacement {
                 origin_m: *origin,
                 x_axis_m: *x_axis,
@@ -128,12 +128,17 @@ pub fn placement_from_workplane(workplane: &Workplane) -> Result<SketchPlacement
     }
 }
 
-fn y_axis_from_custom(x_axis: &[f64; 3]) -> [f64; 3] {
-    let helper = [0.0, 1.0, 0.0];
+/// The in-plane y axis of a custom workplane: `normal × x_axis`, so that
+/// `x × y` points along the workplane normal.
+///
+/// It used to ignore the normal and cross a fixed +y helper with the x axis,
+/// which put sketches on a top face (normal +z) into a vertical plane: a
+/// pin sketched on the bracket's top face stood on its side.
+fn y_axis_from_custom(normal: &[f64; 3], x_axis: &[f64; 3]) -> [f64; 3] {
     let cross = [
-        helper[1] * x_axis[2] - helper[2] * x_axis[1],
-        helper[2] * x_axis[0] - helper[0] * x_axis[2],
-        helper[0] * x_axis[1] - helper[1] * x_axis[0],
+        normal[1] * x_axis[2] - normal[2] * x_axis[1],
+        normal[2] * x_axis[0] - normal[0] * x_axis[2],
+        normal[0] * x_axis[1] - normal[1] * x_axis[0],
     ];
     let len = (cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]).sqrt();
     if len <= 1e-12 {
