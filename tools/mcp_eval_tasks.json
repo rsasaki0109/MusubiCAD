@@ -55,6 +55,13 @@
       "prompt": "The part document at {document} is a bracket plate with a mounting hole. Round every edge of its top face, the four outer edges and the rim of the hole, with a 1 mm fillet.",
       "expected_volume_mm3": 28262.0,
       "required_parameters": []
+    },
+    {
+      "id": "loft_cone",
+      "document": "cone.ocad.d",
+      "prompt": "Create a new part document at {document} and author a tapered round boss with a loft: a 40 mm diameter circular base centred on the origin in the XY plane, blending into a 20 mm diameter circle centred 30 mm directly above it.",
+      "expected_volume_mm3": 21991.1,
+      "required_parameters": []
     }
   ]
 }
