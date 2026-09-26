@@ -292,10 +292,6 @@ const ARC_POLYGON_SAMPLES: usize = 16;
 /// polygon (ADR-021).  Returns `None` for line-only loops, which keep the
 /// polygon path.
 fn arc_loop(sketch: &Sketch, profile: &Profile) -> Result<Option<ArcLoop>> {
-    enum Piece<'a> {
-        Line(&'a LineEntity),
-        Arc(&'a opencad_sketch::entity::ArcEntity),
-    }
     let pieces: Vec<Piece> = profile
         .entity_ids
         .iter()
@@ -311,45 +307,86 @@ fn arc_loop(sketch: &Sketch, profile: &Profile) -> Result<Option<ArcLoop>> {
     if !pieces.iter().any(|piece| matches!(piece, Piece::Arc(_))) {
         return Ok(None);
     }
-    let ends = |piece: &Piece| -> Result<(EntityId, EntityId)> {
-        Ok(match piece {
-            Piece::Line(line) => (line.start.clone(), line.end.clone()),
-            Piece::Arc(arc) => match (&arc.start_point, &arc.end_point) {
-                (Some(start), Some(end)) => (start.clone(), end.clone()),
-                _ => {
-                    return Err(OpenCadError::validation(format!(
-                        "arc '{}' needs start_point and end_point to join a loop",
-                        arc.base.id.as_str()
-                    )))
-                }
-            },
-        })
-    };
+    let ordered = order_chain(&pieces, None)?;
+    chain_segments(sketch, &ordered, true).map(Some)
+}
 
+/// A loop or path segment entity.
+enum Piece<'a> {
+    Line(&'a LineEntity),
+    Arc(&'a opencad_sketch::entity::ArcEntity),
+}
+
+/// Endpoint point IDs of a segment, in its stored direction.
+fn piece_ends(piece: &Piece) -> Result<(EntityId, EntityId)> {
+    Ok(match piece {
+        Piece::Line(line) => (line.start.clone(), line.end.clone()),
+        Piece::Arc(arc) => match (&arc.start_point, &arc.end_point) {
+            (Some(start), Some(end)) => (start.clone(), end.clone()),
+            _ => {
+                return Err(OpenCadError::validation(format!(
+                    "arc '{}' needs start_point and end_point to join a loop or path",
+                    arc.base.id.as_str()
+                )))
+            }
+        },
+    })
+}
+
+/// Order segments into one chain, each paired with whether it is traversed
+/// against its stored direction.  A closed loop starts at the first
+/// segment; an open path starts at `start`, one of its end points.  Every
+/// segment must be used.
+fn order_chain<'a>(
+    pieces: &'a [Piece<'a>],
+    start: Option<&EntityId>,
+) -> Result<Vec<(&'a Piece<'a>, bool)>> {
     let mut remaining: Vec<&Piece> = pieces.iter().collect();
-    let first = remaining.remove(0);
-    let (loop_start, mut current) = ends(first)?;
-    let mut ordered = vec![(first, false)];
-    while current != loop_start {
+    if remaining.is_empty() {
+        return Err(OpenCadError::validation("chain has no segments"));
+    }
+    let (mut ordered, mut current, loop_start) = match start {
+        None => {
+            let first = remaining.remove(0);
+            let (a, b) = piece_ends(first)?;
+            (vec![(first, false)], b, Some(a))
+        }
+        Some(start) => (Vec::new(), start.clone(), None),
+    };
+    while !remaining.is_empty() {
+        if loop_start.as_ref() == Some(&current) {
+            break;
+        }
         let Some(index) = remaining
             .iter()
-            .position(|piece| ends(piece).is_ok_and(|(a, b)| a == current || b == current))
+            .position(|piece| piece_ends(piece).is_ok_and(|(a, b)| a == current || b == current))
         else {
-            return Err(OpenCadError::validation(
-                "profile loop does not close on the first point",
-            ));
+            break;
         };
         let piece = remaining.remove(index);
-        let (a, b) = ends(piece)?;
+        let (a, b) = piece_ends(piece)?;
         let reversed = b == current;
         current = if reversed { a } else { b };
         ordered.push((piece, reversed));
     }
+    if !remaining.is_empty() || loop_start.is_some_and(|first| first != current) {
+        return Err(OpenCadError::validation(if start.is_none() {
+            "profile loop does not close on the first point"
+        } else {
+            "path segments do not form one connected chain"
+        }));
+    }
+    Ok(ordered)
+}
 
+/// Exact segments and a sampled polygon for an ordered chain.  A closed
+/// chain's polygon omits the repeated first point.
+fn chain_segments(sketch: &Sketch, ordered: &[(&Piece, bool)], closed: bool) -> Result<ArcLoop> {
     let mut segments = Vec::with_capacity(ordered.len());
     let mut points = Vec::new();
     for (piece, reversed) in ordered {
-        let (a, b) = ends(piece)?;
+        let reversed = *reversed;
+        let (a, b) = piece_ends(piece)?;
         let (from, to) = if reversed { (b, a) } else { (a, b) };
         let (start_m, end_m) = (point_coord(sketch, &from)?, point_coord(sketch, &to)?);
         points.push(start_m);
@@ -365,8 +402,7 @@ fn arc_loop(sketch: &Sketch, profile: &Profile) -> Result<Option<ArcLoop>> {
                         ))
                     }
                 };
-                let start_angle = opencad_sketch::solve::arc_angle(arc, &arc.start_angle)?;
-                let end_angle = opencad_sketch::solve::arc_angle(arc, &arc.end_angle)?;
+                let (start_angle, end_angle) = opencad_sketch::solve::arc_angles(arc)?;
                 let mut sweep = (end_angle - start_angle).rem_euclid(std::f64::consts::TAU);
                 if sweep == 0.0 {
                     sweep = std::f64::consts::TAU;
@@ -384,15 +420,95 @@ fn arc_loop(sketch: &Sketch, profile: &Profile) -> Result<Option<ArcLoop>> {
                     mid_m,
                     end_m,
                 });
-                // Interior samples, in loop direction.
+                // Interior samples, in chain direction.
                 for step in 1..ARC_POLYGON_SAMPLES {
                     let fraction = step as f64 / ARC_POLYGON_SAMPLES as f64;
                     points.push(at(if reversed { 1.0 - fraction } else { fraction }));
                 }
             }
         }
+        if !closed && segments.len() == ordered.len() {
+            points.push(end_m);
+        }
     }
-    Ok(Some((points, segments)))
+    Ok((points, segments))
+}
+
+/// Build a sweep path from a sketch whose lines and endpoint arcs form one
+/// chain (ADR-023).  An open path starts at the end nearest the swept
+/// profile, which must sit at the start of the path.
+pub fn path_to_solved_with_context(
+    sketch: &Sketch,
+    profile: &SolvedSketch,
+    ctx: &dyn RegenContext,
+) -> Result<SolvedSketch> {
+    let pieces: Vec<Piece> = sketch
+        .entities
+        .iter()
+        .filter_map(|entity| match entity {
+            SketchEntity::Line(line) if !line.base.construction => Some(Piece::Line(line)),
+            SketchEntity::Arc(arc) if !arc.base.construction => Some(Piece::Arc(arc)),
+            _ => None,
+        })
+        .collect();
+    let mut degree: IndexMap<EntityId, usize> = IndexMap::new();
+    for piece in &pieces {
+        let (a, b) = piece_ends(piece)?;
+        *degree.entry(a).or_default() += 1;
+        *degree.entry(b).or_default() += 1;
+    }
+    if degree.values().any(|count| *count > 2) {
+        return Err(OpenCadError::validation(format!(
+            "path sketch '{}' branches; a sweep path must be one chain",
+            sketch.id.as_str()
+        )));
+    }
+    let ends: Vec<&EntityId> = degree
+        .iter()
+        .filter(|(_, count)| **count == 1)
+        .map(|(id, _)| id)
+        .collect();
+    let placement = placement_from_workplane(&resolve_workplane(sketch, ctx)?)?;
+    let world = |p: [f64; 2]| placement.map_point(p[0], p[1]);
+    let (ordered, closed) = match ends.as_slice() {
+        [] => (order_chain(&pieces, None)?, true),
+        [a, b] => {
+            let profile_placement = profile.placement.unwrap_or(SketchPlacement::global_xy());
+            let anchor_2d = profile
+                .circle
+                .map(|circle| circle.center_m)
+                .unwrap_or_else(|| {
+                    let n = profile.points.len().max(1) as f64;
+                    let sum = profile
+                        .points
+                        .iter()
+                        .fold([0.0, 0.0], |acc, p| [acc[0] + p[0], acc[1] + p[1]]);
+                    [sum[0] / n, sum[1] / n]
+                });
+            let anchor = profile_placement.map_point(anchor_2d[0], anchor_2d[1]);
+            let distance = |id: &EntityId| -> Result<f64> {
+                let p = world(point_coord(sketch, id)?);
+                Ok((0..3).map(|i| (p[i] - anchor[i]).powi(2)).sum::<f64>())
+            };
+            let start = if distance(b)? < distance(a)? { *b } else { *a };
+            (order_chain(&pieces, Some(start))?, false)
+        }
+        _ => {
+            return Err(OpenCadError::validation(format!(
+                "path sketch '{}' must form exactly one chain",
+                sketch.id.as_str()
+            )))
+        }
+    };
+    let (points, segments) = chain_segments(sketch, &ordered, closed)?;
+    Ok(SolvedSketch {
+        profile_ref: format!("{}/path", sketch.id.as_str()),
+        points,
+        closed,
+        circle: None,
+        segments,
+        placement: Some(placement),
+    })
 }
 
 fn circle_profile(sketch: &Sketch, circle_id: &EntityId) -> Result<SolvedCircle> {

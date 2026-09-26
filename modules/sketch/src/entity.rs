@@ -69,6 +69,11 @@ pub struct ArcEntity {
     /// Point entity held at the arc's end (ADR-021).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub end_point: Option<EntityId>,
+    /// Start and end angles in radians resolved from parameter expressions
+    /// before solving (ADR-024).  Never persisted: the angle expressions
+    /// stay the source of truth.
+    #[serde(skip)]
+    pub resolved_angles_rad: Option<[f64; 2]>,
 }
 
 /// Rectangle helper: stores parametric origin/size and expands to four lines.
@@ -267,6 +272,7 @@ mod tests {
             end_angle: Coord::expr("sweep").expect("expr"),
             start_point: None,
             end_point: None,
+            resolved_angles_rad: None,
         });
         assert_eq!(arc.point_refs(), vec![&ent("ent:center")]);
         assert_eq!(arc.defined_ids(), vec![&ent("ent:arc")]);

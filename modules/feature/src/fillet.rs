@@ -54,7 +54,7 @@ impl Feature for FilletFeatureExecutor {
                 def.edge_selector.clone(),
             )?
         } else if let Some(ref face_ref) = def.face_ref {
-            edge_selector_for_face_ref(ctx, face_ref, def.edge_selector.clone())?
+            edge_selector_for_face_ref(ctx, face_ref, &body, def.edge_selector.clone())?
         } else {
             def.edge_selector.clone()
         };

@@ -3,7 +3,7 @@
 use opencad_core::{OpenCadError, Result};
 use opencad_geometry::{
     resolve_kernel_face_id_for_topo_ref, resolve_kernel_face_id_for_topo_ref_with_discoveries,
-    FilletEdgeSelector,
+    FilletEdgeSelector, KernelBody,
 };
 use opencad_sketch::workplane::Workplane;
 
@@ -34,9 +34,65 @@ pub fn target_feature_for_face_ref(
     Ok(created_by.to_string())
 }
 
+/// Resolve a face reference among discoveries of one specific body.
+///
+/// Standard resolution matches the role and the creating feature, but face
+/// discoveries infer the creating feature from a coarse heuristic (a `top`
+/// face is attributed to the model's first fillet, chamfer, or extrude),
+/// which rejects valid matches.  On a known target body, a role that exactly
+/// one face carries identifies that face; two or more faces with the role
+/// are ambiguous and fail.
+pub fn resolve_face_on_body(
+    ctx: &dyn RegenContext,
+    face_ref: &str,
+    discoveries: &[opencad_geometry::FaceRefDiscovery],
+) -> Result<u64> {
+    let resolved = resolve_kernel_face_id_for_topo_ref_with_discoveries(
+        ctx.semantic_refs(),
+        ctx.face_history(),
+        face_ref,
+        Some(discoveries),
+    );
+    let error = match resolved {
+        Ok(kernel_face_id) => return Ok(kernel_face_id),
+        Err(error) => error,
+    };
+    let role = ctx
+        .semantic_refs()
+        .iter()
+        .find(|topo_ref| topo_ref.ref_id.as_str() == face_ref)
+        .and_then(|topo_ref| topo_ref.semantic.role.as_deref());
+    let Some(role) = role else {
+        return Err(error);
+    };
+    let mut faces: Vec<u64> = discoveries
+        .iter()
+        .filter(|discovery| discovery.role == role)
+        .map(|discovery| discovery.kernel_face_id)
+        .collect();
+    faces.sort_unstable();
+    faces.dedup();
+    match faces.as_slice() {
+        [only] => Ok(*only),
+        [] => Err(error),
+        _ => Err(OpenCadError::validation(format!(
+            "face_ref '{face_ref}' role '{role}' matches {} faces on the body",
+            faces.len()
+        ))),
+    }
+}
+
+/// Select the perimeter edges of the face `face_ref` names on `body`, the
+/// body being filleted or chamfered.
+///
+/// With face discoveries on `body`, the reference must resolve there
+/// (role-verified, ADR-018) or selection fails closed: falling back to the
+/// top perimeter would silently round the wrong face.  Kernels without
+/// discoveries keep the legacy stored-ID and top-role fallbacks.
 pub fn edge_selector_for_face_ref(
     ctx: &dyn RegenContext,
     face_ref: &str,
+    body: &KernelBody,
     fallback: FilletEdgeSelector,
 ) -> Result<FilletEdgeSelector> {
     if face_ref.trim().is_empty() {
@@ -49,21 +105,21 @@ pub fn edge_selector_for_face_ref(
         .find(|topo_ref| topo_ref.ref_id.as_str() == face_ref)
         .ok_or_else(|| OpenCadError::not_found(format!("topo ref '{face_ref}'")))?;
 
+    let discoveries = ctx.face_discoveries_on(body)?;
+    if !discoveries.is_empty() {
+        return resolve_face_on_body(ctx, face_ref, &discoveries)
+            .map(|kernel_face_id| FilletEdgeSelector::FacePerimeter { kernel_face_id })
+            .map_err(|error| {
+                OpenCadError::validation(format!(
+                    "face_ref '{face_ref}' did not resolve on the target body: {error}"
+                ))
+            });
+    }
+
     if let Ok(kernel_face_id) =
         resolve_kernel_face_id_for_topo_ref(ctx.semantic_refs(), ctx.face_history(), face_ref)
     {
         return Ok(FilletEdgeSelector::FacePerimeter { kernel_face_id });
-    }
-
-    if !ctx.face_discoveries().is_empty() {
-        if let Ok(kernel_face_id) = resolve_kernel_face_id_for_topo_ref_with_discoveries(
-            ctx.semantic_refs(),
-            ctx.face_history(),
-            face_ref,
-            Some(ctx.face_discoveries()),
-        ) {
-            return Ok(FilletEdgeSelector::FacePerimeter { kernel_face_id });
-        }
     }
 
     match topo_ref.semantic.role.as_deref() {
@@ -413,9 +469,13 @@ mod tests {
                 feature_id: Some("feature:extrude_base".into()),
             }],
         };
-        let selector =
-            edge_selector_for_face_ref(&ctx, "ref:face:bracket_top", FilletEdgeSelector::All)
-                .expect("selector");
+        let selector = edge_selector_for_face_ref(
+            &ctx,
+            "ref:face:bracket_top",
+            &KernelBody::new(42),
+            FilletEdgeSelector::All,
+        )
+        .expect("selector");
         assert_eq!(
             selector,
             FilletEdgeSelector::FacePerimeter { kernel_face_id: 88 }
@@ -432,9 +492,13 @@ mod tests {
                 "top",
             )],
         };
-        let selector =
-            edge_selector_for_face_ref(&ctx, "ref:face:bracket_top", FilletEdgeSelector::All)
-                .expect("selector");
+        let selector = edge_selector_for_face_ref(
+            &ctx,
+            "ref:face:bracket_top",
+            &KernelBody::new(42),
+            FilletEdgeSelector::All,
+        )
+        .expect("selector");
         assert_eq!(selector, FilletEdgeSelector::TopPerimeter);
     }
 

@@ -16,6 +16,7 @@ use crate::pattern::{CircularPatternFeature, LinearPatternFeature, MirrorPattern
 use crate::revolve::RevolveFeature;
 use crate::shell::ShellFeature;
 use crate::sketch_feature::SketchFeatureDef;
+use crate::sweep::SweepFeature;
 
 /// Serializable feature definition stored in the design graph.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -33,6 +34,7 @@ pub enum FeatureDefinition {
     ImportedSolid(ImportedSolidFeature),
     Shell(ShellFeature),
     Loft(LoftFeature),
+    Sweep(SweepFeature),
 }
 
 impl FeatureDefinition {
@@ -50,6 +52,7 @@ impl FeatureDefinition {
             Self::ImportedSolid(_) => "imported_solid",
             Self::Shell(_) => "shell",
             Self::Loft(_) => "loft",
+            Self::Sweep(_) => "sweep",
         }
     }
 }

@@ -964,6 +964,27 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let profile_edges = sketch_to_edges(profile)?;
+            let path_edges = crate::convert::path_to_edges(path)?;
+            let placement = path
+                .placement
+                .unwrap_or(opencad_geometry::SketchPlacement::global_xy());
+            let up = DVec3::from_array(placement.extrude_direction_m());
+            let solid = Solid::sweep(&profile_edges, &path_edges, ProfileOrient::Up(up))
+                .map_err(map_occt_error)?;
+            let id = self.store.borrow_mut().insert_body(solid);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (profile, path);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {

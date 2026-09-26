@@ -420,6 +420,10 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-018 | Loft feature | [ADR-022](../adr/ADR-022-loft-feature.md); `loft` through two or more workplane sections (new body, join, cut), exact square-frustum test, custom workplane y-axis fix (face-ref sketches were placed vertically) | Complete |
 | MCAD-P7-019 | Designed extents | Face-ref workplanes and mirror planes resolve on the creating feature's body (pin mirror used the pin's own top); `example_extents` test pins every part example's bounding box; review goldens compare line-ending agnostic | Complete |
 | MCAD-P7-020 | Loft eval task | `loft_cone` task (Ø40 → Ø20 mm over 30 mm, analytic 21 991.1 mm³); passed on its first run | Complete |
+| MCAD-P7-021 | Target-body face refs | Fillet/chamfer/shell face refs resolve on the modified body (unique role on that body identifies the face); unresolved refs fail closed instead of rounding the top perimeter | Complete |
+| MCAD-P7-022 | Sweep feature | [ADR-023](../adr/ADR-023-sweep-feature.md); closed section swept along a line/arc path sketch (new body, join, cut), Pappus-exact elbow test, open-chain sketches allowed, `sweep_elbow` eval task | Complete |
+| MCAD-P7-023 | Parametric arc angles | [ADR-024](../adr/ADR-024-parametric-arc-angles.md); arc start/end angles may name parameters, resolved before solving without being persisted; sector test follows a 90° → 120° edit | Complete |
+| MCAD-P7-024 | Assembly eval task | `assembly_third_bracket` task: add an instance and a distance mate to `assembly_two_brackets`; graded by volume (3 × bracket), instance/mate counts, and `mate_max_error` ≤ 1 µm | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

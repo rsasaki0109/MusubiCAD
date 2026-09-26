@@ -104,3 +104,37 @@ fn side_face_refs_select_that_faces_perimeter() {
         "chamfer removal -y {chamfer_y} m^3 vs +x {chamfer_x} m^3"
     );
 }
+
+/// A face reference that does not resolve on the target body fails closed
+/// instead of silently rounding the top perimeter.
+#[test]
+fn an_unresolved_face_ref_fails_instead_of_rounding_the_top() {
+    let kernel = OcctGeometryKernel::new();
+    let mut model = bracket_with_hole().expect("bracket");
+    let mut refs = bracket_semantic_refs();
+    refs.push(TopoRef::face(
+        TopoRefId::new("ref:face:side").expect("id"),
+        "feature:extrude_base",
+        "no_such_role",
+    ));
+    model
+        .add_node(FeatureNode::new("feature:edge", "Edge", fillet()))
+        .expect("node");
+    model
+        .add_dependency("feature:hole_mount", "feature:edge")
+        .expect("edge");
+    let error = model
+        .regenerate(
+            &kernel,
+            &FeatureRegistry::with_defaults(),
+            Some(&bracket_parameters()),
+            Some(&refs),
+        )
+        .expect_err("unresolved face ref");
+    assert!(
+        error
+            .to_string()
+            .contains("did not resolve on the target body"),
+        "{error}"
+    );
+}

@@ -49,8 +49,9 @@ An arc with `start_point` and `end_point` holds those points on the arc
 `x − (cx + r·cos θ)` and `y − (cy + r·sin θ)`, in metres, where θ is
 `start_angle` or `end_angle`.
 
-- Angles are literals in radians or constant angle expressions such as
-  `90 deg`.
+- Angles are literals in radians or angle expressions, including parameter
+  names such as `sweep_angle`. Parameter expressions are resolved before
+  solving (ADR-024).
 - The radius stays a solver variable, so radius constraints move the
   endpoints.
 - Lines, and arcs with both endpoints, form closed profiles through shared

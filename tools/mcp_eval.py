@@ -5,7 +5,9 @@ Each task in ``tools/mcp_eval_tasks.json`` runs Claude Code headless against
 checked independently by regenerating the document with ``opencad regen``:
 
 - the solid volume must match the analytic value;
-- the named parameters must exist.
+- the named parameters must exist;
+- for assembly tasks, the instance and mate counts must match and the mates
+  must be satisfied.
 
 The harness records turns, cost, and duration for each task.  It calls a
 paid model, so it is never run in CI.  Run it by hand after changes to the
@@ -37,6 +39,10 @@ TASKS = ROOT / "tools" / "mcp_eval_tasks.json"
 VOLUME_TOLERANCE_MM3 = 0.1
 
 VOLUME_LINE = re.compile(r"^volume_m3:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
+MATE_ERROR_LINE = re.compile(r"^mate_max_error:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
+
+# Largest mate residual, in metres, an assembly task accepts as satisfied.
+MATE_TOLERANCE_M = 1e-6
 
 INSTRUCTIONS = (
     "Use only the musubicad MCP tools. Read the server instructions and the "
@@ -60,6 +66,16 @@ def parameter_names(document: Path) -> set[str]:
     return {entry.get("name", "") for entry in parameters.values()}
 
 
+def assembly_counts(document: Path) -> tuple[int, int]:
+    """(instances, active mates) in an assembly document."""
+    path = document / "graph" / "assemblies.json"
+    if not path.exists():
+        return 0, 0
+    assembly = json.loads(path.read_text(encoding="utf-8")).get("assembly") or {}
+    mates = [mate for mate in assembly.get("mates", []) if not mate.get("suppressed")]
+    return len(assembly.get("instances", [])), len(mates)
+
+
 def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
@@ -72,6 +88,17 @@ def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str
     missing = set(task.get("required_parameters", [])) - parameter_names(document)
     if missing:
         problems.append(f"missing parameters: {sorted(missing)}")
+    if "expected_instances" in task:
+        instances, mates = assembly_counts(document)
+        if instances != task["expected_instances"]:
+            problems.append(f"{instances} instances, expected {task['expected_instances']}")
+        if mates != task["expected_mates"]:
+            problems.append(f"{mates} active mates, expected {task['expected_mates']}")
+        match = MATE_ERROR_LINE.search(regen_output)
+        if match is None:
+            problems.append("regeneration reported no mate error")
+        elif float(match.group(1)) > MATE_TOLERANCE_M:
+            problems.append(f"mates unsatisfied: max error {match.group(1)} m")
     return not problems, problems
 
 
@@ -162,6 +189,13 @@ def self_test() -> None:
         {**task, "required_parameters": ["wall"]}, bracket, output
     )
     assert not passed and "wall" in problems[0]
+    pair = ROOT / "examples" / "assembly_two_brackets.ocad.d"
+    assembly = {"expected_volume_mm3": 5368.5, "expected_instances": 2, "expected_mates": 2}
+    assert check(assembly, pair, output + "mate_max_error: 1e-9\n") == (True, [])
+    passed, problems = check(
+        {**assembly, "expected_instances": 3}, pair, output + "mate_max_error: 0.01\n"
+    )
+    assert not passed and "instances" in problems[0] and "unsatisfied" in problems[1]
     tasks = json.loads(TASKS.read_text(encoding="utf-8"))["tasks"]
     assert len({task["id"] for task in tasks}) == len(tasks)
     placeholders = {"document": "d", "workdir": "w", "root": "r"}
