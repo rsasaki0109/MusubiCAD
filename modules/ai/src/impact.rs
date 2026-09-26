@@ -222,7 +222,7 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
     inputs.into_iter().collect()
 }
 
-fn node_uses_parameter(node: &FeatureNode, name: &str, sketches: &[Sketch]) -> bool {
+pub(crate) fn node_uses_parameter(node: &FeatureNode, name: &str, sketches: &[Sketch]) -> bool {
     if serialized_value_uses_parameter(&node.definition, name) {
         return true;
     }
@@ -246,7 +246,7 @@ pub(crate) fn serialized_value_uses_parameter(value: &impl Serialize, name: &str
     })
 }
 
-fn serialized_value_contains(value: &impl Serialize, needle: &str) -> bool {
+pub(crate) fn serialized_value_contains(value: &impl Serialize, needle: &str) -> bool {
     serde_json::to_value(value)
         .ok()
         .is_some_and(|value| json_strings(&value).any(|text| text == needle))
@@ -265,7 +265,10 @@ fn json_strings(value: &serde_json::Value) -> Box<dyn Iterator<Item = &str> + '_
     }
 }
 
-fn ordered_impact(graph: &FeatureGraph, direct: &BTreeSet<String>) -> (Vec<String>, Vec<String>) {
+pub(crate) fn ordered_impact(
+    graph: &FeatureGraph,
+    direct: &BTreeSet<String>,
+) -> (Vec<String>, Vec<String>) {
     let mut dirty = direct.clone();
     let mut queue = direct.iter().cloned().collect::<VecDeque<_>>();
     while let Some(source) = queue.pop_front() {

@@ -9,6 +9,7 @@ pub mod drawing;
 pub mod explain;
 pub mod feature_patch;
 pub mod impact;
+pub mod inspector;
 pub mod intent;
 pub mod merge;
 pub mod patch;
@@ -41,6 +42,7 @@ pub use impact::{
     predict_change_impact, ChangeImpact, ChangedInput, ChangedInputKind, ImpactContext,
     CHANGE_IMPACT_VERSION,
 };
+pub use inspector::{inspect_parameter, inspect_reference, ParameterIntent, ReferenceIntent};
 pub use intent::{
     apply_approved_proposal, create_proposal, AgentIntent, AgentProposal, AgentSelection,
     IntentProvider,

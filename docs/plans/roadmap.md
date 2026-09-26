@@ -330,7 +330,7 @@ non-goals are defined in the
 | MCAD-P6-003 | Semantic reference provenance | Exact/derived/fingerprint/ambiguous/missing status, candidate evidence, fail-closed repair patches | Complete |
 | MCAD-P6-004 | Executable design assertions | Typed unit-explicit engineering assertions evaluated by dry-run and regeneration | Complete |
 | MCAD-P6-005 | Git-native semantic merge | CLI merge driver, stable semantic conflicts, DesignPatch resolution, branch/merge golden workflow | Complete |
-| MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | Planned |
+| MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | In progress: `inspect_parameter` / `inspect_reference` queries (Agent API, MCP `query_document`, `opencad intent`); Desktop panel and failed-regeneration inspection remain |
 
 MCAD-P6-003 is complete: `ReferenceProvenance` classifies every face/edge
 resolution as `exact`, `derived`, `fingerprint`, `ambiguous`, or `missing`,
