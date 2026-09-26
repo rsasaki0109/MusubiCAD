@@ -1117,6 +1117,7 @@ mod tests {
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
             circle: None,
+            segments: Vec::new(),
             placement: None,
         }
     }
@@ -1260,6 +1261,7 @@ mod tests {
                     center_m: [0.02, 0.03],
                     radius_m: radius,
                 }),
+                segments: Vec::new(),
                 placement: None,
             })
             .expect("wire");

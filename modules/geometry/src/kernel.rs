@@ -158,6 +158,23 @@ pub struct SolvedCircle {
     pub radius_m: f64,
 }
 
+/// One segment of a profile loop in sketch coordinates, in metres
+/// (ADR-021).  Arcs are given by three points so the orientation follows
+/// the loop.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ProfileSegment {
+    Line {
+        start_m: [f64; 2],
+        end_m: [f64; 2],
+    },
+    Arc {
+        start_m: [f64; 2],
+        mid_m: [f64; 2],
+        end_m: [f64; 2],
+    },
+}
+
 /// 2D profile input for wire creation (sketch solver output).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SolvedSketch {
@@ -170,6 +187,10 @@ pub struct SolvedSketch {
     /// The exact circle when the profile is a single circle.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub circle: Option<SolvedCircle>,
+    /// Exact loop segments when the loop contains arcs (ADR-021); `points`
+    /// then holds a sampled polygon for kernels without curves.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub segments: Vec<ProfileSegment>,
     #[serde(skip)]
     pub placement: Option<SketchPlacement>,
 }
@@ -594,6 +615,7 @@ mod tests {
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
             circle: None,
+            segments: Vec::new(),
             placement: None,
         }
     }

@@ -59,6 +59,10 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
    - `{"type": "add_sketch_entity", "sketch_id": "sketch:base", "entity": {"type": "point", "id": "ent:c0", "x": 0.0, "y": 0.0}}`
    - `{"type": "add_sketch_entity", "sketch_id": "sketch:base", "entity": {"type": "line", "id": "ent:e0", "start": "ent:c0", "end": "ent:c1"}}`
    - `{"type": "add_sketch_entity", "sketch_id": "sketch:hole", "entity": {"type": "circle", "id": "ent:hole_circle", "center": "ent:hole_center", "radius": 0.005}}`
+   - Arcs join line loops when they name the points at their ends; the arc
+     runs counterclockwise from `start_angle` to `end_angle` (ADR-021):
+     `{"type": "arc", "id": "ent:right", "center": "ent:c_right", "radius": 0.004, "start_angle": "-90 deg", "end_angle": "90 deg", "start_point": "ent:s1", "end_point": "ent:s2"}`.
+     `examples/agent/author_slot_plate_patch.json` authors a slot this way.
 4. **Driving constraints.**
    - `{"type": "add_sketch_constraint", "sketch_id": "sketch:base", "constraint": {"type": "distance", "id": "con:width", "target": {"line": "ent:e0"}, "expr": "width"}}`
    - `{"type": "radius", "id": "con:hole_radius", "target": "ent:hole_circle", "expr": "hole_diameter / 2"}`

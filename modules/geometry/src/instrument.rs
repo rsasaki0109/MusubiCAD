@@ -223,6 +223,7 @@ mod tests {
                 points: vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
                 closed: true,
                 circle: None,
+                segments: Vec::new(),
                 placement: Some(SketchPlacement::global_xy()),
             })
             .expect("wire");

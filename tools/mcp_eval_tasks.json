@@ -26,6 +26,13 @@
         "width",
         "thickness"
       ]
+    },
+    {
+      "id": "slot_plate",
+      "document": "slot.ocad.d",
+      "prompt": "Create a new part document at {document} and author a 60 mm x 40 mm x 5 mm plate with one through slot centred on the plate: 30 mm between the centres of its rounded ends and 8 mm wide, running along the plate's long direction. Keep the plate size, slot length, and slot width as named parameters.",
+      "expected_volume_mm3": 10548.7,
+      "required_parameters": []
     }
   ]
 }

@@ -152,7 +152,9 @@
                 "required": ["type", "id"],
                 "properties": {
                   "type": { "enum": ["point", "line", "circle", "arc", "rectangle"] },
-                  "id": { "$ref": "#/$defs/stable_id_entity" }
+                  "id": { "$ref": "#/$defs/stable_id_entity" },
+                  "start_point": { "type": "string", "pattern": "^ent:" },
+                  "end_point": { "type": "string", "pattern": "^ent:" }
                 }
               }
             }

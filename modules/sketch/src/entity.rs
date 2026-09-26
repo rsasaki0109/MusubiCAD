@@ -58,8 +58,17 @@ pub struct ArcEntity {
     pub base: EntityBase,
     pub center: EntityId,
     pub radius: Coord,
+    /// Start angle in radians, measured counterclockwise from +x.  The arc
+    /// runs counterclockwise from `start_angle` to `end_angle`.
     pub start_angle: Coord,
     pub end_angle: Coord,
+    /// Point entity held at the arc's start (ADR-021).  With both endpoint
+    /// points set, the arc joins line loops into closed profiles.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_point: Option<EntityId>,
+    /// Point entity held at the arc's end (ADR-021).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub end_point: Option<EntityId>,
 }
 
 /// Rectangle helper: stores parametric origin/size and expands to four lines.
@@ -103,7 +112,10 @@ impl SketchEntity {
         match self {
             Self::Line(line) => vec![&line.start, &line.end],
             Self::Circle(circle) => vec![&circle.center],
-            Self::Arc(arc) => vec![&arc.center],
+            Self::Arc(arc) => std::iter::once(&arc.center)
+                .chain(arc.start_point.as_ref())
+                .chain(arc.end_point.as_ref())
+                .collect(),
             Self::Point(_) | Self::Rectangle(_) => Vec::new(),
         }
     }
@@ -253,6 +265,8 @@ mod tests {
             radius: Coord::expr("hole_diameter / 2").expect("expr"),
             start_angle: Coord::literal(0.0),
             end_angle: Coord::expr("sweep").expect("expr"),
+            start_point: None,
+            end_point: None,
         });
         assert_eq!(arc.point_refs(), vec![&ent("ent:center")]);
         assert_eq!(arc.defined_ids(), vec![&ent("ent:arc")]);
