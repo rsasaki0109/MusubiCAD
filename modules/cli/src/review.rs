@@ -1560,8 +1560,10 @@ mod tests {
                 fs::read_to_string(first_output.join(name)).expect("generated review artifact");
             let second =
                 fs::read_to_string(second_output.join(name)).expect("second review artifact");
-            let golden =
-                fs::read_to_string(golden_review_dir.join(name)).expect("review golden artifact");
+            let golden = fs::read_to_string(golden_review_dir.join(name))
+                .expect("review golden artifact")
+                // Git may check the goldens out with CRLF line endings.
+                .replace("\r\n", "\n");
             assert_eq!(
                 first, second,
                 "review artifact is not deterministic: {name}"
@@ -1695,8 +1697,10 @@ mod tests {
                 fs::read_to_string(first_output.join(name)).expect("generated review artifact");
             let repeated =
                 fs::read_to_string(second_output.join(name)).expect("repeated review artifact");
-            let golden =
-                fs::read_to_string(golden_dir.join(name)).expect("arm review golden artifact");
+            let golden = fs::read_to_string(golden_dir.join(name))
+                .expect("arm review golden artifact")
+                // Git may check the goldens out with CRLF line endings.
+                .replace("\r\n", "\n");
             assert_eq!(
                 generated, repeated,
                 "review artifact is not deterministic: {name}"
