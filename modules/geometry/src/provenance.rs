@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::refs::{TopoRef, TopoRefKind, TopoRefTolerancePolicy};
 use crate::topo_sync::{
-    build_src_to_post_map, edge_match_candidates, face_match_candidates, EdgeRefDiscovery,
-    FaceDerivation, FaceRefDiscovery,
+    edge_match_candidates, face_match_candidates, EdgeRefDiscovery, FaceDerivation,
+    FaceRefDiscovery,
 };
 
 /// Score distance treated as an exact tie during candidate classification.
@@ -34,12 +34,36 @@ pub enum ReferenceStatus {
     Ambiguous,
     /// No candidate satisfied the reference.
     Missing,
+    /// A downstream feature intentionally removed the referenced face, such
+    /// as a shell opening (ADR-019).
+    Consumed,
 }
 
 impl ReferenceStatus {
     /// Whether the status means the reference could not be pinned to one face/edge.
     pub fn is_unresolved(self) -> bool {
-        matches!(self, Self::Ambiguous | Self::Missing)
+        matches!(self, Self::Ambiguous | Self::Missing | Self::Consumed)
+    }
+}
+
+/// Mark references that a feature intentionally removed (ADR-019).
+///
+/// `consumers` pairs a reference ID with the feature that consumes it.
+/// Consumption overrides any other classification: a removed face can only
+/// match the final body by coincidence.  Candidates are kept as evidence.
+pub fn mark_consumed_references(
+    provenance: &mut [ReferenceProvenance],
+    consumers: &[(String, String)],
+) {
+    for record in provenance.iter_mut() {
+        if let Some((_, feature)) = consumers
+            .iter()
+            .find(|(ref_id, _)| *ref_id == record.ref_id)
+        {
+            record.status = ReferenceStatus::Consumed;
+            record.resolved_kernel_id = None;
+            record.reason = format!("opened by {feature}");
+        }
     }
 }
 
@@ -251,11 +275,18 @@ pub fn resolve_face_ref_with_provenance(
         .unwrap_or_default();
 
     if let Some(stored_id) = topo_ref.kernel_face_id() {
-        let remap = build_src_to_post_map(face_history);
-        let resolved_id = remap.get(&stored_id).copied().unwrap_or(stored_id);
-        let derived = resolved_id != stored_id;
+        // Stored IDs are final-body indices (ADR-018) and are not remapped
+        // through per-operation history, so nothing is reported as derived.
+        let _ = face_history;
+        let resolved_id = stored_id;
+        let derived = false;
         let verified = discoveries
-            .map(|discoveries| discoveries.iter().any(|d| d.kernel_face_id == resolved_id))
+            .map(|discoveries| {
+                discoveries.iter().any(|d| {
+                    d.kernel_face_id == resolved_id
+                        && crate::topo_sync::role_agrees(topo_ref, &d.role)
+                })
+            })
             .unwrap_or(true);
         if verified {
             let (status, reason) = if derived {
@@ -336,7 +367,12 @@ pub fn resolve_edge_ref_with_provenance(
 
     if let Some(stored_id) = topo_ref.kernel_edge_id() {
         let verified = discoveries
-            .map(|discoveries| discoveries.iter().any(|d| d.kernel_edge_id == stored_id))
+            .map(|discoveries| {
+                discoveries.iter().any(|d| {
+                    d.kernel_edge_id == stored_id
+                        && crate::topo_sync::role_agrees(topo_ref, &d.role)
+                })
+            })
             .unwrap_or(true);
         if verified {
             let provenance = provenance_from(
@@ -470,7 +506,9 @@ mod tests {
     }
 
     #[test]
-    fn derived_face_is_classified_through_history() {
+    /// ADR-018: stored IDs are final-body indices and are not remapped
+    /// through per-operation history; a stale ID falls back to fingerprints.
+    fn history_does_not_remap_a_stored_face_id() {
         let refs = vec![TopoRef::kernel_face(
             TopoRefId::new("ref:face:top").expect("id"),
             "feature:fillet_top",
@@ -488,8 +526,8 @@ mod tests {
             TopoRefTolerancePolicy::default(),
             true,
         )
-        .expect("derived resolution");
-        assert_eq!(resolution.provenance.status, ReferenceStatus::Derived);
+        .expect("fingerprint resolution");
+        assert_eq!(resolution.provenance.status, ReferenceStatus::Fingerprint);
         assert_eq!(resolution.resolved_kernel_id, Some(200));
     }
 

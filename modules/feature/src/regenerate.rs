@@ -415,6 +415,21 @@ impl PartModel {
                     },
                     TopoRefTolerancePolicy::default(),
                 );
+                let consumers: Vec<(String, String)> = self
+                    .nodes
+                    .values()
+                    .filter(|node| !node.suppressed)
+                    .flat_map(|node| {
+                        node.definition
+                            .consumed_face_refs()
+                            .into_iter()
+                            .map(|ref_id| (ref_id.to_string(), node.id.clone()))
+                    })
+                    .collect();
+                opencad_geometry::mark_consumed_references(
+                    &mut report.reference_provenance,
+                    &consumers,
+                );
             }
 
             Ok(report)

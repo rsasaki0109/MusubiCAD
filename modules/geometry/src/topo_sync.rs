@@ -108,16 +108,18 @@ pub fn resolve_kernel_face_id_for_topo_ref_with_discoveries_and_policy(
         .find(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
         .ok_or_else(|| OpenCadError::not_found(format!("topo ref '{ref_id}'")))?;
 
+    // Stored IDs are final-body enumeration indices (ADR-018): they are
+    // matched directly and verified by role, never remapped through the
+    // face derivation history, whose indices are local to each operation.
+    let _ = face_history;
     if let Some(stored_id) = topo_ref.kernel_face_id() {
-        let remap = build_src_to_post_map(face_history);
-        let resolved_id = remap.get(&stored_id).copied().unwrap_or(stored_id);
+        let resolved_id = stored_id;
         let Some(discoveries) = discoveries else {
             return Ok(resolved_id);
         };
-        if discoveries
-            .iter()
-            .any(|discovery| discovery.kernel_face_id == resolved_id)
-        {
+        if discoveries.iter().any(|discovery| {
+            discovery.kernel_face_id == resolved_id && role_agrees(topo_ref, &discovery.role)
+        }) {
             return Ok(resolved_id);
         }
         if let Some(kernel_face_id) =
@@ -395,6 +397,20 @@ pub fn match_face_discovery_for_topo_ref_with_policy(
         .map(|discovery| discovery.kernel_face_id)
 }
 
+/// Whether a discovered face or edge role agrees with a reference's role.
+///
+/// Kernel IDs are enumeration indices (ADR-018), so a stored ID can name a
+/// different face or edge after a topology change.  A stored ID is only
+/// trusted when the element it names still has the reference's role; a
+/// reference without a role accepts any role.
+pub(crate) fn role_agrees(topo_ref: &TopoRef, discovered_role: &str) -> bool {
+    topo_ref
+        .semantic
+        .role
+        .as_deref()
+        .map_or(true, |role| role == discovered_role)
+}
+
 fn discovery_matches_topo_ref(
     topo_ref: &TopoRef,
     discovery: &FaceRefDiscovery,
@@ -643,38 +659,25 @@ pub fn compose_face_derivation_histories(segments: &[&[FaceDerivation]]) -> Vec<
     composed
 }
 
-/// Update persisted `kernel_face_id` values using `[post_id, src_id]` history pairs.
+/// Formerly rebound stored `kernel_face_id` values through history pairs.
+///
+/// Kernel IDs are now final-body enumeration indices (ADR-018) and history
+/// indices are local to each operation, so a flat history cannot rebind a
+/// stored ID.  Stored IDs are instead verified by role during resolution and
+/// sync.  Kept as a no-op for API compatibility.
 pub fn rebind_kernel_face_ids(semantic_refs: &mut [TopoRef], history: &[FaceDerivation]) {
-    if history.is_empty() {
-        return;
-    }
-
-    let remap = build_src_to_post_map(history);
-    for topo_ref in semantic_refs.iter_mut() {
-        let Some(stored_id) = topo_ref.kernel_face_id() else {
-            continue;
-        };
-        let Some(new_id) = remap.get(&stored_id).copied() else {
-            continue;
-        };
-        if new_id == stored_id {
-            continue;
-        }
-        if let Some(fingerprint) = topo_ref.geometric_fingerprint.as_mut() {
-            fingerprint.kernel_face_id = Some(new_id);
-        }
-    }
+    let _ = (semantic_refs, history);
 }
 
-/// Rebind stored ids via history, then merge discovered faces into semantic refs.
+/// Merge discovered faces into semantic refs.  `history` is ignored; see
+/// [`rebind_kernel_face_ids`].
 pub fn sync_semantic_refs_with_history(
     existing: &[TopoRef],
     history: &[FaceDerivation],
     discoveries: &[FaceRefDiscovery],
 ) -> Vec<TopoRef> {
-    let mut refs = existing.to_vec();
-    rebind_kernel_face_ids(&mut refs, history);
-    sync_semantic_refs(&refs, discoveries)
+    let _ = history;
+    sync_semantic_refs(existing, discoveries)
 }
 
 /// Merge discovered kernel faces into persisted semantic references.
@@ -683,10 +686,12 @@ pub fn sync_semantic_refs(existing: &[TopoRef], discoveries: &[FaceRefDiscovery]
     let policy = TopoRefTolerancePolicy::default();
 
     for discovery in discoveries {
-        if let Some(index) = refs
-            .iter()
-            .position(|topo_ref| topo_ref.kernel_face_id() == Some(discovery.kernel_face_id))
-        {
+        // A stored ID only identifies the discovery while the face still has
+        // the reference's role; indices can shift to another face (ADR-018).
+        if let Some(index) = refs.iter().position(|topo_ref| {
+            topo_ref.kernel_face_id() == Some(discovery.kernel_face_id)
+                && role_agrees(topo_ref, &discovery.role)
+        }) {
             refs[index].geometric_fingerprint = Some(fingerprint_from(discovery));
             if discovery.feature_id.is_some() {
                 refs[index].semantic.created_by = discovery.feature_id.clone().unwrap_or_default();
@@ -886,6 +891,41 @@ fn fingerprint_from(discovery: &FaceRefDiscovery) -> GeometricFingerprint {
 mod tests {
     use super::*;
 
+    /// ADR-018: a stored index that now names a face with another role is
+    /// not trusted; fingerprint matching finds the face with the role.
+    #[test]
+    fn a_stored_id_naming_another_role_falls_back_to_the_fingerprint() {
+        let mut topo_ref = TopoRef::face(
+            TopoRefId::new("ref:face:top").expect("id"),
+            "feature:extrude_base",
+            "top",
+        );
+        topo_ref.geometric_fingerprint = Some(GeometricFingerprint {
+            surface_type: "brep_face".into(),
+            kernel_face_id: Some(2),
+            kernel_edge_id: None,
+            area_range: None,
+            bbox_hint: None,
+            adjacent_feature_ids: Vec::new(),
+        });
+        let discovery = |kernel_face_id: u64, role: &str, z: f32| FaceRefDiscovery {
+            kernel_face_id,
+            role: role.into(),
+            normal_m: [0.0, 0.0, if role == "top" { 1.0 } else { -1.0 }],
+            centroid_m: [0.0, 0.0, z],
+            feature_id: Some("feature:extrude_base".into()),
+        };
+        let discoveries = [discovery(2, "bottom", 0.0), discovery(5, "top", 0.006)];
+        let resolved = resolve_kernel_face_id_for_topo_ref_with_discoveries(
+            &[topo_ref],
+            &[],
+            "ref:face:top",
+            Some(&discoveries),
+        )
+        .expect("resolve");
+        assert_eq!(resolved, 5);
+    }
+
     #[test]
     fn sync_creates_kernel_face_refs() {
         let refs = sync_semantic_refs(
@@ -941,7 +981,8 @@ mod tests {
     }
 
     #[test]
-    fn rebind_updates_stale_kernel_face_id() {
+    /// ADR-018: rebinding through history is a no-op.
+    fn rebind_leaves_stored_kernel_face_ids_unchanged() {
         let mut refs = vec![TopoRef::kernel_face(
             TopoRefId::new("ref:face:custom_top").expect("id"),
             "feature:fillet_top",
@@ -950,7 +991,7 @@ mod tests {
             [0.0, 0.0, 1.0],
         )];
         rebind_kernel_face_ids(&mut refs, &[(200, 100)]);
-        assert_eq!(refs[0].kernel_face_id(), Some(200));
+        assert_eq!(refs[0].kernel_face_id(), Some(100));
     }
 
     #[test]
@@ -1005,7 +1046,9 @@ mod tests {
     }
 
     #[test]
-    fn resolve_kernel_face_id_remaps_through_history() {
+    /// ADR-018: without discoveries a stored ID is used as is; history does
+    /// not remap it.
+    fn resolve_kernel_face_id_ignores_history() {
         use opencad_core::TopoRefId;
 
         let refs = vec![TopoRef::kernel_face(
@@ -1018,7 +1061,7 @@ mod tests {
         let history = vec![(20, 10), (30, 20)];
         let resolved = resolve_kernel_face_id_for_topo_ref(&refs, &history, "ref:face:bracket_top")
             .expect("resolve");
-        assert_eq!(resolved, 30);
+        assert_eq!(resolved, 10);
     }
 
     #[test]

@@ -68,3 +68,38 @@ The CLI integration test `modules/cli/tests/mcp.rs` drives a real
 4. `patch_apply` writes the part.
 5. `regen_document` reports the OCCT volume of a 60 × 40 × 5 mm plate with a
    10 mm through hole.
+
+## Evaluating agent hosts
+
+`tools/mcp_eval.py` measures how well a real MCP host authors parts with
+these tools. It runs Claude Code headless, one task at a time, against
+`opencad mcp` with only the `musubicad` tools allowed. It then checks the
+result independently:
+
+- `opencad regen` must report the analytic volume within 0.1 mm³;
+- every required named parameter must exist.
+
+The report records pass/fail, volume, turns, cost, and duration for each
+task. The tasks are defined in `tools/mcp_eval_tasks.json`:
+
+| Task | What the agent must do | Expected volume |
+|---|---|---|
+| `enclosure` | Author a 50 × 30 × 15 mm open-top enclosure with 1.5 mm walls from nothing | 5 368.5 mm³ |
+| `two_hole_plate` | Author an 80 × 50 × 6 mm plate with two Ø8 mm through holes | 23 400.7 mm³ |
+| `edit_bracket` | Widen and thicken the example bracket while keeping it rectangular. Its sketch starts constrained only by side lengths. | 47 375.7 mm³ |
+
+Expected volumes treat sketch circles as the 32-sided inscribed polygons that
+the kernel receives today (`CIRCLE_SEGMENTS`).
+
+```bash
+python tools/mcp_eval.py --opencad target/debug/opencad.exe --out eval.json
+python tools/mcp_eval.py --only edit_bracket
+python tools/mcp_eval.py --self-test   # checker only, no model calls
+```
+
+The harness calls a paid model, so it is not part of CI.
+
+The first baseline run, on 2026-09-26, passed 3 of 3 tasks. It cost
+$1.54 in total, and each task took 9–16 turns and 26–144 s. In
+`edit_bracket`, the agent added horizontal and vertical constraints to the
+bracket's under-constrained sketch before editing it.

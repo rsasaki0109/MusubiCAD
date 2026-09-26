@@ -89,9 +89,23 @@ pub fn edge_selector_for_edge_ref(
         .ok_or_else(|| OpenCadError::not_found(format!("topo ref '{edge_ref}'")))?;
 
     if let Some(stored_id) = topo_ref.kernel_edge_id() {
-        return Ok(FilletEdgeSelector::KernelEdges {
-            kernel_edge_ids: vec![stored_id],
-        });
+        // Kernel IDs are enumeration indices (ADR-018): trust a stored ID
+        // only while the edge it names still has the reference's role.
+        let discoveries = ctx.edge_discoveries();
+        let still_matches = discoveries.is_empty()
+            || discoveries.iter().any(|discovery| {
+                discovery.kernel_edge_id == stored_id
+                    && topo_ref
+                        .semantic
+                        .role
+                        .as_deref()
+                        .map_or(true, |role| role == discovery.role)
+            });
+        if still_matches || topo_ref.semantic.role.is_none() {
+            return Ok(FilletEdgeSelector::KernelEdges {
+                kernel_edge_ids: vec![stored_id],
+            });
+        }
     }
 
     let role =

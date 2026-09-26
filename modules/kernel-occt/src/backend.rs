@@ -132,6 +132,22 @@ fn collect_body_solids(store: &KernelStore, body_id: u64) -> Result<Vec<Solid>> 
     }
 }
 
+/// Map each face address of a deep copy to its 1-based enumeration index
+/// (ADR-018).  A deep copy shares no topology, so the map is one-to-one;
+/// shared addresses (only possible on a solid that was not copied) fail.
+#[cfg(feature = "occt")]
+fn face_indices(solid: &Solid, offset: u64) -> Result<std::collections::HashMap<u64, u64>> {
+    let mut map = std::collections::HashMap::new();
+    for (index, face) in solid.iter_face().enumerate() {
+        if map.insert(face.id(), offset + index as u64 + 1).is_some() {
+            return Err(OpenCadError::Other(
+                "solid shares face topology; enumerate a deep copy".into(),
+            ));
+        }
+    }
+    Ok(map)
+}
+
 #[cfg(feature = "occt")]
 fn merge_bounding_boxes(mut merged: BoundingBox, next: BoundingBox) -> BoundingBox {
     merged.min = [
@@ -164,14 +180,23 @@ fn collect_edges(solid: &Solid, selector: FilletEdgeSelector) -> Vec<&Edge> {
                 })
                 .collect()
         }
-        FilletEdgeSelector::FacePerimeter { kernel_face_id } => solid
-            .iter_face()
-            .find(|face| face.id() == kernel_face_id)
-            .map(|face| face.iter_edge().collect())
+        // Kernel IDs are 1-based enumeration indices (ADR-018).
+        FilletEdgeSelector::FacePerimeter { kernel_face_id } => kernel_face_id
+            .checked_sub(1)
+            .and_then(|index| solid.iter_face().nth(index as usize))
+            .map(|face| {
+                let ids: Vec<u64> = face.iter_edge().map(|edge| edge.id()).collect();
+                solid
+                    .iter_edge()
+                    .filter(|edge| ids.contains(&edge.id()))
+                    .collect()
+            })
             .unwrap_or_default(),
         FilletEdgeSelector::KernelEdges { kernel_edge_ids } => solid
             .iter_edge()
-            .filter(|edge| kernel_edge_ids.contains(&edge.id()))
+            .enumerate()
+            .filter(|(index, _)| kernel_edge_ids.contains(&(*index as u64 + 1)))
+            .map(|(_, edge)| edge)
             .collect(),
         FilletEdgeSelector::EdgeRole { role } => {
             let bb = solid.bounding_box();
@@ -216,9 +241,11 @@ fn discover_edges_from_solid(solid: &Solid) -> Vec<EdgeRefDiscovery> {
     let z_max = bb[1].z;
     let eps = 1e-6;
     let bbox = [[bb[0].x, bb[0].y, bb[0].z], [bb[1].x, bb[1].y, bb[1].z]];
+    // Kernel edge IDs are 1-based enumeration indices (ADR-018).
     solid
         .iter_edge()
-        .filter_map(|edge| {
+        .enumerate()
+        .filter_map(|(index, edge)| {
             let start = edge.start_point();
             let end = edge.end_point();
             let midpoint = [
@@ -236,7 +263,7 @@ fn discover_edges_from_solid(solid: &Solid) -> Vec<EdgeRefDiscovery> {
                     .sqrt();
             let role = top_edge_role(&midpoint, &tangent, &bbox);
             Some(EdgeRefDiscovery {
-                kernel_edge_id: edge.id(),
+                kernel_edge_id: index as u64 + 1,
                 role,
                 midpoint_m: [midpoint[0] as f32, midpoint[1] as f32, midpoint[2] as f32],
                 tangent_m: [tangent[0] as f32, tangent[1] as f32, tangent[2] as f32],
@@ -367,7 +394,7 @@ impl GeometryKernel for OcctGeometryKernel {
                 direction_m[2] / dir_len * length_m,
             );
 
-            let mut solid = Solid::extrude(edges.iter(), direction).map_err(map_occt_error)?;
+            let solid = Solid::extrude(edges.iter(), direction).map_err(map_occt_error)?;
 
             if let ExtrudeOperation::Cut = operation {
                 let Some(target_body) = target else {
@@ -381,7 +408,10 @@ impl GeometryKernel for OcctGeometryKernel {
                     .body(target_body.0)
                     .ok_or_else(|| OpenCadError::not_found(format!("body {}", target_body.0)))?
                     .clone();
-                solid = (target_solid - solid).build().map_err(map_occt_error)?;
+                let input_faces = face_indices(&target_solid, 0)?;
+                let cut = (target_solid - solid).build().map_err(map_occt_error)?;
+                let id = self.store.borrow_mut().insert_derived(cut, &input_faces);
+                return Ok(KernelBody::new(id));
             }
 
             let id = self.store.borrow_mut().insert_body(solid);
@@ -429,7 +459,7 @@ impl GeometryKernel for OcctGeometryKernel {
 
             let edges = sketch_to_edges_on_plane(sketch, profile_plane)?;
             let spine = revolve_spine_edge(axis, angle_rad)?;
-            let mut solid = Solid::sweep(
+            let solid = Solid::sweep(
                 &edges,
                 std::slice::from_ref(&spine),
                 ProfileOrient::Up(axis),
@@ -448,7 +478,10 @@ impl GeometryKernel for OcctGeometryKernel {
                         .body(target_body.0)
                         .ok_or_else(|| OpenCadError::not_found(format!("body {}", target_body.0)))?
                         .clone();
-                    solid = (target_solid - solid).build().map_err(map_occt_error)?;
+                    let input_faces = face_indices(&target_solid, 0)?;
+                    let cut = (target_solid - solid).build().map_err(map_occt_error)?;
+                    let id = self.store.borrow_mut().insert_derived(cut, &input_faces);
+                    return Ok(KernelBody::new(id));
                 }
                 RevolveOperation::Join => {
                     let new_body = solid;
@@ -463,7 +496,10 @@ impl GeometryKernel for OcctGeometryKernel {
                         .body(target_body.0)
                         .ok_or_else(|| OpenCadError::not_found(format!("body {}", target_body.0)))?
                         .clone();
-                    solid = (target_solid + new_body).build().map_err(map_occt_error)?;
+                    let input_faces = face_indices(&target_solid, 0)?;
+                    let joined = (target_solid + new_body).build().map_err(map_occt_error)?;
+                    let id = self.store.borrow_mut().insert_derived(joined, &input_faces);
+                    return Ok(KernelBody::new(id));
                 }
             }
 
@@ -490,6 +526,7 @@ impl GeometryKernel for OcctGeometryKernel {
                 .ok_or_else(|| OpenCadError::not_found(format!("body {}", rhs.0)))?
                 .clone();
             drop(store);
+            let input_faces = face_indices(&left, 0)?;
 
             let expr = match op {
                 BooleanOp::Union => left + right,
@@ -497,7 +534,7 @@ impl GeometryKernel for OcctGeometryKernel {
                 BooleanOp::Intersect => left * right,
             };
             let solid = expr.build().map_err(map_occt_error)?;
-            let id = self.store.borrow_mut().insert_body(solid);
+            let id = self.store.borrow_mut().insert_derived(solid, &input_faces);
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -510,14 +547,12 @@ impl GeometryKernel for OcctGeometryKernel {
     fn face_derivation_history(&self, body: &KernelBody) -> Vec<(u64, u64)> {
         #[cfg(feature = "occt")]
         {
-            let store = self.store.borrow();
-            let Some(solid) = store.body(body.0) else {
-                return Vec::new();
-            };
-            solid
-                .iter_history()
-                .map(|pair| (pair[0], pair[1]))
-                .collect()
+            self.store
+                .borrow()
+                .face_history
+                .get(&body.0)
+                .cloned()
+                .unwrap_or_default()
         }
         #[cfg(not(feature = "occt"))]
         {
@@ -563,6 +598,12 @@ impl GeometryKernel for OcctGeometryKernel {
             let store = self.store.borrow();
             let solids = collect_body_solids(&store, body.0)?;
             drop(store);
+            let mut index_of = std::collections::HashMap::new();
+            let mut offset = 0;
+            for solid in &solids {
+                index_of.extend(face_indices(solid, offset)?);
+                offset += solid.iter_face().count() as u64;
+            }
 
             let tessellation = cadrum::Tessellation {
                 deflection_linear: settings.linear_deflection,
@@ -578,7 +619,17 @@ impl GeometryKernel for OcctGeometryKernel {
                 .collect();
             let normals = vec![[0.0, 0.0, 1.0]; positions.len()];
             let indices: Vec<u32> = mesh.indices.iter().map(|&i| i as u32).collect();
-            let triangle_face_ids = mesh.face_ids.clone();
+            let triangle_face_ids = mesh
+                .face_ids
+                .iter()
+                .map(|address| {
+                    index_of.get(address).copied().ok_or_else(|| {
+                        OpenCadError::Other(format!(
+                            "tessellation face {address} is not a face of the body"
+                        ))
+                    })
+                })
+                .collect::<Result<Vec<u64>>>()?;
 
             Ok(MeshSet {
                 positions,
@@ -739,10 +790,14 @@ impl GeometryKernel for OcctGeometryKernel {
                 ));
             }
 
+            let input_faces = face_indices(&solid, 0)?;
             let filleted = solid
                 .fillet_edges(radius_m, edges)
                 .map_err(map_occt_error)?;
-            let id = self.store.borrow_mut().insert_body(filleted);
+            let id = self
+                .store
+                .borrow_mut()
+                .insert_derived(filleted, &input_faces);
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -780,10 +835,14 @@ impl GeometryKernel for OcctGeometryKernel {
                 ));
             }
 
+            let input_faces = face_indices(&solid, 0)?;
             let chamfered = solid
                 .chamfer_edges(distance_m, edges)
                 .map_err(map_occt_error)?;
-            let id = self.store.borrow_mut().insert_body(chamfered);
+            let id = self
+                .store
+                .borrow_mut()
+                .insert_derived(chamfered, &input_faces);
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -921,10 +980,15 @@ impl GeometryKernel for OcctGeometryKernel {
                     "shell needs at least one open face",
                 ));
             }
-            let store = self.store.borrow();
-            let solid = store
+            // Shell a deep copy so the history maps one-to-one to indices.
+            let solid = self
+                .store
+                .borrow()
                 .body(body.0)
-                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?;
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+            let solid = &solid;
+            let input_faces = face_indices(solid, 0)?;
             let faces = open_faces
                 .iter()
                 .map(|pick| pick_face(solid, pick))
@@ -943,8 +1007,10 @@ impl GeometryKernel for OcctGeometryKernel {
                     "shell of {thickness_m} m did not hollow the body (volume {before} m^3 -> {after} m^3)"
                 )));
             }
-            drop(store);
-            let id = self.store.borrow_mut().insert_body(shelled);
+            let id = self
+                .store
+                .borrow_mut()
+                .insert_derived(shelled, &input_faces);
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -1124,6 +1190,58 @@ mod tests {
             (overlap - expected).abs() < 1e-12,
             "overlap {overlap} vs {expected}"
         );
+    }
+
+    fn box_body(kernel: &OcctGeometryKernel) -> KernelBody {
+        let wire = kernel
+            .make_wire_from_sketch(&rectangle_sketch())
+            .expect("wire");
+        kernel
+            .extrude(
+                wire,
+                ExtrudeExtent::Distance {
+                    length: Length::from_meters(0.006),
+                },
+                ExtrudeOperation::NewBody,
+                None,
+                [0.0, 0.0, 1.0],
+            )
+            .expect("extrude")
+    }
+
+    /// ADR-018: a prism's top and bottom faces share one TShape, yet their
+    /// kernel IDs differ because IDs are enumeration indices.
+    #[test]
+    fn occt_face_ids_are_distinct_enumeration_indices() {
+        let kernel = OcctGeometryKernel::new();
+        let body = box_body(&kernel);
+        let mesh = kernel
+            .tessellate(&body, &TessellationSettings::default())
+            .expect("mesh");
+        let ids: std::collections::BTreeSet<u64> = mesh.triangle_face_ids.iter().copied().collect();
+        assert_eq!(ids, (1..=6).collect());
+    }
+
+    /// Every face of the box selects its own four perimeter edges.
+    #[test]
+    fn occt_face_perimeter_selects_the_indexed_face() {
+        let kernel = OcctGeometryKernel::new();
+        let body = box_body(&kernel);
+        let solid = kernel.store.borrow().body(body.0).expect("body").clone();
+        let mut perimeters = std::collections::BTreeSet::new();
+        for kernel_face_id in 1..=6 {
+            let edges = collect_edges(&solid, FilletEdgeSelector::FacePerimeter { kernel_face_id });
+            assert_eq!(edges.len(), 4, "face {kernel_face_id}");
+            let mut ids: Vec<u64> = edges.iter().map(|edge| edge.id()).collect();
+            ids.sort_unstable();
+            perimeters.insert(ids);
+        }
+        assert_eq!(perimeters.len(), 6, "each face has a different perimeter");
+        assert!(collect_edges(
+            &solid,
+            FilletEdgeSelector::FacePerimeter { kernel_face_id: 7 }
+        )
+        .is_empty());
     }
 
     #[test]

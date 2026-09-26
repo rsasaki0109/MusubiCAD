@@ -29,7 +29,7 @@ pub use fillet::{FilletFeature, FilletFeatureExecutor};
 pub use graph_derive::derive_feature_graph;
 pub use hole::{HoleFeature, HoleFeatureExecutor};
 pub use imported::{ImportedSolidExecutor, ImportedSolidFeature};
-pub use param_apply::apply_parameters;
+pub use param_apply::{apply_parameters, sketch_solve_state};
 pub use pattern::{
     CircularPatternFeature, CircularPatternFeatureExecutor, LinearPatternFeature,
     LinearPatternFeatureExecutor, MirrorPatternFeature, MirrorPatternFeatureExecutor,

@@ -132,11 +132,89 @@ pub fn dry_run_patch_state_with_context(
         sketches: context.sketches,
     };
     let impact = predict_change_impact(before, &after, &diff, context);
+    if validation.is_ok() {
+        for warning in sketch_freedom_warnings(before, &after) {
+            validation.push(warning);
+        }
+    }
     PatchDryRunReport {
         validation,
         diff,
         impact,
     }
+}
+
+/// Smallest parameter value change, in metres or radians, that counts as a
+/// change when deciding which sketches a patch can move.
+const PARAMETER_CHANGE_TOLERANCE: f64 = 1e-12;
+
+/// Warn about under-constrained sketches the patch adds, edits, or drives
+/// through a changed parameter value.
+///
+/// A sketch with remaining degrees of freedom regenerates as drawn while its
+/// stored coordinates satisfy the constraints, but a later parameter edit can
+/// move or skew it (for example a rectangle constrained only by its side
+/// lengths).  Untouched sketches are not reported, so existing documents do
+/// not produce warnings on unrelated edits.
+fn sketch_freedom_warnings(before: &DesignState, after: &DesignState) -> Vec<ValidationMessage> {
+    use opencad_graph::{evaluate_param_graph, parameter_names_in_expr};
+    use opencad_sketch::SolveState;
+
+    let Ok(values) = evaluate_param_graph(&after.parameters) else {
+        return Vec::new();
+    };
+    let previous = evaluate_param_graph(&before.parameters).unwrap_or_default();
+    let changed: std::collections::BTreeSet<&str> = values
+        .iter()
+        .filter(|(name, value)| {
+            previous.get(name.as_str()).map_or(true, |old| {
+                (*old - **value).abs() > PARAMETER_CHANGE_TOLERANCE
+            })
+        })
+        .map(|(name, _)| name.as_str())
+        .collect();
+
+    let mut warnings = Vec::new();
+    for sketch in &after.sketches {
+        let edited = !before.sketches.iter().any(|old| {
+            old.id == sketch.id
+                && old.entities == sketch.entities
+                && old.constraints == sketch.constraints
+                && old.workplane == sketch.workplane
+        });
+        let driven = sketch
+            .constraints
+            .iter()
+            .filter_map(|constraint| constraint.expression())
+            .chain(
+                sketch
+                    .entities
+                    .iter()
+                    .flat_map(|entity| entity.expressions()),
+            )
+            .flat_map(|expr| parameter_names_in_expr(expr.as_str()))
+            .any(|name| changed.contains(name.as_str()));
+        if !edited && !driven {
+            continue;
+        }
+        if let Ok(SolveState::UnderConstrained { dof }) =
+            opencad_feature::sketch_solve_state(sketch, &values)
+        {
+            warnings.push(
+                ValidationMessage::warning(
+                    "sketch_under_constrained",
+                    format!(
+                        "sketch '{}' has {dof} remaining degrees of freedom; a parameter edit can \
+                         move or skew it. Constrain edges horizontal/vertical and add the missing \
+                         dimensions or coincidences.",
+                        sketch.id
+                    ),
+                )
+                .with_target(sketch.id.as_str()),
+            );
+        }
+    }
+    warnings
 }
 
 /// Validate that a patch can be applied and evaluated against a parameter graph.

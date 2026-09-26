@@ -416,16 +416,8 @@ listed faces to form openings
 - Known limitation: OCCT cannot shell a body whose open face is pierced by a
   through hole. Shell before cutting the hole.
 - After a shell, regeneration reports each opened face reference as
-  `Ambiguous` in `references:`. For example: `ref:face:box_top Ambiguous 2
-  candidates tie`.
-  - The cause: references are checked against the final body, where the
-    opened face is gone and both the rim and the inner floor match its
-    description.
-  - The shell geometry is correct.
-  - Do not put a `required_reference` assertion on an opened face; it
-    would fail.
-
-  See ADR-017 §4.
+  `Consumed`, for example `ref:face:box_top Consumed opened by feature:shell`
+  (ADR-019). A `required_reference` assertion on an opened face fails.
 
 `examples/agent/add_shell_patch.json` authors a 60 × 40 × 20 mm enclosure
 with 2 mm walls from an empty document.
@@ -506,6 +498,15 @@ Rules shared by every structural operation:
 
   For example, setting `thickness` to `0 mm` fails at dry-run and names every
   affected feature. Suppressed features are skipped.
+- **Under-constrained sketches.** Dry-run adds a `sketch_under_constrained`
+  warning, targeting the sketch ID, for a sketch that still has degrees of
+  freedom after solving with the new parameter values. It checks only
+  sketches the patch adds or edits, and sketches that use a parameter whose
+  value changes.
+
+  Warnings do not reject the patch. They flag geometry that can move or skew
+  on a later edit: for example, the bracket's base sketch, which only its
+  side lengths constrain, warns when `width` changes.
 - **Limits.** A patch holds at most 10,000 operations.
 - **Complete state required.** Structural operations run only through
   `build_patch_candidate` / `DesignPatch::apply_to_state` and the document,
@@ -702,18 +703,9 @@ Holes accept `face_ref` for semantic targeting; pass `semantic_refs` during rege
 }
 ```
 
-Fillet and chamfer `face_ref` currently works only on top faces in the OCCT
-backend.
-- A top face (role `top`) falls back to the top perimeter.
-- Any other face fails regeneration with "selector matched no edges".
-
-Faces resolved from tessellation carry face IDs of a deep copy, which do not
-name faces of the stored body. Picking the perimeter by geometry selects the
-right edges, but OCCT's fillet and chamfer builders then fail
-nondeterministically on side-face perimeters: 3–8 of 10 identical runs
-succeed. Deterministic regeneration takes priority, so geometric picking is
-not enabled for fillet and chamfer. To round a single top edge, use `edge_ref`
-with a `top@±x` or `top@±y` role. Other edges are not selectable yet.
+Fillet and chamfer `face_ref` select the perimeter edges of the referenced
+face, on any face (ADR-018). Before kernel IDs became deterministic
+enumeration indices, only top faces worked.
 
 `spacing_expr` is evaluated during regeneration (same timing as `length_expr` on extrude). Use `set_feature_expr` with `field: "spacing_expr"` to patch it parametrically.
 
