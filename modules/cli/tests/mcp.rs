@@ -8,10 +8,7 @@ use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
 use serde_json::{json, Value};
 
-/// Hole profiles are 32-segment polygons (see `sketch_bridge`), in segments.
-const CIRCLE_SEGMENTS: f64 = 32.0;
-
-/// Volume agreement with the analytic plate-minus-polygonal-hole volume, in
+/// Volume agreement with the analytic plate-minus-hole volume, in
 /// cubic meters (1e-3 mm^3).
 const VOLUME_TOLERANCE_M3: f64 = 1e-12;
 
@@ -146,12 +143,9 @@ fn an_agent_authors_reviews_and_applies_a_part_over_mcp() {
     );
 
     let (width, depth, thickness, radius) = (0.06_f64, 0.04_f64, 0.005_f64, 0.005_f64);
-    let polygon_area = 0.5
-        * CIRCLE_SEGMENTS
-        * radius
-        * radius
-        * (2.0 * std::f64::consts::PI / CIRCLE_SEGMENTS).sin();
-    let expected = (width * depth - polygon_area) * thickness;
+    // Circle profiles are exact (ADR-020).
+    let hole_area = std::f64::consts::PI * radius * radius;
+    let expected = (width * depth - hole_area) * thickness;
     let volume = regen["volume_m3"].as_f64().expect("volume");
     assert!(
         (volume - expected).abs() <= VOLUME_TOLERANCE_M3,

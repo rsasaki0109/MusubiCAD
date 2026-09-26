@@ -3,7 +3,7 @@
 use indexmap::IndexMap;
 
 use opencad_core::{EntityId, OpenCadError, Result};
-use opencad_geometry::{ExtrudeOperation, SketchPlacement, SolvedSketch};
+use opencad_geometry::{ExtrudeOperation, SketchPlacement, SolvedCircle, SolvedSketch};
 use opencad_sketch::{
     entity::{expand_rectangle, Coord, LineEntity, SketchEntity},
     workplane::{GlobalPlane, Workplane},
@@ -148,10 +148,11 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
         )));
     }
 
-    let points = if profile.entity_ids.len() == 1 {
-        circle_profile_points(sketch, &profile.entity_ids[0])?
+    let (points, circle) = if profile.entity_ids.len() == 1 {
+        let circle = circle_profile(sketch, &profile.entity_ids[0])?;
+        (inscribed_polygon(circle), Some(circle))
     } else {
-        line_loop_points(sketch, profile)?
+        (line_loop_points(sketch, profile)?, None)
     };
 
     if points.len() < 3 {
@@ -164,6 +165,7 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
         profile_ref: profile_ref.into(),
         points,
         closed: true,
+        circle,
         placement: None,
     })
 }
@@ -270,7 +272,7 @@ fn line_loop_points(sketch: &Sketch, profile: &Profile) -> Result<Vec<[f64; 2]>>
     Ok(ordered)
 }
 
-fn circle_profile_points(sketch: &Sketch, circle_id: &EntityId) -> Result<Vec<[f64; 2]>> {
+fn circle_profile(sketch: &Sketch, circle_id: &EntityId) -> Result<SolvedCircle> {
     let entity = sketch
         .find_entity(circle_id.as_str())
         .ok_or_else(|| OpenCadError::not_found(format!("circle '{}'", circle_id.as_str())))?;
@@ -290,15 +292,23 @@ fn circle_profile_points(sketch: &Sketch, circle_id: &EntityId) -> Result<Vec<[f
         }
     };
 
-    let mut points = Vec::with_capacity(CIRCLE_SEGMENTS);
-    for i in 0..CIRCLE_SEGMENTS {
-        let angle = std::f64::consts::TAU * i as f64 / CIRCLE_SEGMENTS as f64;
-        points.push([
-            center[0] + radius * angle.cos(),
-            center[1] + radius * angle.sin(),
-        ]);
-    }
-    Ok(points)
+    Ok(SolvedCircle {
+        center_m: center,
+        radius_m: radius,
+    })
+}
+
+/// Inscribed polygon of a circle, for kernels without exact curves.
+fn inscribed_polygon(circle: SolvedCircle) -> Vec<[f64; 2]> {
+    (0..CIRCLE_SEGMENTS)
+        .map(|i| {
+            let angle = std::f64::consts::TAU * i as f64 / CIRCLE_SEGMENTS as f64;
+            [
+                circle.center_m[0] + circle.radius_m * angle.cos(),
+                circle.center_m[1] + circle.radius_m * angle.sin(),
+            ]
+        })
+        .collect()
 }
 
 #[cfg(test)]

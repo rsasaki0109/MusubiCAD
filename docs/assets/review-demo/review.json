@@ -15,15 +15,15 @@
       },
       {
         "kind": "mass_changed",
-        "before": "608.49 g",
-        "after": "653.32 g"
+        "before": "609.23 g",
+        "after": "654.36 g"
       }
     ],
     "geometry": {
-      "volume_before": 0.0002253656565967034,
-      "volume_after": 0.0002419717444746595,
-      "mass_before": 0.6084872728110992,
-      "mass_after": 0.6533237100815806
+      "volume_before": 0.00022564173725044792,
+      "volume_after": 0.00024235500983326659,
+      "mass_before": 0.6092326905762094,
+      "mass_after": 0.6543585265498197
     }
   },
   "geometry": {
@@ -51,8 +51,8 @@
         0.042
       ]
     ],
-    "before_triangles": 2444,
-    "after_triangles": 2444,
+    "before_triangles": 4150,
+    "after_triangles": 4150,
     "before_interference_count": null,
     "after_interference_count": null
   },
@@ -73,7 +73,7 @@
         "max": 0.048
       },
       "passed": true,
-      "message": "mass delta is 0.04483643727048148 kg"
+      "message": "mass delta is 0.045125835973610307 kg"
     }
   ],
   "before_image": "before.png",

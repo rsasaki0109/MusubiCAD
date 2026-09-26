@@ -21,7 +21,7 @@
 | Property | Before | After |
 |---|---:|---:|
 | Bounds | 178.79 × 338.79 × 74.00 mm | 212.95 × 276.21 × 74.00 mm |
-| Triangles (count) | 2344 | 2344 |
+| Triangles (count) | 4296 | 4296 |
 | Interferences (count) | 0 | 0 |
 
 ### Expected effects
