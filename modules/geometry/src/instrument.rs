@@ -151,6 +151,11 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.import_step(step)
     }
 
+    fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
+        self.record();
+        self.inner.loft(sections)
+    }
+
     fn shell_body(
         &self,
         body: KernelBody,

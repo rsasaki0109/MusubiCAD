@@ -263,6 +263,14 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// Skin a solid through two or more closed section profiles, each placed
+    /// by its own sketch placement, in order (ADR-022).
+    fn loft(&self, _sections: &[SolvedSketch]) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not support lofts",
+        ))
+    }
+
     /// Hollow `body` to a uniform inward wall of `thickness_m` metres,
     /// removing the picked faces to form openings (ADR-017).  Every pick must
     /// match exactly one face of `body`, or the call fails.
@@ -344,6 +352,19 @@ impl GeometryKernel for MockGeometryKernel {
             return Err(OpenCadError::validation("STEP file contains no solids"));
         }
         Ok(KernelBody::new((step.len() as u64 % 97).max(1)))
+    }
+
+    /// A deterministic stand-in body derived from the section count and
+    /// point counts, so loft pipelines run without OCCT (ADR-022).
+    fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
+        if sections.len() < 2 {
+            return Err(OpenCadError::validation("loft needs at least two sections"));
+        }
+        let seed = sections.iter().fold(sections.len() as u64, |acc, section| {
+            acc.wrapping_mul(31)
+                .wrapping_add(section.points.len() as u64)
+        });
+        Ok(KernelBody::new(seed.max(1)))
     }
 
     /// A deterministic stand-in body derived from the inputs, so shell

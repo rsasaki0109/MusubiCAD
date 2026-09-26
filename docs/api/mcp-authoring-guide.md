@@ -83,7 +83,11 @@ document (`examples/agent/author_plate_from_empty_patch.json`), uses:
    - Hole: `{"type": "hole", "sketch_feature": "feature:sketch_hole", "profile_ref": "sketch:hole/profile:outer", "depth": {"type": "distance", "length": {"value_si": 0.005}}, "target_feature": "feature:plate", "depth_expr": "thickness"}`
 
 Other feature types are `revolve`, `fillet`, `chamfer`, `linear_pattern`,
-`circular_pattern`, `mirror_pattern`, `imported_solid`, and `shell`. A shell
+`circular_pattern`, `mirror_pattern`, `imported_solid`, `shell`, and `loft`.
+A loft skins two or more closed sections, each on its own sketch workplane,
+for example a raised one:
+`{"type": "custom", "origin": [0, 0, 0.03], "normal": [0, 0, 1], "x_axis": [1, 0, 0]}`
+(see `examples/agent/author_loft_frustum_patch.json`). A shell
 needs an `add_semantic_ref` for each face it opens, for example
 `{"type": "add_semantic_ref", "topo_ref": {"ref_id": "ref:face:box_top", "kind": "face", "semantic": {"created_by": "feature:box", "role": "top"}}}`,
 then

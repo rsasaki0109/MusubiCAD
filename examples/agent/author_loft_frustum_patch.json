@@ -1,0 +1,382 @@
+{
+  "intent": "Author a square frustum lofted from a 40 mm base to a 20 mm top 30 mm higher",
+  "rationale": "Two fully constrained square sections on parallel workplanes skinned by a loft",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:base_size",
+      "name": "base_size",
+      "expr": "40 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:top_size",
+      "name": "top_size",
+      "expr": "20 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:base",
+      "name": "Base Square",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:base_c0",
+        "x": -0.02,
+        "y": -0.02
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:base_c1",
+        "x": 0.02,
+        "y": -0.02
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:base_c2",
+        "x": 0.02,
+        "y": 0.02
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:base_c3",
+        "x": -0.02,
+        "y": 0.02
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:base_e0",
+        "start": "ent:base_c0",
+        "end": "ent:base_c1"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:base_e1",
+        "start": "ent:base_c1",
+        "end": "ent:base_c2"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:base_e2",
+        "start": "ent:base_c2",
+        "end": "ent:base_c3"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:base_e3",
+        "start": "ent:base_c3",
+        "end": "ent:base_c0"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:base_e0_horizontal",
+        "line": "ent:base_e0"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:base_e2_horizontal",
+        "line": "ent:base_e2"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:base_e1_vertical",
+        "line": "ent:base_e1"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:base_e3_vertical",
+        "line": "ent:base_e3"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:base_side0",
+        "target": {
+          "line": "ent:base_e0"
+        },
+        "expr": "base_size"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:base_side1",
+        "target": {
+          "line": "ent:base_e1"
+        },
+        "expr": "base_size"
+      }
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:top",
+      "name": "Top Square",
+      "workplane": {
+        "type": "custom",
+        "origin": [
+          0.0,
+          0.0,
+          0.03
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "x_axis": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "point",
+        "id": "ent:top_c0",
+        "x": -0.01,
+        "y": -0.01
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "point",
+        "id": "ent:top_c1",
+        "x": 0.01,
+        "y": -0.01
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "point",
+        "id": "ent:top_c2",
+        "x": 0.01,
+        "y": 0.01
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "point",
+        "id": "ent:top_c3",
+        "x": -0.01,
+        "y": 0.01
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "line",
+        "id": "ent:top_e0",
+        "start": "ent:top_c0",
+        "end": "ent:top_c1"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "line",
+        "id": "ent:top_e1",
+        "start": "ent:top_c1",
+        "end": "ent:top_c2"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "line",
+        "id": "ent:top_e2",
+        "start": "ent:top_c2",
+        "end": "ent:top_c3"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:top",
+      "entity": {
+        "type": "line",
+        "id": "ent:top_e3",
+        "start": "ent:top_c3",
+        "end": "ent:top_c0"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:top",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:top_e0_horizontal",
+        "line": "ent:top_e0"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:top",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:top_e2_horizontal",
+        "line": "ent:top_e2"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:top",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:top_e1_vertical",
+        "line": "ent:top_e1"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:top",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:top_e3_vertical",
+        "line": "ent:top_e3"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:top",
+      "constraint": {
+        "type": "distance",
+        "id": "con:top_side0",
+        "target": {
+          "line": "ent:top_e0"
+        },
+        "expr": "top_size"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:top",
+      "constraint": {
+        "type": "distance",
+        "id": "con:top_side1",
+        "target": {
+          "line": "ent:top_e1"
+        },
+        "expr": "top_size"
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:sketch_base",
+        "name": "Base Square",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:base"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:sketch_top",
+        "name": "Top Square",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:top"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:frustum",
+        "name": "Frustum",
+        "definition": {
+          "type": "loft",
+          "operation": "new_body",
+          "sections": [
+            {
+              "sketch_feature": "feature:sketch_base",
+              "profile_ref": "sketch:base/profile:outer"
+            },
+            {
+              "sketch_feature": "feature:sketch_top",
+              "profile_ref": "sketch:top/profile:outer"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

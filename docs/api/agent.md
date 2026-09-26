@@ -422,6 +422,21 @@ listed faces to form openings
 `examples/agent/add_shell_patch.json` authors a 60 × 40 × 20 mm enclosure
 with 2 mm walls from an empty document.
 
+A `loft` feature skins a solid through two or more closed section profiles
+in order ([ADR-022](../adr/ADR-022-loft-feature.md)):
+
+```json
+{ "type": "loft", "operation": "new_body",
+  "sections": [
+    { "sketch_feature": "feature:sketch_base", "profile_ref": "sketch:base/profile:outer" },
+    { "sketch_feature": "feature:sketch_top", "profile_ref": "sketch:top/profile:outer" } ] }
+```
+
+- Each section sits on its sketch's workplane. Use a custom workplane
+  (origin, normal, x axis) to raise or tilt a section.
+- `join` and `cut` need `target_feature`.
+- `examples/agent/author_loft_frustum_patch.json` authors a square frustum.
+
 Assembly and drawing objects use the stored JSON shapes of
 `graph/assemblies.json` and `graph/drawings.json`, with IDs under the
 `component:`, `instance:`, `mate:`, `pattern:`, `sheet:`, `view:`, and `dim:`
