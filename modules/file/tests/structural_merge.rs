@@ -226,3 +226,39 @@ fn rebase_reports_typed_structural_conflicts() {
         .unwrap_or_default()
         .contains("feature:fillet_a"));
 }
+
+/// Git takes a file only one branch changed without calling the merge
+/// driver, so the merged collection must equal that branch byte-for-byte
+/// (ADR-015).  Parameters added out of ID order keep theirs' order.
+#[test]
+fn a_collection_changed_on_one_side_keeps_that_sides_bytes() {
+    let base = bracket();
+    let theirs = apply(
+        &base,
+        json!([
+            { "type": "add_parameter", "id": "param:zeta", "name": "zeta", "expr": "1 mm" },
+            { "type": "add_parameter", "id": "param:alpha", "name": "alpha", "expr": "2 mm" },
+            { "type": "add_sketch_entity", "sketch_id": "sketch:base",
+              "entity": { "type": "point", "id": "ent:z_mark", "x": 0.0, "y": 0.0 } },
+            { "type": "add_sketch_entity", "sketch_id": "sketch:base",
+              "entity": { "type": "point", "id": "ent:a_mark", "x": 0.01, "y": 0.0 } }
+        ]),
+    );
+    let ours = apply(
+        &base,
+        json!([
+            { "type": "add_assertion", "assertion": {
+                "id": "assertion:width_range", "name": "Width", "severity": "advisory",
+                "type": "parameter_range", "parameter_name": "width", "min_m": 0.01, "max_m": 0.2 } }
+        ]),
+    );
+    let merged = semantic_three_way_merge(&base, &ours, &theirs)
+        .merged
+        .expect("merge");
+    assert_eq!(
+        serde_json::to_vec(&merged.parameters).unwrap(),
+        serde_json::to_vec(&theirs.parameters).unwrap()
+    );
+    assert_eq!(merged.sketches, theirs.sketches);
+    assert_eq!(merged.assertions, ours.assertions);
+}
