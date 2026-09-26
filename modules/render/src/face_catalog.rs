@@ -78,14 +78,22 @@ impl FaceCatalog {
                     None
                 };
                 let group_index = if let Some(kernel_face_id) = kernel_face_id {
-                    group_index_for_kernel_face(
+                    let index = group_index_for_kernel_face(
                         &mut groups,
                         mesh_index,
                         kernel_face_id,
                         role,
                         normal,
                         centroid,
-                    )
+                    );
+                    // A kernel face whose triangles face different axes is
+                    // curved (for example an exact cylindrical hole wall,
+                    // ADR-020), so its role must not depend on which
+                    // triangle came first.
+                    if groups[index].role != role {
+                        groups[index].role = curved_role(bounds);
+                    }
+                    index
                 } else {
                     group_index_for(&mut groups, mesh_index, role, normal, centroid)
                 };
@@ -210,6 +218,15 @@ fn group_key(role: FaceRole, _normal: [f32; 3], centroid: [f32; 3]) -> GroupKey 
             bucket_a: quantize(centroid[0], PLANE_QUANTUM_M),
             bucket_b: quantize(centroid[1], PLANE_QUANTUM_M),
         },
+    }
+}
+
+/// Role of a curved face: cylindrical in a body with height, otherwise other.
+fn curved_role(bounds: &BoundingBox) -> FaceRole {
+    if bounds.extent()[2] > f32::EPSILON {
+        FaceRole::Cylindrical
+    } else {
+        FaceRole::Other
     }
 }
 

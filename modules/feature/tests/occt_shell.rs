@@ -131,12 +131,12 @@ fn a_wall_thicker_than_the_part_fails_regeneration() {
 }
 
 /// Picking the open face walks every face of the body, including the
-/// mounting hole's cylindrical face.  Projection-based picking panicked
-/// inside cadrum there; the pick must instead fail or succeed normally.
-/// Shelling this body then fails in OCCT (a through hole pierces the open
-/// face, ADR-017 §4), which must surface as an error, not a panic.
+/// mounting hole's cylindrical face; projection-based picking panicked
+/// inside cadrum there.  With exact circle profiles (ADR-020) OCCT also
+/// shells the pierced plate: the wall wraps the hole, so the cavity is the
+/// 78 x 58 x 5 mm box minus a radius 6 mm cylinder around the hole axis.
 #[test]
-fn a_holed_body_reports_an_error_instead_of_panicking() {
+fn a_holed_body_shells_around_the_hole() {
     let kernel = OcctGeometryKernel::new();
     let mut model = opencad_feature::bracket_with_hole().expect("bracket");
     model
@@ -162,9 +162,19 @@ fn a_holed_body_reports_an_error_instead_of_panicking() {
             Some(&bracket_semantic_refs()),
         )
     }));
-    let regenerated = result.expect("regeneration must not panic");
+    result
+        .expect("regeneration must not panic")
+        .expect("the pierced plate shells");
+    let volume = kernel
+        .mass_properties(model.active_body().expect("body"), 1.0)
+        .expect("mass")
+        .volume_m3;
+    let pi = std::f64::consts::PI;
+    let solid_mm3 = 80.0 * 60.0 * 6.0 - pi * 25.0 * 6.0;
+    let cavity_mm3 = (78.0 * 58.0 - pi * 36.0) * 5.0;
+    let expected = (solid_mm3 - cavity_mm3) * 1e-9;
     assert!(
-        regenerated.is_err(),
-        "OCCT cannot shell a pierced open face"
+        (volume - expected).abs() <= VOLUME_TOLERANCE_M3,
+        "volume {volume} m^3, expected {expected} m^3"
     );
 }

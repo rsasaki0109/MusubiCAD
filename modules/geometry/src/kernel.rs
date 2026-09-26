@@ -149,12 +149,27 @@ impl SketchPlacement {
     }
 }
 
+/// An exact circle in sketch coordinates (ADR-020).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct SolvedCircle {
+    /// Centre in sketch-plane coordinates, in metres.
+    pub center_m: [f64; 2],
+    /// Radius in metres.
+    pub radius_m: f64,
+}
+
 /// 2D profile input for wire creation (sketch solver output).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SolvedSketch {
     pub profile_ref: String,
+    /// Polygon vertices.  For a circle profile these are an inscribed
+    /// polygon, kept for kernels without exact curves; kernels that support
+    /// curves build the profile from [`Self::circle`] instead.
     pub points: Vec<[f64; 2]>,
     pub closed: bool,
+    /// The exact circle when the profile is a single circle.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub circle: Option<SolvedCircle>,
     #[serde(skip)]
     pub placement: Option<SketchPlacement>,
 }
@@ -578,6 +593,7 @@ mod tests {
             profile_ref: "sketch:base/profile:outer".into(),
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
+            circle: None,
             placement: None,
         }
     }

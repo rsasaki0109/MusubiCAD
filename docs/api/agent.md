@@ -251,8 +251,8 @@ STEP output is deterministic: the header time stamp is fixed at
   "kernel": "OCCT 8.0.0 (cadrum static)",
   "regenerated": ["feature:sketch_base", "feature:extrude_base"],
   "skipped_suppressed": [],
-  "volume_m3": 2.833178323652379e-5,
-  "mass_kg": 0.07649581473861423,
+  "volume_m3": 2.832876111138442e-5,
+  "mass_kg": 0.07648765500073794,
   "density_kg_per_m3": 2700.0,
   "trace": {
     "executed_nodes": ["feature:sketch_base", "feature:extrude_base"],
@@ -413,8 +413,8 @@ listed faces to form openings
 - Every open face is resolved on the target body itself. If one does not
   resolve, regeneration fails; there is no role fallback.
 - A wall that does not fit the part fails regeneration.
-- Known limitation: OCCT cannot shell a body whose open face is pierced by a
-  through hole. Shell before cutting the hole.
+- An open face pierced by a through hole shells as well; the wall wraps the
+  hole (ADR-020).
 - After a shell, regeneration reports each opened face reference as
   `Consumed`, for example `ref:face:box_top Consumed opened by feature:shell`
   (ADR-019). A `required_reference` assertion on an opened face fails.

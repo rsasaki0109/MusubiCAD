@@ -1116,6 +1116,7 @@ mod tests {
             profile_ref: "sketch:base/profile:outer".into(),
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
+            circle: None,
             placement: None,
         }
     }
@@ -1242,6 +1243,42 @@ mod tests {
             FilletEdgeSelector::FacePerimeter { kernel_face_id: 7 }
         )
         .is_empty());
+    }
+
+    /// ADR-020: a circle profile is one exact circular edge, so a cylinder
+    /// has the analytic volume π·r²·h.
+    #[test]
+    fn occt_circle_profiles_are_exact() {
+        let kernel = OcctGeometryKernel::new();
+        let (radius, height) = (0.005, 0.006);
+        let wire = kernel
+            .make_wire_from_sketch(&SolvedSketch {
+                profile_ref: "sketch:pin/profile:outer".into(),
+                points: vec![[0.0, 0.0], [0.01, 0.0], [0.0, 0.01]],
+                closed: true,
+                circle: Some(opencad_geometry::SolvedCircle {
+                    center_m: [0.02, 0.03],
+                    radius_m: radius,
+                }),
+                placement: None,
+            })
+            .expect("wire");
+        let body = kernel
+            .extrude(
+                wire,
+                ExtrudeExtent::Distance {
+                    length: Length::from_meters(height),
+                },
+                ExtrudeOperation::NewBody,
+                None,
+                [0.0, 0.0, 1.0],
+            )
+            .expect("extrude");
+        let volume = kernel.mass_properties(&body, 1.0).expect("mass").volume_m3;
+        let expected = std::f64::consts::PI * radius * radius * height;
+        assert!((volume - expected).abs() < 1e-12, "{volume} vs {expected}");
+        let bounds = kernel.bounding_box(&body).expect("bounds");
+        assert!((bounds.min[0] - 0.015).abs() < 1e-6 && (bounds.max[1] - 0.035).abs() < 1e-6);
     }
 
     #[test]

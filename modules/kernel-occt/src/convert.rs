@@ -15,14 +15,36 @@ pub fn sketch_to_edges_placed(
     sketch: &SolvedSketch,
     placement: SketchPlacement,
 ) -> Result<Vec<Edge>> {
-    if sketch.points.len() < 3 {
-        return Err(OpenCadError::validation(
-            "profile needs at least three points",
-        ));
-    }
     if !sketch.closed {
         return Err(OpenCadError::validation(
             "only closed profiles can be extruded in MVP",
+        ));
+    }
+
+    // Exact circle profiles become one true circular edge (ADR-020).
+    if let Some(circle) = sketch.circle {
+        if !circle.radius_m.is_finite() || circle.radius_m <= 0.0 {
+            return Err(OpenCadError::validation(
+                "circle profile radius must be positive",
+            ));
+        }
+        let x = DVec3::from_array(placement.x_axis_m);
+        let y = DVec3::from_array(placement.y_axis_m);
+        let normal = x.cross(y).normalize_or_zero();
+        if normal == DVec3::ZERO {
+            return Err(OpenCadError::validation(
+                "sketch placement axes must not be parallel",
+            ));
+        }
+        let center = placement.map_point(circle.center_m[0], circle.center_m[1]);
+        let edge = Edge::circle(circle.radius_m, normal)
+            .map_err(map_occt_error)?
+            .translate(DVec3::from_array(center));
+        return Ok(vec![edge]);
+    }
+    if sketch.points.len() < 3 {
+        return Err(OpenCadError::validation(
+            "profile needs at least three points",
         ));
     }
 

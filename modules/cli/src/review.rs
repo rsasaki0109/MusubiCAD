@@ -391,7 +391,8 @@ fn check_expected_effects(
                     let delta = diff
                         .geometry
                         .as_ref()
-                        .and_then(|geometry| Some(geometry.mass_after? - geometry.mass_before?));
+                        .and_then(|geometry| Some(geometry.mass_after? - geometry.mass_before?))
+                        .map(crate::diff::round_significant);
                     (
                         delta.is_some_and(|value| value >= *min && value <= *max),
                         format!(

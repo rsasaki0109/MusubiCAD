@@ -13,7 +13,7 @@
       "id": "two_hole_plate",
       "document": "plate.ocad.d",
       "prompt": "Create a new part document at {document} and author an 80 mm x 50 mm x 6 mm mounting plate with two 8 mm diameter through holes, centred 20 mm from each short edge on the plate's long centreline. Keep the plate size, thickness, and hole diameter as named parameters.",
-      "expected_volume_mm3": 23400.7,
+      "expected_volume_mm3": 23396.8,
       "required_parameters": []
     },
     {
@@ -21,12 +21,11 @@
       "document": "bracket.ocad.d",
       "source": "examples/bracket.ocad.d",
       "prompt": "The part document at {document} is a bracket plate with a mounting hole. Change it to 100 mm wide and 8 mm thick, keeping its 60 mm height and the hole. The plate must stay rectangular.",
-      "expected_volume_mm3": 47375.7,
+      "expected_volume_mm3": 47371.7,
       "required_parameters": [
         "width",
         "thickness"
       ]
     }
-  ],
-  "note": "Expected volumes model sketch circles as the 32-sided inscribed polygons the kernel receives today (CIRCLE_SEGMENTS in modules/feature/src/sketch_bridge.rs). Update them when circles become exact."
+  ]
 }

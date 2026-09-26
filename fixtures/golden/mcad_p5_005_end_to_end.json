@@ -5,8 +5,8 @@
     "source": "examples/bracket.ocad.d",
     "mass_fixture": "fixtures/golden/bracket_with_hole.json",
     "density_kg_per_m3": 2700.0,
-    "volume_m3": 2.833178323652379e-5,
-    "mass_kg": 0.07649581473861423,
+    "volume_m3": 2.832876111138442e-5,
+    "mass_kg": 0.07648765500073794,
     "tolerance": {
       "density_kg_per_m3": 1e-9,
       "volume_m3": 5e-9,
@@ -49,8 +49,8 @@
       "bounds_tolerance_m": 1e-9,
       "volume_tolerance_m3": 1e-12
     },
-    "volume_m3": 5.666356647304757e-5,
-    "mass_kg": 0.15299162947722844,
+    "volume_m3": 5.665752222276884e-5,
+    "mass_kg": 0.15297531000147588,
     "tolerance": {
       "density_kg_per_m3": 1e-9,
       "volume_m3": 1e-12,
@@ -69,7 +69,7 @@
   },
   "desktop_evidence": {
     "expected_name": "Bracket with Mounting Hole",
-    "expected_triangles": 144,
+    "expected_triangles": 256,
     "expected_sketch_count": 2,
     "expected_feature_count": 4
   },

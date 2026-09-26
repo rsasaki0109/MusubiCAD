@@ -412,6 +412,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-010 | Deterministic topology IDs | [ADR-018](../adr/ADR-018-deterministic-kernel-topology-ids.md); OCCT face/edge IDs are enumeration indices, stored IDs verified by role instead of history remap, reproducible `--sync-topo-refs` | Complete |
 | MCAD-P7-011 | Consumed references | [ADR-019](../adr/ADR-019-consumed-reference-provenance.md); provenance reports shell-opened face references as `consumed` (naming the feature) instead of `ambiguous` | Complete |
 | MCAD-P7-012 | MCP host evaluation | `tools/mcp_eval.py`: headless Claude Code tasks against `opencad mcp`, independently graded by regenerated volume and parameters; first baseline 3/3 | Complete |
+| MCAD-P7-013 | Exact circle profiles | [ADR-020](../adr/ADR-020-exact-circle-profiles.md); circle profiles reach OCCT as true circles (analytic hole/boss volumes), curved kernel faces classified as cylindrical, goldens re-blessed | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph

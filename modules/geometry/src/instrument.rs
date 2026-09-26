@@ -222,6 +222,7 @@ mod tests {
                 profile_ref: "profile:test".into(),
                 points: vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
                 closed: true,
+                circle: None,
                 placement: Some(SketchPlacement::global_xy()),
             })
             .expect("wire");

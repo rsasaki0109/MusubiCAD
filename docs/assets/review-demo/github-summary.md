@@ -14,22 +14,22 @@
 | Change | Before | After |
 |---|---|---|
 | Parameter param:upper_hub_height | 32 mm | 42 mm |
-| Mass | 608.49 g | 653.32 g |
+| Mass | 609.23 g | 654.36 g |
 
 ### Regenerated geometry
 
 | Property | Before | After |
 |---|---:|---:|
-| Volume | 225.37 cm³ | 241.97 cm³ |
-| Mass | 608.49 g | 653.32 g |
+| Volume | 225.64 cm³ | 242.36 cm³ |
+| Mass | 609.23 g | 654.36 g |
 | Bounds | 178.00 × 110.00 × 32.00 mm | 178.00 × 110.00 × 42.00 mm |
-| Triangles (count) | 2444 | 2444 |
+| Triangles (count) | 4150 | 4150 |
 
 ### Expected effects
 
 | Status | Expectation | Evidence |
 |---|---|---|
 | ✅ | Parameter param:upper_hub_height equals 42 mm | parameter 'param:upper_hub_height' expression is 42 mm |
-| ✅ | Mass delta is between 0.043 kg and 0.048 kg | mass delta is 0.04483643727048148 kg |
+| ✅ | Mass delta is between 0.043 kg and 0.048 kg | mass delta is 0.045125835974 kg |
 
 The workflow artifact contains `review.html`, `review.json`, `comparison.gif`, and the before/after images.

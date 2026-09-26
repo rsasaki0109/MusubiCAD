@@ -85,11 +85,11 @@ task. The tasks are defined in `tools/mcp_eval_tasks.json`:
 | Task | What the agent must do | Expected volume |
 |---|---|---|
 | `enclosure` | Author a 50 × 30 × 15 mm open-top enclosure with 1.5 mm walls from nothing | 5 368.5 mm³ |
-| `two_hole_plate` | Author an 80 × 50 × 6 mm plate with two Ø8 mm through holes | 23 400.7 mm³ |
-| `edit_bracket` | Widen and thicken the example bracket while keeping it rectangular. Its sketch starts constrained only by side lengths. | 47 375.7 mm³ |
+| `two_hole_plate` | Author an 80 × 50 × 6 mm plate with two Ø8 mm through holes | 23 396.8 mm³ |
+| `edit_bracket` | Widen and thicken the example bracket while keeping it rectangular. Its sketch starts constrained only by side lengths. | 47 371.7 mm³ |
 
-Expected volumes treat sketch circles as the 32-sided inscribed polygons that
-the kernel receives today (`CIRCLE_SEGMENTS`).
+Expected volumes are analytic. Sketch circles reach the kernel as exact
+circles (ADR-020). The first baseline below still built 32-sided polygons.
 
 ```bash
 python tools/mcp_eval.py --opencad target/debug/opencad.exe --out eval.json

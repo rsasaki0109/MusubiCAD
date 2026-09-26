@@ -61,8 +61,10 @@ The persisted input is the semantic references, never kernel face IDs.
   unchanged. For a wall that does not fit, OCCT can return the input
   unchanged instead of failing. The backend therefore requires a relative
   volume loss above `1e-9` and fails otherwise.
-- **Known limitation.** OCCT cannot shell a body whose open face is pierced
-  by a through hole. Users shell first and cut the hole afterwards.
+- **Pierced open faces.** Shelling a body whose open face is pierced by a
+  through hole failed while circle profiles were 32-sided polygons. Since
+  exact circles (ADR-020), such a body shells, and the wall wraps the hole.
+  The holed bracket test checks the analytic volume.
 - **New faces.** Faces created by the shell receive no semantic roles.
 - **Opened faces in reference provenance.** An opened face no longer exists
   on the final body. Its references were first reported as `Ambiguous`,
