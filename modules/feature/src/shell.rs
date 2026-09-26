@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use opencad_core::{Length, OpenCadError, Result};
 use opencad_geometry::{resolve_kernel_face_id_for_topo_ref_with_discoveries, FacePick};
 
+use crate::topo_resolve::resolve_face_on_body;
+
 use crate::feature::{Feature, FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
 
 /// Thinnest accepted shell wall, in metres (ADR-017 §3).
@@ -105,12 +107,16 @@ impl Feature for ShellFeatureExecutor {
                         "shell open face '{face_ref}' did not resolve to a face: {reason}"
                     ))
                 };
-                let kernel_face_id = resolve_kernel_face_id_for_topo_ref_with_discoveries(
-                    ctx.semantic_refs(),
-                    ctx.face_history(),
-                    face_ref,
-                    (!discoveries.is_empty()).then_some(discoveries.as_slice()),
-                )
+                let kernel_face_id = if discoveries.is_empty() {
+                    resolve_kernel_face_id_for_topo_ref_with_discoveries(
+                        ctx.semantic_refs(),
+                        ctx.face_history(),
+                        face_ref,
+                        None,
+                    )
+                } else {
+                    resolve_face_on_body(ctx, face_ref, &discoveries)
+                }
                 .map_err(|error| unresolved(error.to_string()))?;
                 // The kernel matches faces by geometry, so the resolved face
                 // must come with its discovered point and normal.

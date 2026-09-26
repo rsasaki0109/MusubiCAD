@@ -722,6 +722,11 @@ Fillet and chamfer `face_ref` select the perimeter edges of the referenced
 face, on any face (ADR-018). Before kernel IDs became deterministic
 enumeration indices, only top faces worked.
 
+Fillet, chamfer, and shell face references resolve on the body being
+modified. On that body, a role that exactly one face carries identifies the
+face. A reference that does not resolve fails regeneration instead of
+falling back to the top perimeter.
+
 `spacing_expr` is evaluated during regeneration (same timing as `length_expr` on extrude). Use `set_feature_expr` with `field: "spacing_expr"` to patch it parametrically.
 
 ## Linked plugin discovery and invocation
