@@ -386,12 +386,16 @@ fn example_bracket_pin_ring_regenerates_with_occt() {
         .expect("regen");
     let body = model.active_body().expect("body");
     let mass = kernel.mass_properties(body, 2700.0).expect("mass");
+    // Four separate Ø10 mm bosses, each rising 6 mm above the 6 mm plate:
+    // copies stacked on the pattern axis would add only one boss.
     let plate_volume = 0.08 * 0.06 * 0.006;
+    let boss_volume = std::f64::consts::PI * 0.005 * 0.005 * 0.006;
+    let expected = plate_volume + 4.0 * boss_volume;
     assert!(
-        mass.volume_m3 > plate_volume,
-        "pin ring example should fuse bosses onto plate: {} vs {}",
+        (mass.volume_m3 - expected).abs() <= 1e-12,
+        "pin ring example should fuse a ring of four bosses onto the plate: {} vs {}",
         mass.volume_m3,
-        plate_volume
+        expected
     );
 }
 

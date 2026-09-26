@@ -427,6 +427,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-025 | Tangent shapes at a design angle | Slanted slot example: arc angles `slot_angle ± 90 deg` with line–arc tangent constraints, fully constrained; volume and extents verified at 30° and 60° | Complete |
 | MCAD-P7-026 | Helical sweep | [ADR-025](../adr/ADR-025-helical-sweep.md); closed section swept along a right-handed helix through its centre (new body, join, cut), parametric pitch and height; coil spring matches the screw-motion volume within 5e-4 relative before and after edits | Complete |
 | MCAD-P7-027 | Drawing eval task | `bracket_drawing` task: a new drawing of a set-up bracket with front/top views and an 80 mm dimension; graded by projections, dimension lengths, and SVG export | Complete |
+| MCAD-P7-029 | Pin-ring example fix | The pin-ring seed boss moves 18 mm off the circular-pattern axis, so the example is a ring of four bosses rather than four copies stacked on the axis; OCCT volume equals plate + 4 bosses exactly | Complete |
 
 MCAD-P7-001 is delivered in the six slices listed in ADR-013: `DesignState` v2
 with parameter/assertion operations; sketch operations; feature-graph
