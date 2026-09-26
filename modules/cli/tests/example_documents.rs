@@ -101,11 +101,18 @@ fn example_bearing_carrier_regenerates_with_occt() {
     assert_eq!(report.regenerated.len(), 9);
     assert!(model.outputs.contains_key("feature:bearing_bore"));
     assert!(model.outputs.contains_key("feature:bolt_circle"));
+    // The 96 x 72 mm plate keeps its rectangle (MCAD-P7-014); it used to
+    // skew toward the 80 x 60 mm sketch coordinates and weigh 0.131 kg.
     assert!(
-        (0.12..=0.14).contains(&mass.mass_kg),
+        (0.15..=0.16).contains(&mass.mass_kg),
         "bearing carrier mass {} kg",
         mass.mass_kg
     );
+    let bounds = kernel.bounding_box(body).expect("bounds");
+    for (axis, extent) in [(0, 0.096), (1, 0.072)] {
+        let size = bounds.max[axis] - bounds.min[axis];
+        assert!((size - extent).abs() < 1e-6, "axis {axis}: {size} m");
+    }
 }
 
 #[test]

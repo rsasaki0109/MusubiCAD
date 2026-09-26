@@ -142,7 +142,7 @@ fn constraints_can_be_removed_and_are_diffed() {
     let doc = bracket();
     let operations = json!([{ "type": "remove_sketch_constraint", "sketch_id": "sketch:base", "constraint_id": "con:width" }]);
     let after = candidate(&doc, operations.clone()).expect("remove constraint");
-    assert_eq!(after.sketches[0].constraints.len(), 1);
+    assert_eq!(after.sketches[0].constraints.len(), 5);
     let report = dry_run_patch_document(&doc, &patch(operations));
     assert_eq!(
         report.diff.changes,

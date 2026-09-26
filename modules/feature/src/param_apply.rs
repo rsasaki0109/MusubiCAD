@@ -195,6 +195,19 @@ mod tests {
         assert_eq!(expr.as_str(), "tilt_angle");
     }
 
+    /// The bracket template's base rectangle is fully constrained, so a
+    /// length edit cannot skew it (MCAD-P7-014).
+    #[test]
+    fn bracket_base_sketch_is_fully_constrained() {
+        let model = crate::regenerate::bracket_base_plate().expect("model");
+        let sketch = model.sketches.get("sketch:base").expect("sketch");
+        let values = evaluate_param_graph(&opencad_graph::bracket_parameters()).expect("values");
+        assert_eq!(
+            sketch_solve_state(sketch, &values).expect("solve"),
+            opencad_sketch::SolveState::FullyConstrained
+        );
+    }
+
     #[test]
     fn applies_width_parameter_to_bracket_sketch() {
         let mut model = crate::regenerate::bracket_base_plate().expect("model");

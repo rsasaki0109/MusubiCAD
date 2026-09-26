@@ -1275,7 +1275,7 @@ mod tests {
         let result = response.result.expect("result");
         assert_eq!(result["kind"], "sketch_constraints");
         assert_eq!(result["sketch_id"], "sketch:base");
-        assert_eq!(result["items"].as_array().expect("items").len(), 2);
+        assert_eq!(result["items"].as_array().expect("items").len(), 6);
     }
 
     #[test]

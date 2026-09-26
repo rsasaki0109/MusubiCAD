@@ -1582,9 +1582,10 @@ mod tests {
                 "assertion:mass",
                 "Bracket mass",
                 AssertionSeverity::Required,
+                // A rectangular 100 x 60 x 6 mm bracket weighs 0.0959 kg.
                 AssertionKind::MassRange {
                     min_kg: 0.07,
-                    max_kg: 0.09,
+                    max_kg: 0.10,
                 },
             ),
             Assertion::new(

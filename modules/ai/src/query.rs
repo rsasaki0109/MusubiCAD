@@ -682,7 +682,7 @@ mod tests {
             .iter()
             .find(|item| item.id == "sketch:base")
             .expect("base sketch");
-        assert_eq!(base.constraint_count, 2);
+        assert_eq!(base.constraint_count, 6);
     }
 
     #[test]
