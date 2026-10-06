@@ -235,8 +235,9 @@ docs/        Architecture, ADRs, API references, roadmap, and developer guides
 examples/    Parametric documents and Agent API requests
 ```
 
-> **Developer note:** Public Rust crates and the CLI retain the historical `musubicad` prefix
-> (`opencad-cli`, `musubicad agent`) while the project is branded MusubiCAD.
+> **Developer note:** The CLI is `musubicad` (`opencad` remains as an alias in release archives).
+> Rust crates and Agent API method names keep the historical `opencad` prefix (`opencad-cli`,
+> `opencad.patch_apply_document`) because they are API identifiers.
 
 ## License
 
