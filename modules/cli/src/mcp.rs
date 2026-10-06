@@ -41,6 +41,7 @@ enum Handler {
     Authoring,
     NewDocument,
     ImportStep,
+    Preview,
 }
 
 struct Tool {
@@ -172,6 +173,21 @@ fn tools() -> Vec<Tool> {
                     "translation_mm": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 }
                 },
                 "required": ["path", "step_path", "feature_id"]
+            }),
+        },
+        Tool {
+            name: "preview_document",
+            description: "Render a PNG image of a part or assembly (no GPU needed) and return it as an image you can look at, plus its bounds in mm. Use it to check a change visually: views iso (default), front, top, right.",
+            handler: Handler::Preview,
+            schema: || json!({
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string", "description": "Part or assembly .ocad.d / .ocad" },
+                    "view": { "enum": ["iso", "front", "top", "right"] },
+                    "width": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 }
+                },
+                "required": ["path"]
             }),
         },
         Tool {
@@ -320,6 +336,7 @@ fn call_tool(params: &Value, host: &PluginHost) -> std::result::Result<Value, (i
         Handler::Review => review(&arguments).map_err(|error| error.to_string()),
         Handler::Authoring => authoring(&arguments).map_err(|error| error.to_string()),
         Handler::NewDocument => new_document(&arguments).map_err(|error| error.to_string()),
+        Handler::Preview => return Ok(preview_result(&arguments)),
         Handler::ImportStep => {
             serde_json::from_value::<crate::import::ImportStepRequest>(arguments)
                 .map_err(|error| format!("invalid arguments: {error}"))
@@ -331,6 +348,34 @@ fn call_tool(params: &Value, host: &PluginHost) -> std::result::Result<Value, (i
         }
     };
     Ok(tool_result(result))
+}
+
+/// Preview as MCP image content plus a text summary, or `isError`.
+fn preview_result(arguments: &Value) -> Value {
+    let outcome = serde_json::from_value::<crate::preview::PreviewParams>(arguments.clone())
+        .map_err(|error| format!("invalid arguments: {error}"))
+        .and_then(|params| {
+            crate::preview::preview_document(&params).map_err(|error| error.to_string())
+        });
+    match outcome {
+        Ok((png, summary)) => {
+            use base64::Engine as _;
+            let structured = serde_json::to_value(&summary).unwrap_or(Value::Null);
+            json!({
+                "content": [
+                    {
+                        "type": "image",
+                        "data": base64::engine::general_purpose::STANDARD.encode(png),
+                        "mimeType": "image/png"
+                    },
+                    { "type": "text", "text": serde_json::to_string_pretty(&structured).unwrap_or_default() }
+                ],
+                "structuredContent": structured,
+                "isError": false
+            })
+        }
+        Err(message) => tool_result(Err(message)),
+    }
 }
 
 /// Wrap a tool outcome: structured JSON plus a text copy, or `isError`.
@@ -491,13 +536,39 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 13);
+        assert_eq!(tools.len(), 14);
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
             assert!(tool["description"]
                 .as_str()
                 .is_some_and(|text| !text.is_empty()));
         }
+    }
+
+    #[test]
+    fn preview_returns_a_png_image_and_its_bounds() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/bracket.ocad.d");
+        let response = call(
+            "tools/call",
+            json!({ "name": "preview_document", "arguments": { "path": path, "view": "top", "width": 120, "height": 90 } }),
+        );
+        let result = &response["result"];
+        assert_eq!(result["isError"], false, "{response}");
+        assert_eq!(result["content"][0]["type"], "image");
+        assert_eq!(result["content"][0]["mimeType"], "image/png");
+        use base64::Engine as _;
+        let png = base64::engine::general_purpose::STANDARD
+            .decode(result["content"][0]["data"].as_str().expect("data"))
+            .expect("base64");
+        assert_eq!(&png[1..4], b"PNG");
+        assert_eq!(result["structuredContent"]["view"], "top");
+        assert_eq!(result["content"][1]["type"], "text");
+
+        let bad = call(
+            "tools/call",
+            json!({ "name": "preview_document", "arguments": { "path": path, "view": "bottom" } }),
+        );
+        assert_eq!(bad["result"]["isError"], true);
     }
 
     #[test]

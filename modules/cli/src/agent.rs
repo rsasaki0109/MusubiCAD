@@ -193,6 +193,7 @@ pub fn handle_agent_request_with_plugins(
         "opencad.regen_document" => handle_regen_document(request),
         "opencad.regen" => handle_regen(request),
         "opencad.export" => handle_export(request),
+        "opencad.preview_document" => handle_preview_document(request),
         "opencad.diff_document" => handle_diff_document(request),
         "opencad.query_document" => handle_query_document(request),
         "opencad.pick_document" => handle_pick_document(request),
@@ -465,6 +466,37 @@ fn handle_patch_apply_document(request: &JsonRpcRequest) -> JsonRpcResponse {
                         serde_json::to_value(verification).unwrap_or(Value::Null),
                     );
                 }
+            }
+            JsonRpcResponse::success(request.id.clone(), value)
+        }
+        Err(err) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(err.to_string()),
+        ),
+    }
+}
+
+/// GPU-free PNG preview, returned as base64 with a summary (ADR-031).
+fn handle_preview_document(request: &JsonRpcRequest) -> JsonRpcResponse {
+    let params =
+        match serde_json::from_value::<crate::preview::PreviewParams>(request.params.clone()) {
+            Ok(params) => params,
+            Err(err) => {
+                return JsonRpcResponse::error(
+                    request.id.clone(),
+                    JsonRpcError::invalid_params(err.to_string()),
+                );
+            }
+        };
+    match crate::preview::preview_document(&params) {
+        Ok((png, summary)) => {
+            use base64::Engine as _;
+            let mut value = serde_json::to_value(summary).unwrap_or(Value::Null);
+            if let Some(object) = value.as_object_mut() {
+                object.insert(
+                    "png_base64".into(),
+                    Value::String(base64::engine::general_purpose::STANDARD.encode(png)),
+                );
             }
             JsonRpcResponse::success(request.id.clone(), value)
         }

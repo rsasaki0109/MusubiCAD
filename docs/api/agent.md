@@ -36,6 +36,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 | `opencad.history_redo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.regen_document` | `{ path }` | `RegenResult` |
 | `opencad.export` | `{ path, output }` | `ExportSummary` |
+| `opencad.preview_document` | `{ path, view?, width?, height? }` | `{ view, width, height, triangles, bounds_mm, objects, png_base64 }` (GPU-free, [ADR-031](../adr/ADR-031-gpu-free-preview.md)) |
 | `opencad.diff_document` | `{ before, after? \| patch?, geometry? }` | `DesignDiff` |
 | `opencad.query_document` | `{ path, query }` | `QueryResult` |
 | `opencad.pick_document` | `{ path, x, y, width?, height? }` | `PickSummary` |
