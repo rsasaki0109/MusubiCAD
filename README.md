@@ -5,23 +5,24 @@
 <h1 align="center">MusubiCAD</h1>
 
 <p align="center">
-  <strong>CAD changes you can review like code.</strong>
+  <strong>Let your agent iterate on real CAD — every change verified.</strong>
 </p>
 
 <p align="center">
-  An AI-native, open-source parametric 3D CAD system built on a deterministic Design Graph.
-  Agents propose typed patches, MusubiCAD regenerates and verifies the geometry, and humans
-  decide whether to apply the change.
+  A parametric CAD plugin for coding agents such as Claude Code. Your agent edits named,
+  unit-bearing parameters in a Design Graph; MusubiCAD dry-runs every change, rebuilds the solid
+  with OpenCASCADE, checks it against what the agent said it would do, and only then writes the
+  file. Export STEP, STL, drawings, and URDF for robot simulators.
 </p>
 
 <p align="center">
-  <a href="#60-second-tour-no-build"><strong>60-second tour</strong></a>
+  <a href="#install"><strong>Install</strong></a>
+  ·
+  <a href="docs/assets/agent-demo/session.json">Full session transcript</a>
+  ·
+  <a href="docs/api/mcp.md">MCP tools</a>
   ·
   <a href="docs/architecture/overview.md">Architecture</a>
-  ·
-  <a href="docs/api/agent.md">Agent API</a>
-  ·
-  <a href="docs/api/plugin-api.md">Plugin API</a>
   ·
   <a href="docs/plans/roadmap.md">Roadmap</a>
 </p>
@@ -33,6 +34,88 @@
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust" alt="Rust stable">
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-22c55e" alt="MIT OR Apache-2.0">
 </p>
+
+<p align="center">
+  <img src="docs/assets/agent-demo/conversation.gif" alt="A Claude Code session: the agent sets a bearing bore to 8 mm with a verified diff, applies it, refuses a 200 mm bore that would destroy the part, and exports STEP and STL" width="800">
+  <br>
+  <sub>Abridged from a real Claude Code session with this plugin (<a href="docs/assets/agent-demo/session.json">transcript</a>).
+  The 200 mm bore is refused because the part no longer regenerates; the file stays at 8 mm.</sub>
+</p>
+
+## Install
+
+1. Install the `musubicad` binary (one self-contained executable with OpenCASCADE linked in,
+   checksum-verified, no build):
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/rsasaki0109/MusubiCAD/main/install.sh | sh
+   ```
+
+   Windows PowerShell (installer tested; agent hosts on Windows not yet verified):
+   `irm https://raw.githubusercontent.com/rsasaki0109/MusubiCAD/main/install.ps1 | iex`
+
+2. Add the plugin (MCP server plus the `musubicad` skill) to Claude Code:
+
+   ```bash
+   claude plugin marketplace add rsasaki0109/MusubiCAD
+   claude plugin install musubicad@musubicad
+   ```
+
+   Any other MCP host: run the stdio server `musubicad mcp`. Codex, Cursor, and Gemini CLI
+   manifests are included but not yet tested on those hosts.
+
+Then ask for a part: *"Design a 60 × 40 × 5 mm mounting plate with a 10 mm hole and export it
+as STEP"*, or point the agent at one of the [examples](examples/README.md).
+
+## What your agent gets
+
+- **Parameters, not code.** Dimensions are named and carry units (`bore_diameter = 8 mm`). The
+  next request is one `set_parameter`, not a rewrite.
+- **A verified change, every time.** `patch_dry_run` rebuilds the model before and after and
+  reports the semantic diff, the mass and size change, interference counts, and whether the
+  patch's declared expected effects hold. `patch_apply` refuses anything that fails and leaves
+  the file unchanged. The error names the feature that broke.
+- **Reviewable diffs.** `review_patch` writes an HTML before/after review with the semantic diff
+  and checks (and images when a GPU is available) for a human to approve.
+- **Real outputs.** STEP (millimetre B-rep) for CAD/CAM, STL for slicers, SVG drawings, and
+  URDF for robot simulators.
+- **Authoring from scratch.** Parameters, constrained sketches, features (extrude, hole,
+  revolve, fillet, chamfer, shell, patterns, mirror, loft, sweep, helix), assemblies with
+  mates, and drawings, all as typed `DesignPatch` operations.
+
+## Why edits don't break
+
+The Design Graph is the source of truth, and the geometry is rebuilt from it on every check. On
+the bearing carrier example, a valid-looking edit of `bore_diameter` from 18 mm to 200 mm used
+to pass validation; now the dry-run reports:
+
+```text
+patched document does not regenerate: feature 'feature:bearing_bore': OCCT error: Expected exactly one resulting Solid, got 0
+```
+
+and `patch_apply` refuses it. A patch that rebuilds fine but misses its declared intent, for
+example `mass_delta_kg` in `[-1, 0]` for a change that adds 7.72 g, is refused the same way. The
+same gate runs on `musubicad patch` for agents that use the CLI instead of MCP. See
+[ADR-026](docs/adr/ADR-026-verified-patch-apply.md).
+
+## From CAD to simulator: URDF
+
+```bash
+musubicad export examples/robot_arm_assembly.ocad.d urdf/robot_arm.urdf
+```
+
+<p align="center">
+  <img src="docs/assets/urdf-mujoco.gif" alt="The exported robot arm URDF loaded in MuJoCo, sweeping its shoulder, elbow, and wrist joints" width="640">
+</p>
+
+The grounded base becomes the root link, the three concentric mates become joints about their
+axes, each part is exported as an STL, and masses and inertia tensors come from the regenerated
+solids. Loaded in MuJoCo 3.15, the arm has three hinge joints, its link positions match the CAD
+placements within 1e-13 m, and its link masses add up to the assembly's 0.7349 kg. Joints are
+exported as `continuous` (no limits yet), parts use a 2700 kg/m³ density, and joint positions
+come from connector frames in the assembly. See [ADR-028](docs/adr/ADR-028-urdf-export.md).
+
+## Evidence: reviewable design changes
 
 <p align="center">
   <img src="docs/assets/review-demo/comparison.gif" alt="A deterministic MusubiCAD DesignPatch review progressing through before, dry-run regeneration, after, and verified semantic diff stages" width="800">
@@ -79,37 +162,20 @@
   </tr>
 </table>
 
-## Why MusubiCAD?
-
-| Typical binary CAD workflow | MusubiCAD workflow |
-|---|---|
-| Review an opaque file or screenshot | Review intent, parameters, geometry, and engineering effects |
-| Automation mutates application state | Agents submit serializable `DesignPatch` proposals |
-| Cached geometry can become implicit state | The deterministic Design Graph is the source of truth |
-| Diffs stop at file-level changes | Semantic diff reports `bearing tower: 32 mm → 42 mm` |
 
 The workflow is always: **agent proposes** a typed `DesignPatch` → **MusubiCAD verifies** it with a
 transactional dry-run and expected-effect checks → **a human approves** the before/after diff.
-AI changes never bypass validation, and a failed regeneration never corrupts the document.
 
-## 60-second tour (no build)
-
-See the complete review locally before installing Rust or compiling OCCT:
+See the review locally without installing anything:
 
 ```bash
 git clone --depth 1 https://github.com/rsasaki0109/MusubiCAD.git && cd MusubiCAD && ./quickstart.sh
 ```
 
-On Windows PowerShell, use `./quickstart.ps1`. This opens the generated `32 mm → 42 mm` report
-shown above. It runs no downloaded executable, makes no network request after cloning, and does
-not mutate the model.
+On Windows PowerShell, use `./quickstart.ps1`. It opens the generated `32 mm → 42 mm` report
+shown above, runs no downloaded executable, and does not mutate the model.
 
-Prefer a binary? The [latest release](https://github.com/rsasaki0109/MusubiCAD/releases/latest)
-ships CLI archives for Linux x86-64, Windows x86-64, and macOS (Apple Silicon and Intel). Verify
-against the attached `SHA256SUMS`; archives are not yet code-signed, and warnings are documented in
-[`QUICKSTART.md`](docs/release-quickstart.md).
-
-## Run a real design review
+## Build from source
 
 You need [stable Rust](https://www.rust-lang.org/tools/install). The first build downloads a
 prebuilt OpenCASCADE 8.0 binary automatically; no system OCCT install is required.
@@ -123,28 +189,11 @@ cargo run -p opencad-cli -- review \
 
 Open `review/review.html` to inspect the hub height (**32 mm → 42 mm**), mass
 (**609.23 g → 654.36 g**), regenerated before/after geometry, the patch intent, and two checked
-expected effects. The source document is unchanged.
-
-The same pipeline works on assemblies—the [robot-arm review](docs/assets/arm-review/review.html)
-reposes elbow and wrist joints from -45° to -75° and checks the result stays interference-free.
-The [Design Review workflow](.github/workflows/design-review.yml) dogfoods these examples in CI,
-regenerating the README bundle (`./docs/assets/generate-review-demo.sh`) and failing on drift.
-
-## Design with an AI agent (MCP)
-
-`musubicad mcp` is a [Model Context Protocol](docs/api/mcp.md) server, so agent hosts such as
-Claude Code can create, dry-run, review, and apply designs directly:
-
-```bash
-claude mcp add musubicad -- musubicad mcp
-```
-
-Agents author new parts, assemblies, and drawings from empty documents with structural
-`DesignPatch` operations, such as `add_sketch`, `add_feature`, and `add_instance`, and repair
-their patches from dry-run errors that name every broken reference. Every change still passes
-the same validation, review, and transaction path as a hand-written patch. See the
-[authoring guide](docs/api/mcp-authoring-guide.md) and a complete
-[plate-from-scratch patch](examples/agent/author_plate_from_empty_patch.json).
+expected effects. The source document is unchanged. The
+[robot-arm review](docs/assets/arm-review/review.html) reposes elbow and wrist joints from -45° to
+-75° and checks the result stays interference-free. The
+[Design Review workflow](.github/workflows/design-review.yml) regenerates these bundles in CI and
+fails on drift.
 
 ## How it works
 
@@ -177,9 +226,10 @@ transactions; `modules/render` consumes disposable tessellation. See the
 - **Agent API:** JSON-RPC query, explain, patch, diff, dry-run, regenerate, pick, export
 - **Structural authoring:** create and remove parameters, sketches, features, references,
   assembly components/instances/mates, and drawing sheets/views/dimensions through `DesignPatch`
-- **MCP server:** `musubicad mcp` exposes inspection, authoring, dry-run, review, and apply to agent hosts
+- **MCP server and agent plugin:** `musubicad mcp` exposes inspection, authoring, verified dry-run,
+  review, apply, and export; a Claude Code plugin and skill package it with a checksum-verified installer
 - **Git-native review:** deterministic JSON/HTML/GIF artifacts, policy checks, patch rebase, three-way semantic merge
-- **Headless output:** PNG/GIF rendering plus STEP (millimetre B-rep), STL, and SVG export
+- **Headless output:** PNG/GIF rendering plus STEP (millimetre B-rep), STL, SVG, and URDF export
 
 Every desktop UI command is also available through the CLI or Agent API. See the
 [Agent API reference](docs/api/agent.md) and
@@ -193,7 +243,7 @@ wgpu viewport. See the [desktop guide](apps/desktop/README.md).
 
 | Example | Demonstrates |
 |---|---|
-| [`robot_arm_assembly.ocad.d`](examples/robot_arm_assembly.ocad.d) | Four-part articulated arm, six connectors, three concentric joints |
+| [`robot_arm_assembly.ocad.d`](examples/robot_arm_assembly.ocad.d) | Four-part articulated arm, six connectors, three concentric joints; exports to URDF |
 | [`robot_joint_actuator.ocad.d`](examples/robot_joint_actuator.ocad.d) | 22-feature housing: stepped hubs, bearing seats, 8-hole PCD, ribs, mirrored mounts |
 | [`bearing_carrier.ocad.d`](examples/bearing_carrier.ocad.d) | Joined hub, through bore, four-hole circular cut pattern |
 | [`bracket.ocad.d`](examples/bracket.ocad.d) | Plate, centered hole, and semantic face reference |
@@ -214,9 +264,10 @@ tests, but APIs and schemas may evolve before 1.0. Dynamic plugin loading is not
 Next priorities, per the [roadmap](docs/plans/roadmap.md) and
 [implementation status](docs/plans/implementation-status.md):
 
-1. Downloadable desktop builds (Phase 1)
-2. Unify backend transactions, DesignPatch, and undo/redo (Phase 3)
-3. Reference-focused geometry and end-to-end golden coverage (Phase 5)
+1. Joint limits, prismatic joints, and joint-angle parameters in the Design Graph, so URDF joints
+   carry ranges and connector frames follow part parameters (Phase 8)
+2. Per-part materials and densities for mass, inertia, and URDF
+3. Verified installs on Windows hosts and on Codex, Cursor, and Gemini CLI
 
 ## Contributing
 
