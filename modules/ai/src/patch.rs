@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use opencad_assembly::{AssemblyPattern, Component, Instance, Mate};
+use opencad_assembly::{AssemblyJoint, AssemblyPattern, Component, Instance, Mate};
 use opencad_core::{Assertion, AssertionKind, OpenCadError, Result, TopoRefId};
 use opencad_drawing::{DrawingView, LinearDimension, Sheet};
 use opencad_feature::{FeatureDefinition, FeatureNode};
@@ -244,6 +244,18 @@ pub enum PatchOperation {
     RemoveMate {
         id: String,
     },
+    /// Add a robot joint (motion type and limits) over an existing mate.
+    AddJoint {
+        joint: Box<AssemblyJoint>,
+    },
+    /// Remove a robot joint; its mate stays.
+    RemoveJoint {
+        id: String,
+    },
+    /// Replace an existing joint's mate, motion type, and limits.
+    SetJoint {
+        joint: Box<AssemblyJoint>,
+    },
     /// Remove a connector no mate references by name.
     RemoveConnector {
         id: String,
@@ -334,6 +346,8 @@ impl PatchOperation {
                 | Self::RemoveInstance { .. }
                 | Self::AddMate { .. }
                 | Self::RemoveMate { .. }
+                | Self::AddJoint { .. }
+                | Self::RemoveJoint { .. }
                 | Self::RemoveConnector { .. }
                 | Self::AddAssemblyPattern { .. }
                 | Self::RemoveAssemblyPattern { .. }
@@ -853,6 +867,7 @@ impl DesignPatch {
                 | PatchOperation::AssignFaceRef { .. }
                 | PatchOperation::SetInstancePlacement { .. }
                 | PatchOperation::SetMateDistance { .. }
+                | PatchOperation::SetJoint { .. }
                 | PatchOperation::AddConnector { .. }
                 | PatchOperation::SetDrawingViewScale { .. }
                 | PatchOperation::SetDrawingViewOrigin { .. }
@@ -1207,6 +1222,7 @@ impl DesignPatch {
             match operation {
                 PatchOperation::SetInstancePlacement { .. }
                 | PatchOperation::SetMateDistance { .. }
+                | PatchOperation::SetJoint { .. }
                 | PatchOperation::AddConnector { .. }
                     if assembly.is_none() =>
                 {

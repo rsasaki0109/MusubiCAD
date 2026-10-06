@@ -227,6 +227,15 @@ fn print_change(change: &SemanticChange) {
         SemanticChange::AssemblyMateChanged { id, before, after } => {
             println!("  assembly mate {id}: {before} -> {after}");
         }
+        SemanticChange::AssemblyJointAdded { id } => {
+            println!("  assembly joint added {id}");
+        }
+        SemanticChange::AssemblyJointRemoved { id } => {
+            println!("  assembly joint removed {id}");
+        }
+        SemanticChange::AssemblyJointChanged { id, before, after } => {
+            println!("  assembly joint {id}: {before} -> {after}");
+        }
         SemanticChange::AssemblyConnectorAdded { id } => {
             println!("  assembly connector added {id}");
         }

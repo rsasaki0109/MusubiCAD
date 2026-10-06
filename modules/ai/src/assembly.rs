@@ -3,8 +3,8 @@
 use std::collections::BTreeSet;
 
 use opencad_assembly::{
-    validate_connectors, validate_mates, validate_patterns, AssemblyModel, Component, Connector,
-    Instance, Mate, MateEntity, MateKind,
+    validate_connectors, validate_joints, validate_mates, validate_patterns, AssemblyModel,
+    Component, Connector, Instance, Mate, MateEntity, MateKind,
 };
 use opencad_core::{InstanceId, OpenCadError, Result};
 use opencad_geometry::RigidTransform;
@@ -226,6 +226,15 @@ fn structural_assembly_failures(
                     )
                     .collect(),
             ),
+            PatchOperation::RemoveMate { id } => (
+                id,
+                model
+                    .joints
+                    .iter()
+                    .filter(|joint| joint.mate.as_str() == id)
+                    .map(|joint| format!("joint {}", joint.id))
+                    .collect(),
+            ),
             _ => continue,
         };
         if !dependents.is_empty() {
@@ -289,6 +298,31 @@ pub fn apply_assembly_patch(
                 let exists = model.mates.iter().any(|item| item.id == mate.id);
                 check_new_id(id, "mate", exists, &removed, "mate")?;
                 model.mates.push(mate.as_ref().clone());
+            }
+            PatchOperation::AddJoint { joint } => {
+                let id = joint.id.as_str();
+                let exists = model.joints.iter().any(|item| item.id == joint.id);
+                check_new_id(id, "joint", exists, &removed, "joint")?;
+                model.joints.push(joint.as_ref().clone());
+            }
+            PatchOperation::RemoveJoint { id } => {
+                remove_by_id(
+                    &mut model.joints,
+                    id,
+                    |item| item.id.as_str(),
+                    "assembly joint",
+                    &mut removed,
+                )?;
+            }
+            PatchOperation::SetJoint { joint } => {
+                let existing = model
+                    .joints
+                    .iter_mut()
+                    .find(|item| item.id == joint.id)
+                    .ok_or_else(|| {
+                        OpenCadError::validation(format!("unknown assembly joint '{}'", joint.id))
+                    })?;
+                *existing = joint.as_ref().clone();
             }
             PatchOperation::RemoveMate { id } => {
                 remove_by_id(
@@ -415,6 +449,7 @@ pub fn apply_assembly_patch(
     validate_mates(&model.mates, &instance_ids, &model.connectors)?;
     validate_connectors(&model.connectors, &instance_ids)?;
     validate_patterns(model)?;
+    validate_joints(&model.joints, &model.mates)?;
     Ok(())
 }
 
@@ -517,6 +552,16 @@ pub fn diff_assembly_models(before: &AssemblyModel, after: &AssemblyModel) -> De
             _ => {}
         }
     }
+
+    diff_items_by_id(
+        &before.joints,
+        &after.joints,
+        |joint| joint.id.as_str(),
+        |id| SemanticChange::AssemblyJointAdded { id },
+        |id| SemanticChange::AssemblyJointRemoved { id },
+        |id, before, after| SemanticChange::AssemblyJointChanged { id, before, after },
+        &mut changes,
+    );
 
     let before_connectors: std::collections::BTreeMap<_, _> = before
         .connectors
@@ -628,6 +673,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         })
     }
 

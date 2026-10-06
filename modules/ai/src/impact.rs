@@ -177,6 +177,9 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
             | SemanticChange::AssemblyMateAdded { id }
             | SemanticChange::AssemblyMateRemoved { id }
             | SemanticChange::AssemblyMateChanged { id, .. }
+            | SemanticChange::AssemblyJointAdded { id }
+            | SemanticChange::AssemblyJointRemoved { id }
+            | SemanticChange::AssemblyJointChanged { id, .. }
             | SemanticChange::AssemblyConnectorAdded { id }
             | SemanticChange::AssemblyConnectorRemoved { id }
             | SemanticChange::AssemblyConnectorChanged { id, .. }

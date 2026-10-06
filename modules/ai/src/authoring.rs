@@ -117,6 +117,11 @@ pub fn authoring_patch(state: &DesignState) -> Result<DesignPatch> {
                 mate: Box::new(mate.clone()),
             });
         }
+        for joint in &assembly.joints {
+            operations.push(PatchOperation::AddJoint {
+                joint: Box::new(joint.clone()),
+            });
+        }
         for pattern in &assembly.patterns {
             operations.push(PatchOperation::AddAssemblyPattern {
                 pattern: pattern.clone(),

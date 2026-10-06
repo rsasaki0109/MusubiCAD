@@ -486,6 +486,35 @@
           ]
         }
       }
+    ],
+    "joints": [
+      {
+        "id": "joint:shoulder",
+        "mate": "mate:shoulder",
+        "type": "revolute",
+        "lower_rad": -2.6179938779914944,
+        "upper_rad": 2.6179938779914944,
+        "effort_n_m": 1.5,
+        "velocity_rad_s": 3.0
+      },
+      {
+        "id": "joint:elbow",
+        "mate": "mate:elbow",
+        "type": "revolute",
+        "lower_rad": -1.7453292519943295,
+        "upper_rad": 2.443460952792061,
+        "effort_n_m": 1.0,
+        "velocity_rad_s": 3.0
+      },
+      {
+        "id": "joint:wrist",
+        "mate": "mate:wrist",
+        "type": "revolute",
+        "lower_rad": -1.5707963267948966,
+        "upper_rad": 1.5707963267948966,
+        "effort_n_m": 0.4,
+        "velocity_rad_s": 4.0
+      }
     ]
   }
 }
