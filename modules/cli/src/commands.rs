@@ -250,12 +250,12 @@ fn cmd_regen(path: Option<&str>, extra_args: &[String]) -> Result<()> {
 fn cmd_export(input: Option<&str>, output: Option<&str>) -> Result<()> {
     let input = input.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: musubicad export <input> <output.stl|output.step|output.svg|output.urdf>",
+            "usage: musubicad export <input> <output.stl|output.3mf|output.glb|output.step|output.svg|output.urdf>",
         )
     })?;
     let output = output.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: musubicad export <input> <output.stl|output.step|output.svg|output.urdf>",
+            "usage: musubicad export <input> <output.stl|output.3mf|output.glb|output.step|output.svg|output.urdf>",
         )
     })?;
     let summary = export::export_document(input, output)?;
@@ -620,7 +620,7 @@ COMMANDS:
     intent      Show what drives a parameter or reference and what it changes
     params      List document parameters
     regen       Regenerate features through the geometry kernel
-    export      Export STL, STEP, drawing SVG, or an assembly as URDF
+    export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF
     mesh        Tessellate and summarize viewport scene data
     pick        Query viewport selection at a pixel coordinate
     view        Open an interactive 3D viewport
@@ -667,6 +667,7 @@ EXAMPLES:
     musubicad regen bracket.ocad
     musubicad regen bracket.ocad --sync-topo-refs
     musubicad export bracket.ocad bracket.stl
+    musubicad export bracket.ocad.d bracket.3mf
     musubicad export bracket_front_view.ocad.d bracket_front.svg
     musubicad export robot_arm_assembly.ocad.d urdf/robot_arm.urdf
     musubicad mesh bracket.ocad.d
