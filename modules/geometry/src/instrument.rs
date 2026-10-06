@@ -85,6 +85,15 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.mass_properties(body, density_kg_per_m3)
     }
 
+    fn inertia_about_com(
+        &self,
+        body: &KernelBody,
+        density_kg_per_m3: f64,
+    ) -> Result<[[f64; 3]; 3]> {
+        self.record();
+        self.inner.inertia_about_com(body, density_kg_per_m3)
+    }
+
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
         self.record();
         self.inner.bounding_box(body)

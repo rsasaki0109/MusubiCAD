@@ -39,6 +39,31 @@ the exact volumes of every resulting piece. Common volume must be strictly
 greater than the threshold; output pairs are sorted by `InstanceId` regardless
 of scene input order.
 
+## Kinematic tree and URDF export
+
+`opencad_assembly::kinematic_tree(&AssemblyModel)` derives a robot kinematic
+tree from the Design Graph ([ADR-028](../adr/ADR-028-urdf-export.md)):
+
+- the single grounded instance (`ground` mate) is the root link; zero or
+  several grounded instances are an error;
+- mated instance pairs are tree edges, visited breadth-first in mate-ID
+  order; a pair with a `concentric` mate is a continuous joint about that
+  mate's axis on the child (connector or local frame), any other mated pair
+  is a fixed joint;
+- a pair that reaches an already placed instance is a loop and an error that
+  names the mate; instances no mate reaches are fixed to the root and listed
+  in `warnings`;
+- joint zero positions are the current assembly pose, and each child link
+  frame is its part frame translated to the joint axis origin.
+
+`musubicad export <assembly> <name>.urdf` (Agent `opencad.export`, MCP
+`export_document`) writes the URDF and one binary STL per component next to
+it (`<robot>_<component>.stl`, metres, referenced by file name). Inertials use
+the kernel's mass, centre of mass, and inertia tensor about the centre of mass
+(`GeometryKernel::inertia_about_com`) at the default density of
+2700 kg/m³. Output is deterministic: numbers carry 12 significant digits and
+kernel noise below 1e-12 m (or 1e-9 of the inertia trace) is written as 0.
+
 ## Related
 
 - [Assembly architecture](../architecture/assembly.md)

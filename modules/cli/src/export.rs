@@ -21,7 +21,7 @@ pub use opencad_desktop::tessellate_active_body_detailed;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExportSummary {
     pub format: String,
-    /// Triangles written (STL), drawing segments (SVG), or 0 (STEP).
+    /// Triangles written (STL, URDF meshes), drawing segments (SVG), or 0 (STEP).
     pub triangles: usize,
     pub output: String,
     /// Bytes written, for formats without a triangle count (STEP).
@@ -38,8 +38,9 @@ pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
         Some("stl") => export_stl(input, output),
         Some("svg") => export_svg(input, output),
         Some("step" | "stp") => export_step(input, output),
+        Some("urdf") => crate::urdf::export_urdf(input, output),
         _ => Err(OpenCadError::validation(
-            "export output must use .stl, .step/.stp, or .svg extension",
+            "export output must use .stl, .step/.stp, .svg, or .urdf extension",
         )),
     }
 }

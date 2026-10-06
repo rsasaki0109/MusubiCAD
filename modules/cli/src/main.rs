@@ -18,6 +18,7 @@ mod review;
 mod review_gif;
 mod scene_query;
 mod topo_sync;
+mod urdf;
 mod view;
 
 fn main() {
