@@ -110,6 +110,18 @@ cargo run -p opencad-cli -- regen examples/robot_arm_assembly.ocad.d
 cargo run -p opencad-cli -- screenshot examples/robot_arm_assembly.ocad.d arm.png
 ```
 
+Export it as a robot description for simulators (ADR-028). The grounded base is
+the root link, the three concentric mates become continuous joints about their
+connector axes, each part becomes one STL next to the URDF, and masses and
+inertia tensors come from the regenerated solids:
+
+```bash
+cargo run -p opencad-cli -- export examples/robot_arm_assembly.ocad.d urdf/robot_arm.urdf
+```
+
+The URDF loads in MuJoCo 3.15 with three hinge joints; link poses match the CAD
+placements to 1e-13 m and the link masses sum to the assembly mass.
+
 A ready-to-run agent review,
 [`examples/agent/review_robot_arm_patch.json`](agent/review_robot_arm_patch.json),
 reposes the elbow and wrist joints from -45° to -75° via two

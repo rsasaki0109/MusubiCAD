@@ -114,7 +114,11 @@ reports the count.
   (`images_skipped` explains a missing image). Offer the HTML path to the user.
 - `export_document` with `{path, output}`: the extension picks the format.
   `.step` for other CAD/CAM tools (millimetres), `.stl` for slicers and 3D
-  printing, `.svg` for drawing sheets.
+  printing, `.svg` for drawing sheets, `.urdf` for an assembly as a robot
+  description (simulators such as MuJoCo): the grounded instance is the root
+  link, concentric mates become continuous joints, other mates fixed joints,
+  and one STL per part is written next to the URDF. Re-export after every
+  design change instead of editing the URDF.
 - `import_step` brings a STEP solid (for example a purchased motor) into a
   part as a fixed body, a join, or a cut.
 
@@ -137,6 +141,7 @@ musubicad patch part.ocad.d change.json                     # verifies, then wri
 musubicad review part.ocad.d change.json --output review    # HTML review
 musubicad regen part.ocad.d                                 # mass, volume, assertions
 musubicad export part.ocad.d part.step                      # or part.stl / sheet.svg
+musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description
 ```
 
 `musubicad patch` refuses a patch that does not regenerate or misses its

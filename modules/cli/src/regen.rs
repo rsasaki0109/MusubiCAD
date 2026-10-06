@@ -19,7 +19,7 @@ use opencad_kernel_occt::OcctGeometryKernel;
 
 use opencad_core::Result;
 
-const DEFAULT_DENSITY_KG_PER_M3: f64 = 2700.0;
+pub(crate) const DEFAULT_DENSITY_KG_PER_M3: f64 = 2700.0;
 
 /// Summary printed by `musubicad regen`.
 #[derive(Debug, Clone, PartialEq)]
@@ -267,7 +267,7 @@ fn assembly_regen_report(report: &opencad_assembly::AssemblyRegenReport) -> Rege
     }
 }
 
-fn assembly_root(path: &str) -> std::path::PathBuf {
+pub(crate) fn assembly_root(path: &str) -> std::path::PathBuf {
     let path = Path::new(path);
     if path.extension().and_then(|ext| ext.to_str()) == Some("ocad") {
         path.parent()

@@ -528,6 +528,7 @@ verified before it is written.
 | MCAD-P8-003 | `musubicad` command name | The CLI binary, help, usage messages, docs, release workflow, and eval harness use `musubicad`; release archives keep `opencad` as a symlink (`opencad.cmd` on Windows); crate names and `opencad.*` JSON-RPC method names are unchanged wire/API identifiers | Complete |
 | MCAD-P8-004 | Verified CLI patch | `musubicad patch` refuses (document unchanged) a patch that does not regenerate or misses declared expected effects, prints the verified mass change, and offers `--no-verify` | Complete |
 | MCAD-P8-005 | Agent plugin and installer | [ADR-027](../adr/ADR-027-agent-plugin-distribution.md); `install.sh`/`install.ps1` with checksum verification; Claude Code marketplace, Codex, Cursor, and Gemini manifests launching `musubicad mcp`; `skills/musubicad` skill and `skills.sh.json`; manifest, skill, and installer contract test in CI | Complete (Windows host launch unverified) |
+| MCAD-P8-006 | URDF export | [ADR-028](../adr/ADR-028-urdf-export.md); kernel-free `kinematic_tree` from ground and mates (concentric → continuous, other mates → fixed, loops rejected); `GeometryKernel::inertia_about_com` (OCCT, mock); `export *.urdf` with per-part STL, mass, centre of mass, and inertia; CLI, Agent, and MCP parity; verified in MuJoCo | Complete |
 
 ## Cross-phase verification matrix
 

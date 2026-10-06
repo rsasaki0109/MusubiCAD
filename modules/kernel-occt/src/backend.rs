@@ -672,6 +672,64 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn inertia_about_com(
+        &self,
+        body: &KernelBody,
+        density_kg_per_m3: f64,
+    ) -> Result<[[f64; 3]; 3]> {
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let solids = collect_body_solids(&store, body.0)?;
+            // cadrum returns each solid's tensor about the world origin at unit
+            // density (mass = volume), so the solids add up directly; shift the
+            // sum to the combined centre of mass with the parallel-axis theorem.
+            let mut about_origin = [[0.0_f64; 3]; 3];
+            let mut volume = 0.0;
+            let mut weighted = [0.0_f64; 3];
+            for solid in solids {
+                let tensor = solid.inertia();
+                let columns = [tensor.x_axis, tensor.y_axis, tensor.z_axis];
+                for (column, values) in columns.iter().enumerate() {
+                    about_origin[0][column] += values.x;
+                    about_origin[1][column] += values.y;
+                    about_origin[2][column] += values.z;
+                }
+                let solid_volume = solid.volume();
+                let center = solid.center();
+                volume += solid_volume;
+                weighted[0] += center.x * solid_volume;
+                weighted[1] += center.y * solid_volume;
+                weighted[2] += center.z * solid_volume;
+            }
+            if volume <= 0.0 {
+                return Err(OpenCadError::validation(
+                    "body has no volume; cannot compute inertia",
+                ));
+            }
+            let com = [
+                weighted[0] / volume,
+                weighted[1] / volume,
+                weighted[2] / volume,
+            ];
+            let d2 = com[0] * com[0] + com[1] * com[1] + com[2] * com[2];
+            let mut tensor = [[0.0_f64; 3]; 3];
+            for row in 0..3 {
+                for column in 0..3 {
+                    let identity = if row == column { 1.0 } else { 0.0 };
+                    let shift = volume * (d2 * identity - com[row] * com[column]);
+                    tensor[row][column] = (about_origin[row][column] - shift) * density_kg_per_m3;
+                }
+            }
+            Ok(tensor)
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, density_kg_per_m3);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
         #[cfg(feature = "occt")]
         {
@@ -1311,6 +1369,39 @@ mod tests {
                 [0.0, 0.0, 1.0],
             )
             .expect("extrude")
+    }
+
+    /// A box's tensor about its centre of mass is `m(b² + c²)/12` per axis,
+    /// wherever the box sits.
+    #[test]
+    fn occt_inertia_about_com_matches_a_box_anywhere() {
+        let kernel = OcctGeometryKernel::new();
+        let density = 2700.0;
+        let (width, depth, height) = (0.08, 0.06, 0.006);
+        for offset in [[0.0, 0.0, 0.0], [0.5, -0.2, 0.1]] {
+            let body = kernel
+                .translate_body(box_body(&kernel), offset)
+                .expect("translate");
+            let mass = kernel
+                .mass_properties(&body, density)
+                .expect("mass")
+                .mass_kg;
+            let tensor = kernel.inertia_about_com(&body, density).expect("inertia");
+            let expected = [
+                mass * (depth * depth + height * height) / 12.0,
+                mass * (width * width + height * height) / 12.0,
+                mass * (width * width + depth * depth) / 12.0,
+            ];
+            for axis in 0..3 {
+                let relative = (tensor[axis][axis] - expected[axis]).abs() / expected[axis];
+                assert!(relative < 1e-9, "axis {axis}: {tensor:?} vs {expected:?}");
+                for other in 0..3 {
+                    if other != axis {
+                        assert!(tensor[axis][other].abs() < 1e-12 * mass, "{tensor:?}");
+                    }
+                }
+            }
+        }
     }
 
     /// ADR-018: a prism's top and bottom faces share one TShape, yet their

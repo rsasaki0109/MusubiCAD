@@ -276,6 +276,19 @@ pub trait GeometryKernel {
 
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties>;
 
+    /// Inertia tensor in kg·m² about the body's centre of mass, expressed in
+    /// the body's coordinate axes, for a uniform `density_kg_per_m3`.
+    fn inertia_about_com(
+        &self,
+        body: &KernelBody,
+        density_kg_per_m3: f64,
+    ) -> Result<[[f64; 3]; 3]> {
+        let _ = (body, density_kg_per_m3);
+        Err(OpenCadError::Other(
+            "this geometry kernel does not compute inertia tensors".into(),
+        ))
+    }
+
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox>;
 
     /// Serialize a body as STEP (ISO 10303-21) text whose length unit is the
@@ -579,6 +592,18 @@ impl GeometryKernel for MockGeometryKernel {
             mass_kg: volume * density_kg_per_m3,
             center_of_mass: [side / 2.0, side / 2.0, side / 2.0],
         })
+    }
+
+    /// The mock body is a solid cube of side `body.0` mm: `m·s²/6` on each axis.
+    fn inertia_about_com(
+        &self,
+        body: &KernelBody,
+        density_kg_per_m3: f64,
+    ) -> Result<[[f64; 3]; 3]> {
+        let mass = self.mass_properties(body, density_kg_per_m3)?;
+        let side = body.0 as f64 * 0.001;
+        let moment = mass.mass_kg * side * side / 6.0;
+        Ok([[moment, 0.0, 0.0], [0.0, moment, 0.0], [0.0, 0.0, moment]])
     }
 
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
