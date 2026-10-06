@@ -75,6 +75,20 @@ def verify(root: Path, tag: str | None) -> str:
     }
     verify_lock(desktop_root / "Cargo.lock", desktop_workspace_packages, version)
 
+    # Agent plugin manifests ship from the same tag as the CLI they launch.
+    for manifest_path in (
+        root / ".claude-plugin" / "plugin.json",
+        root / ".codex-plugin" / "plugin.json",
+        root / ".cursor-plugin" / "plugin.json",
+        root / "gemini-extension.json",
+    ):
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        require_version(manifest.get("version"), version, manifest_path)
+    marketplace_path = root / ".claude-plugin" / "marketplace.json"
+    marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
+    for plugin in marketplace["plugins"]:
+        require_version(plugin.get("version"), version, marketplace_path)
+
     if tag is not None and tag != f"v{version}":
         raise AssertionError(f"tag {tag!r} does not match release version v{version}")
     return version

@@ -12,14 +12,16 @@ This guide is served to MCP clients as the resource
    exists. `authoring_patch` prints any document as the patch that rebuilds
    it; it is the best source of correct examples.
 3. Write one `DesignPatch` and send it to `patch_dry_run`. Fix every reported
-   problem. Errors list every dependent or missing reference by stable ID.
+   problem until `verification.passed` is `true`; a failing
+   `verification.error` names the feature that stopped regenerating or the
+   expected effect that did not hold. Errors list every dependent or missing reference by stable ID.
    A `sketch_under_constrained` warning means that sketch can skew on a
    later parameter edit. Add horizontal/vertical and dimension constraints
    until the warning disappears.
 4. Optionally, `review_patch` writes a before/after HTML review with images
    and mass and bounds changes.
-5. `patch_apply` validates the patch again and writes the document. A failed
-   patch leaves the document unchanged.
+5. `patch_apply` validates and verifies the patch again and writes the
+   document. A failed or unverified patch leaves the document unchanged.
 
 ## Rules
 

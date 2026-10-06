@@ -8,12 +8,34 @@ No network listener is started.
 
 ## Setup
 
-Build or install the CLI, then register the server with an MCP host. For
-example, with Claude Code:
+Install the prebuilt CLI (one self-contained executable, checksum-verified;
+[ADR-027](../adr/ADR-027-agent-plugin-distribution.md)):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rsasaki0109/MusubiCAD/main/install.sh | sh
+```
+
+On Windows PowerShell:
+`irm https://raw.githubusercontent.com/rsasaki0109/MusubiCAD/main/install.ps1 | iex`.
+
+Then add the plugin, which registers this server and the `musubicad` skill,
+in Claude Code:
+
+```bash
+claude plugin marketplace add rsasaki0109/MusubiCAD
+claude plugin install musubicad@musubicad
+```
+
+or register only the server:
 
 ```bash
 claude mcp add musubicad -- musubicad mcp
 ```
+
+The repository also carries Codex (`.codex-plugin/`), Cursor
+(`.cursor-plugin/`), and Gemini CLI (`gemini-extension.json`) manifests and a
+`skills.sh.json` listing; they launch the same server but have not been
+verified on those hosts yet.
 
 Any host that launches a stdio MCP server with the command `musubicad mcp` works
 the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,

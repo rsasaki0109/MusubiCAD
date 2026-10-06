@@ -1,0 +1,12 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "groupings": [
+    {
+      "title": "CAD",
+      "description": "Design, verify, and export parametric parts and assemblies.",
+      "skills": [
+        "musubicad"
+      ]
+    }
+  ]
+}
