@@ -1,4 +1,4 @@
-//! `opencad import-step`: place a STEP file in a part as an imported solid
+//! `musubicad import-step`: place a STEP file in a part as an imported solid
 //! (ADR-016).  The command only builds a `DesignPatch`; applying it uses the
 //! same validated history boundary as every other edit.
 
@@ -151,9 +151,9 @@ pub fn import_step(request: &ImportStepRequest) -> Result<ImportStepSummary> {
     Ok(summary)
 }
 
-/// `opencad import-step <doc> <file.step> --id <feature id> [options]`.
+/// `musubicad import-step <doc> <file.step> --id <feature id> [options]`.
 pub fn cmd_import_step(args: Vec<String>) -> Result<()> {
-    let usage = "usage: opencad import-step <document> <file.step> --id <feature:id> \
+    let usage = "usage: musubicad import-step <document> <file.step> --id <feature:id> \
                  [--name <name>] [--operation new_body|join|cut] [--target <feature:id>] \
                  [--translate-mm <x,y,z>]";
     let mut positional = Vec::new();

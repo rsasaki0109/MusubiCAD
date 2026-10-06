@@ -1,4 +1,4 @@
-//! `opencad merge-driver` and `opencad conflicts`: Git integration for
+//! `musubicad merge-driver` and `musubicad conflicts`: Git integration for
 //! expanded `.ocad.d` documents (ADR-015).
 //!
 //! Git merges files; a design is a directory.  For any file of a document the
@@ -120,7 +120,7 @@ struct MergeRevisions {
 ///
 /// While a merge driver runs, `git merge` has not written `MERGE_HEAD` yet;
 /// it exports `GITHEAD_<sha>` for the merged commits instead.  `MERGE_HEAD`
-/// is still honoured when present (for example `opencad conflicts` after a
+/// is still honoured when present (for example `musubicad conflicts` after a
 /// stopped merge).
 fn theirs_revision(repo: &Path, ours: &str) -> std::result::Result<String, String> {
     let mut heads: Vec<String> = std::env::vars()
@@ -132,13 +132,13 @@ fn theirs_revision(repo: &Path, ours: &str) -> std::result::Result<String, Strin
     match heads.as_slice() {
         [theirs] => return Ok(theirs.clone()),
         [] => {}
-        _ => return Err("octopus merges are resolved with `opencad merge`".into()),
+        _ => return Err("octopus merges are resolved with `musubicad merge`".into()),
     }
     git_line(repo, &["rev-parse", "-q", "--verify", "MERGE_HEAD"])
         .ok()
         .filter(|value| !value.is_empty())
         .ok_or_else(|| {
-            "no merge in progress: only `git merge` is supported; resolve with `opencad merge`"
+            "no merge in progress: only `git merge` is supported; resolve with `musubicad merge`"
                 .to_string()
         })
 }
@@ -156,7 +156,7 @@ fn merge_revisions(repo: &Path) -> std::result::Result<MergeRevisions, String> {
             theirs,
         }),
         _ => Err(format!(
-            "{} merge bases: criss-cross merges are resolved with `opencad merge`",
+            "{} merge bases: criss-cross merges are resolved with `musubicad merge`",
             bases.len()
         )),
     }

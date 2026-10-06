@@ -1,4 +1,4 @@
-//! `opencad new` command (Task-121+).
+//! `musubicad new` command (Task-121+).
 
 use opencad_assembly::{
     robot_arm_assembly_model, AssemblyModel, Component, Instance, Mate, MateEntity, MateKind,

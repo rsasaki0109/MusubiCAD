@@ -24,7 +24,7 @@ See [apps/desktop/README.md](../../apps/desktop/README.md) and the
 | `create_document(path, template)` | Built-in sample templates |
 | `load_view_data(path)` | Scene + sketch overlay for advanced viewers |
 
-CLI commands (`opencad mesh`, `opencad new`, and `opencad params`) reuse the
+CLI commands (`musubicad mesh`, `musubicad new`, and `musubicad params`) reuse the
 same crate. The shared regeneration/export helpers are also used by the
 headless `run_desktop_smoke` contract; they are intentionally not exposed as
 Tauri UI commands. The complete UI/Tauri/CLI/Agent mapping and headless smoke

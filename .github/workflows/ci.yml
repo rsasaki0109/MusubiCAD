@@ -31,6 +31,9 @@ jobs:
       - name: Verify shared release version contract
         run: python tools/test_release_version.py
 
+      - name: Verify agent plugin manifests and installer
+        run: python tools/test_agent_plugin.py
+
   rust:
     runs-on: ubuntu-latest
     steps:

@@ -55,6 +55,6 @@ tessellation choice.
 ## Evidence
 
 - The OCCT backend extrudes a circle profile to π·r²·h within `1e-12 m³`.
-- `opencad regen examples/bracket.ocad.d` matches the analytic volume within
+- `musubicad regen examples/bracket.ocad.d` matches the analytic volume within
   `1e-5 mm³`.
 - The MCP end-to-end test expects the analytic plate-minus-hole volume.

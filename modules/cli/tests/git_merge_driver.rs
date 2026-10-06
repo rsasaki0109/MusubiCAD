@@ -1,5 +1,5 @@
 //! ADR-015: a real `git merge` of two branches that edited the same
-//! `.ocad.d` document, resolved by `opencad merge-driver`.
+//! `.ocad.d` document, resolved by `musubicad merge-driver`.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -9,7 +9,7 @@ use opencad_file::{apply_patch_to_document, read_ocad, validate_ocad, write_expa
 use serde_json::json;
 
 fn opencad() -> &'static str {
-    env!("CARGO_BIN_EXE_opencad")
+    env!("CARGO_BIN_EXE_musubicad")
 }
 
 fn run(repo: &Path, program: &str, args: &[&str]) -> Output {

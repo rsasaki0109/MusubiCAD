@@ -2,13 +2,13 @@
 
 MusubiCAD exposes a JSON-RPC 2.0 API for AI agents and automation tools.
 
-Transport: **stdio** via `opencad agent`. No network server is started by default.
+Transport: **stdio** via `musubicad agent`. No network server is started by default.
 
 ## Invocation
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"bracket.ocad.d"}}' \
-  | opencad agent
+  | musubicad agent
 ```
 
 ## Methods
@@ -30,8 +30,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 |---|---|---|
 | `opencad.inspect` | `{ path }` | document summary |
 | `opencad.validate` | `{ path }` | `{ valid, path }` |
-| `opencad.patch_dry_run_document` | `{ path, patch }` | `{ validation, diff, impact }` |
-| `opencad.patch_apply_document` | `{ path, patch, history? }` | `{ patched, history, can_undo, can_redo }` |
+| `opencad.patch_dry_run_document` | `{ path, patch, verify? }` | `{ validation, diff, impact, verification? }` |
+| `opencad.patch_apply_document` | `{ path, patch, history?, verify? }` | `{ patched, history, can_undo, can_redo, verification? }` |
 | `opencad.history_undo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.history_redo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.regen_document` | `{ path }` | `RegenResult` |
@@ -46,6 +46,46 @@ references, assembly state, and drawing state. The in-memory `patch_apply`
 path and the document patch path stage a candidate state and commit it only
 after every operation validates; a later operation failure cannot retain an
 earlier operation's mutation.
+
+### Geometry verification
+
+Validation alone cannot tell whether a patch still produces a solid: a bore
+widened past its boss is a valid parameter edit that leaves no geometry. The
+document patch methods therefore regenerate the document before and after the
+patch (with `verify`, default `true`) and report a `verification` object:
+
+```json
+{
+  "passed": true,
+  "diff": { "summary": "param:bore_diameter: 18 mm -> 8 mm",
+            "geometry": { "mass_before": 0.156000217928, "mass_after": 0.163719110838, "...": "..." } },
+  "geometry": { "before_bounds_m": [[0, 0, 0], [0.096, 0.072, 0.014]], "after_bounds_m": "...",
+                "before_triangles": 1592, "after_triangles": 1592,
+                "before_interference_count": null, "after_interference_count": null },
+  "expected_effects": [{ "effect": { "type": "mass_delta_kg", "min": 0.0, "max": 1.0 },
+                         "passed": true, "message": "mass delta is 0.00771889291 kg" }]
+}
+```
+
+`passed` is `true` only when the patched document regenerates, its required
+assertions hold, and every declared `expected_effects` entry passed. When
+verification cannot complete, the object is `{ "passed": false, "error": "..." }`
+and the error names the failing feature, for example
+`patched document does not regenerate: feature 'feature:bearing_bore': OCCT error: ...`.
+A document that did not regenerate before the patch is reported in
+`geometry.before_regen_error` rather than rejected, so a patch can repair it.
+
+- `patch_dry_run_document` adds `verification` only when validation reports no
+  errors. It never writes.
+- `patch_apply_document` refuses a patch whose verification did not pass and
+  leaves the document unchanged (`-32000`, message starting
+  `patch rejected; the document was not changed:`). On success it returns the
+  same `verification` evidence.
+- `verify: false` skips the geometry gate for staged authoring steps that are
+  known not to regenerate yet. Validation still runs.
+
+Verification needs no GPU. It uses the same evidence as `musubicad review`
+without rendering images.
 
 For optimistic concurrency, a patch may include a complete-state revision
 precondition. The digest covers the canonical serialized patchable state, not
@@ -173,11 +213,11 @@ geometry kernel. Lists are sorted, and feature lists follow recompute order.
 
 In-memory `opencad.query` accepts an optional `assertions` array.
 `opencad.query_document` reads assertions from the document.
-The CLI equivalent is `opencad intent <path> <param:...|ref:...> [--json]`.
+The CLI equivalent is `musubicad intent <path> <param:...|ref:...> [--json]`.
 
 ### `PickSummary`
 
-Headless GPU pick at viewport pixel coordinates (same default camera as `opencad mesh --render`).
+Headless GPU pick at viewport pixel coordinates (same default camera as `musubicad mesh --render`).
 
 ```json
 {
@@ -209,12 +249,12 @@ Selection kinds: `none`, `sketch_line`, `solid_triangle`.
 
 ### `list_overlay_lines` / `list_face_groups`
 
-Enumerate pick targets without a pixel coordinate (same tessellation as `opencad pick`).
+Enumerate pick targets without a pixel coordinate (same tessellation as `musubicad pick`).
 
 Persisted face references live in `graph/semantic_refs.json`. Sync them after regeneration:
 
 ```bash
-opencad regen bracket.ocad.d --sync-topo-refs
+musubicad regen bracket.ocad.d --sync-topo-refs
 ```
 
 ```json
@@ -423,7 +463,7 @@ An `imported_solid` feature places a STEP attachment as a fixed solid
 
 Regeneration verifies the attachment digest and fails closed on a mismatch.
 The rotation must be proper and orthonormal within `1e-9`. `join` and `cut`
-need `target_feature`. `opencad import-step <doc> <file.step> --id <feature:id>
+need `target_feature`. `musubicad import-step <doc> <file.step> --id <feature:id>
 [--operation new_body|join|cut] [--target <feature:id>] [--translate-mm x,y,z]`
 builds and applies this patch; it reuses an existing identical attachment.
 
@@ -632,7 +672,7 @@ component and pattern changes appear as `assembly_component_*` and
 
 ### Rebase and semantic merge
 
-`opencad rebase-patch` and `opencad_ai::rebase_patch` compare each target by
+`musubicad rebase-patch` and `opencad_ai::rebase_patch` compare each target by
 stable ID across the old base, the patch result, and the new base.
 Structural conflicts carry a `reason`:
 
@@ -648,7 +688,7 @@ An addition that the new base already contains with identical content is
 dropped from the rebased patch, and the rebased patch must still apply to the
 new base.
 
-`opencad merge` and `opencad_ai::semantic_three_way_merge` merge every
+`musubicad merge` and `opencad_ai::semantic_three_way_merge` merge every
 collection of the complete design state by stable ID: parameters, features,
 sketches, semantic references, assertions, assembly components, instances,
 mates, connectors, patterns, and drawing sheets. A side equal to base yields to
@@ -657,7 +697,7 @@ order and additions follow in ID order. Feature display order keeps the
 reordering side's relative order; features that both sides insert at the same
 anchor follow it in order of their first feature ID. The merged result
 therefore does not depend on which side is "ours". The combined state must
-pass `opencad_ai::validate_design_state`. `opencad merge` writes back every
+pass `opencad_ai::validate_design_state`. `musubicad merge` writes back every
 merged collection and re-derives `graph/features.json` only when features,
 their order, sketches, or semantic references changed.
 

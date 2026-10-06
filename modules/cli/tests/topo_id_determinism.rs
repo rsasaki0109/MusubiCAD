@@ -21,10 +21,10 @@ fn synced_refs(workspace: &Path) -> String {
     let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/bracket.ocad.d");
     let doc = workspace.join("bracket.ocad.d");
     copy_dir(&source, &doc);
-    let output = Command::new(env!("CARGO_BIN_EXE_opencad"))
+    let output = Command::new(env!("CARGO_BIN_EXE_musubicad"))
         .args(["regen", doc.to_str().expect("path"), "--sync-topo-refs"])
         .output()
-        .expect("run opencad");
+        .expect("run musubicad");
     assert!(
         output.status.success(),
         "{}",

@@ -1,0 +1,25 @@
+{
+  "name": "musubicad",
+  "version": "0.1.1",
+  "description": "Parametric CAD your agent can iterate on without breaking it: a Design Graph with named, unit-bearing parameters is the source of truth, and every change is dry-run, regenerated with OpenCASCADE, and checked against its declared intent before it is written. Exports STEP for CAD/CAM and STL for 3D printing.",
+  "author": {
+    "name": "rsasaki0109",
+    "url": "https://github.com/rsasaki0109"
+  },
+  "homepage": "https://github.com/rsasaki0109/MusubiCAD",
+  "repository": "https://github.com/rsasaki0109/MusubiCAD",
+  "license": "MIT OR Apache-2.0",
+  "keywords": [
+    "cad",
+    "parametric",
+    "mcp",
+    "step",
+    "stl",
+    "3d-printing",
+    "robotics",
+    "opencascade"
+  ],
+  "logo": "docs/assets/musubicad-mark.png",
+  "skills": "./skills/",
+  "mcpServers": "./plugin/mcp.json"
+}

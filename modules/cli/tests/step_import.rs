@@ -23,10 +23,10 @@ const VOLUME_TOLERANCE_M3: f64 = 1e-12;
 const BOUNDS_TOLERANCE_M: f64 = 1e-6;
 
 fn opencad(args: &[&str]) -> std::process::Output {
-    Command::new(env!("CARGO_BIN_EXE_opencad"))
+    Command::new(env!("CARGO_BIN_EXE_musubicad"))
         .args(args)
         .output()
-        .expect("run opencad")
+        .expect("run musubicad")
 }
 
 fn ok(output: std::process::Output) -> String {

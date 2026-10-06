@@ -8,7 +8,7 @@ Roadmap: MCAD-P7-010
 
 Kernel face and edge IDs connect regeneration to semantic references. They
 come from tessellation triangle face IDs, face discoveries, fillet/chamfer
-selectors, face derivation history, and `assign_face_ref`. `opencad regen
+selectors, face derivation history, and `assign_face_ref`. `musubicad regen
 --sync-topo-refs` persists them in `graph/semantic_refs.json` as
 `kernel_face_id` and `kernel_edge_id`, and it embeds them in generated IDs
 such as `ref:face:kernel_<id>`.
@@ -17,7 +17,7 @@ The OCCT backend defines these IDs as cadrum's `Face::id()` and `Edge::id()`,
 which is the address of the underlying `TShape`. Measurements on the current
 backend show three defects.
 
-1. **The IDs are not deterministic.** Running `opencad regen
+1. **The IDs are not deterministic.** Running `musubicad regen
    --sync-topo-refs` twice on copies of `examples/bracket.ocad.d` wrote
    different `kernel_face_id` values (for example `2268474746992` vs
    `1724170044832`), different generated reference IDs, and a different

@@ -1,4 +1,4 @@
-//! `opencad export` command (Task-125+).
+//! `musubicad export` command (Task-125+).
 
 use std::fs;
 use std::path::Path;
@@ -17,7 +17,7 @@ use opencad_kernel_occt::OcctGeometryKernel;
 
 pub use opencad_desktop::tessellate_active_body_detailed;
 
-/// Summary printed by `opencad export`.
+/// Summary printed by `musubicad export`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExportSummary {
     pub format: String,

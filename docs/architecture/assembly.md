@@ -73,9 +73,9 @@ Regeneration runs `solve_assembly_mates` when `mates` is non-empty, then places 
 ## CLI
 
 ```bash
-opencad new assembly.ocad.d assembly
-opencad regen assembly.ocad.d      # reports instances: N
-opencad export assembly.ocad.d out.stl
+musubicad new assembly.ocad.d assembly
+musubicad regen assembly.ocad.d      # reports instances: N
+musubicad export assembly.ocad.d out.stl
 ```
 
 See `examples/assembly_two_brackets.ocad.d`.

@@ -1,1 +1,1 @@
-//! `opencad validate` command (Task-124+).
+//! `musubicad validate` command (Task-124+).

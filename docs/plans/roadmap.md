@@ -330,7 +330,7 @@ non-goals are defined in the
 | MCAD-P6-003 | Semantic reference provenance | Exact/derived/fingerprint/ambiguous/missing status, candidate evidence, fail-closed repair patches | Complete |
 | MCAD-P6-004 | Executable design assertions | Typed unit-explicit engineering assertions evaluated by dry-run and regeneration | Complete |
 | MCAD-P6-005 | Git-native semantic merge | CLI merge driver, stable semantic conflicts, DesignPatch resolution, branch/merge golden workflow | Complete |
-| MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | In progress: `inspect_parameter` / `inspect_reference` queries (Agent API, MCP `query_document`, `opencad intent`); Desktop panel and failed-regeneration inspection remain |
+| MCAD-P6-006 | Unified intent inspector | One backend dependency/impact/reference/assertion/trace query surface across Desktop, CLI, and Agent API | In progress: `inspect_parameter` / `inspect_reference` queries (Agent API, MCP `query_document`, `musubicad intent`); Desktop panel and failed-regeneration inspection remain |
 
 MCAD-P6-003 is complete: `ReferenceProvenance` classifies every face/edge
 resolution as `exact`, `derived`, `fingerprint`, `ambiguous`, or `missing`,
@@ -338,7 +338,7 @@ records the source feature, role, scored candidate set, tolerance policy, and a
 human-readable reason, and refuses to pick among equal-score candidates. The
 `required` flag makes an ambiguous or missing reference fail closed instead of
 choosing by incidental kernel order. `RegenReport.reference_provenance`,
-`opencad regen`, and the design-review artifact surface the same status, and
+`musubicad regen`, and the design-review artifact surface the same status, and
 adversarial fixtures cover exact, derived, fingerprint, ambiguous, and missing
 outcomes deterministically.
 
@@ -346,7 +346,7 @@ MCAD-P6-004 is complete: serializable, unit-explicit `Assertion`s live in the
 `.ocad` document (`graph/assertions.json`), carry a stable id, name, severity
 (`required`/`advisory`), and a typed rule (parameter range, mass range,
 bounding-box limit, body count, required semantic reference, assembly DOF, and
-interference limit). `opencad regen` evaluates them against regenerated
+interference limit). `musubicad regen` evaluates them against regenerated
 evidence, the design review embeds the same results and rejects a change when a
 `required` assertion fails, and the actuator acceptance is covered by OCCT
 regression tests. `RequiredReference` assertions consume the P6-003 provenance.
@@ -361,13 +361,13 @@ restores the previous document outputs, and OCCT regressions prove that editing
 `bolt_circle_radius` leaves the base and hubs cached. Checked-in 22/100/250-node
 chain benchmarks gate deterministic call counts and cold/incremental equivalence.
 
-MCAD-P6-005 is complete: `opencad merge-driver` resolves `git merge` of
+MCAD-P6-005 is complete: `musubicad merge-driver` resolves `git merge` of
 expanded `.ocad.d` documents semantically
 ([ADR-015](../adr/ADR-015-git-merge-driver.md)). For each changed file it
 reconstructs the complete base, ours, and theirs documents from Git, runs the
 whole-state merge from MCAD-P7-001, and writes that file of the merged result,
 so the directory stays checksum-consistent. Conflicting intent stops the merge
-with typed conflicts, which `opencad conflicts` lists again. Uncertain cases
+with typed conflicts, which `musubicad conflicts` lists again. Uncertain cases
 fail closed to Git's ordinary conflicts. `modules/cli/tests/git_merge_driver.rs`
 merges real branches in a temporary repository on every CI run.
 
@@ -401,9 +401,9 @@ remove, or reorder parameters, sketches, constraints, or features.
 | ID | Scope | Deliverables | Status |
 |---|---|---|---|
 | MCAD-P7-001 | Structural DesignPatch | [ADR-013](../adr/ADR-013-structural-design-patch.md); add/remove/move operations with author-chosen IDs, final-state validation, derived feature graph, fail-closed removal, `DesignState` v2 revisions, structural diff/rebase | Complete (ADR accepted; slices 1–6 delivered) |
-| MCAD-P7-002 | MCP server | [ADR-014](../adr/ADR-014-mcp-server.md); `opencad mcp` over stdio delegating to the Agent API, authoring guide and patch schema resources, stdio end-to-end test authoring a part from an empty document | Complete |
-| MCAD-P7-003 | STEP export | Kernel-neutral `export_step`/`import_step` with millimetre units and deterministic headers; `opencad export *.step` for parts and assemblies; Agent and MCP parity | Complete |
-| MCAD-P7-004 | STEP import | [ADR-016](../adr/ADR-016-imported-step-solids.md); checksummed `imports/` attachments, `add/remove_attachment`, fail-closed `imported_solid` feature (new body, join, cut), `opencad import-step`, MCP `import_step` | Complete |
+| MCAD-P7-002 | MCP server | [ADR-014](../adr/ADR-014-mcp-server.md); `musubicad mcp` over stdio delegating to the Agent API, authoring guide and patch schema resources, stdio end-to-end test authoring a part from an empty document | Complete |
+| MCAD-P7-003 | STEP export | Kernel-neutral `export_step`/`import_step` with millimetre units and deterministic headers; `musubicad export *.step` for parts and assemblies; Agent and MCP parity | Complete |
+| MCAD-P7-004 | STEP import | [ADR-016](../adr/ADR-016-imported-step-solids.md); checksummed `imports/` attachments, `add/remove_attachment`, fail-closed `imported_solid` feature (new body, join, cut), `musubicad import-step`, MCP `import_step` | Complete |
 | MCAD-P7-005 | Sketch constraints | Angle, midpoint, symmetric, and tangent constraints with dimensionless or metre residuals, angle-expression resolution, overlays, and schema | Complete |
 | MCAD-P7-006 | Feature value validation | Dry-run rejection of degenerate lengths, counts, directions, and revolve angles for every patch and in whole-state validation | Complete |
 | MCAD-P7-007 | Shell feature | [ADR-017](../adr/ADR-017-shell-feature.md); `shell` with inward uniform wall, fail-closed open-face references resolved on the target body, `thickness_expr`, OCCT volume-loss guard, Mock stand-in, enclosure example | Complete |
@@ -411,7 +411,7 @@ remove, or reorder parameters, sketches, constraints, or features.
 | MCAD-P7-009 | Sketch freedom warnings | Dry-run warns `sketch_under_constrained` for added, edited, or parameter-driven sketches that keep degrees of freedom | Complete |
 | MCAD-P7-010 | Deterministic topology IDs | [ADR-018](../adr/ADR-018-deterministic-kernel-topology-ids.md); OCCT face/edge IDs are enumeration indices, stored IDs verified by role instead of history remap, reproducible `--sync-topo-refs` | Complete |
 | MCAD-P7-011 | Consumed references | [ADR-019](../adr/ADR-019-consumed-reference-provenance.md); provenance reports shell-opened face references as `consumed` (naming the feature) instead of `ambiguous` | Complete |
-| MCAD-P7-012 | MCP host evaluation | `tools/mcp_eval.py`: headless Claude Code tasks against `opencad mcp`, independently graded by regenerated volume and parameters; first baseline 3/3 | Complete |
+| MCAD-P7-012 | MCP host evaluation | `tools/mcp_eval.py`: headless Claude Code tasks against `musubicad mcp`, independently graded by regenerated volume and parameters; first baseline 3/3 | Complete |
 | MCAD-P7-013 | Exact circle profiles | [ADR-020](../adr/ADR-020-exact-circle-profiles.md); circle profiles reach OCCT as true circles (analytic hole/boss volumes), curved kernel faces classified as cylindrical, goldens re-blessed | Complete |
 | MCAD-P7-014 | Fully constrained examples | Bracket template and 12 example documents constrain base rectangle edges horizontal/vertical (via `examples/agent/constrain_bracket_base_patch.json`); parameter edits keep rectangles; skew-derived goldens corrected | Complete |
 | MCAD-P7-015 | Line and arc profiles | [ADR-021](../adr/ADR-021-line-arc-profiles.md); arcs with endpoint points join loops, solver holds endpoints on arcs, exact line/arc edges in OCCT, slot example and eval task | Complete |
@@ -483,7 +483,7 @@ additions the new base already contains and requires the rebased patch to
 apply to the new base. `semantic_three_way_merge` merges the complete v2 state
 by stable ID, merges feature display order with ID-ordered same-anchor
 inserts, and is independent of which side is "ours". The result must pass
-`validate_design_state`. `opencad merge` now writes back sketches, assertions,
+`validate_design_state`. `musubicad merge` now writes back sketches, assertions,
 and a re-derived Feature Graph; before this change the other side's sketch and
 assertion edits were silently dropped. Coverage is in
 `modules/file/tests/structural_merge.rs`,
@@ -512,6 +512,22 @@ the flagship rebuild.
 
 **Known risks:** feature input fields missing from graph derivation, verbose
 removal patches, larger revision payloads, and ID-naming burden on agents.
+
+## Phase 8 — Agent distribution
+
+**Objective:** make MusubiCAD a plugin that coding agents (Claude Code, Codex,
+Cursor, Gemini, and others) install in one step, and make every agent edit
+verified before it is written.
+
+**Dependencies:** Phase 7 (MCP server, STEP export, structural patches).
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P8-001 | Verified patch apply | [ADR-026](../adr/ADR-026-verified-patch-apply.md); render-free `verify_patch`; dry-run `verification`; apply refuses patches that do not regenerate or miss declared expected effects; regeneration errors name the failing feature | Complete |
+| MCAD-P8-002 | Review without a GPU | `musubicad review` and MCP `review_patch` write `review.json`, `review.html`, and `github-summary.md` with every check when no renderer is available; images are omitted and `images_skipped` says why; outputs with a GPU stay byte-identical | Complete |
+| MCAD-P8-003 | `musubicad` command name | The CLI binary, help, usage messages, docs, release workflow, and eval harness use `musubicad`; release archives keep `opencad` as a symlink (`opencad.cmd` on Windows); crate names and `opencad.*` JSON-RPC method names are unchanged wire/API identifiers | Complete |
+| MCAD-P8-004 | Verified CLI patch | `musubicad patch` refuses (document unchanged) a patch that does not regenerate or misses declared expected effects, prints the verified mass change, and offers `--no-verify` | Complete |
+| MCAD-P8-005 | Agent plugin and installer | [ADR-027](../adr/ADR-027-agent-plugin-distribution.md); `install.sh`/`install.ps1` with checksum verification; Claude Code marketplace, Codex, Cursor, and Gemini manifests launching `musubicad mcp`; `skills/musubicad` skill and `skills.sh.json`; manifest, skill, and installer contract test in CI | Complete (Windows host launch unverified) |
 
 ## Cross-phase verification matrix
 

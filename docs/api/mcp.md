@@ -1,6 +1,6 @@
 # MCP server
 
-`opencad mcp` serves the Model Context Protocol over stdio
+`musubicad mcp` serves the Model Context Protocol over stdio
 ([ADR-014](../adr/ADR-014-mcp-server.md)). Every tool delegates to the
 [Agent API](agent.md) or to a file-layer function the CLI already uses, so each
 change still goes through `DesignPatch` validation, transactions, and history.
@@ -8,14 +8,36 @@ No network listener is started.
 
 ## Setup
 
-Build or install the CLI, then register the server with an MCP host. For
-example, with Claude Code:
+Install the prebuilt CLI (one self-contained executable, checksum-verified;
+[ADR-027](../adr/ADR-027-agent-plugin-distribution.md)):
 
 ```bash
-claude mcp add musubicad -- opencad mcp
+curl -fsSL https://raw.githubusercontent.com/rsasaki0109/MusubiCAD/main/install.sh | sh
 ```
 
-Any host that launches a stdio MCP server with the command `opencad mcp` works
+On Windows PowerShell:
+`irm https://raw.githubusercontent.com/rsasaki0109/MusubiCAD/main/install.ps1 | iex`.
+
+Then add the plugin, which registers this server and the `musubicad` skill,
+in Claude Code:
+
+```bash
+claude plugin marketplace add rsasaki0109/MusubiCAD
+claude plugin install musubicad@musubicad
+```
+
+or register only the server:
+
+```bash
+claude mcp add musubicad -- musubicad mcp
+```
+
+The repository also carries Codex (`.codex-plugin/`), Cursor
+(`.cursor-plugin/`), and Gemini CLI (`gemini-extension.json`) manifests and a
+`skills.sh.json` listing; they launch the same server but have not been
+verified on those hosts yet.
+
+Any host that launches a stdio MCP server with the command `musubicad mcp` works
 the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,
 `2025-03-26`, and `2024-11-05`.
 
@@ -29,11 +51,11 @@ the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,
 | `explain_document` | `path` | no | `opencad.explain_document` |
 | `query_document` | `path`, `query` | no | `opencad.query_document` |
 | `authoring_patch` | `path` | no | `opencad_ai::authoring_patch` |
-| `patch_dry_run` | `path`, `patch` | no | `opencad.patch_dry_run_document` |
-| `review_patch` | `path`, `patch`, `output_dir` | review artifacts only | `opencad review` |
-| `patch_apply` | `path`, `patch` | yes | `opencad.patch_apply_document` |
+| `patch_dry_run` | `path`, `patch`, `verify` | no | `opencad.patch_dry_run_document` |
+| `review_patch` | `path`, `patch`, `output_dir` | review artifacts only | `musubicad review` |
+| `patch_apply` | `path`, `patch`, `verify` | yes, only when verified | `opencad.patch_apply_document` |
 | `regen_document` | `path` | no | `opencad.regen_document` |
-| `import_step` | `path`, `step_path`, `feature_id`, `name`, `operation`, `target_feature`, `translation_mm` | yes | `opencad import-step` |
+| `import_step` | `path`, `step_path`, `feature_id`, `name`, `operation`, `target_feature`, `translation_mm` | yes | `musubicad import-step` |
 | `export_document` | `path`, `output` (`.step`/`.stp`, `.stl`, `.svg`) | output file only | `opencad.export` |
 | `diff_document` | `before`, `after` or `patch`, `geometry` | no | `opencad.diff_document` |
 
@@ -44,8 +66,17 @@ unknown references, and conflict reasons are named by stable ID so the agent
 can repair its patch. Unknown tools and methods are JSON-RPC errors (`-32602`
 and `-32601`).
 
+`patch_dry_run` and `patch_apply` regenerate the model before and after the
+patch and check the patch's declared `expected_effects`
+([geometry verification](agent.md#geometry-verification)). `patch_apply`
+refuses a patch whose model does not regenerate or whose expected effects do
+not hold, and the error names the failing feature or effect; the document is
+not written. Pass `verify: false` only for a staged authoring step that cannot
+regenerate yet.
+
 `new_document` never overwrites an existing path. `review_patch` also writes
-the submitted patch as `patch.json` in `output_dir`. A design without a body
+the submitted patch as `patch.json` in `output_dir`. On a host without a GPU
+adapter it writes the reports without images and sets `images_skipped`. A design without a body
 before the patch (for example, a new document) is reviewed against an empty
 "before" frame.
 
@@ -59,10 +90,10 @@ before the patch (for example, a new document) is reviewed against an empty
 ## Example session
 
 The CLI integration test `modules/cli/tests/mcp.rs` drives a real
-`opencad mcp` process:
+`musubicad mcp` process:
 
 1. `new_document` creates an empty part.
-2. `patch_dry_run` validates
+2. `patch_dry_run` validates and verifies
    [`examples/agent/author_plate_from_empty_patch.json`](../../examples/agent/author_plate_from_empty_patch.json).
 3. `review_patch` renders the before/after review.
 4. `patch_apply` writes the part.
@@ -73,15 +104,15 @@ The CLI integration test `modules/cli/tests/mcp.rs` drives a real
 
 `tools/mcp_eval.py` measures how well a real MCP host authors parts with
 these tools. It runs Claude Code headless, one task at a time, against
-`opencad mcp` with only the `musubicad` tools allowed. It then checks the
+`musubicad mcp` with only the `musubicad` tools allowed. It then checks the
 result independently:
 
-- `opencad regen` must report the analytic volume within 0.1 mm³;
+- `musubicad regen` must report the analytic volume within 0.1 mm³;
 - every required named parameter must exist.
 - for assembly tasks, the instance and active mate counts must match, and
   `mate_max_error` must be at most 1 µm;
 - for drawing tasks, the view projections and dimension lengths (within
-  1 µm) must match, and `opencad export` must render the drawing to SVG.
+  1 µm) must match, and `musubicad export` must render the drawing to SVG.
   Drawing tasks have no expected volume.
 
 The report records pass/fail, volume, turns, cost, and duration for each
@@ -101,14 +132,14 @@ task. The tasks are defined in `tools/mcp_eval_tasks.json`:
 | `bracket_drawing` | Draw the bracket (created by a `new` setup step) in front and top views with an 80 mm width dimension | — |
 | `assembly_third_bracket` | Add a third bracket instance to the two-bracket assembly and place it with a 120 mm distance mate | 84 986.3 mm³ |
 
-`setup` lists `opencad` argument lists that run before the agent starts.
+`setup` lists `musubicad` argument lists that run before the agent starts.
 Their arguments may use `{root}`, `{workdir}`, and `{document}`. Expected
 volumes are analytic, except `fillet_bracket_top`, which uses the verified
 fillet golden value. Sketch circles reach the kernel as exact
 circles (ADR-020). The first baseline below still built 32-sided polygons.
 
 ```bash
-python tools/mcp_eval.py --opencad target/debug/opencad.exe --out eval.json
+python tools/mcp_eval.py --musubicad target/debug/musubicad.exe --out eval.json
 python tools/mcp_eval.py --only edit_bracket
 python tools/mcp_eval.py --self-test   # checker only, no model calls
 ```

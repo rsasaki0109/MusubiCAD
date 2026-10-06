@@ -1,4 +1,4 @@
-//! `opencad agent` JSON-RPC stdio server (Task-156+).
+//! `musubicad agent` JSON-RPC stdio server (Task-156+).
 
 use std::io::{self, BufRead, Write};
 
@@ -18,6 +18,7 @@ use crate::mesh;
 use crate::pick::{self, PickOptions};
 use crate::plugin::{self, PluginHost};
 use crate::regen::{self, RegenBodyParams, RegenResult};
+use crate::review::verification_report;
 use crate::scene_query;
 use crate::topo_sync;
 use serde::{Deserialize, Serialize};
@@ -44,6 +45,16 @@ pub struct DocumentPatchParams {
     pub patch: opencad_ai::DesignPatch,
     #[serde(default)]
     pub history: Option<DocumentHistory>,
+    /// Regenerate before and after the patch and check declared expected
+    /// effects.  `patch_apply_document` refuses a patch that fails this
+    /// check.  Defaults to `true`; set `false` only for staged authoring
+    /// steps that are known not to regenerate yet.
+    #[serde(default = "default_verify")]
+    pub verify: bool,
+}
+
+fn default_verify() -> bool {
+    true
 }
 
 /// Transport value for file-backed undo/redo methods. The history snapshots
@@ -357,14 +368,36 @@ fn handle_patch_dry_run_document(request: &JsonRpcRequest) -> JsonRpcResponse {
             );
         }
     };
-    match read_ocad(&params.path) {
-        Ok(doc) => match serde_json::to_value(dry_run_patch_document(&doc, &params.patch)) {
-            Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
-            Err(err) => JsonRpcResponse::error(
+    let doc = match read_ocad(&params.path) {
+        Ok(doc) => doc,
+        Err(err) => {
+            return JsonRpcResponse::error(
                 request.id.clone(),
                 JsonRpcError::application_error(err.to_string()),
-            ),
-        },
+            );
+        }
+    };
+    let report = dry_run_patch_document(&doc, &params.patch);
+    // Geometry is only worth checking once the patch itself is valid.
+    let verification = (params.verify && !report.validation.has_errors())
+        .then(|| verification_report(&params.path, &doc, &params.patch));
+    match serde_json::to_value(report) {
+        Ok(mut value) => {
+            if let (Some(object), Some(verification)) = (value.as_object_mut(), verification) {
+                match serde_json::to_value(verification) {
+                    Ok(verification) => {
+                        object.insert("verification".into(), verification);
+                    }
+                    Err(err) => {
+                        return JsonRpcResponse::error(
+                            request.id.clone(),
+                            JsonRpcError::application_error(err.to_string()),
+                        );
+                    }
+                }
+            }
+            JsonRpcResponse::success(request.id.clone(), value)
+        }
         Err(err) => JsonRpcResponse::error(
             request.id.clone(),
             JsonRpcError::application_error(err.to_string()),
@@ -391,6 +424,21 @@ fn handle_patch_apply_document(request: &JsonRpcRequest) -> JsonRpcResponse {
             );
         }
     };
+    let verification = if params.verify {
+        let verification = verification_report(&params.path, &doc, &params.patch);
+        if !verification.passed {
+            return JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::application_error(format!(
+                    "patch rejected; the document was not changed: {}",
+                    verification.failure_summary()
+                )),
+            );
+        }
+        Some(verification)
+    } else {
+        None
+    };
     let mut history = params.history.unwrap_or_default();
     if let Err(err) =
         apply_patch_with_history(&mut doc, &params.patch, &mut history, "Apply DesignPatch")
@@ -411,6 +459,12 @@ fn handle_patch_apply_document(request: &JsonRpcRequest) -> JsonRpcResponse {
         Ok(mut value) => {
             if let Some(object) = value.as_object_mut() {
                 object.insert("patched".into(), serde_json::json!(params.path));
+                if let Some(verification) = verification {
+                    object.insert(
+                        "verification".into(),
+                        serde_json::to_value(verification).unwrap_or(Value::Null),
+                    );
+                }
             }
             JsonRpcResponse::success(request.id.clone(), value)
         }
@@ -997,6 +1051,183 @@ mod tests {
         let restored = read_ocad(&doc_path).expect("read");
         let values = opencad_graph::evaluate_param_graph(&restored.parameters).expect("eval");
         assert!((values["width"] - 0.1).abs() < 1e-9);
+    }
+
+    /// Bearing carrier copied to a temp dir; `bore_diameter` starts at 18 mm.
+    fn bearing_carrier_copy(dir: &Path) -> String {
+        let source = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../examples/bearing_carrier.ocad.d"
+        );
+        let doc = read_ocad(source).expect("read example");
+        let path = dir.join("bearing_carrier.ocad.d");
+        write_expanded_dir(&path, &doc).expect("write copy");
+        path.to_str().expect("path").to_string()
+    }
+
+    fn bore_patch(expr: &str, expected_effects: serde_json::Value) -> serde_json::Value {
+        serde_json::json!({
+            "intent": format!("Set the bearing bore to {expr}"),
+            "operations": [{ "type": "set_parameter", "id": "param:bore_diameter", "expr": expr }],
+            "expected_effects": expected_effects,
+        })
+    }
+
+    fn patch_request(method: &str, params: serde_json::Value) -> JsonRpcRequest {
+        JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: serde_json::json!(7),
+            method: method.into(),
+            params,
+        }
+    }
+
+    fn bore_expr(path: &str) -> String {
+        read_ocad(path)
+            .expect("read")
+            .parameters
+            .get("param:bore_diameter")
+            .expect("bore parameter")
+            .expr
+            .clone()
+    }
+
+    #[test]
+    fn dry_run_document_reports_the_feature_that_fails_to_regenerate() {
+        let dir = tempdir().expect("tempdir");
+        let path = bearing_carrier_copy(dir.path());
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_dry_run_document",
+            serde_json::json!({ "path": path, "patch": bore_patch("200 mm", serde_json::json!([])) }),
+        ));
+        let result = response.result.expect("dry-run result");
+        let verification = &result["verification"];
+        assert_eq!(verification["passed"], false);
+        let error = verification["error"].as_str().expect("error");
+        assert!(error.contains("feature 'feature:bearing_bore'"), "{error}");
+        assert_eq!(bore_expr(&path), "18 mm");
+    }
+
+    #[test]
+    fn apply_document_rejects_a_patch_that_does_not_regenerate() {
+        let dir = tempdir().expect("tempdir");
+        let path = bearing_carrier_copy(dir.path());
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({ "path": path, "patch": bore_patch("200 mm", serde_json::json!([])) }),
+        ));
+        let message = response.error.expect("rejected").message;
+        assert!(message.contains("document was not changed"), "{message}");
+        assert!(message.contains("feature:bearing_bore"), "{message}");
+        assert_eq!(bore_expr(&path), "18 mm");
+    }
+
+    #[test]
+    fn apply_document_rejects_an_unmet_expected_effect() {
+        let dir = tempdir().expect("tempdir");
+        let path = bearing_carrier_copy(dir.path());
+        // A smaller bore adds material, so a mass decrease cannot hold.
+        let effects = serde_json::json!([{ "type": "mass_delta_kg", "min": -1.0, "max": 0.0 }]);
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({ "path": path, "patch": bore_patch("8 mm", effects) }),
+        ));
+        let message = response.error.expect("rejected").message;
+        assert!(message.contains("expected effect not met"), "{message}");
+        assert_eq!(bore_expr(&path), "18 mm");
+    }
+
+    #[test]
+    fn apply_document_writes_a_verified_patch_and_returns_its_evidence() {
+        let dir = tempdir().expect("tempdir");
+        let path = bearing_carrier_copy(dir.path());
+        let effects = serde_json::json!([{ "type": "mass_delta_kg", "min": 0.0, "max": 1.0 }]);
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({ "path": path, "patch": bore_patch("8 mm", effects) }),
+        ));
+        let result = response.result.expect("applied");
+        let verification = &result["verification"];
+        assert_eq!(verification["passed"], true);
+        assert_eq!(verification["expected_effects"][0]["passed"], true);
+        let geometry = &verification["diff"]["geometry"];
+        let before = geometry["mass_before"].as_f64().expect("mass before");
+        let after = geometry["mass_after"].as_f64().expect("mass after");
+        assert!(after > before, "{before} -> {after}");
+        assert_eq!(bore_expr(&path), "8 mm");
+    }
+
+    #[test]
+    fn apply_document_without_verify_skips_the_geometry_gate() {
+        let dir = tempdir().expect("tempdir");
+        let path = bearing_carrier_copy(dir.path());
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({
+                "path": path,
+                "patch": bore_patch("200 mm", serde_json::json!([])),
+                "verify": false,
+            }),
+        ));
+        let result = response.result.expect("applied");
+        assert!(result.get("verification").is_none());
+        assert_eq!(bore_expr(&path), "200 mm");
+    }
+
+    #[test]
+    fn apply_document_accepts_a_staged_step_that_has_no_solid_yet() {
+        let dir = tempdir().expect("tempdir");
+        let path = dir.path().join("plate.ocad.d");
+        let metadata = DocumentMetadata::new(DocumentId::new("doc:plate").expect("id"), "Plate");
+        write_expanded_dir(&path, &OcadDocument::new(metadata)).expect("write");
+        let full: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../examples/agent/author_plate_from_empty_patch.json"
+        ))
+        .expect("example patch");
+        // Parameters, both sketches, and the sketch feature, but no extrude.
+        let operations = full["operations"].as_array().expect("operations");
+        let sketch_feature = operations
+            .iter()
+            .position(|op| op["node"]["id"] == "feature:sketch_base")
+            .expect("sketch feature");
+        let staged = serde_json::json!({ "operations": operations[..=sketch_feature] });
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({ "path": path.to_str().expect("path"), "patch": staged }),
+        ));
+        let result = response.result.expect("staged step applied");
+        assert_eq!(result["verification"]["passed"], true);
+        assert_eq!(result["verification"]["geometry"]["after_triangles"], 0);
+    }
+
+    #[test]
+    fn verification_accepts_empty_assemblies_and_drawings() {
+        let dir = tempdir().expect("tempdir");
+        let documents = [
+            (
+                "assembly.ocad.d",
+                DocumentMetadata::new_assembly(DocumentId::new("doc:asm").expect("id"), "A"),
+            ),
+            (
+                "drawing.ocad.d",
+                DocumentMetadata::new_drawing(DocumentId::new("doc:drw").expect("id"), "D"),
+            ),
+        ];
+        for (name, metadata) in documents {
+            let path = dir.path().join(name);
+            write_expanded_dir(&path, &OcadDocument::new(metadata)).expect("write");
+            let patch = serde_json::json!({ "operations": [
+                { "type": "add_parameter", "id": "param:gap", "name": "gap", "expr": "2 mm" }
+            ]});
+            let response = handle_agent_request(&patch_request(
+                "opencad.patch_apply_document",
+                serde_json::json!({ "path": path.to_str().expect("path"), "patch": patch }),
+            ));
+            let result = response
+                .result
+                .unwrap_or_else(|| panic!("{name}: {:?}", response.error));
+            assert_eq!(result["verification"]["passed"], true, "{name}");
+        }
     }
 
     #[test]

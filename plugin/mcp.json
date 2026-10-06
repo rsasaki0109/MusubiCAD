@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "musubicad": {
+      "command": "musubicad",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

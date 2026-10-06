@@ -4,10 +4,10 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn run_cli(args: &[&str]) -> std::process::Output {
-    Command::new(env!("CARGO_BIN_EXE_opencad"))
+    Command::new(env!("CARGO_BIN_EXE_musubicad"))
         .args(args)
         .output()
-        .expect("run opencad")
+        .expect("run musubicad")
 }
 
 fn bracket_fixture() -> PathBuf {
@@ -43,7 +43,7 @@ fn params_json_lists_evaluated_width_with_explicit_units() {
     assert_eq!(width["value_mm"], 80.0);
 }
 
-/// `opencad merge` writes back every merged collection: structural edits from
+/// `musubicad merge` writes back every merged collection: structural edits from
 /// both sides survive, including theirs' sketch edits, and the Feature Graph
 /// is re-derived when features change (ADR-013 slice 5).
 #[test]

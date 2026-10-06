@@ -1,17 +1,17 @@
-//! `opencad review` — self-contained DesignPatch review artifacts.
+//! `musubicad review` — self-contained DesignPatch review artifacts.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use opencad_ai::{
     ensure_patch_valid, evaluate_assertions, required_assertions_pass, AssertionContext,
-    AssertionResult, ExpectedEffect,
+    AssertionResult, DesignPatch, ExpectedEffect,
 };
 use opencad_core::{OpenCadError, Result};
-use opencad_desktop::{load_assembly_scene_from_document, load_view_data, tessellate_active_body};
+use opencad_desktop::{load_assembly_scene_from_document, load_view_data};
 use opencad_feature::FeatureRegistry;
 use opencad_file::{apply_patch_to_document, dry_run_patch_document, read_ocad, OcadDocument};
-use opencad_geometry::{GeometryKernel, ReferenceProvenance};
+use opencad_geometry::{GeometryKernel, ReferenceProvenance, TessellationSettings};
 use opencad_graph::{evaluate_param_graph, DesignDiff, SemanticChange};
 use opencad_kernel_occt::OcctGeometryKernel;
 use opencad_render::{
@@ -28,7 +28,7 @@ const REVIEW_WIDTH_PX: u32 = 800;
 const REVIEW_HEIGHT_PX: u32 = 450;
 const REVIEW_FPS: u32 = 8;
 
-/// Parsed `opencad review` arguments.
+/// Parsed `musubicad review` arguments.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReviewArgs {
     pub document_path: String,
@@ -45,6 +45,10 @@ pub struct ReviewGeometry {
     pub after_triangles: usize,
     pub before_interference_count: Option<usize>,
     pub after_interference_count: Option<usize>,
+    /// Why the document did not regenerate before the patch, when the patch
+    /// repairs an already broken document.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub before_regen_error: Option<String>,
 }
 
 /// Result of checking one declared expected effect.
@@ -65,9 +69,15 @@ pub struct ReviewArtifact {
     pub diff: DesignDiff,
     pub geometry: ReviewGeometry,
     pub expected_effects: Vec<EffectCheck>,
-    pub before_image: String,
-    pub after_image: String,
-    pub comparison_gif: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub before_image: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after_image: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub comparison_gif: Option<String>,
+    /// Why no images were rendered; absent when they were.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub images_skipped: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub before_drawing_svg: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -111,7 +121,7 @@ pub fn parse_review_args(args: &[String]) -> Result<ReviewArgs> {
     Ok(ReviewArgs {
         document_path: positional.first().cloned().ok_or_else(|| {
             OpenCadError::validation(
-                "usage: opencad review <document> <patch.json> --output <directory>",
+                "usage: musubicad review <document> <patch.json> --output <directory>",
             )
         })?,
         patch_path: positional
@@ -123,14 +133,129 @@ pub fn parse_review_args(args: &[String]) -> Result<ReviewArgs> {
     })
 }
 
-/// Generate review JSON, HTML, PNGs, and an animated Before/After GIF.
-pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
-    let before = read_ocad(&args.document_path)?;
-    let patch = read_patch_file(&args.patch_path)?;
-    let dry_run = dry_run_patch_document(&before, &patch);
+/// Render-free evidence that a patch regenerates and does what it declares:
+/// everything a review checks except the images.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PatchVerification {
+    pub diff: DesignDiff,
+    pub geometry: ReviewGeometry,
+    pub expected_effects: Vec<EffectCheck>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reference_provenance: Vec<ReferenceProvenance>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub assertions: Vec<AssertionResult>,
+}
+
+impl PatchVerification {
+    /// Declared expected effects that did not hold.
+    pub fn failed_expected_effects(&self) -> Vec<&EffectCheck> {
+        self.expected_effects
+            .iter()
+            .filter(|check| !check.passed)
+            .collect()
+    }
+}
+
+/// Outcome of [`verify_patch`] as reported by the Agent API and MCP.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VerificationReport {
+    /// The patched document regenerates, required assertions hold, and every
+    /// declared expected effect passed.
+    pub passed: bool,
+    /// Why verification could not complete (for example the failing feature).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<PatchVerification>,
+}
+
+impl VerificationReport {
+    /// One line naming everything that failed, for error messages.
+    pub fn failure_summary(&self) -> String {
+        if let Some(error) = &self.error {
+            return error.clone();
+        }
+        let failed: Vec<String> = self
+            .evidence
+            .as_ref()
+            .map(|evidence| {
+                evidence
+                    .failed_expected_effects()
+                    .into_iter()
+                    .map(|check| format!("expected effect not met ({})", check.message))
+                    .collect()
+            })
+            .unwrap_or_default();
+        if failed.is_empty() {
+            "verification passed".into()
+        } else {
+            failed.join("; ")
+        }
+    }
+}
+
+/// Run [`verify_patch`] and fold its outcome into a serializable report.
+pub fn verification_report(
+    document_path: &str,
+    before: &OcadDocument,
+    patch: &DesignPatch,
+) -> VerificationReport {
+    match verify_patch(document_path, before, patch) {
+        Ok(evidence) => VerificationReport {
+            passed: evidence.failed_expected_effects().is_empty(),
+            error: None,
+            evidence: Some(evidence),
+        },
+        Err(error) => VerificationReport {
+            passed: false,
+            error: Some(error.to_string()),
+            evidence: None,
+        },
+    }
+}
+
+/// Verification plus the regenerated scenes a renderer needs.
+struct VerifiedPatch {
+    after: OcadDocument,
+    verification: PatchVerification,
+    before_scene: RenderScene,
+    after_scene: RenderScene,
+}
+
+/// Validate a patch, apply it to a copy of `before`, regenerate both sides,
+/// and check assertions, interference, and declared expected effects.
+///
+/// Needs no GPU.  Fails when the patch is invalid, when either side does not
+/// regenerate (the error names the failing feature), or when a required
+/// document assertion is violated.  `document_path` resolves assembly
+/// children and drawing models; the document on disk is never written.
+pub fn verify_patch(
+    document_path: &str,
+    before: &OcadDocument,
+    patch: &DesignPatch,
+) -> Result<PatchVerification> {
+    verify_patch_with_scenes(document_path, before, patch).map(|verified| verified.verification)
+}
+
+fn verify_patch_with_scenes(
+    document_path: &str,
+    before: &OcadDocument,
+    patch: &DesignPatch,
+) -> Result<VerifiedPatch> {
+    let dry_run = dry_run_patch_document(before, patch);
     ensure_patch_valid(&dry_run)?;
     let mut after = before.clone();
-    apply_patch_to_document(&mut after, &patch)?;
+    apply_patch_to_document(&mut after, patch)?;
+
+    // A document that is already broken may be repaired by the patch, so a
+    // failing "before" is evidence to report, not a reason to reject.
+    let (before_scene, before_interference_count, before_regen_error) =
+        match document_scene(document_path, before) {
+            Ok((scene, interference)) => (scene, interference, None),
+            Err(error) => (RenderScene::empty()?, None, Some(error.to_string())),
+        };
+    let (after_scene, after_interference_count) = document_scene(document_path, &after)
+        .map_err(|error| error.with_context("patched document does not regenerate"))?;
 
     let reference_provenance = document_reference_provenance(&after);
     let assertions = document_assertion_results(&after);
@@ -140,54 +265,85 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
         ));
     }
     let diff = build_document_diff(
-        &before,
+        before,
         &after,
         DiffOptions {
             json: true,
-            geometry: true,
+            geometry: before_regen_error.is_none(),
         },
     )?;
-
-    let (before_scene, before_interference_count) = document_scene(&args.document_path, &before)?;
-    let (after_scene, after_interference_count) = document_scene(&args.document_path, &after)?;
-    let renderer = OffscreenRenderer::new()?;
-    let mut combined_bounds = before_scene.bounds;
-    combined_bounds.merge(&after_scene.bounds);
-    let camera = OrbitCamera::fit_bounds(
-        &combined_bounds,
-        REVIEW_WIDTH_PX as f32 / REVIEW_HEIGHT_PX as f32,
-    );
-    let after_image = render_review_image(&renderer, &after_scene, &camera)?;
-    let before_image = if before_scene.meshes.is_empty() {
-        blank_like(&after_image)
-    } else {
-        render_review_image(&renderer, &before_scene, &camera)?
-    };
     let expected_effects = check_expected_effects(
         &patch.expected_effects,
-        &before,
+        before,
         &after,
         &diff,
         after_interference_count,
     );
+    let verification = PatchVerification {
+        diff,
+        geometry: ReviewGeometry {
+            before_bounds_m: [before_scene.bounds.min, before_scene.bounds.max],
+            after_bounds_m: [after_scene.bounds.min, after_scene.bounds.max],
+            before_triangles: before_scene.triangle_count(),
+            after_triangles: after_scene.triangle_count(),
+            before_interference_count,
+            after_interference_count,
+            before_regen_error,
+        },
+        expected_effects,
+        reference_provenance,
+        assertions,
+    };
+    Ok(VerifiedPatch {
+        after,
+        verification,
+        before_scene,
+        after_scene,
+    })
+}
+
+/// Generate review JSON, HTML, PNGs, and an animated Before/After GIF.
+pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
+    generate_review_with_renderer(args, OffscreenRenderer::new())
+}
+
+/// [`generate_review`] with an explicit renderer; an `Err` renderer writes
+/// the reports without images.
+fn generate_review_with_renderer(
+    args: &ReviewArgs,
+    renderer: Result<OffscreenRenderer>,
+) -> Result<ReviewArtifact> {
+    let before = read_ocad(&args.document_path)?;
+    let patch = read_patch_file(&args.patch_path)?;
+    let VerifiedPatch {
+        after,
+        verification,
+        before_scene,
+        after_scene,
+    } = verify_patch_with_scenes(&args.document_path, &before, &patch)?;
+    let PatchVerification {
+        diff,
+        geometry,
+        expected_effects,
+        reference_provenance,
+        assertions,
+    } = verification;
 
     let output = Path::new(&args.output_dir);
     fs::create_dir_all(output).map_err(io_error("create review directory"))?;
-    write_png(
-        output.join("before.png"),
-        before_image.width,
-        before_image.height,
-        &before_image.rgba,
-    )?;
-    write_png(
-        output.join("after.png"),
-        after_image.width,
-        after_image.height,
-        &after_image.rgba,
-    )?;
-    let labels = ReviewGifLabels::from_review(&diff, &expected_effects);
-    let frames = comparison_frames(&before_image, &after_image, &labels, REVIEW_FPS)?;
-    write_gif_frames(&frames, REVIEW_FPS, output.join("comparison.gif"))?;
+    // Images are evidence for humans; the checks above are complete without
+    // them.  Without a GPU adapter (headless servers, CI without Mesa, cloud
+    // agents) the review still writes its reports and says why images are
+    // missing.
+    let images_skipped = match renderer {
+        Ok(renderer) => {
+            let labels = ReviewGifLabels::from_review(&diff, &expected_effects);
+            write_review_images(&renderer, &before_scene, &after_scene, &labels, output)?;
+            None
+        }
+        Err(error) => Some(format!("no renderer available ({error})")),
+    };
+    let image = |name: &str| images_skipped.is_none().then(|| name.to_string());
 
     let drawing_assets: Option<(String, String)> = if before.drawing.is_some() {
         let (before_svg, _) = crate::export::render_drawing_svg(&args.document_path, &before)?;
@@ -207,18 +363,12 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
         rationale: patch.rationale,
         patch_file: file_name(&args.patch_path),
         diff,
-        geometry: ReviewGeometry {
-            before_bounds_m: [before_scene.bounds.min, before_scene.bounds.max],
-            after_bounds_m: [after_scene.bounds.min, after_scene.bounds.max],
-            before_triangles: before_scene.triangle_count(),
-            after_triangles: after_scene.triangle_count(),
-            before_interference_count,
-            after_interference_count,
-        },
+        geometry,
         expected_effects,
-        before_image: "before.png".into(),
-        after_image: "after.png".into(),
-        comparison_gif: "comparison.gif".into(),
+        before_image: image("before.png"),
+        after_image: image("after.png"),
+        comparison_gif: image("comparison.gif"),
+        images_skipped,
         before_drawing_svg: drawing_assets.as_ref().map(|assets| assets.0.clone()),
         after_drawing_svg: drawing_assets.map(|assets| assets.1),
         reference_provenance,
@@ -236,17 +386,57 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
     Ok(artifact)
 }
 
+/// Render before/after PNGs and the comparison GIF into `output`.
+fn write_review_images(
+    renderer: &OffscreenRenderer,
+    before_scene: &RenderScene,
+    after_scene: &RenderScene,
+    labels: &ReviewGifLabels,
+    output: &Path,
+) -> Result<()> {
+    let mut combined_bounds = before_scene.bounds;
+    combined_bounds.merge(&after_scene.bounds);
+    let camera = OrbitCamera::fit_bounds(
+        &combined_bounds,
+        REVIEW_WIDTH_PX as f32 / REVIEW_HEIGHT_PX as f32,
+    );
+    let after_image = render_review_image(renderer, after_scene, &camera)?;
+    let before_image = if before_scene.meshes.is_empty() {
+        blank_like(&after_image)
+    } else {
+        render_review_image(renderer, before_scene, &camera)?
+    };
+    write_png(
+        output.join("before.png"),
+        before_image.width,
+        before_image.height,
+        &before_image.rgba,
+    )?;
+    write_png(
+        output.join("after.png"),
+        after_image.width,
+        after_image.height,
+        &after_image.rgba,
+    )?;
+    let frames = comparison_frames(&before_image, &after_image, labels, REVIEW_FPS)?;
+    write_gif_frames(&frames, REVIEW_FPS, output.join("comparison.gif"))?;
+    Ok(())
+}
+
 fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option<usize>)> {
-    if doc.assembly.is_some() {
+    // Documents that hold nothing to show yet (a new assembly without
+    // instances, a drawing without views) are reviewed against an empty scene.
+    if let Some(assembly) = &doc.assembly {
+        if assembly.instances.is_empty() {
+            return Ok((RenderScene::empty()?, Some(0)));
+        }
         let (scene, interference_count) = load_assembly_scene_from_document(path, doc)?;
         return Ok((scene, Some(interference_count)));
     }
     if let Some(drawing) = &doc.drawing {
-        let view = drawing
-            .sheets
-            .first()
-            .and_then(|sheet| sheet.views.first())
-            .ok_or_else(|| OpenCadError::validation("drawing has no view to review"))?;
+        let Some(view) = drawing.sheets.first().and_then(|sheet| sheet.views.first()) else {
+            return Ok((RenderScene::empty()?, None));
+        };
         let root = if Path::new(path).extension().and_then(|ext| ext.to_str()) == Some("ocad") {
             Path::new(path).parent().unwrap_or_else(|| Path::new("."))
         } else {
@@ -259,16 +449,23 @@ fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option
             })?)?;
         return Ok((data.scene, None));
     }
-    // A part authored from an empty document has no body before the patch;
-    // review it against an empty scene.  A part that has features but no body
-    // is still an error.
-    if doc.feature_nodes.is_empty() {
-        return Ok((RenderScene::empty()?, None));
-    }
+    // Regenerate first so a failing feature is an error.  A part that
+    // regenerates without a solid yet (a new document, or a staged authoring
+    // step with only sketches) is reviewed against an empty scene.
     let parameters = doc.parameters.clone();
     let refs = doc.semantic_refs.clone();
     let mut model = doc.clone().into_part_model();
-    let mesh = tessellate_active_body(&mut model, Some(&parameters), Some(&refs))?;
+    let kernel = OcctGeometryKernel::new();
+    model.regenerate(
+        &kernel,
+        &FeatureRegistry::with_defaults(),
+        Some(&parameters),
+        Some(&refs),
+    )?;
+    let Some(body) = model.active_body() else {
+        return Ok((RenderScene::empty()?, None));
+    };
+    let mesh = kernel.tessellate(body, &TessellationSettings::default())?;
     Ok((RenderScene::from_mesh_set(&mesh)?, None))
 }
 
@@ -848,12 +1045,33 @@ fn review_html(artifact: &ReviewArtifact) -> Result<String> {
             .as_deref()
             .unwrap_or("No rationale supplied"),
     );
+    let images = match (
+        &artifact.comparison_gif,
+        &artifact.before_image,
+        &artifact.after_image,
+    ) {
+        (Some(gif), Some(before), Some(after)) => format!(
+            "<img class=\"hero\" src=\"{}\" alt=\"Before and after geometry\"><section class=\"compare\"><figure><img src=\"{}\"><figcaption>Before</figcaption></figure><figure><img src=\"{}\"><figcaption>After</figcaption></figure></section>",
+            html_escape(gif),
+            html_escape(before),
+            html_escape(after)
+        ),
+        _ => format!(
+            "<p style=\"background:#2a2410;color:#ffd77a;padding:12px 16px;border-radius:10px\">Images were not rendered: {}. The diff and checks below are complete.</p>",
+            html_escape(
+                artifact
+                    .images_skipped
+                    .as_deref()
+                    .unwrap_or("no renderer available")
+            )
+        ),
+    };
     let drawing = match (&artifact.before_drawing_svg, &artifact.after_drawing_svg) {
         (Some(before), Some(after)) => format!("<h2>Drawing impact</h2><section class=\"compare\"><figure><img src=\"{}\"><figcaption>Before drawing</figcaption></figure><figure><img src=\"{}\"><figcaption>After drawing</figcaption></figure></section>", html_escape(before), html_escape(after)),
         _ => String::new(),
     };
     Ok(format!(
-        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>MusubiCAD Review</title><style>{}</style></head><body><main><p class=\"eyebrow\">MUSUBICAD DESIGN REVIEW</p><h1>{intent}</h1><p>{rationale}</p><img class=\"hero\" src=\"comparison.gif\" alt=\"Before and after geometry\"><section class=\"compare\"><figure><img src=\"before.png\"><figcaption>Before</figcaption></figure><figure><img src=\"after.png\"><figcaption>After</figcaption></figure></section>{drawing}<h2>Semantic and geometric diff</h2><pre>{diff_json}</pre></main></body></html>\n",
+        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>MusubiCAD Review</title><style>{}</style></head><body><main><p class=\"eyebrow\">MUSUBICAD DESIGN REVIEW</p><h1>{intent}</h1><p>{rationale}</p>{images}{drawing}<h2>Semantic and geometric diff</h2><pre>{diff_json}</pre></main></body></html>\n",
         "body{margin:0;background:#111722;color:#e7edf7;font:16px system-ui}main{max-width:1100px;margin:auto;padding:48px}.eyebrow{color:#6dd5ff;letter-spacing:.18em}h1{font-size:42px;margin:.2em 0}.hero{width:100%;border-radius:12px}.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0}.compare img{width:100%}figure{margin:0;background:#1d2635;padding:12px;border-radius:10px}figcaption{padding-top:8px}pre{white-space:pre-wrap;background:#0a0f18;padding:20px;border-radius:10px;overflow:auto}"
     ))
 }
@@ -1109,6 +1327,49 @@ mod tests {
     #[test]
     fn escapes_github_markdown_table_content() {
         assert_eq!(markdown_cell("a|b\n<c>"), "a\\|b<br>&lt;c&gt;");
+    }
+
+    #[test]
+    fn review_without_a_renderer_writes_reports_and_says_why() {
+        let dir = tempdir().expect("tempdir");
+        let document = dir.path().join("bracket.ocad.d");
+        write_bracket_fixture_at(&document);
+        let patch_path = dir.path().join("width.patch.json");
+        let patch = DesignPatch::set_parameter("param:width", "100 mm");
+        fs::write(
+            &patch_path,
+            serde_json::to_string_pretty(&patch).expect("patch json"),
+        )
+        .expect("write patch");
+        let output = dir.path().join("review");
+        let artifact = generate_review_with_renderer(
+            &ReviewArgs {
+                document_path: document.to_string_lossy().into_owned(),
+                patch_path: patch_path.to_string_lossy().into_owned(),
+                output_dir: output.to_string_lossy().into_owned(),
+            },
+            Err(OpenCadError::Other("no wgpu adapter available".into())),
+        )
+        .expect("review without images");
+
+        assert_eq!(artifact.before_image, None);
+        assert_eq!(artifact.comparison_gif, None);
+        assert_eq!(
+            artifact.images_skipped.as_deref(),
+            Some("no renderer available (no wgpu adapter available)")
+        );
+        // Geometry evidence is still complete.
+        assert!(artifact.geometry.after_triangles > 0);
+        assert!(artifact.diff.geometry.is_some());
+        for name in ["review.json", "review.html", "github-summary.md"] {
+            assert!(output.join(name).exists(), "{name}");
+        }
+        for name in ["before.png", "after.png", "comparison.gif"] {
+            assert!(!output.join(name).exists(), "{name}");
+        }
+        let html = fs::read_to_string(output.join("review.html")).expect("html");
+        assert!(html.contains("Images were not rendered"));
+        assert!(!html.contains("comparison.gif"));
     }
 
     #[test]

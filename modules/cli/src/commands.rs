@@ -63,7 +63,7 @@ pub fn run() -> Result<()> {
         Some("agent") => cmd_agent(args.collect()),
         Some("mcp") => cmd_mcp(args.collect()),
         Some(cmd) => Err(opencad_core::OpenCadError::Other(format!(
-            "unknown command '{cmd}'; run 'opencad help' for usage"
+            "unknown command '{cmd}'; run 'musubicad help' for usage"
         ))),
     }
 }
@@ -71,7 +71,7 @@ pub fn run() -> Result<()> {
 fn cmd_new(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let path = path.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad new <path> [bracket|bearing-carrier|robot-joint|boss-join|face-pin|edge-fillet|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing|revolve-sector|assembly|robot-arm|drawing]",
+            "usage: musubicad new <path> [bracket|bearing-carrier|robot-joint|boss-join|face-pin|edge-fillet|hole-row|hole-ring|pin-row|pin-ring|pin-mirror|revolve-bushing|revolve-sector|assembly|robot-arm|drawing]",
         )
     })?;
     let template = extra_args
@@ -85,8 +85,9 @@ fn cmd_new(path: Option<&str>, extra_args: &[String]) -> Result<()> {
 }
 
 fn cmd_validate(path: Option<&str>) -> Result<()> {
-    let path = path
-        .ok_or_else(|| opencad_core::OpenCadError::validation("usage: opencad validate <path>"))?;
+    let path = path.ok_or_else(|| {
+        opencad_core::OpenCadError::validation("usage: musubicad validate <path>")
+    })?;
     validate_ocad(path)?;
     println!("valid: {path}");
     Ok(())
@@ -94,7 +95,7 @@ fn cmd_validate(path: Option<&str>) -> Result<()> {
 
 fn cmd_inspect(path: Option<&str>) -> Result<()> {
     let path = path
-        .ok_or_else(|| opencad_core::OpenCadError::validation("usage: opencad inspect <path>"))?;
+        .ok_or_else(|| opencad_core::OpenCadError::validation("usage: musubicad inspect <path>"))?;
     let doc = read_ocad(path)?;
     println!("document: {}", doc.metadata.id.as_str());
     println!("name: {}", doc.metadata.name);
@@ -124,12 +125,12 @@ fn cmd_inspect(path: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-/// `opencad intent <path> <param:...|ref:...> [--json]` (MCAD-P6-006): what
+/// `musubicad intent <path> <param:...|ref:...> [--json]` (MCAD-P6-006): what
 /// drives a parameter or reference and what an edit to it would change.
 fn cmd_intent(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let usage = || {
         opencad_core::OpenCadError::validation(
-            "usage: opencad intent <path> <param:...|ref:...> [--json]",
+            "usage: musubicad intent <path> <param:...|ref:...> [--json]",
         )
     };
     let path = path.ok_or_else(usage)?;
@@ -208,7 +209,7 @@ fn cmd_intent(path: Option<&str>, extra_args: &[String]) -> Result<()> {
 
 fn cmd_params(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let path = path.ok_or_else(|| {
-        opencad_core::OpenCadError::validation("usage: opencad params <path> [--json]")
+        opencad_core::OpenCadError::validation("usage: musubicad params <path> [--json]")
     })?;
     for arg in extra_args {
         if arg != "--json" {
@@ -235,7 +236,7 @@ fn cmd_params(path: Option<&str>, extra_args: &[String]) -> Result<()> {
 
 fn cmd_regen(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let path = path.ok_or_else(|| {
-        opencad_core::OpenCadError::validation("usage: opencad regen <path> [--sync-topo-refs]")
+        opencad_core::OpenCadError::validation("usage: musubicad regen <path> [--sync-topo-refs]")
     })?;
     let sync_topo_refs = extra_args.iter().any(|arg| arg == "--sync-topo-refs");
     let summary = regen::regen_document(path, sync_topo_refs)?;
@@ -249,12 +250,12 @@ fn cmd_regen(path: Option<&str>, extra_args: &[String]) -> Result<()> {
 fn cmd_export(input: Option<&str>, output: Option<&str>) -> Result<()> {
     let input = input.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad export <input> <output.stl|output.step|output.svg>",
+            "usage: musubicad export <input> <output.stl|output.step|output.svg>",
         )
     })?;
     let output = output.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad export <input> <output.stl|output.step|output.svg>",
+            "usage: musubicad export <input> <output.stl|output.step|output.svg>",
         )
     })?;
     let summary = export::export_document(input, output)?;
@@ -265,7 +266,7 @@ fn cmd_export(input: Option<&str>, output: Option<&str>) -> Result<()> {
 fn cmd_mesh(input: Option<&str>, extra_args: Vec<String>) -> Result<()> {
     let input = input.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad mesh <input> [--json] [--render] [--png <output.png>]",
+            "usage: musubicad mesh <input> [--json] [--render] [--png <output.png>]",
         )
     })?;
     let options = parse_mesh_options(&extra_args)?;
@@ -307,7 +308,7 @@ fn parse_mesh_options(args: &[String]) -> Result<mesh::MeshOptions> {
 fn cmd_pick(input: Option<&str>, extra_args: Vec<String>) -> Result<()> {
     let input = input.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad pick <input> [--x <px>] [--y <px>] [--width <px>] [--height <px>] [--json]",
+            "usage: musubicad pick <input> [--x <px>] [--y <px>] [--width <px>] [--height <px>] [--json]",
         )
     })?;
     let options = parse_pick_options(&extra_args)?;
@@ -378,16 +379,16 @@ fn parse_u32_arg(args: &[String], index: usize, flag: &str) -> Result<u32> {
 
 fn cmd_view(input: Option<&str>) -> Result<()> {
     let input = input
-        .ok_or_else(|| opencad_core::OpenCadError::validation("usage: opencad view <input>"))?;
+        .ok_or_else(|| opencad_core::OpenCadError::validation("usage: musubicad view <input>"))?;
     view::view_document(input)
 }
 
 fn cmd_screenshot(input: Option<&str>, output: Option<&str>) -> Result<()> {
     let input = input.ok_or_else(|| {
-        opencad_core::OpenCadError::validation("usage: opencad screenshot <input> <output.png>")
+        opencad_core::OpenCadError::validation("usage: musubicad screenshot <input> <output.png>")
     })?;
     let output = output.ok_or_else(|| {
-        opencad_core::OpenCadError::validation("usage: opencad screenshot <input> <output.png>")
+        opencad_core::OpenCadError::validation("usage: musubicad screenshot <input> <output.png>")
     })?;
     view::screenshot_document(input, output)
 }
@@ -395,7 +396,7 @@ fn cmd_screenshot(input: Option<&str>, output: Option<&str>) -> Result<()> {
 fn cmd_animate(input: Option<&str>, output: Option<&str>, args: Vec<String>) -> Result<()> {
     let input = input.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad animate <input> <output.gif> [--frames N] [--fps N] [--orbit-deg DEG] [--pitch-deg DEG] [--show-sketch]",
+            "usage: musubicad animate <input> <output.gif> [--frames N] [--fps N] [--orbit-deg DEG] [--pitch-deg DEG] [--show-sketch]",
         )
     })?;
     let output = output.ok_or_else(|| {
@@ -417,7 +418,7 @@ fn cmd_animate_features(
 ) -> Result<()> {
     let input = input.ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad animate-features <input> <output.gif> [--frames N] [--fps N] [--orbit-deg DEG] [--pitch-deg DEG]",
+            "usage: musubicad animate-features <input> <output.gif> [--frames N] [--fps N] [--orbit-deg DEG] [--pitch-deg DEG]",
         )
     })?;
     let output = output.ok_or_else(|| {
@@ -535,7 +536,7 @@ fn cmd_agent(args: Vec<String>) -> Result<()> {
     }
     if !args.is_empty() {
         return Err(opencad_core::OpenCadError::validation(
-            "usage: opencad agent   (reads JSON-RPC lines from stdin)",
+            "usage: musubicad agent   (reads JSON-RPC lines from stdin)",
         ));
     }
     agent::serve_stdio()
@@ -544,13 +545,13 @@ fn cmd_agent(args: Vec<String>) -> Result<()> {
 fn cmd_mcp(args: Vec<String>) -> Result<()> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         println!(
-            r"opencad mcp — Model Context Protocol server on stdio (ADR-014)
+            r"musubicad mcp — Model Context Protocol server on stdio (ADR-014)
 
 USAGE:
-    opencad mcp
+    musubicad mcp
 
 Register it with an MCP host, for example:
-    claude mcp add musubicad -- opencad mcp
+    claude mcp add musubicad -- musubicad mcp
 
 Tools delegate to the Agent API; every change is a validated DesignPatch."
         );
@@ -558,7 +559,7 @@ Tools delegate to the Agent API; every change is a validated DesignPatch."
     }
     if !args.is_empty() {
         return Err(opencad_core::OpenCadError::validation(
-            "usage: opencad mcp   (serves MCP over stdin/stdout)",
+            "usage: musubicad mcp   (serves MCP over stdin/stdout)",
         ));
     }
     crate::mcp::serve_stdio()
@@ -566,10 +567,10 @@ Tools delegate to the Agent API; every change is a validated DesignPatch."
 
 fn print_agent_help() {
     println!(
-        r"opencad agent — JSON-RPC 2.0 server on stdio
+        r"musubicad agent — JSON-RPC 2.0 server on stdio
 
 USAGE:
-    opencad agent < request.jsonl
+    musubicad agent < request.jsonl
 
 Each input line is one JSON-RPC request. One JSON response is written per line.
 
@@ -596,7 +597,7 @@ See OpenCAD/docs/api/agent.md
 }
 
 fn print_version() {
-    println!("opencad {}", env!("CARGO_PKG_VERSION"));
+    println!("musubicad {}", env!("CARGO_PKG_VERSION"));
     #[cfg(feature = "occt")]
     if let Some(version) = opencad_kernel_occt::version() {
         println!("{version}");
@@ -605,10 +606,10 @@ fn print_version() {
 
 fn print_help() {
     println!(
-        r"opencad — AI-native parametric CAD CLI
+        r"musubicad — AI-native parametric CAD CLI
 
 USAGE:
-    opencad <COMMAND> [ARGS]
+    musubicad <COMMAND> [ARGS]
 
 COMMANDS:
     help        Show this help
@@ -642,46 +643,47 @@ COMMANDS:
 OPTIONS (patch):
     --dry-run   Validate and preview changes without writing
     --geometry  Include regenerated mass/volume in preview
+    --no-verify Write without regenerating and checking expected effects
     --json      Emit machine-readable diff output
 
 EXAMPLES:
-    opencad new bracket.ocad.d
-    opencad new bearing_carrier.ocad.d bearing-carrier
-    opencad new robot_joint.ocad.d robot-joint
-    opencad new bracket_boss_join.ocad.d boss-join
-    opencad new bracket_face_pin.ocad.d face-pin
-    opencad new bracket_hole_row.ocad.d hole-row
-    opencad new bracket_hole_ring.ocad.d hole-ring
-    opencad new bracket_pin_row.ocad.d pin-row
-    opencad new bracket_pin_ring.ocad.d pin-ring
-    opencad new bracket_pin_mirror.ocad.d pin-mirror
-    opencad new revolve_bushing.ocad.d revolve-bushing
-    opencad new assembly_two_brackets.ocad.d assembly
-    opencad new robot_arm_assembly.ocad.d robot-arm
-    opencad new bracket_front_view.ocad.d drawing
-    opencad validate bracket.ocad
-    opencad inspect bracket.ocad.d
-    opencad params bracket.ocad.d --json
-    opencad regen bracket.ocad
-    opencad regen bracket.ocad --sync-topo-refs
-    opencad export bracket.ocad bracket.stl
-    opencad export bracket_front_view.ocad.d bracket_front.svg
-    opencad mesh bracket.ocad.d
-    opencad mesh bracket.ocad.d --json --render
-    opencad mesh bracket.ocad.d --png preview.png
-    opencad pick bracket.ocad.d --x 256 --y 256 --json
-    opencad view bracket.ocad.d
-    opencad screenshot bracket.ocad.d preview.png
-    opencad animate bracket.ocad.d showcase.gif --frames 48 --fps 12 --orbit-deg 220
-    opencad animate-features robot_joint.ocad.d build.gif --frames 54 --fps 9
-    opencad patch bracket.ocad.d width.patch.json
-    opencad patch bracket.ocad.d combined.patch.json --dry-run --geometry
-    opencad diff bracket.ocad.d --patch width.patch.json --geometry
-    opencad diff before.ocad.d after.ocad.d --json
-    opencad review bracket.ocad.d width.patch.json --output review
-    opencad merge base.ocad.d ours.ocad.d theirs.ocad.d merged.ocad.d
-    opencad rebase-patch old.ocad.d new.ocad.d change.json rebased.json
-    opencad check bracket.ocad.d engineering-policy.json
+    musubicad new bracket.ocad.d
+    musubicad new bearing_carrier.ocad.d bearing-carrier
+    musubicad new robot_joint.ocad.d robot-joint
+    musubicad new bracket_boss_join.ocad.d boss-join
+    musubicad new bracket_face_pin.ocad.d face-pin
+    musubicad new bracket_hole_row.ocad.d hole-row
+    musubicad new bracket_hole_ring.ocad.d hole-ring
+    musubicad new bracket_pin_row.ocad.d pin-row
+    musubicad new bracket_pin_ring.ocad.d pin-ring
+    musubicad new bracket_pin_mirror.ocad.d pin-mirror
+    musubicad new revolve_bushing.ocad.d revolve-bushing
+    musubicad new assembly_two_brackets.ocad.d assembly
+    musubicad new robot_arm_assembly.ocad.d robot-arm
+    musubicad new bracket_front_view.ocad.d drawing
+    musubicad validate bracket.ocad
+    musubicad inspect bracket.ocad.d
+    musubicad params bracket.ocad.d --json
+    musubicad regen bracket.ocad
+    musubicad regen bracket.ocad --sync-topo-refs
+    musubicad export bracket.ocad bracket.stl
+    musubicad export bracket_front_view.ocad.d bracket_front.svg
+    musubicad mesh bracket.ocad.d
+    musubicad mesh bracket.ocad.d --json --render
+    musubicad mesh bracket.ocad.d --png preview.png
+    musubicad pick bracket.ocad.d --x 256 --y 256 --json
+    musubicad view bracket.ocad.d
+    musubicad screenshot bracket.ocad.d preview.png
+    musubicad animate bracket.ocad.d showcase.gif --frames 48 --fps 12 --orbit-deg 220
+    musubicad animate-features robot_joint.ocad.d build.gif --frames 54 --fps 9
+    musubicad patch bracket.ocad.d width.patch.json
+    musubicad patch bracket.ocad.d combined.patch.json --dry-run --geometry
+    musubicad diff bracket.ocad.d --patch width.patch.json --geometry
+    musubicad diff before.ocad.d after.ocad.d --json
+    musubicad review bracket.ocad.d width.patch.json --output review
+    musubicad merge base.ocad.d ours.ocad.d theirs.ocad.d merged.ocad.d
+    musubicad rebase-patch old.ocad.d new.ocad.d change.json rebased.json
+    musubicad check bracket.ocad.d engineering-policy.json
 "
     );
 }

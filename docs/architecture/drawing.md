@@ -46,7 +46,7 @@ document at export time, tessellates it, and projects mesh edges onto the sheet.
 |---|---|
 | `opencad-drawing` | Model, projection, wireframe layout, SVG export |
 | `opencad-file` | `graph/drawings.json` serialization |
-| `opencad-cli` | `opencad new … drawing`, `opencad export … .svg` |
+| `opencad-cli` | `musubicad new … drawing`, `musubicad export … .svg` |
 
 ## Model-driven dimensions
 

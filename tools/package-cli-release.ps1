@@ -23,8 +23,18 @@ $Package = Join-Path $StagingRoot $PackageName
 $ExampleAgent = Join-Path $Package "examples\agent"
 
 New-Item -ItemType Directory -Force -Path $ExampleAgent | Out-Null
-$ExecutableName = if ($Platform.StartsWith("windows-")) { "opencad.exe" } else { "opencad" }
+$ExecutableName = if ($Platform.StartsWith("windows-")) { "musubicad.exe" } else { "musubicad" }
 Copy-Item -LiteralPath $Binary -Destination (Join-Path $Package $ExecutableName)
+# The CLI was called `opencad` before v0.2.0; keep that name working.
+if ($Platform.StartsWith("windows-")) {
+    Set-Content -LiteralPath (Join-Path $Package "opencad.cmd") -Encoding ascii `
+        -Value "@`"%~dp0musubicad.exe`" %*"
+} else {
+    & ln -s musubicad (Join-Path $Package "opencad")
+    if ($LASTEXITCODE -ne 0) {
+        throw "ln failed with exit code $LASTEXITCODE"
+    }
+}
 Copy-Item -LiteralPath (Join-Path $Root "LICENSE") -Destination $Package
 Copy-Item -LiteralPath (Join-Path $Root "README.md") -Destination $Package
 Copy-Item -LiteralPath (Join-Path $Root "docs\release-quickstart.md") `

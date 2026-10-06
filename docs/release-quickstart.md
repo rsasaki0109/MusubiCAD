@@ -1,20 +1,23 @@
 # MusubiCAD CLI quick start
 
-This archive contains the historical `opencad` CLI executable and a real, reviewable bracket
-example. MusubiCAD is early-stage software; archive signing and notarization are not yet available.
+This archive contains the `musubicad` CLI executable and a real, reviewable bracket example.
+MusubiCAD is early-stage software; archive signing and notarization are not yet available.
+
+The CLI was called `opencad` before v0.2.0. The archive keeps that name working: `opencad` is a
+symbolic link on Linux and macOS, and `opencad.cmd` forwards to `musubicad.exe` on Windows.
 
 ## Verify the executable
 
 Linux and macOS:
 
 ```bash
-./opencad version
+./musubicad version
 ```
 
 Windows PowerShell:
 
 ```powershell
-./opencad.exe version
+./musubicad.exe version
 ```
 
 The output must report the same version as the archive name. Only use archives downloaded from the
@@ -24,16 +27,16 @@ archive against `SHA256SUMS` attached to that release.
 ## Regenerate the included model
 
 ```bash
-./opencad regen examples/bracket.ocad.d
+./musubicad regen examples/bracket.ocad.d
 ```
 
-On Windows, replace `./opencad` with `./opencad.exe`. Successful regeneration reports the OCCT
+On Windows, replace `./musubicad` with `./musubicad.exe`. Successful regeneration reports the OCCT
 kernel, regenerated features, volume in cubic metres, and mass in kilograms.
 
 ## Generate a complete design review
 
 ```bash
-./opencad review \
+./musubicad review \
   examples/bracket.ocad.d \
   examples/agent/review_width_patch.json \
   --output review

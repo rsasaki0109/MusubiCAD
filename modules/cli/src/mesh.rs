@@ -1,4 +1,4 @@
-//! `opencad mesh` command — tessellate and summarize viewport scene data.
+//! `musubicad mesh` command — tessellate and summarize viewport scene data.
 
 use std::collections::BTreeMap;
 
@@ -13,14 +13,14 @@ pub use opencad_desktop::{load_view_data, ViewData};
 pub const PREVIEW_WIDTH: u32 = 512;
 pub const PREVIEW_HEIGHT: u32 = 512;
 
-/// Options for `opencad mesh`.
+/// Options for `musubicad mesh`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct MeshOptions {
     pub render: bool,
     pub png_output: Option<String>,
 }
 
-/// Summary printed by `opencad mesh`.
+/// Summary printed by `musubicad mesh`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MeshSummary {
     pub triangles: usize,

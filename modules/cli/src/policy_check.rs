@@ -10,7 +10,7 @@ use crate::diff::{build_document_diff, DiffOptions};
 pub fn check(args: Vec<String>) -> Result<()> {
     if args.len() != 2 {
         return Err(OpenCadError::validation(
-            "usage: opencad check <document> <policy.json>",
+            "usage: musubicad check <document> <policy.json>",
         ));
     }
     let doc = read_ocad(&args[0])?;

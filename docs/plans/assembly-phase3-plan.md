@@ -91,9 +91,9 @@ Placement  { transform: RigidTransform }   // geometry の RigidTransform を保
 
 ## 6. CLI / 例 / ドキュメント
 
-- `opencad new <path> assembly`: bracket ×2 を配置したテンプレート（`modules/desktop/src/template.rs` に追加。CLI `new` はこれを再利用）。
-- `opencad regen`: assembly を検出して子を再生成・配置、`instances: N` を報告。
-- `opencad export`: compound を STL 出力。
+- `musubicad new <path> assembly`: bracket ×2 を配置したテンプレート（`modules/desktop/src/template.rs` に追加。CLI `new` はこれを再利用）。
+- `musubicad regen`: assembly を検出して子を再生成・配置、`instances: N` を報告。
+- `musubicad export`: compound を STL 出力。
 - `examples/assembly_two_brackets.ocad.d` を追加（AGENTS.md「全機能に例1つ」）。
 - `docs/architecture/assembly.md`、`docs/adr/ADR-003-*.md`。
 

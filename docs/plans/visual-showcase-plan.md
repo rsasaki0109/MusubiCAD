@@ -21,7 +21,7 @@ real MusubiCAD documents without making rendered output a source of truth.
 - [x] B-Rep feature-edge overlay without tessellation diagonals
 - [x] Deterministic orbit camera sequence
 - [x] Native looping GIF encoder
-- [x] `opencad animate` with explicit pixel, frame, FPS, and degree options
+- [x] `musubicad animate` with explicit pixel, frame, FPS, and degree options
 - [x] Multi-mesh face catalog regression fix
 - [x] README GIF generated from `assembly_two_brackets.ocad.d`
 - [x] Workspace formatting, clippy, and tests

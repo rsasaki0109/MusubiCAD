@@ -13,7 +13,7 @@ face that a reference names. A shell opening is the first such case
 can match other faces.
 
 For example, the `top` face of the box matches both the open rim and the
-inner floor. `opencad regen` then reported
+inner floor. `musubicad regen` then reported
 `ref:face:box_top Ambiguous 2 candidates tie`, which the MCP host trial also
 hit. The shell itself is correct, but the report reads as a defect and
 hides the real cause.
@@ -42,7 +42,7 @@ the narrow path instead.
    `required_reference` assertion on a consumed face fails and gives the
    consuming feature as its reason. Regeneration itself is unaffected;
    provenance stays observability data.
-4. **Reporting.** `opencad regen` lists a `consumed=` count, and the review
+4. **Reporting.** `musubicad regen` lists a `consumed=` count, and the review
    artifact shows the status.
 
 The status is added to a serialized enum inside regeneration reports. Such

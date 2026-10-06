@@ -252,7 +252,7 @@ given an invented order.
   otherwise `add_add`, `remove_modify`, or a value conflict). Retained objects
   keep base order and additions follow in ID order. The combined state must
   pass `validate_design_state`, the whole-state form of the final-candidate
-  checks; otherwise the merge reports `invalid_result`. `opencad merge` writes
+  checks; otherwise the merge reports `invalid_result`. `musubicad merge` writes
   back every merged collection. Before this change it copied only parameters,
   features, references, assembly, and drawing, silently dropping the other
   side's sketch and assertion edits.
@@ -271,7 +271,7 @@ field is added.
 
 ### 9. Surface parity and boundaries
 
-- CLI `opencad patch`/`review` and the Agent API `patch_*` methods accept the
+- CLI `musubicad patch`/`review` and the Agent API `patch_*` methods accept the
   new operations with no new methods, because they already transport a
   `DesignPatch`. Desktop commands that create or remove objects must build a
   `DesignPatch` (ADR-009).
@@ -372,4 +372,4 @@ Each slice is one PR with its own tests and docs:
   constraints, in one operation to shorten agent patches. It could be added
   later as sugar that expands to the primitive operations before validation.
 - Where the empty-part template lives: a `DocumentTemplate::EmptyPart` variant
-  or `opencad new --empty`.
+  or `musubicad new --empty`.
