@@ -10,6 +10,7 @@ use opencad_file::{
 };
 
 use crate::diff::{self, DiffOptions};
+use crate::review::verification_report;
 
 /// Options for `musubicad patch`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -17,6 +18,8 @@ pub struct PatchOptions {
     pub dry_run: bool,
     pub json: bool,
     pub geometry: bool,
+    /// Skip the regeneration and expected-effect gate before writing.
+    pub no_verify: bool,
 }
 
 /// Parsed CLI arguments for `musubicad patch`.
@@ -84,6 +87,28 @@ pub fn patch_document_with_options(args: &PatchArgs) -> Result<()> {
         return Ok(());
     }
 
+    if !args.options.no_verify {
+        let verification = verification_report(&args.doc_path, &before, &patch);
+        if !verification.passed {
+            return Err(opencad_core::OpenCadError::validation(format!(
+                "patch rejected; the document was not changed: {}",
+                verification.failure_summary()
+            )));
+        }
+        if let Some(geometry) = verification
+            .evidence
+            .as_ref()
+            .and_then(|evidence| evidence.diff.geometry.as_ref())
+        {
+            if let (Some(before_kg), Some(after_kg)) = (geometry.mass_before, geometry.mass_after) {
+                println!("verified: mass {before_kg} kg -> {after_kg} kg");
+            } else {
+                println!("verified: regenerates");
+            }
+        } else {
+            println!("verified: regenerates");
+        }
+    }
     let mut doc = before;
     apply_patch_to_document(&mut doc, &patch)?;
     write_ocad(&args.doc_path, &doc)?;
@@ -100,24 +125,26 @@ where
     let mut dry_run = false;
     let mut json = false;
     let mut geometry = false;
+    let mut no_verify = false;
 
     for arg in args {
         match arg.as_ref() {
             "--dry-run" => dry_run = true,
             "--json" => json = true,
             "--geometry" => geometry = true,
+            "--no-verify" => no_verify = true,
             value => positional.push(value.to_string()),
         }
     }
 
     let doc_path = positional.first().cloned().ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: musubicad patch <document> <patch.json> [--dry-run] [--json] [--geometry]",
+            "usage: musubicad patch <document> <patch.json> [--dry-run] [--json] [--geometry] [--no-verify]",
         )
     })?;
     let patch_path = positional.get(1).cloned().ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: musubicad patch <document> <patch.json> [--dry-run] [--json] [--geometry]",
+            "usage: musubicad patch <document> <patch.json> [--dry-run] [--json] [--geometry] [--no-verify]",
         )
     })?;
 
@@ -128,6 +155,7 @@ where
             dry_run,
             json,
             geometry,
+            no_verify,
         },
     })
 }
@@ -200,6 +228,7 @@ mod tests {
                 dry_run: true,
                 json: false,
                 geometry: false,
+                no_verify: false,
             },
         };
         patch_document_with_options(&args).expect("dry-run");
@@ -237,9 +266,62 @@ mod tests {
                 dry_run: true,
                 json: false,
                 geometry: false,
+                no_verify: false,
             },
         };
         patch_document_with_options(&args).expect_err("invalid patch");
+    }
+
+    fn bearing_carrier_with_patch(dir: &Path, patch_json: &str) -> PatchArgs {
+        let source = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../examples/bearing_carrier.ocad.d"
+        );
+        let doc = read_ocad(source).expect("example");
+        let doc_path = dir.join("bearing_carrier.ocad.d");
+        opencad_file::write_expanded_dir(&doc_path, &doc).expect("write");
+        let patch_path = dir.join("bore.patch.json");
+        fs::write(&patch_path, patch_json).expect("patch");
+        PatchArgs {
+            doc_path: doc_path.to_str().expect("path").to_string(),
+            patch_path: patch_path.to_str().expect("patch").to_string(),
+            options: PatchOptions {
+                dry_run: false,
+                json: false,
+                geometry: false,
+                no_verify: false,
+            },
+        }
+    }
+
+    fn bore_expr(path: &str) -> String {
+        read_ocad(path)
+            .expect("read")
+            .parameters
+            .get("param:bore_diameter")
+            .expect("bore parameter")
+            .expr
+            .clone()
+    }
+
+    #[test]
+    fn patch_refuses_a_change_that_does_not_regenerate() {
+        let dir = tempdir().expect("tempdir");
+        let args = bearing_carrier_with_patch(
+            dir.path(),
+            r#"{"operations":[{"type":"set_parameter","id":"param:bore_diameter","expr":"200 mm"}]}"#,
+        );
+        let error = patch_document_with_options(&args).expect_err("rejected");
+        assert!(
+            error.to_string().contains("feature 'feature:bearing_bore'"),
+            "{error}"
+        );
+        assert_eq!(bore_expr(&args.doc_path), "18 mm");
+
+        let mut forced = args.clone();
+        forced.options.no_verify = true;
+        patch_document_with_options(&forced).expect("--no-verify writes");
+        assert_eq!(bore_expr(&args.doc_path), "200 mm");
     }
 
     #[test]

@@ -526,6 +526,7 @@ verified before it is written.
 | MCAD-P8-001 | Verified patch apply | [ADR-026](../adr/ADR-026-verified-patch-apply.md); render-free `verify_patch`; dry-run `verification`; apply refuses patches that do not regenerate or miss declared expected effects; regeneration errors name the failing feature | Complete |
 | MCAD-P8-002 | Review without a GPU | `musubicad review` and MCP `review_patch` write `review.json`, `review.html`, and `github-summary.md` with every check when no renderer is available; images are omitted and `images_skipped` says why; outputs with a GPU stay byte-identical | Complete |
 | MCAD-P8-003 | `musubicad` command name | The CLI binary, help, usage messages, docs, release workflow, and eval harness use `musubicad`; release archives keep `opencad` as a symlink (`opencad.cmd` on Windows); crate names and `opencad.*` JSON-RPC method names are unchanged wire/API identifiers | Complete |
+| MCAD-P8-004 | Verified CLI patch | `musubicad patch` refuses (document unchanged) a patch that does not regenerate or misses declared expected effects, prints the verified mass change, and offers `--no-verify` | Complete |
 
 ## Cross-phase verification matrix
 

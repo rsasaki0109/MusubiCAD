@@ -643,6 +643,7 @@ COMMANDS:
 OPTIONS (patch):
     --dry-run   Validate and preview changes without writing
     --geometry  Include regenerated mass/volume in preview
+    --no-verify Write without regenerating and checking expected effects
     --json      Emit machine-readable diff output
 
 EXAMPLES:

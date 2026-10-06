@@ -41,7 +41,11 @@ so it was not a usable gate for every edit.
    known not to regenerate yet. Validation still runs.
 
 MCP inherits the behaviour because its `patch_dry_run` and `patch_apply`
-tools delegate to these Agent API methods (ADR-014).
+tools delegate to these Agent API methods (ADR-014). `musubicad patch`
+(without `--dry-run`) runs the same gate before writing, so agents that use
+the CLI instead of MCP get the same guarantee; `--no-verify` opts out.
+
+CAD plugin invocations (`plugin_invoke`, ADR-010) are not gated yet.
 
 ## Consequences
 
