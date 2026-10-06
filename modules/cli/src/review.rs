@@ -69,9 +69,15 @@ pub struct ReviewArtifact {
     pub diff: DesignDiff,
     pub geometry: ReviewGeometry,
     pub expected_effects: Vec<EffectCheck>,
-    pub before_image: String,
-    pub after_image: String,
-    pub comparison_gif: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub before_image: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after_image: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub comparison_gif: Option<String>,
+    /// Why no images were rendered; absent when they were.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub images_skipped: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub before_drawing_svg: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -298,6 +304,15 @@ fn verify_patch_with_scenes(
 
 /// Generate review JSON, HTML, PNGs, and an animated Before/After GIF.
 pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
+    generate_review_with_renderer(args, OffscreenRenderer::new())
+}
+
+/// [`generate_review`] with an explicit renderer; an `Err` renderer writes
+/// the reports without images.
+fn generate_review_with_renderer(
+    args: &ReviewArgs,
+    renderer: Result<OffscreenRenderer>,
+) -> Result<ReviewArtifact> {
     let before = read_ocad(&args.document_path)?;
     let patch = read_patch_file(&args.patch_path)?;
     let VerifiedPatch {
@@ -314,36 +329,21 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
         assertions,
     } = verification;
 
-    let renderer = OffscreenRenderer::new()?;
-    let mut combined_bounds = before_scene.bounds;
-    combined_bounds.merge(&after_scene.bounds);
-    let camera = OrbitCamera::fit_bounds(
-        &combined_bounds,
-        REVIEW_WIDTH_PX as f32 / REVIEW_HEIGHT_PX as f32,
-    );
-    let after_image = render_review_image(&renderer, &after_scene, &camera)?;
-    let before_image = if before_scene.meshes.is_empty() {
-        blank_like(&after_image)
-    } else {
-        render_review_image(&renderer, &before_scene, &camera)?
-    };
     let output = Path::new(&args.output_dir);
     fs::create_dir_all(output).map_err(io_error("create review directory"))?;
-    write_png(
-        output.join("before.png"),
-        before_image.width,
-        before_image.height,
-        &before_image.rgba,
-    )?;
-    write_png(
-        output.join("after.png"),
-        after_image.width,
-        after_image.height,
-        &after_image.rgba,
-    )?;
-    let labels = ReviewGifLabels::from_review(&diff, &expected_effects);
-    let frames = comparison_frames(&before_image, &after_image, &labels, REVIEW_FPS)?;
-    write_gif_frames(&frames, REVIEW_FPS, output.join("comparison.gif"))?;
+    // Images are evidence for humans; the checks above are complete without
+    // them.  Without a GPU adapter (headless servers, CI without Mesa, cloud
+    // agents) the review still writes its reports and says why images are
+    // missing.
+    let images_skipped = match renderer {
+        Ok(renderer) => {
+            let labels = ReviewGifLabels::from_review(&diff, &expected_effects);
+            write_review_images(&renderer, &before_scene, &after_scene, &labels, output)?;
+            None
+        }
+        Err(error) => Some(format!("no renderer available ({error})")),
+    };
+    let image = |name: &str| images_skipped.is_none().then(|| name.to_string());
 
     let drawing_assets: Option<(String, String)> = if before.drawing.is_some() {
         let (before_svg, _) = crate::export::render_drawing_svg(&args.document_path, &before)?;
@@ -365,9 +365,10 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
         diff,
         geometry,
         expected_effects,
-        before_image: "before.png".into(),
-        after_image: "after.png".into(),
-        comparison_gif: "comparison.gif".into(),
+        before_image: image("before.png"),
+        after_image: image("after.png"),
+        comparison_gif: image("comparison.gif"),
+        images_skipped,
         before_drawing_svg: drawing_assets.as_ref().map(|assets| assets.0.clone()),
         after_drawing_svg: drawing_assets.map(|assets| assets.1),
         reference_provenance,
@@ -383,6 +384,43 @@ pub fn generate_review(args: &ReviewArgs) -> Result<ReviewArtifact> {
     )
     .map_err(io_error("write GitHub review summary"))?;
     Ok(artifact)
+}
+
+/// Render before/after PNGs and the comparison GIF into `output`.
+fn write_review_images(
+    renderer: &OffscreenRenderer,
+    before_scene: &RenderScene,
+    after_scene: &RenderScene,
+    labels: &ReviewGifLabels,
+    output: &Path,
+) -> Result<()> {
+    let mut combined_bounds = before_scene.bounds;
+    combined_bounds.merge(&after_scene.bounds);
+    let camera = OrbitCamera::fit_bounds(
+        &combined_bounds,
+        REVIEW_WIDTH_PX as f32 / REVIEW_HEIGHT_PX as f32,
+    );
+    let after_image = render_review_image(renderer, after_scene, &camera)?;
+    let before_image = if before_scene.meshes.is_empty() {
+        blank_like(&after_image)
+    } else {
+        render_review_image(renderer, before_scene, &camera)?
+    };
+    write_png(
+        output.join("before.png"),
+        before_image.width,
+        before_image.height,
+        &before_image.rgba,
+    )?;
+    write_png(
+        output.join("after.png"),
+        after_image.width,
+        after_image.height,
+        &after_image.rgba,
+    )?;
+    let frames = comparison_frames(&before_image, &after_image, labels, REVIEW_FPS)?;
+    write_gif_frames(&frames, REVIEW_FPS, output.join("comparison.gif"))?;
+    Ok(())
 }
 
 fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option<usize>)> {
@@ -1007,12 +1045,33 @@ fn review_html(artifact: &ReviewArtifact) -> Result<String> {
             .as_deref()
             .unwrap_or("No rationale supplied"),
     );
+    let images = match (
+        &artifact.comparison_gif,
+        &artifact.before_image,
+        &artifact.after_image,
+    ) {
+        (Some(gif), Some(before), Some(after)) => format!(
+            "<img class=\"hero\" src=\"{}\" alt=\"Before and after geometry\"><section class=\"compare\"><figure><img src=\"{}\"><figcaption>Before</figcaption></figure><figure><img src=\"{}\"><figcaption>After</figcaption></figure></section>",
+            html_escape(gif),
+            html_escape(before),
+            html_escape(after)
+        ),
+        _ => format!(
+            "<p style=\"background:#2a2410;color:#ffd77a;padding:12px 16px;border-radius:10px\">Images were not rendered: {}. The diff and checks below are complete.</p>",
+            html_escape(
+                artifact
+                    .images_skipped
+                    .as_deref()
+                    .unwrap_or("no renderer available")
+            )
+        ),
+    };
     let drawing = match (&artifact.before_drawing_svg, &artifact.after_drawing_svg) {
         (Some(before), Some(after)) => format!("<h2>Drawing impact</h2><section class=\"compare\"><figure><img src=\"{}\"><figcaption>Before drawing</figcaption></figure><figure><img src=\"{}\"><figcaption>After drawing</figcaption></figure></section>", html_escape(before), html_escape(after)),
         _ => String::new(),
     };
     Ok(format!(
-        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>MusubiCAD Review</title><style>{}</style></head><body><main><p class=\"eyebrow\">MUSUBICAD DESIGN REVIEW</p><h1>{intent}</h1><p>{rationale}</p><img class=\"hero\" src=\"comparison.gif\" alt=\"Before and after geometry\"><section class=\"compare\"><figure><img src=\"before.png\"><figcaption>Before</figcaption></figure><figure><img src=\"after.png\"><figcaption>After</figcaption></figure></section>{drawing}<h2>Semantic and geometric diff</h2><pre>{diff_json}</pre></main></body></html>\n",
+        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>MusubiCAD Review</title><style>{}</style></head><body><main><p class=\"eyebrow\">MUSUBICAD DESIGN REVIEW</p><h1>{intent}</h1><p>{rationale}</p>{images}{drawing}<h2>Semantic and geometric diff</h2><pre>{diff_json}</pre></main></body></html>\n",
         "body{margin:0;background:#111722;color:#e7edf7;font:16px system-ui}main{max-width:1100px;margin:auto;padding:48px}.eyebrow{color:#6dd5ff;letter-spacing:.18em}h1{font-size:42px;margin:.2em 0}.hero{width:100%;border-radius:12px}.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0}.compare img{width:100%}figure{margin:0;background:#1d2635;padding:12px;border-radius:10px}figcaption{padding-top:8px}pre{white-space:pre-wrap;background:#0a0f18;padding:20px;border-radius:10px;overflow:auto}"
     ))
 }
@@ -1268,6 +1327,49 @@ mod tests {
     #[test]
     fn escapes_github_markdown_table_content() {
         assert_eq!(markdown_cell("a|b\n<c>"), "a\\|b<br>&lt;c&gt;");
+    }
+
+    #[test]
+    fn review_without_a_renderer_writes_reports_and_says_why() {
+        let dir = tempdir().expect("tempdir");
+        let document = dir.path().join("bracket.ocad.d");
+        write_bracket_fixture_at(&document);
+        let patch_path = dir.path().join("width.patch.json");
+        let patch = DesignPatch::set_parameter("param:width", "100 mm");
+        fs::write(
+            &patch_path,
+            serde_json::to_string_pretty(&patch).expect("patch json"),
+        )
+        .expect("write patch");
+        let output = dir.path().join("review");
+        let artifact = generate_review_with_renderer(
+            &ReviewArgs {
+                document_path: document.to_string_lossy().into_owned(),
+                patch_path: patch_path.to_string_lossy().into_owned(),
+                output_dir: output.to_string_lossy().into_owned(),
+            },
+            Err(OpenCadError::Other("no wgpu adapter available".into())),
+        )
+        .expect("review without images");
+
+        assert_eq!(artifact.before_image, None);
+        assert_eq!(artifact.comparison_gif, None);
+        assert_eq!(
+            artifact.images_skipped.as_deref(),
+            Some("no renderer available (no wgpu adapter available)")
+        );
+        // Geometry evidence is still complete.
+        assert!(artifact.geometry.after_triangles > 0);
+        assert!(artifact.diff.geometry.is_some());
+        for name in ["review.json", "review.html", "github-summary.md"] {
+            assert!(output.join(name).exists(), "{name}");
+        }
+        for name in ["before.png", "after.png", "comparison.gif"] {
+            assert!(!output.join(name).exists(), "{name}");
+        }
+        let html = fs::read_to_string(output.join("review.html")).expect("html");
+        assert!(html.contains("Images were not rendered"));
+        assert!(!html.contains("comparison.gif"));
     }
 
     #[test]

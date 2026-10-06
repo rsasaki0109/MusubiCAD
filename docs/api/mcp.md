@@ -53,7 +53,8 @@ not written. Pass `verify: false` only for a staged authoring step that cannot
 regenerate yet.
 
 `new_document` never overwrites an existing path. `review_patch` also writes
-the submitted patch as `patch.json` in `output_dir`. A design without a body
+the submitted patch as `patch.json` in `output_dir`. On a host without a GPU
+adapter it writes the reports without images and sets `images_skipped`. A design without a body
 before the patch (for example, a new document) is reviewed against an empty
 "before" frame.
 

@@ -132,7 +132,7 @@ fn tools() -> Vec<Tool> {
         },
         Tool {
             name: "review_patch",
-            description: "Regenerate before/after geometry for a DesignPatch and write review.html, review.json, and images to output_dir without changing the document.",
+            description: "Regenerate before/after geometry for a DesignPatch and write review.html, review.json, and (when a GPU is available) images to output_dir without changing the document.",
             handler: Handler::Review,
             schema: || json!({
                 "type": "object",
