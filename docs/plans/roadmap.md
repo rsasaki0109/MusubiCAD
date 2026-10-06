@@ -513,6 +513,18 @@ the flagship rebuild.
 **Known risks:** feature input fields missing from graph derivation, verbose
 removal patches, larger revision payloads, and ID-naming burden on agents.
 
+## Phase 8 — Agent distribution
+
+**Objective:** make MusubiCAD a plugin that coding agents (Claude Code, Codex,
+Cursor, Gemini, and others) install in one step, and make every agent edit
+verified before it is written.
+
+**Dependencies:** Phase 7 (MCP server, STEP export, structural patches).
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P8-001 | Verified patch apply | [ADR-026](../adr/ADR-026-verified-patch-apply.md); render-free `verify_patch`; dry-run `verification`; apply refuses patches that do not regenerate or miss declared expected effects; regeneration errors name the failing feature | Complete |
+
 ## Cross-phase verification matrix
 
 Every implementation PR must select the applicable rows and record the command

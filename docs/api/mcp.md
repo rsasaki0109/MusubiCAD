@@ -29,9 +29,9 @@ the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,
 | `explain_document` | `path` | no | `opencad.explain_document` |
 | `query_document` | `path`, `query` | no | `opencad.query_document` |
 | `authoring_patch` | `path` | no | `opencad_ai::authoring_patch` |
-| `patch_dry_run` | `path`, `patch` | no | `opencad.patch_dry_run_document` |
+| `patch_dry_run` | `path`, `patch`, `verify` | no | `opencad.patch_dry_run_document` |
 | `review_patch` | `path`, `patch`, `output_dir` | review artifacts only | `opencad review` |
-| `patch_apply` | `path`, `patch` | yes | `opencad.patch_apply_document` |
+| `patch_apply` | `path`, `patch`, `verify` | yes, only when verified | `opencad.patch_apply_document` |
 | `regen_document` | `path` | no | `opencad.regen_document` |
 | `import_step` | `path`, `step_path`, `feature_id`, `name`, `operation`, `target_feature`, `translation_mm` | yes | `opencad import-step` |
 | `export_document` | `path`, `output` (`.step`/`.stp`, `.stl`, `.svg`) | output file only | `opencad.export` |
@@ -43,6 +43,14 @@ a pretty-printed text copy in `content`. A failed operation returns
 unknown references, and conflict reasons are named by stable ID so the agent
 can repair its patch. Unknown tools and methods are JSON-RPC errors (`-32602`
 and `-32601`).
+
+`patch_dry_run` and `patch_apply` regenerate the model before and after the
+patch and check the patch's declared `expected_effects`
+([geometry verification](agent.md#geometry-verification)). `patch_apply`
+refuses a patch whose model does not regenerate or whose expected effects do
+not hold, and the error names the failing feature or effect; the document is
+not written. Pass `verify: false` only for a staged authoring step that cannot
+regenerate yet.
 
 `new_document` never overwrites an existing path. `review_patch` also writes
 the submitted patch as `patch.json` in `output_dir`. A design without a body
@@ -62,7 +70,7 @@ The CLI integration test `modules/cli/tests/mcp.rs` drives a real
 `opencad mcp` process:
 
 1. `new_document` creates an empty part.
-2. `patch_dry_run` validates
+2. `patch_dry_run` validates and verifies
    [`examples/agent/author_plate_from_empty_patch.json`](../../examples/agent/author_plate_from_empty_patch.json).
 3. `review_patch` renders the before/after review.
 4. `patch_apply` writes the part.

@@ -30,8 +30,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 |---|---|---|
 | `opencad.inspect` | `{ path }` | document summary |
 | `opencad.validate` | `{ path }` | `{ valid, path }` |
-| `opencad.patch_dry_run_document` | `{ path, patch }` | `{ validation, diff, impact }` |
-| `opencad.patch_apply_document` | `{ path, patch, history? }` | `{ patched, history, can_undo, can_redo }` |
+| `opencad.patch_dry_run_document` | `{ path, patch, verify? }` | `{ validation, diff, impact, verification? }` |
+| `opencad.patch_apply_document` | `{ path, patch, history?, verify? }` | `{ patched, history, can_undo, can_redo, verification? }` |
 | `opencad.history_undo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.history_redo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.regen_document` | `{ path }` | `RegenResult` |
@@ -46,6 +46,46 @@ references, assembly state, and drawing state. The in-memory `patch_apply`
 path and the document patch path stage a candidate state and commit it only
 after every operation validates; a later operation failure cannot retain an
 earlier operation's mutation.
+
+### Geometry verification
+
+Validation alone cannot tell whether a patch still produces a solid: a bore
+widened past its boss is a valid parameter edit that leaves no geometry. The
+document patch methods therefore regenerate the document before and after the
+patch (with `verify`, default `true`) and report a `verification` object:
+
+```json
+{
+  "passed": true,
+  "diff": { "summary": "param:bore_diameter: 18 mm -> 8 mm",
+            "geometry": { "mass_before": 0.156000217928, "mass_after": 0.163719110838, "...": "..." } },
+  "geometry": { "before_bounds_m": [[0, 0, 0], [0.096, 0.072, 0.014]], "after_bounds_m": "...",
+                "before_triangles": 1592, "after_triangles": 1592,
+                "before_interference_count": null, "after_interference_count": null },
+  "expected_effects": [{ "effect": { "type": "mass_delta_kg", "min": 0.0, "max": 1.0 },
+                         "passed": true, "message": "mass delta is 0.00771889291 kg" }]
+}
+```
+
+`passed` is `true` only when the patched document regenerates, its required
+assertions hold, and every declared `expected_effects` entry passed. When
+verification cannot complete, the object is `{ "passed": false, "error": "..." }`
+and the error names the failing feature, for example
+`patched document does not regenerate: feature 'feature:bearing_bore': OCCT error: ...`.
+A document that did not regenerate before the patch is reported in
+`geometry.before_regen_error` rather than rejected, so a patch can repair it.
+
+- `patch_dry_run_document` adds `verification` only when validation reports no
+  errors. It never writes.
+- `patch_apply_document` refuses a patch whose verification did not pass and
+  leaves the document unchanged (`-32000`, message starting
+  `patch rejected; the document was not changed:`). On success it returns the
+  same `verification` evidence.
+- `verify: false` skips the geometry gate for staged authoring steps that are
+  known not to regenerate yet. Validation still runs.
+
+Verification needs no GPU. It uses the same evidence as `opencad review`
+without rendering images.
 
 For optimistic concurrency, a patch may include a complete-state revision
 precondition. The digest covers the canonical serialized patchable state, not

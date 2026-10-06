@@ -362,7 +362,9 @@ impl PartModel {
                     attachments: &self.attachments,
                 };
 
-                let output = registry.execute(node, &session)?;
+                let output = registry
+                    .execute(node, &session)
+                    .map_err(|error| error.with_context(format!("feature '{feature_id}'")))?;
                 let mut face_history_delta = Vec::new();
                 if let Some(ref body) = output.body {
                     face_history_delta = counted_kernel.face_derivation_history(body);

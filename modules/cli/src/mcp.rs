@@ -27,7 +27,9 @@ const GUIDE: &str = include_str!("../../../docs/api/mcp-authoring-guide.md");
 const INSTRUCTIONS: &str =
     "MusubiCAD is a parametric CAD whose source of truth is a Design Graph. \
 Change designs only with typed DesignPatch operations: call patch_dry_run first, fix every \
-reported problem, optionally call review_patch for a visual before/after, then patch_apply. \
+reported problem until verification.passed is true, declare expected_effects (such as \
+mass_delta_kg) so the change is checked against its intent, optionally call review_patch \
+for a visual before/after, then patch_apply, which refuses unverified changes. \
 Read the resource musubicad://guide/structural-patch before authoring new objects and \
 musubicad://schema/design-patch for the exact JSON shape. Lengths are meters, angles radians.";
 
@@ -61,7 +63,8 @@ fn patch_schema() -> Value {
         "type": "object",
         "properties": {
             "path": { "type": "string", "description": "Path to a .ocad file or .ocad.d directory" },
-            "patch": { "type": "object", "description": format!("DesignPatch; see resource {PATCH_SCHEMA_URI}") }
+            "patch": { "type": "object", "description": format!("DesignPatch; see resource {PATCH_SCHEMA_URI}") },
+            "verify": { "type": "boolean", "description": "Regenerate and check expected effects (default true). Set false only for a staged authoring step that cannot regenerate yet." }
         },
         "required": ["path", "patch"]
     })
@@ -123,7 +126,7 @@ fn tools() -> Vec<Tool> {
         },
         Tool {
             name: "patch_dry_run",
-            description: "Validate a DesignPatch without writing: returns validation messages, semantic diff, and change impact.",
+            description: "Check a DesignPatch without writing: validation messages, semantic diff, change impact, and `verification` (regenerates before/after; reports mass, bounds, interference, declared expected_effects, and the feature that fails to regenerate). Fix every problem until verification.passed is true.",
             handler: Handler::Agent("opencad.patch_dry_run_document"),
             schema: patch_schema,
         },
@@ -143,7 +146,7 @@ fn tools() -> Vec<Tool> {
         },
         Tool {
             name: "patch_apply",
-            description: "Validate and apply a DesignPatch, then write the document. The document is unchanged if validation fails.",
+            description: "Validate, regenerate, and apply a DesignPatch, then write the document. Refuses (document unchanged) when validation fails, the patched model does not regenerate, or a declared expected_effect is not met. Returns the verification evidence.",
             handler: Handler::Agent("opencad.patch_apply_document"),
             schema: patch_schema,
         },

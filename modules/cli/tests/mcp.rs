@@ -109,6 +109,14 @@ fn an_agent_authors_reviews_and_applies_a_part_over_mcp() {
         json!({ "path": part_path, "patch": patch }),
     );
     assert_eq!(dry_run["validation"]["messages"], json!([]), "{dry_run}");
+    // Authoring from an empty part: no body before, a plate after.
+    assert_eq!(dry_run["verification"]["passed"], json!(true), "{dry_run}");
+    assert!(
+        dry_run["verification"]["geometry"]["after_triangles"]
+            .as_u64()
+            .is_some_and(|count| count > 0),
+        "{dry_run}"
+    );
     assert_eq!(
         dry_run["impact"]["predicted_dirty_nodes"],
         json!([
