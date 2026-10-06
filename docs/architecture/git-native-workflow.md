@@ -7,7 +7,7 @@ The Design Graph remains the source of truth; review geometry is regenerated and
 ## Review
 
 ```bash
-opencad review examples/robot_joint_actuator.ocad.d \
+musubicad review examples/robot_joint_actuator.ocad.d \
   examples/agent/review_robot_joint_patch.json --output review
 ```
 
@@ -29,8 +29,8 @@ reviews add Before/After SVG sheets alongside the referenced model geometry comp
 ## Merge and rebase
 
 ```bash
-opencad merge base.ocad.d ours.ocad.d theirs.ocad.d merged.ocad.d
-opencad rebase-patch old-base.ocad.d new-base.ocad.d change.json rebased.json
+musubicad merge base.ocad.d ours.ocad.d theirs.ocad.d merged.ocad.d
+musubicad rebase-patch old-base.ocad.d new-base.ocad.d change.json rebased.json
 ```
 
 Three-way merge compares every collection of the design by stable semantic ID: parameters,
@@ -50,7 +50,7 @@ Expanded `.ocad.d` documents merge through plain `git merge` with the MusubiCAD 
 ([ADR-015](../adr/ADR-015-git-merge-driver.md)):
 
 ```bash
-opencad merge-driver install      # registers merge.musubicad in this repository's git config
+musubicad merge-driver install      # registers merge.musubicad in this repository's git config
 ```
 
 Add the printed lines to `.gitattributes`:
@@ -66,10 +66,10 @@ of the directory therefore stay consistent and `checksums.json` verifies. When t
 conflicts, the merge stops like any Git conflict and prints typed conflicts. List them again with:
 
 ```bash
-opencad conflicts path/to/design.ocad.d
+musubicad conflicts path/to/design.ocad.d
 ```
 
-Resolve them with a `DesignPatch` or `opencad merge`, then commit. The driver refuses to guess:
+Resolve them with a `DesignPatch` or `musubicad merge`, then commit. The driver refuses to guess:
 rebase, cherry-pick, octopus and criss-cross merges, or any input that does not match its
 reconstruction fall back to Git's ordinary conflict handling.
 
@@ -88,7 +88,7 @@ maximum mass in kilograms, bounding-box limits in metres, and zero assembly inte
 metrics fail closed rather than silently passing.
 
 ```bash
-opencad check examples/bracket.ocad.d examples/agent/bracket_policy.json
+musubicad check examples/bracket.ocad.d examples/agent/bracket_policy.json
 ```
 
 The command prints a JSON report and exits unsuccessfully when any finding fails.

@@ -48,10 +48,10 @@ jobs:
           # tags build every platform before publishing.  Non-Linux compile
           # breakage is still caught on main by the Desktop workflow, which
           # builds every platform on push.
-          linux='{"runner":"ubuntu-22.04","platform":"linux-x86_64","binary":"target/release/opencad","wgpu_backend":"vulkan"}'
-          windows='{"runner":"windows-2022","platform":"windows-x86_64","binary":"target/release/opencad.exe"}'
-          mac_arm='{"runner":"macos-15","platform":"macos-aarch64","binary":"target/release/opencad"}'
-          mac_intel='{"runner":"macos-15-intel","platform":"macos-x86_64","binary":"target/release/opencad"}'
+          linux='{"runner":"ubuntu-22.04","platform":"linux-x86_64","binary":"target/release/musubicad","wgpu_backend":"vulkan"}'
+          windows='{"runner":"windows-2022","platform":"windows-x86_64","binary":"target/release/musubicad.exe"}'
+          mac_arm='{"runner":"macos-15","platform":"macos-aarch64","binary":"target/release/musubicad"}'
+          mac_intel='{"runner":"macos-15-intel","platform":"macos-x86_64","binary":"target/release/musubicad"}'
           if [ "$EVENT_NAME" = "pull_request" ]; then
             include="[$linux]"
           else
@@ -113,7 +113,7 @@ jobs:
           EXPECTED_VERSION: ${{ steps.version.outputs.version }}
         run: |
           $versionOutput = @(& $env:BINARY_PATH version)
-          if ($LASTEXITCODE -ne 0 -or $versionOutput[0] -ne "opencad $env:EXPECTED_VERSION") {
+          if ($LASTEXITCODE -ne 0 -or $versionOutput[0] -ne "musubicad $env:EXPECTED_VERSION") {
               throw "Unexpected version output: $($versionOutput -join '; ')"
           }
           & $env:BINARY_PATH regen examples/bracket.ocad.d
@@ -182,9 +182,11 @@ jobs:
               throw "Could not list release archive $($archive.Name)"
           }
           $root = "musubicad-cli-v$env:RELEASE_VERSION-$env:RELEASE_PLATFORM"
-          $executable = if ($env:RELEASE_PLATFORM.StartsWith("windows-")) { "opencad.exe" } else { "opencad" }
+          $executable = if ($env:RELEASE_PLATFORM.StartsWith("windows-")) { "musubicad.exe" } else { "musubicad" }
+          $legacy = if ($env:RELEASE_PLATFORM.StartsWith("windows-")) { "opencad.cmd" } else { "opencad" }
           $required = @(
               "$root/$executable",
+              "$root/$legacy",
               "$root/LICENSE",
               "$root/README.md",
               "$root/QUICKSTART.md",

@@ -1,4 +1,4 @@
-//! `opencad animate` — deterministic presentation GIF export.
+//! `musubicad animate` — deterministic presentation GIF export.
 
 use opencad_core::{OpenCadError, Result};
 use std::collections::BTreeSet;

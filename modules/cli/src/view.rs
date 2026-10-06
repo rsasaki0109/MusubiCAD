@@ -1,4 +1,4 @@
-//! `opencad view` and `opencad screenshot` commands.
+//! `musubicad view` and `musubicad screenshot` commands.
 
 use opencad_core::Result;
 use opencad_render::{run_viewport, OffscreenRenderer};

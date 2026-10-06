@@ -1,4 +1,4 @@
-//! `opencad regen` command (Task-123+).
+//! `musubicad regen` command (Task-123+).
 
 use std::path::Path;
 
@@ -21,7 +21,7 @@ use opencad_core::Result;
 
 const DEFAULT_DENSITY_KG_PER_M3: f64 = 2700.0;
 
-/// Summary printed by `opencad regen`.
+/// Summary printed by `musubicad regen`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RegenSummary {
     pub kernel: String,

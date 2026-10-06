@@ -1,8 +1,8 @@
 """Evaluate an MCP agent host authoring MusubiCAD parts (MCAD-P7-012).
 
 Each task in ``tools/mcp_eval_tasks.json`` runs Claude Code headless against
-``opencad mcp`` with only the MusubiCAD tools allowed.  The result is then
-checked independently by regenerating the document with ``opencad regen``:
+``musubicad mcp`` with only the MusubiCAD tools allowed.  The result is then
+checked independently by regenerating the document with ``musubicad regen``:
 
 - the solid volume must match the analytic value;
 - the named parameters must exist;
@@ -15,7 +15,7 @@ The harness records turns, cost, and duration for each task.  It calls a
 paid model, so it is never run in CI.  Run it by hand after changes to the
 MCP surface or the authoring guide:
 
-    python tools/mcp_eval.py --opencad target/debug/opencad.exe
+    python tools/mcp_eval.py --musubicad target/debug/musubicad.exe
     python tools/mcp_eval.py --only enclosure --out eval.json
     python tools/mcp_eval.py --self-test   # checker only, no model calls
 """
@@ -58,7 +58,7 @@ INSTRUCTIONS = (
 
 
 def regenerated_volume_mm3(regen_output: str) -> float | None:
-    """Parse the solid volume, in mm^3, from `opencad regen` output."""
+    """Parse the solid volume, in mm^3, from `musubicad regen` output."""
     match = VOLUME_LINE.search(regen_output)
     return float(match.group(1)) * 1e9 if match else None
 
@@ -132,7 +132,7 @@ def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str
     return not problems, problems
 
 
-def run_task(task: dict, opencad: Path, claude: str, timeout_s: int) -> dict:
+def run_task(task: dict, musubicad: Path, claude: str, timeout_s: int) -> dict:
     workdir = Path(tempfile.mkdtemp(prefix=f"mcp-eval-{task['id']}-"))
     document = workdir / task["document"]
     if "source" in task:
@@ -142,18 +142,18 @@ def run_task(task: dict, opencad: Path, claude: str, timeout_s: int) -> dict:
         "workdir": workdir.as_posix(),
         "root": ROOT.as_posix(),
     }
-    # Setup steps are `opencad` argument lists, e.g. exporting a STEP file
+    # Setup steps are `musubicad` argument lists, e.g. exporting a STEP file
     # the agent must import.  They run before the agent starts.
     for step in task.get("setup", []):
         subprocess.run(
-            [str(opencad), *[arg.format(**placeholders) for arg in step]],
+            [str(musubicad), *[arg.format(**placeholders) for arg in step]],
             check=True,
             capture_output=True,
         )
     config = workdir / "mcp.json"
     config.write_text(
         json.dumps(
-            {"mcpServers": {"musubicad": {"command": str(opencad), "args": ["mcp"]}}}
+            {"mcpServers": {"musubicad": {"command": str(musubicad), "args": ["mcp"]}}}
         ),
         encoding="utf-8",
     )
@@ -185,7 +185,7 @@ def run_task(task: dict, opencad: Path, claude: str, timeout_s: int) -> dict:
         host = {"is_error": True, "result": completed.stdout[-2000:] + completed.stderr[-2000:]}
 
     regen = subprocess.run(
-        [str(opencad), "regen", str(document)],
+        [str(musubicad), "regen", str(document)],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -194,7 +194,7 @@ def run_task(task: dict, opencad: Path, claude: str, timeout_s: int) -> dict:
     if "expected_views" in task:
         # The views must resolve their model and project to an SVG sheet.
         export = subprocess.run(
-            [str(opencad), "export", str(document), str(workdir / "check.svg")],
+            [str(musubicad), "export", str(document), str(workdir / "check.svg")],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -258,7 +258,7 @@ def self_test() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--opencad", type=Path, default=ROOT / "target" / "debug" / "opencad")
+    parser.add_argument("--musubicad", type=Path, default=ROOT / "target" / "debug" / "musubicad")
     parser.add_argument("--claude", default="claude")
     parser.add_argument("--only", action="append", help="task id to run (repeatable)")
     parser.add_argument("--timeout", type=int, default=900, help="seconds per task")
@@ -270,13 +270,13 @@ def main() -> int:
         self_test()
         return 0
 
-    opencad = args.opencad
-    if not opencad.exists() and opencad.with_suffix(".exe").exists():
-        opencad = opencad.with_suffix(".exe")
+    musubicad = args.musubicad
+    if not musubicad.exists() and musubicad.with_suffix(".exe").exists():
+        musubicad = musubicad.with_suffix(".exe")
     tasks = json.loads(TASKS.read_text(encoding="utf-8"))["tasks"]
     if args.only:
         tasks = [task for task in tasks if task["id"] in args.only]
-    results = [run_task(task, opencad.resolve(), args.claude, args.timeout) for task in tasks]
+    results = [run_task(task, musubicad.resolve(), args.claude, args.timeout) for task in tasks]
     report = {
         "passed": sum(result["passed"] for result in results),
         "total": len(results),

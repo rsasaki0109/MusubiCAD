@@ -7,7 +7,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [[bin]]
-name = "opencad"
+name = "musubicad"
 path = "src/main.rs"
 
 [features]

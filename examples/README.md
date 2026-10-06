@@ -6,21 +6,21 @@ Ready-to-use MusubiCAD documents and Agent API requests.
 
 | Directory | Template | Features |
 |---|---|---|
-| `robot_arm_assembly.ocad.d` | `opencad new <path> robot-arm` | 4-part articulated arm: base turret, upper link, forearm link, wrist gripper; 3 concentric joints via connectors and mates |
+| `robot_arm_assembly.ocad.d` | `musubicad new <path> robot-arm` | 4-part articulated arm: base turret, upper link, forearm link, wrist gripper; 3 concentric joints via connectors and mates |
 | `robot_arm_assembly_drawing.ocad.d` | generated example | A4 front-view drawing of the arm assembly with a model-driven 160 mm upper-arm dimension |
-| `robot_joint_actuator.ocad.d` | `opencad new <path> robot-joint` | 22 nodes: stepped hubs, shaft/counterbore cuts, 8-hole PCD, 6 ribs, mirrored ears and holes |
-| `bearing_carrier.ocad.d` | `opencad new <path> bearing-carrier` | Base extrude, joined hub, through bore, four-hole circular cut pattern |
-| `bracket.ocad.d` | `opencad new <path>` | Sketch, extrude, hole (`face_ref`) |
-| `bracket_boss_join.ocad.d` | `opencad new <path> boss-join` | + extrude join onto plate |
-| `bracket_face_pin.ocad.d` | `opencad new <path> face-pin` | + sketch-on-face pin (`face_ref` workplane) |
-| `bracket_edge_fillet.ocad.d` | `opencad new <path> edge-fillet` | + single-edge fillet (`edge_ref`) |
-| `bracket_hole_row.ocad.d` | `opencad new <path> hole-row` | + linear cut pattern, `hole_pitch` param |
-| `bracket_hole_ring.ocad.d` | `opencad new <path> hole-ring` | + circular cut pattern |
-| `bracket_pin_row.ocad.d` | `opencad new <path> pin-row` | + linear union pattern on plate |
-| `bracket_pin_ring.ocad.d` | `opencad new <path> pin-ring` | + circular union pattern on plate |
-| `bracket_pin_mirror.ocad.d` | `opencad new <path> pin-mirror` | + mirror pattern, `plane_face_ref` |
-| `revolve_bushing.ocad.d` | `opencad new <path> revolve-bushing` | Revolve bushing (XY profile, Y axis, 360°) |
-| `revolve_sector.ocad.d` | `opencad new <path> revolve-sector` | Half bushing sector (180°) |
+| `robot_joint_actuator.ocad.d` | `musubicad new <path> robot-joint` | 22 nodes: stepped hubs, shaft/counterbore cuts, 8-hole PCD, 6 ribs, mirrored ears and holes |
+| `bearing_carrier.ocad.d` | `musubicad new <path> bearing-carrier` | Base extrude, joined hub, through bore, four-hole circular cut pattern |
+| `bracket.ocad.d` | `musubicad new <path>` | Sketch, extrude, hole (`face_ref`) |
+| `bracket_boss_join.ocad.d` | `musubicad new <path> boss-join` | + extrude join onto plate |
+| `bracket_face_pin.ocad.d` | `musubicad new <path> face-pin` | + sketch-on-face pin (`face_ref` workplane) |
+| `bracket_edge_fillet.ocad.d` | `musubicad new <path> edge-fillet` | + single-edge fillet (`edge_ref`) |
+| `bracket_hole_row.ocad.d` | `musubicad new <path> hole-row` | + linear cut pattern, `hole_pitch` param |
+| `bracket_hole_ring.ocad.d` | `musubicad new <path> hole-ring` | + circular cut pattern |
+| `bracket_pin_row.ocad.d` | `musubicad new <path> pin-row` | + linear union pattern on plate |
+| `bracket_pin_ring.ocad.d` | `musubicad new <path> pin-ring` | + circular union pattern on plate |
+| `bracket_pin_mirror.ocad.d` | `musubicad new <path> pin-mirror` | + mirror pattern, `plane_face_ref` |
+| `revolve_bushing.ocad.d` | `musubicad new <path> revolve-bushing` | Revolve bushing (XY profile, Y axis, 360°) |
+| `revolve_sector.ocad.d` | `musubicad new <path> revolve-sector` | Half bushing sector (180°) |
 | `sketch_constraints_regression.ocad.d` | solver regression fixture | Equal line/circle/arc targets, Parallel/Perpendicular combination, and under/fully/over/contradictory cases |
 
 See [docs/examples/patterns.md](../docs/examples/patterns.md) for a full cut vs union comparison table.
@@ -61,7 +61,7 @@ cargo run -p opencad-cli -- patch examples/bracket_hole_row.ocad.d examples/agen
 
 ## Agent API
 
-See `agent/` for JSON-RPC payloads. Pipe them to `opencad agent` on stdio.
+See `agent/` for JSON-RPC payloads. Pipe them to `musubicad agent` on stdio.
 
 ## Semantic TopoRef
 
@@ -145,7 +145,7 @@ let patch = DesignPatch::set_parameter("param:width", "100 mm")
 is serialized as a `revision_equals` precondition and is refreshed by
 `rebase_patch` when the patch is moved to a newer state.
 
-The desktop parameter toolbar, `opencad patch`, and
+The desktop parameter toolbar, `musubicad patch`, and
 `opencad.patch_apply_document` all cross the same validated
 `DesignPatch`/file boundary; the command-parity test exercises the desktop
 path against a direct patch transaction.
@@ -165,7 +165,7 @@ cargo test -p opencad-plugin-example
 Feature and importer implementations return validated `DesignPatch` DTOs;
 exporters receive immutable serializable state and return bytes. The example
 declares `feature_patch`, so it passes the deterministic P4-002 registry policy.
-Product integration is available through `opencad plugin list`, `opencad plugin
+Product integration is available through `musubicad plugin list`, `musubicad plugin
 invoke`, `opencad.plugin_list`, and `opencad.plugin_invoke`. Copy the bracket
 fixture before invoking a mutating example; the checked-in Agent invoke request
 uses dry-run mode and points at `work/bracket.ocad.d`.

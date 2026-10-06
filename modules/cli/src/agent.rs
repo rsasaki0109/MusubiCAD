@@ -1,4 +1,4 @@
-//! `opencad agent` JSON-RPC stdio server (Task-156+).
+//! `musubicad agent` JSON-RPC stdio server (Task-156+).
 
 use std::io::{self, BufRead, Write};
 

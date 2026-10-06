@@ -79,7 +79,7 @@ New operations:
 
 The imported solid itself is an ordinary `add_feature`.
 
-The CLI command `opencad import-step <doc> <file.step> --id <feature id>`
+The CLI command `musubicad import-step <doc> <file.step> --id <feature id>`
 builds that patch and applies it through the same history boundary. An MCP
 tool `import_step` delegates to the same function, so the CLI, Agent API
 (through `patch_apply`), and MCP stay at parity.

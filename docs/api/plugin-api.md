@@ -115,8 +115,8 @@ state. The linked built-ins demonstrate all three contracts:
 List or invoke them with:
 
 ```text
-opencad plugin list --json
-opencad plugin invoke example.bracket-feature work/bracket.ocad.d examples/plugin-example/feature-request.json --dry-run --json
+musubicad plugin list --json
+musubicad plugin invoke example.bracket-feature work/bracket.ocad.d examples/plugin-example/feature-request.json --dry-run --json
 ```
 
 Feature/importer results are dry-run validated, then applied with the shared

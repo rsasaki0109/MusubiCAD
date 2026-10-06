@@ -52,7 +52,7 @@ tessellation discovery order.
 
 Kernel face and edge IDs are 1-based enumeration indices of the final body
 ([ADR-018](../adr/ADR-018-deterministic-kernel-topology-ids.md)). They are
-deterministic for identical inputs, so `opencad regen --sync-topo-refs`
+deterministic for identical inputs, so `musubicad regen --sync-topo-refs`
 writes the same file on every run.
 
 When current discoveries are supplied, a stored ID is accepted only if a
@@ -119,7 +119,7 @@ match resolution.provenance.status {
 
 `resolve_all_reference_provenance` classifies every document reference against
 the final regenerated discoveries as observability data; `RegenReport` carries
-the per-reference provenance, the CLI `opencad regen` prints a status summary,
+the per-reference provenance, the CLI `musubicad regen` prints a status summary,
 and the design-review artifact includes the same provenance table for part
 documents.
 

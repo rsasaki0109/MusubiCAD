@@ -132,7 +132,7 @@ Acceptance:
 ### MCAD-P6-005 — Git-native semantic merge productization
 
 Productize the existing semantic three-way merge and patch rebase primitives as
-`opencad merge-driver`, `opencad conflicts`, and a documented Git attributes
+`musubicad merge-driver`, `musubicad conflicts`, and a documented Git attributes
 workflow. Conflicts are stable-ID parameter/feature/sketch/assembly/drawing
 conflicts, not JSON line conflicts. Geometry is regenerated only after the
 merged Design Graph validates.

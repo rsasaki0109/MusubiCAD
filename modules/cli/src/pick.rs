@@ -1,4 +1,4 @@
-//! `opencad pick` — headless viewport selection query.
+//! `musubicad pick` — headless viewport selection query.
 
 pub use opencad_desktop::{pick_document, PickOptions, PickSummary, PickTarget};
 

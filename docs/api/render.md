@@ -21,7 +21,7 @@
 The CLI exposes the same capability:
 
 ```bash
-opencad animate model.ocad.d showcase.gif \
+musubicad animate model.ocad.d showcase.gif \
   --width 960 --height 540 \
   --frames 36 --fps 12 \
   --orbit-deg 220 --pitch-deg 26
@@ -31,7 +31,7 @@ Add `--show-sketch` to include sketch entities and constraint labels.
 
 ## Shaded previews
 
-`OffscreenRenderer` images (`opencad screenshot`, `opencad animate`, and the
+`OffscreenRenderer` images (`musubicad screenshot`, `musubicad animate`, and the
 headless preview) add two view-independent cues to the lit solid:
 
 - **Feature edges.** Mesh boundary edges and creases sharper than 25° are

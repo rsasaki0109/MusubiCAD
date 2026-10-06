@@ -1,4 +1,4 @@
-//! `opencad export <doc> out.step` for parts and assemblies (integration
+//! `musubicad export <doc> out.step` for parts and assemblies (integration
 //! test: requires OCCT).
 
 use std::path::{Path, PathBuf};
@@ -18,14 +18,14 @@ fn example(name: &str) -> PathBuf {
 }
 
 fn export(document: &Path, output: &Path) {
-    let run = Command::new(env!("CARGO_BIN_EXE_opencad"))
+    let run = Command::new(env!("CARGO_BIN_EXE_musubicad"))
         .args([
             "export",
             &document.to_string_lossy(),
             &output.to_string_lossy(),
         ])
         .output()
-        .expect("run opencad export");
+        .expect("run musubicad export");
     assert!(
         run.status.success(),
         "{}{}",
@@ -86,7 +86,7 @@ fn an_assembly_exports_every_placed_instance() {
 #[test]
 fn drawings_are_refused_for_step() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let run = Command::new(env!("CARGO_BIN_EXE_opencad"))
+    let run = Command::new(env!("CARGO_BIN_EXE_musubicad"))
         .args([
             "export",
             &example("bracket_front_view.ocad.d").to_string_lossy(),

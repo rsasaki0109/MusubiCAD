@@ -56,7 +56,7 @@ pub fn merge_documents(
 pub fn merge(args: Vec<String>) -> Result<()> {
     if args.len() != 4 {
         return Err(OpenCadError::validation(
-            "usage: opencad merge <base> <ours> <theirs> <output>",
+            "usage: musubicad merge <base> <ours> <theirs> <output>",
         ));
     }
     let base = read_ocad(&args[0])?;
@@ -78,12 +78,12 @@ pub fn merge(args: Vec<String>) -> Result<()> {
     }
 }
 
-/// `opencad merge-driver %O %A %B %P` and `opencad merge-driver install`.
+/// `musubicad merge-driver %O %A %B %P` and `musubicad merge-driver install`.
 pub fn merge_driver(args: Vec<String>) -> Result<()> {
     if args.first().map(String::as_str) == Some("install") {
         let repo = crate::git_driver::repository_root()?;
         let executable = std::env::current_exe()
-            .map_err(|error| OpenCadError::Other(format!("cannot locate opencad: {error}")))?;
+            .map_err(|error| OpenCadError::Other(format!("cannot locate musubicad: {error}")))?;
         let attributes = crate::git_driver::install(&repo, &executable)?;
         println!("Registered merge driver 'musubicad' in {}.", repo.display());
         println!("Add these lines to .gitattributes:");
@@ -94,7 +94,7 @@ pub fn merge_driver(args: Vec<String>) -> Result<()> {
     }
     let [base, current, other, path] = args.as_slice() else {
         return Err(OpenCadError::validation(
-            "usage: opencad merge-driver %O %A %B %P   |   opencad merge-driver install",
+            "usage: musubicad merge-driver %O %A %B %P   |   musubicad merge-driver install",
         ));
     };
     let repo = crate::git_driver::repository_root()?;
@@ -107,7 +107,7 @@ pub fn merge_driver(args: Vec<String>) -> Result<()> {
     )? {
         crate::git_driver::DriverOutcome::Merged => Ok(()),
         crate::git_driver::DriverOutcome::Conflict(reason) => {
-            eprintln!("opencad merge-driver: {reason}");
+            eprintln!("musubicad merge-driver: {reason}");
             Err(OpenCadError::validation(format!(
                 "'{path}' left conflicted"
             )))
@@ -128,11 +128,11 @@ fn repository_relative(repo: &Path, path: &Path) -> String {
         .replace('\\', "/")
 }
 
-/// `opencad conflicts <doc.ocad.d>`: typed conflicts of an unfinished merge.
+/// `musubicad conflicts <doc.ocad.d>`: typed conflicts of an unfinished merge.
 pub fn conflicts(args: Vec<String>) -> Result<()> {
     let [document] = args.as_slice() else {
         return Err(OpenCadError::validation(
-            "usage: opencad conflicts <document.ocad.d>",
+            "usage: musubicad conflicts <document.ocad.d>",
         ));
     };
     let repo = crate::git_driver::repository_root()?;
@@ -152,7 +152,7 @@ pub fn conflicts(args: Vec<String>) -> Result<()> {
 pub fn rebase(args: Vec<String>) -> Result<()> {
     if args.len() != 4 {
         return Err(OpenCadError::validation(
-            "usage: opencad rebase-patch <old-base> <new-base> <patch.json> <output.json>",
+            "usage: musubicad rebase-patch <old-base> <new-base> <patch.json> <output.json>",
         ));
     }
     let old_base = read_ocad(&args[0])?;

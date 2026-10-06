@@ -23,8 +23,8 @@ depends on every other merged file.
 
 ## Decision
 
-Add `opencad merge-driver`, a Git merge driver
-(`driver = opencad merge-driver %O %A %B %P`) for the files of `.ocad.d`
+Add `musubicad merge-driver`, a Git merge driver
+(`driver = musubicad merge-driver %O %A %B %P`) for the files of `.ocad.d`
 documents.
 
 1. **Whole-document merge per file.**
@@ -34,7 +34,7 @@ documents.
      `GITHEAD_<sha>`, because `MERGE_HEAD` is not written until after the
      drivers have run; `MERGE_HEAD` is used when present. Base is the single
      merge base of the two.
-   - It runs the same whole-document merge as `opencad merge`, serializes the
+   - It runs the same whole-document merge as `musubicad merge`, serializes the
      merged document canonically, and writes the requested file's bytes to
      `%A`.
    - Git takes a file changed on only one branch without calling the driver.
@@ -58,16 +58,16 @@ documents.
    - the path is not a canonical file of the merged document.
 
    Git then falls back to its normal conflict handling, and the user runs
-   `opencad merge` explicitly.
+   `musubicad merge` explicitly.
 3. **Semantic conflicts.** When the merge reports conflicts, the driver
    prints them as JSON on stderr, including `add_add`, `remove_modify`,
    `order`, and `invalid_result` reasons, and exits 1. During an unfinished
-   merge, `opencad conflicts <doc.ocad.d>` recomputes and prints the same
+   merge, `musubicad conflicts <doc.ocad.d>` recomputes and prints the same
    conflict list.
 4. **Setup.**
-   - `opencad merge-driver install` writes the repository-local `git config`
+   - `musubicad merge-driver install` writes the repository-local `git config`
      entries.
-   - `opencad merge-driver install` also prints the `.gitattributes` lines to
+   - `musubicad merge-driver install` also prints the `.gitattributes` lines to
      add:
      - `*.ocad.d/*.json merge=musubicad`
      - `*.ocad.d/graph/*.json merge=musubicad`

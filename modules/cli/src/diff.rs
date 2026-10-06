@@ -1,4 +1,4 @@
-//! `opencad diff` command (Task-127+).
+//! `musubicad diff` command (Task-127+).
 
 use opencad_core::Result;
 use opencad_file::{diff_documents, read_ocad, OcadDocument};
@@ -14,7 +14,7 @@ pub struct DiffOptions {
     pub geometry: bool,
 }
 
-/// Parsed CLI arguments for `opencad diff`.
+/// Parsed CLI arguments for `musubicad diff`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiffArgs {
     pub before_path: String,
@@ -59,7 +59,7 @@ pub fn diff_documents_at_paths(args: &DiffArgs) -> Result<DesignDiff> {
         }
         _ => {
             return Err(opencad_core::OpenCadError::validation(
-                "usage: opencad diff <before> <after> | opencad diff <doc> --patch <patch.json>",
+                "usage: musubicad diff <before> <after> | musubicad diff <doc> --patch <patch.json>",
             ));
         }
     };
@@ -349,21 +349,21 @@ where
 
     let before_path = positional.first().cloned().ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad diff <before> <after> [--json] [--geometry]\n       opencad diff <doc> --patch <patch.json> [--json] [--geometry]",
+            "usage: musubicad diff <before> <after> [--json] [--geometry]\n       musubicad diff <doc> --patch <patch.json> [--json] [--geometry]",
         )
     })?;
 
     let after_path = if patch_path.is_some() {
         if positional.len() > 1 {
             return Err(opencad_core::OpenCadError::validation(
-                "usage: opencad diff <doc> --patch <patch.json>",
+                "usage: musubicad diff <doc> --patch <patch.json>",
             ));
         }
         None
     } else {
         Some(positional.get(1).cloned().ok_or_else(|| {
             opencad_core::OpenCadError::validation(
-                "usage: opencad diff <before> <after> [--json] [--geometry]",
+                "usage: musubicad diff <before> <after> [--json] [--geometry]",
             )
         })?)
     };

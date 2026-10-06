@@ -21,7 +21,7 @@ SVG sheets.
 - [x] Core IDs: `SheetId`, `ViewId`, `DocumentKind::Drawing`
 - [x] `opencad-drawing`: `DrawingModel`, projection, wireframe, SVG export
 - [x] File I/O: `OcadDocument.drawing`, `graph/drawings.json`
-- [x] CLI: `opencad new … drawing`, `opencad export … .svg`, inspect summary
+- [x] CLI: `musubicad new … drawing`, `musubicad export … .svg`, inspect summary
 - [x] Template: `bracket_front_view` with child `parts/bracket.ocad.d`
 - [x] Schemas: `ocad.drawing.schema.json`, document `kind: drawing`
 - [x] Example committed under `examples/bracket_front_view.ocad.d`
@@ -38,7 +38,7 @@ SVG sheets.
 ## Definition of done (M4.1)
 
 - Drawing round-trip through `.ocad.d`
-- `opencad export drawing.ocad.d out.svg` produces valid SVG wireframe
+- `musubicad export drawing.ocad.d out.svg` produces valid SVG wireframe
 - `cargo test -p opencad-drawing -p opencad-file` pass without OCCT link issues
 - Docs: ADR-004, `docs/architecture/drawing.md`
 

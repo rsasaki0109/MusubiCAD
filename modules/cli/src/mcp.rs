@@ -1,4 +1,4 @@
-//! `opencad mcp`: Model Context Protocol server on stdio (ADR-014).
+//! `musubicad mcp`: Model Context Protocol server on stdio (ADR-014).
 //!
 //! A thin adapter: every tool delegates to an existing Agent API method or to
 //! a file-layer function the CLI already uses, so MCP adds no mutation path.

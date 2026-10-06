@@ -12,7 +12,7 @@ body:
     id: version
     attributes:
       label: MusubiCAD version or commit
-      description: Run `opencad version` for a release binary, or provide the commit SHA.
+      description: Run `musubicad version` for a release binary, or provide the commit SHA.
       placeholder: "v0.1.0 / 7d9cd8b"
     validations:
       required: true

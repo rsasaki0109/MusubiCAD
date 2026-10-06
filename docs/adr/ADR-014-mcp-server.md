@@ -8,9 +8,9 @@ Roadmap: MCAD-P7-002
 
 ADR-013 lets agents author complete designs through structural
 `DesignPatch` operations. The only programmatic entry point, however, is
-`opencad agent`: a project-specific JSON-RPC 2.0 method set over stdio.
+`musubicad agent`: a project-specific JSON-RPC 2.0 method set over stdio.
 General-purpose agent hosts (Claude Code, Claude Desktop, IDE agents) speak
-the Model Context Protocol (MCP). Using `opencad agent` from them requires
+the Model Context Protocol (MCP). Using `musubicad agent` from them requires
 custom glue, so MusubiCAD's intended workflow cannot be used by the agents it
 was built for:
 
@@ -18,7 +18,7 @@ was built for:
 
 ## Decision
 
-Add `opencad mcp`, an MCP server on stdio, as a thin adapter over the existing
+Add `musubicad mcp`, an MCP server on stdio, as a thin adapter over the existing
 Agent API dispatch (`handle_agent_request_with_plugins`) and the file-layer
 functions the CLI already uses.
 
@@ -28,7 +28,7 @@ functions the CLI already uses.
   negotiates protocol versions `2025-11-25`, `2025-06-18`, `2025-03-26`, and
   `2024-11-05`. It echoes a supported requested version and otherwise answers
   with its newest. Notifications receive no response. No network listener is
-  started, as for `opencad agent`.
+  started, as for `musubicad agent`.
 - **No new dependency.** The protocol subset is small and uses the
   `serde_json` types the Agent API already uses. An MCP SDK crate would add an
   async runtime and a large dependency tree to the CLI for little benefit
@@ -39,7 +39,7 @@ functions the CLI already uses.
   |---|---|
   | `inspect_document`, `validate_document`, `query_document`, `explain_document`, `regen_document`, `diff_document` | The existing `opencad.*` Agent API methods |
   | `patch_dry_run`, `patch_apply` | `opencad.patch_dry_run_document`, `opencad.patch_apply_document` |
-  | `review_patch` | `opencad review` (`generate_review`) |
+  | `review_patch` | `musubicad review` (`generate_review`) |
   | `authoring_patch` | `opencad_ai::authoring_patch` on the document's design state |
   | `new_document` | Creates an empty part, assembly, or drawing document and refuses to overwrite an existing path |
 

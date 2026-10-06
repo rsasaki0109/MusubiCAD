@@ -63,7 +63,7 @@ and does not contain direct Design Graph mutation expressions.
 The parity test also checks the implementation boundary: the Tauri parameter
 handler delegates to the desktop history helper, the desktop helper constructs
 the same validated `DesignPatch` used by the CLI/Agent routes, and template
-creation is shared with `opencad new`. A runtime case applies the toolbar
+creation is shared with `musubicad new`. A runtime case applies the toolbar
 parameter command and a direct `DesignPatch` transaction to equivalent
 documents and compares their serialized results.
 

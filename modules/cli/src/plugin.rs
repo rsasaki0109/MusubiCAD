@@ -166,7 +166,7 @@ pub fn decode_request(kind: PluginKind, value: Value) -> Result<PluginRequest> {
     }
 }
 
-/// Parsed `opencad plugin` command.
+/// Parsed `musubicad plugin` command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PluginCliCommand {
     List {
@@ -186,7 +186,7 @@ pub enum PluginCliCommand {
 pub fn parse_cli_args(args: &[String]) -> Result<PluginCliCommand> {
     let command = args.first().map(String::as_str).ok_or_else(|| {
         OpenCadError::validation(
-            "usage: opencad plugin list [--json] | plugin invoke <id> <document> <request.json> [--dry-run] [--output <path>] [--json]",
+            "usage: musubicad plugin list [--json] | plugin invoke <id> <document> <request.json> [--dry-run] [--output <path>] [--json]",
         )
     })?;
     match command {
@@ -194,7 +194,7 @@ pub fn parse_cli_args(args: &[String]) -> Result<PluginCliCommand> {
             let json = args.iter().skip(1).all(|arg| arg == "--json");
             if !json && args.len() > 1 {
                 return Err(OpenCadError::validation(
-                    "usage: opencad plugin list [--json]",
+                    "usage: musubicad plugin list [--json]",
                 ));
             }
             Ok(PluginCliCommand::List { json })
@@ -222,7 +222,7 @@ pub fn parse_cli_args(args: &[String]) -> Result<PluginCliCommand> {
             }
             if positional.len() != 3 {
                 return Err(OpenCadError::validation(
-                    "usage: opencad plugin invoke <id> <document> <request.json> [--dry-run] [--output <path>] [--json]",
+                    "usage: musubicad plugin invoke <id> <document> <request.json> [--dry-run] [--output <path>] [--json]",
                 ));
             }
             Ok(PluginCliCommand::Invoke {
@@ -235,7 +235,7 @@ pub fn parse_cli_args(args: &[String]) -> Result<PluginCliCommand> {
             })
         }
         _ => Err(OpenCadError::validation(
-            "usage: opencad plugin list [--json] | plugin invoke <id> <document> <request.json> [--dry-run] [--output <path>] [--json]",
+            "usage: musubicad plugin list [--json] | plugin invoke <id> <document> <request.json> [--dry-run] [--output <path>] [--json]",
         )),
     }
 }

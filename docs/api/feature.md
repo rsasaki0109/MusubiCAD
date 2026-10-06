@@ -89,12 +89,12 @@ assert!(report.cached_nodes.iter().any(|id| id == "feature:joint_base"));
 
 ## Feature-build animation
 
-`opencad animate-features` regenerates a part, omits standalone pattern-tool
+`musubicad animate-features` regenerates a part, omits standalone pattern-tool
 bodies, and renders the remaining body-producing milestones in deterministic
 Feature Graph order. Every frame uses a camera fitted to the final body so
 geometry growth is directly comparable:
 
 ```bash
-opencad animate-features examples/robot_joint_actuator.ocad.d build.gif \
+musubicad animate-features examples/robot_joint_actuator.ocad.d build.gif \
   --frames 54 --fps 9 --orbit-deg 35 --pitch-deg 30
 ```

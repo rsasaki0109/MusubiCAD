@@ -1,4 +1,4 @@
-//! `opencad review` — self-contained DesignPatch review artifacts.
+//! `musubicad review` — self-contained DesignPatch review artifacts.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -28,7 +28,7 @@ const REVIEW_WIDTH_PX: u32 = 800;
 const REVIEW_HEIGHT_PX: u32 = 450;
 const REVIEW_FPS: u32 = 8;
 
-/// Parsed `opencad review` arguments.
+/// Parsed `musubicad review` arguments.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReviewArgs {
     pub document_path: String,
@@ -121,7 +121,7 @@ pub fn parse_review_args(args: &[String]) -> Result<ReviewArgs> {
     Ok(ReviewArgs {
         document_path: positional.first().cloned().ok_or_else(|| {
             OpenCadError::validation(
-                "usage: opencad review <document> <patch.json> --output <directory>",
+                "usage: musubicad review <document> <patch.json> --output <directory>",
             )
         })?,
         patch_path: positional

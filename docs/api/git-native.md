@@ -15,7 +15,7 @@ SHA-256 `digest` for the complete canonical patchable `DesignState`. Use
 `design_state_revision` to calculate it; `rebase_patch` refreshes an existing
 revision guard after moving a patch to a newer base.
 
-The `opencad review` CLI writes the machine-readable report as `review.json` and a deterministic
+The `musubicad review` CLI writes the machine-readable report as `review.json` and a deterministic
 GitHub Actions summary as `github-summary.md`. It returns a validation error after producing the
 review bundle when one or more declared `ExpectedEffect` checks fail, so CI can preserve the
 evidence and still block the change.

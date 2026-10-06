@@ -1,4 +1,4 @@
-//! End-to-end `opencad mcp` session over real stdio (ADR-014): an agent
+//! End-to-end `musubicad mcp` session over real stdio (ADR-014): an agent
 //! creates an empty part, authors a plate with a through hole, and verifies
 //! the regenerated OCCT geometry (integration test: requires OCCT).
 
@@ -21,12 +21,12 @@ struct Session {
 
 impl Session {
     fn start() -> Self {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_opencad"))
+        let mut child = Command::new(env!("CARGO_BIN_EXE_musubicad"))
             .arg("mcp")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
-            .expect("spawn opencad mcp");
+            .expect("spawn musubicad mcp");
         let stdin = child.stdin.take().expect("stdin");
         let stdout = BufReader::new(child.stdout.take().expect("stdout"));
         Self {

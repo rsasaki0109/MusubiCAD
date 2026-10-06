@@ -73,7 +73,7 @@ failure is reported but never blocks.
 
 ## Surfaces
 
-- `opencad regen` evaluates the document's assertions after regeneration,
+- `musubicad regen` evaluates the document's assertions after regeneration,
   prints `assertion <id>: PASS/FAIL (<evidence>)` per rule, and exits with an
   error when a `required` assertion fails.
 - The design review artifact embeds the same assertion results and rejects the

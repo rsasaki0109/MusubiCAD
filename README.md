@@ -132,11 +132,11 @@ regenerating the README bundle (`./docs/assets/generate-review-demo.sh`) and fai
 
 ## Design with an AI agent (MCP)
 
-`opencad mcp` is a [Model Context Protocol](docs/api/mcp.md) server, so agent hosts such as
+`musubicad mcp` is a [Model Context Protocol](docs/api/mcp.md) server, so agent hosts such as
 Claude Code can create, dry-run, review, and apply designs directly:
 
 ```bash
-claude mcp add musubicad -- opencad mcp
+claude mcp add musubicad -- musubicad mcp
 ```
 
 Agents author new parts, assemblies, and drawings from empty documents with structural
@@ -177,7 +177,7 @@ transactions; `modules/render` consumes disposable tessellation. See the
 - **Agent API:** JSON-RPC query, explain, patch, diff, dry-run, regenerate, pick, export
 - **Structural authoring:** create and remove parameters, sketches, features, references,
   assembly components/instances/mates, and drawing sheets/views/dimensions through `DesignPatch`
-- **MCP server:** `opencad mcp` exposes inspection, authoring, dry-run, review, and apply to agent hosts
+- **MCP server:** `musubicad mcp` exposes inspection, authoring, dry-run, review, and apply to agent hosts
 - **Git-native review:** deterministic JSON/HTML/GIF artifacts, policy checks, patch rebase, three-way semantic merge
 - **Headless output:** PNG/GIF rendering plus STEP (millimetre B-rep), STL, and SVG export
 
@@ -235,8 +235,8 @@ docs/        Architecture, ADRs, API references, roadmap, and developer guides
 examples/    Parametric documents and Agent API requests
 ```
 
-> **Developer note:** Public Rust crates and the CLI retain the historical `opencad` prefix
-> (`opencad-cli`, `opencad agent`) while the project is branded MusubiCAD.
+> **Developer note:** Public Rust crates and the CLI retain the historical `musubicad` prefix
+> (`opencad-cli`, `musubicad agent`) while the project is branded MusubiCAD.
 
 ## License
 

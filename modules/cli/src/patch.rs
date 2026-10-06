@@ -1,4 +1,4 @@
-//! `opencad patch` command (Task-126+).
+//! `musubicad patch` command (Task-126+).
 
 use std::fs;
 use std::path::Path;
@@ -11,7 +11,7 @@ use opencad_file::{
 
 use crate::diff::{self, DiffOptions};
 
-/// Options for `opencad patch`.
+/// Options for `musubicad patch`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PatchOptions {
     pub dry_run: bool,
@@ -19,7 +19,7 @@ pub struct PatchOptions {
     pub geometry: bool,
 }
 
-/// Parsed CLI arguments for `opencad patch`.
+/// Parsed CLI arguments for `musubicad patch`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PatchArgs {
     pub doc_path: String,
@@ -112,12 +112,12 @@ where
 
     let doc_path = positional.first().cloned().ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad patch <document> <patch.json> [--dry-run] [--json] [--geometry]",
+            "usage: musubicad patch <document> <patch.json> [--dry-run] [--json] [--geometry]",
         )
     })?;
     let patch_path = positional.get(1).cloned().ok_or_else(|| {
         opencad_core::OpenCadError::validation(
-            "usage: opencad patch <document> <patch.json> [--dry-run] [--json] [--geometry]",
+            "usage: musubicad patch <document> <patch.json> [--dry-run] [--json] [--geometry]",
         )
     })?;
 

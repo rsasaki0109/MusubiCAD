@@ -15,7 +15,7 @@ only the next `regen_document` failed with
 name a feature. The graph stayed consistent and undo worked, but an agent
 could commit a change that destroys the part without noticing.
 
-`opencad review` already regenerated both sides and checked declared
+`musubicad review` already regenerated both sides and checked declared
 `expected_effects`, but it also rendered images and therefore needed a GPU,
 so it was not a usable gate for every edit.
 
