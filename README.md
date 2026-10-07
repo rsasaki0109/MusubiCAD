@@ -9,6 +9,13 @@
 </p>
 
 <p align="center">
+  <img src="docs/assets/agent-demo/hero.gif" alt="A Claude Code session with MusubiCAD: the agent enlarges an actuator hub with a verified diff and looks at the regenerated part, a 100 mm shaft bore is refused and the file stays unchanged, and the exported robot arm URDF moves in MuJoCo" width="900">
+  <br>
+  <sub>Abridged from a real Claude Code session with this plugin (<a href="docs/assets/agent-demo/hero-session.json">transcript</a>).
+  Every shape is a real regeneration, the preview is the exact PNG the agent looked at, and the arm is the URDF it exported, loaded in MuJoCo.</sub>
+</p>
+
+<p align="center">
   A parametric CAD plugin for coding agents such as Claude Code. Your agent edits named,
   unit-bearing parameters in a Design Graph; MusubiCAD dry-runs every change, rebuilds the solid
   with OpenCASCADE, checks it against what the agent said it would do, and only then writes the
@@ -18,7 +25,7 @@
 <p align="center">
   <a href="#install"><strong>Install</strong></a>
   ·
-  <a href="docs/assets/agent-demo/session.json">Full session transcript</a>
+  <a href="docs/assets/agent-demo/hero-session.json">Full session transcript</a>
   ·
   <a href="docs/api/mcp.md">MCP tools</a>
   ·
@@ -33,13 +40,6 @@
   <a href="https://github.com/rsasaki0109/MusubiCAD/releases/latest"><img src="https://img.shields.io/github/v/release/rsasaki0109/MusubiCAD?display_name=tag" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust" alt="Rust stable">
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-22c55e" alt="MIT OR Apache-2.0">
-</p>
-
-<p align="center">
-  <img src="docs/assets/agent-demo/conversation.gif" alt="A Claude Code session: the agent sets a bearing bore to 8 mm with a verified diff, applies it, refuses a 200 mm bore that would destroy the part, and exports STEP and STL" width="800">
-  <br>
-  <sub>Abridged from a real Claude Code session with this plugin (<a href="docs/assets/agent-demo/session.json">transcript</a>).
-  The 200 mm bore is refused because the part no longer regenerates; the file stays at 8 mm.</sub>
 </p>
 
 ## Install
@@ -100,6 +100,13 @@ and `patch_apply` refuses it. A patch that rebuilds fine but misses its declared
 example `mass_delta_kg` in `[-1, 0]` for a change that adds 7.72 g, is refused the same way. The
 same gate runs on `musubicad patch` for agents that use the CLI instead of MCP. See
 [ADR-026](docs/adr/ADR-026-verified-patch-apply.md).
+
+<p align="center">
+  <img src="docs/assets/agent-demo/conversation.gif" alt="A Claude Code session: the agent sets a bearing bore to 8 mm with a verified diff, applies it, refuses a 200 mm bore that would destroy the part, and exports STEP and STL" width="720">
+  <br>
+  <sub>An earlier session on the bearing carrier (<a href="docs/assets/agent-demo/session.json">transcript</a>):
+  the 200 mm bore is refused because the part no longer regenerates, and the file stays at 8 mm.</sub>
+</p>
 
 ## From CAD to simulator: URDF
 
@@ -168,7 +175,6 @@ any other change, followed by a re-export. See
     </td>
   </tr>
 </table>
-
 
 The workflow is always: **agent proposes** a typed `DesignPatch` → **MusubiCAD verifies** it with a
 transactional dry-run and expected-effect checks → **a human approves** the before/after diff.
