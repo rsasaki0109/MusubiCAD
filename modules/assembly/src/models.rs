@@ -1,11 +1,14 @@
 //! Ready-made flagship assembly models.
 
-use opencad_core::{ComponentId, ConnectorId, DocumentId, InstanceId, MateId, Result, TopoRefId};
+use opencad_core::{
+    ComponentId, ConnectorId, DocumentId, InstanceId, JointId, MateId, Result, TopoRefId,
+};
 use opencad_geometry::{RigidTransform, TopoRef};
 
 use crate::component::Component;
 use crate::connector::Connector;
 use crate::instance::{Instance, Placement};
+use crate::joint::{AssemblyJoint, JointMotion};
 use crate::mate::{Mate, MateEntity, MateKind};
 use crate::model::AssemblyModel;
 
@@ -245,12 +248,40 @@ pub fn robot_arm_assembly_model() -> Result<AssemblyModel> {
         ),
     ];
 
+    // Joint zero is the authored pose; limits are measured from it.
+    let revolute = |lower_deg: f64, upper_deg: f64, effort_n_m: f64, velocity_rad_s: f64| {
+        JointMotion::Revolute {
+            lower_rad: lower_deg.to_radians(),
+            upper_rad: upper_deg.to_radians(),
+            effort_n_m,
+            velocity_rad_s,
+        }
+    };
+    let joints = vec![
+        AssemblyJoint::new(
+            JointId::new("joint:shoulder")?,
+            MateId::new("mate:shoulder")?,
+            revolute(-150.0, 150.0, 1.5, 3.0),
+        ),
+        AssemblyJoint::new(
+            JointId::new("joint:elbow")?,
+            MateId::new("mate:elbow")?,
+            revolute(-100.0, 140.0, 1.0, 3.0),
+        ),
+        AssemblyJoint::new(
+            JointId::new("joint:wrist")?,
+            MateId::new("mate:wrist")?,
+            revolute(-90.0, 90.0, 0.4, 4.0),
+        ),
+    ];
+
     Ok(AssemblyModel {
         components,
         instances,
         mates,
         connectors,
         patterns: Vec::new(),
+        joints,
     }
     .sorted_deterministic())
 }

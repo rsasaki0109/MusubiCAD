@@ -21,6 +21,7 @@ fn example_robot_arm_assembly_round_trip() {
     assert_eq!(assembly.instances.len(), 4);
     assert_eq!(assembly.mates.len(), 4);
     assert_eq!(assembly.connectors.len(), 6);
+    assert_eq!(assembly.joints.len(), 3);
     assert_eq!(doc.metadata.kind, opencad_core::DocumentKind::Assembly);
     assert_eq!(doc.metadata.id.as_str(), "doc:robot_arm_assembly_001");
 }

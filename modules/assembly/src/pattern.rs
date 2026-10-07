@@ -115,6 +115,7 @@ mod tests {
                 base_placement: Placement::new(RigidTransform::identity()),
                 name_prefix: "pin_".into(),
             }],
+            joints: Vec::new(),
         };
 
         let expanded = expand_patterns(&model)?;
