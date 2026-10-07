@@ -16,6 +16,7 @@ occt = ["opencad-kernel-occt/occt", "opencad-file/occt"]
 
 [dependencies]
 base64 = "0.22"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 opencad-ai = { workspace = true }
 opencad-assembly = { workspace = true }
 opencad-core = { workspace = true }

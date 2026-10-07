@@ -113,8 +113,10 @@ reports the count.
   `review.json`, and, when a GPU is available, before/after PNGs and a GIF
   (`images_skipped` explains a missing image). Offer the HTML path to the user.
 - `export_document` with `{path, output}`: the extension picks the format.
-  `.step` for other CAD/CAM tools (millimetres), `.stl` for slicers and 3D
-  printing, `.svg` for drawing sheets, `.urdf` for an assembly as a robot
+  `.step` for other CAD/CAM tools (millimetres), `.3mf` for slicers and 3D
+  printing (closed, millimetre meshes; Bambu Studio, PrusaSlicer, OrcaSlicer
+  open it directly), `.stl` for older tools, `.glb` for viewers and the web,
+  `.svg` for drawing sheets, `.urdf` for an assembly as a robot
   description (simulators such as MuJoCo): the grounded instance is the root
   link, concentric mates become continuous joints, other mates fixed joints,
   and one STL per part is written next to the URDF. Re-export after every
@@ -140,7 +142,7 @@ musubicad patch part.ocad.d change.json --dry-run --geometry --json
 musubicad patch part.ocad.d change.json                     # verifies, then writes
 musubicad review part.ocad.d change.json --output review    # HTML review
 musubicad regen part.ocad.d                                 # mass, volume, assertions
-musubicad export part.ocad.d part.step                      # or part.stl / sheet.svg
+musubicad export part.ocad.d part.step                      # or part.3mf / part.stl / part.glb / sheet.svg
 musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description
 ```
 
