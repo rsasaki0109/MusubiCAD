@@ -2,7 +2,7 @@
   "algorithm": "sha256",
   "files": {
     "document.ocad.json": "e59e28cd1c571ab269c594916e1d868c840a98f5e697560ddf0513baebff5e0b",
-    "graph/assemblies.json": "fd2ffc7728a1442cc39ba32e692f2de0b82886a292d659f5b839baafcd3833da",
+    "graph/assemblies.json": "165266f9735b9dea09c298ae859132ccd2fecfae421ae97835a1784bfbb8e114",
     "graph/constraints.json": "6471ad7d98dc0235da614a438f37c47e96cc355347a57c77c3e44d4d4abb894b",
     "graph/drawings.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
     "graph/features.json": "af4211c092b02d01f032c343213cdffa07f2a2932fde6f65e5f1c7254ce43896",

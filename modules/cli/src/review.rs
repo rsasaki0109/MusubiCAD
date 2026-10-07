@@ -862,6 +862,19 @@ fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
         SemanticChange::AssemblyMateChanged { id, before, after } => {
             (format!("Assembly mate {id}"), before.clone(), after.clone())
         }
+        SemanticChange::AssemblyJointAdded { id } => {
+            (format!("Assembly joint {id}"), "—".into(), "Added".into())
+        }
+        SemanticChange::AssemblyJointRemoved { id } => (
+            format!("Assembly joint {id}"),
+            "Present".into(),
+            "Removed".into(),
+        ),
+        SemanticChange::AssemblyJointChanged { id, before, after } => (
+            format!("Assembly joint {id}"),
+            before.clone(),
+            after.clone(),
+        ),
         SemanticChange::AssemblyConnectorAdded { id } => (
             format!("Assembly connector {id}"),
             "—".into(),

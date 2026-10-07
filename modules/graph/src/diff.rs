@@ -79,6 +79,17 @@ pub enum SemanticChange {
         before: String,
         after: String,
     },
+    AssemblyJointAdded {
+        id: String,
+    },
+    AssemblyJointRemoved {
+        id: String,
+    },
+    AssemblyJointChanged {
+        id: String,
+        before: String,
+        after: String,
+    },
     AssemblyConnectorAdded {
         id: String,
     },

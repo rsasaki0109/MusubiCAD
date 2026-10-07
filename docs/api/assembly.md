@@ -47,9 +47,12 @@ tree from the Design Graph ([ADR-028](../adr/ADR-028-urdf-export.md)):
 - the single grounded instance (`ground` mate) is the root link; zero or
   several grounded instances are an error;
 - mated instance pairs are tree edges, visited breadth-first in mate-ID
-  order; a pair with a `concentric` mate is a continuous joint about that
-  mate's axis on the child (connector or local frame), any other mated pair
-  is a fixed joint;
+  order; a joint declared over one of the pair's mates
+  ([ADR-030](../adr/ADR-030-assembly-joints.md)) sets the type and limits
+  (`revolute`, `continuous`, `prismatic`, `fixed`); without one, a pair
+  with a `concentric` mate is a continuous joint about that mate's axis on
+  the child (connector or local frame), and any other mated pair is a fixed
+  joint;
 - a pair that reaches an already placed instance is a loop and an error that
   names the mate; instances no mate reaches are fixed to the root and listed
   in `warnings`;

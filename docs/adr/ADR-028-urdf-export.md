@@ -52,9 +52,8 @@ tensor within 1e-9 relative error at any placement.
 
 ## Consequences and follow-ups
 
-- Joint limits, prismatic joints, and joint-angle parameters need an explicit
-  joint model in the schema (a later ADR); until then revolute joints export
-  as `continuous`.
+- Joint limits and prismatic joints are now declared in the Design Graph
+  ([ADR-030](ADR-030-assembly-joints.md)); joint-angle parameters are not.
 - A lone concentric mate also permits sliding along the axis; the URDF models
   only the rotation.
 - Nested sub-assemblies are rejected; parts only.

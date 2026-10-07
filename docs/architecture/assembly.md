@@ -70,6 +70,18 @@ Regeneration runs `solve_assembly_mates` when `mates` is non-empty, then places 
   Boolean Intersect. Contact within tolerance is not reported, and results are
   ordered by `InstanceId` rather than scene input order.
 
+## Joints (ADR-030)
+
+`AssemblyModel.joints` refines mates for robot descriptions. Each
+`AssemblyJoint` names one mate and a motion: `revolute` or `prismatic` with
+SI limits, effort, and velocity, `continuous`, or `fixed`. Joints do not move
+parts; mates and placements still do. They feed the kinematic tree that URDF
+export uses. Validation: unique IDs, a known mate, at most one joint per mate,
+moving joints only on concentric mates, finite `lower <= upper`, and
+positive effort and velocity. Removing a mate a joint uses fails and names
+the joint. An empty list is not serialized, so existing documents and their
+revision digests are unchanged.
+
 ## CLI
 
 ```bash
