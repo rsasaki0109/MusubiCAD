@@ -111,7 +111,7 @@ cargo run -p opencad-cli -- screenshot examples/robot_arm_assembly.ocad.d arm.pn
 ```
 
 Export it as a robot description for simulators (ADR-028). The grounded base is
-the root link, the three concentric mates become continuous joints about their
+the root link, the three concentric mates become revolute joints about their
 connector axes, each part becomes one STL next to the URDF, and masses and
 inertia tensors come from the regenerated solids:
 

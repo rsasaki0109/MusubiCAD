@@ -123,12 +123,13 @@ reports the count.
   (`images_skipped` explains a missing image). Offer the HTML path to the user.
 - `export_document` with `{path, output}`: the extension picks the format.
   `.step` for other CAD/CAM tools (millimetres), `.3mf` for slicers and 3D
-  printing (closed, millimetre meshes; Bambu Studio, PrusaSlicer, OrcaSlicer
-  open it directly), `.stl` for older tools, `.glb` for viewers and the web,
+  printing (closed, millimetre meshes), `.stl` for older tools, `.glb` for viewers and the web,
   `.svg` for drawing sheets, `.urdf` for an assembly as a robot
   description (simulators such as MuJoCo): the grounded instance is the root
-  link, concentric mates become continuous joints, other mates fixed joints,
-  and one STL per part is written next to the URDF. Re-export after every
+  link; a concentric mate becomes the joint declared on it (`revolute` or
+  `prismatic` with its limits, or `fixed`), or a `continuous` joint when none
+  is declared; other mates become fixed joints; and one STL per part is
+  written next to the URDF. Re-export after every
   design change instead of editing the URDF.
 - `import_step` brings a STEP solid (for example a purchased motor) into a
   part as a fixed body, a join, or a cut.
