@@ -39,8 +39,10 @@ pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
         Some("svg") => export_svg(input, output),
         Some("step" | "stp") => export_step(input, output),
         Some("urdf") => crate::urdf::export_urdf(input, output),
+        Some("3mf") => export_mesh_package(input, output, "3mf"),
+        Some("glb") => export_mesh_package(input, output, "glb"),
         _ => Err(OpenCadError::validation(
-            "export output must use .stl, .step/.stp, .svg, or .urdf extension",
+            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, or .urdf extension",
         )),
     }
 }
@@ -59,18 +61,7 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
         ));
     }
 
-    let mesh = if let Some(assembly) = &doc.assembly {
-        export_assembly_mesh(input, doc.metadata.id.as_str(), assembly)?
-    } else {
-        let parameters = doc.parameters.clone();
-        let semantic_refs = doc.semantic_refs.clone();
-        let mut model = doc.into_part_model();
-        opencad_desktop::tessellate_active_body(
-            &mut model,
-            Some(&parameters),
-            Some(&semantic_refs),
-        )?
-    };
+    let mesh = document_mesh(input, doc)?;
 
     write_binary_stl(output_path, &mesh, &name)?;
     Ok(ExportSummary {
@@ -78,6 +69,95 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
         triangles: mesh.triangle_count(),
         output: output.to_string(),
         bytes: None,
+    })
+}
+
+/// Regenerated mesh of a part's active body, or of every placed assembly instance.
+fn document_mesh(input: &str, doc: OcadDocument) -> Result<opencad_geometry::MeshSet> {
+    if let Some(assembly) = &doc.assembly {
+        return export_assembly_mesh(input, doc.metadata.id.as_str(), assembly);
+    }
+    let parameters = doc.parameters.clone();
+    let semantic_refs = doc.semantic_refs.clone();
+    let mut model = doc.into_part_model();
+    opencad_desktop::tessellate_active_body(&mut model, Some(&parameters), Some(&semantic_refs))
+}
+
+/// Named meshes: the part itself, or one placed mesh per assembly instance.
+fn document_meshes(
+    input: &str,
+    doc: OcadDocument,
+) -> Result<Vec<(String, opencad_geometry::MeshSet)>> {
+    let Some(assembly) = doc.assembly.clone() else {
+        let name = doc.metadata.name.clone();
+        return Ok(vec![(name, document_mesh(input, doc)?)]);
+    };
+    #[cfg(feature = "occt")]
+    {
+        let kernel = OcctGeometryKernel::new();
+        let report = regenerate_assembly(
+            &assembly,
+            &doc.metadata.id,
+            &assembly_root(input),
+            &kernel,
+            &FeatureRegistry::with_defaults(),
+            &mut load_child_document,
+        )?;
+        let meshes = opencad_assembly::tessellate_assembly_instances(
+            &kernel,
+            &report.scene,
+            &TessellationSettings::default(),
+        )?;
+        Ok(meshes
+            .into_iter()
+            .map(|instance| {
+                let name = assembly
+                    .instances
+                    .iter()
+                    .find(|candidate| candidate.id == instance.instance_id)
+                    .map(|candidate| candidate.name.clone())
+                    .unwrap_or_else(|| instance.instance_id.as_str().to_string());
+                (name, instance.mesh_set)
+            })
+            .collect())
+    }
+    #[cfg(not(feature = "occt"))]
+    {
+        let _ = (input, assembly);
+        Err(OpenCadError::Other(
+            "assembly export requires OCCT; rebuild with --features occt".into(),
+        ))
+    }
+}
+
+/// Export a part or assembly mesh as 3MF (millimetres, welded, for slicers)
+/// or GLB (binary glTF 2.0 in metres, for viewers and the web).
+pub fn export_mesh_package(input: &str, output: &str, format: &str) -> Result<ExportSummary> {
+    let doc = read_ocad(input)?;
+    let name = doc.metadata.name.clone();
+    let objects = document_meshes(input, doc)?;
+    let mesh = opencad_geometry::MeshSet::merge(
+        &objects
+            .iter()
+            .map(|(_, mesh)| mesh.clone())
+            .collect::<Vec<_>>(),
+    );
+    let bytes = match format {
+        "3mf" => crate::mesh_formats::encode_3mf(&name, &objects)?,
+        "glb" => crate::mesh_formats::encode_glb(&mesh, &name)?,
+        other => {
+            return Err(OpenCadError::validation(format!(
+                "unknown mesh package format '{other}'"
+            )))
+        }
+    };
+    fs::write(output, &bytes)
+        .map_err(|error| OpenCadError::Other(format!("cannot write '{output}': {error}")))?;
+    Ok(ExportSummary {
+        format: format.into(),
+        triangles: mesh.triangle_count(),
+        output: output.to_string(),
+        bytes: Some(bytes.len()),
     })
 }
 
@@ -339,6 +419,108 @@ mod tests {
     use opencad_file::{write_expanded_dir, OcadDocument};
     use opencad_graph::bracket_parameters;
     use tempfile::tempdir;
+
+    /// Every exported 3MF must be a closed, manifold surface whose enclosed
+    /// volume matches the regenerated solid; slicers reject anything else.
+    #[test]
+    fn three_mf_exports_of_examples_are_closed_and_match_the_solid_volume() {
+        use std::collections::HashMap;
+        use std::io::Read;
+
+        let dir = tempdir().expect("tempdir");
+        for example in [
+            "bearing_carrier.ocad.d",
+            "robot_joint_actuator.ocad.d",
+            "robot_arm_assembly.ocad.d",
+        ] {
+            let input = format!("{}/../../examples/{example}", env!("CARGO_MANIFEST_DIR"));
+            let output = dir.path().join(format!("{example}.3mf"));
+            let summary = export_document(&input, output.to_str().expect("path")).expect("3mf");
+            assert_eq!(summary.format, "3mf");
+
+            let file = fs::File::open(&output).expect("open");
+            let mut archive = zip::ZipArchive::new(file).expect("zip");
+            let mut model = String::new();
+            archive
+                .by_name("3D/3dmodel.model")
+                .expect("model")
+                .read_to_string(&mut model)
+                .expect("read");
+            let attribute = |line: &str, key: &str| -> f64 {
+                let start = line.find(&format!(" {key}=\"")).expect(key) + key.len() + 3;
+                line[start..]
+                    .split('"')
+                    .next()
+                    .expect("value")
+                    .parse()
+                    .expect("number")
+            };
+            // Vertex indices restart in every object; check each one separately.
+            let mut volume_mm3 = 0.0;
+            let objects: Vec<&str> = model.split("<object ").skip(1).collect();
+            assert!(!objects.is_empty(), "{example}: no objects");
+            for object in objects {
+                let vertices: Vec<[f64; 3]> = object
+                    .lines()
+                    .filter(|line| line.trim_start().starts_with("<vertex "))
+                    .map(|line| {
+                        [
+                            attribute(line, "x"),
+                            attribute(line, "y"),
+                            attribute(line, "z"),
+                        ]
+                    })
+                    .collect();
+                let triangles: Vec<[usize; 3]> = object
+                    .lines()
+                    .filter(|line| line.trim_start().starts_with("<triangle "))
+                    .map(|line| {
+                        [
+                            attribute(line, "v1") as usize,
+                            attribute(line, "v2") as usize,
+                            attribute(line, "v3") as usize,
+                        ]
+                    })
+                    .collect();
+                let mut directed: HashMap<(usize, usize), usize> = HashMap::new();
+                for [a, b, c] in &triangles {
+                    for edge in [(*a, *b), (*b, *c), (*c, *a)] {
+                        *directed.entry(edge).or_default() += 1;
+                    }
+                }
+                // Closed and consistently oriented: each directed edge appears
+                // once and its reverse appears once.
+                for (&(from, to), &count) in &directed {
+                    assert_eq!(count, 1, "{example}: edge {from}->{to} used {count} times");
+                    assert_eq!(
+                        directed.get(&(to, from)),
+                        Some(&1),
+                        "{example}: open edge {from}->{to}"
+                    );
+                }
+                // Divergence theorem: signed volume of the closed mesh.
+                volume_mm3 += triangles
+                    .iter()
+                    .map(|[a, b, c]| {
+                        let (p, q, r) = (vertices[*a], vertices[*b], vertices[*c]);
+                        (p[0] * (q[1] * r[2] - q[2] * r[1]) - p[1] * (q[0] * r[2] - q[2] * r[0])
+                            + p[2] * (q[0] * r[1] - q[1] * r[0]))
+                            / 6.0
+                    })
+                    .sum::<f64>();
+            }
+            let solid_m3 = crate::regen::regen_document(&input, false)
+                .expect("regen")
+                .volume_m3
+                .expect("volume");
+            let relative = (volume_mm3 * 1e-9 - solid_m3).abs() / solid_m3;
+            // Chordal tessellation of curved faces under-fills slightly.
+            assert!(
+                relative < 0.01,
+                "{example}: mesh {volume_mm3} mm³ vs solid {solid_m3} m³"
+            );
+        }
+    }
 
     #[test]
     fn exports_bracket_to_stl() {

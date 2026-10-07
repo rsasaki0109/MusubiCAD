@@ -530,6 +530,7 @@ verified before it is written.
 | MCAD-P8-005 | Agent plugin and installer | [ADR-027](../adr/ADR-027-agent-plugin-distribution.md); `install.sh`/`install.ps1` with checksum verification; Claude Code marketplace, Codex, Cursor, and Gemini manifests launching `musubicad mcp`; `skills/musubicad` skill and `skills.sh.json`; manifest, skill, and installer contract test in CI | Complete (Windows host launch unverified) |
 | MCAD-P8-006 | URDF export | [ADR-028](../adr/ADR-028-urdf-export.md); kernel-free `kinematic_tree` from ground and mates (concentric → continuous, other mates → fixed, loops rejected); `GeometryKernel::inertia_about_com` (OCCT, mock); `export *.urdf` with per-part STL, mass, centre of mass, and inertia; CLI, Agent, and MCP parity; verified in MuJoCo | Complete |
 | MCAD-P8-007 | Agent-first README | Headline, two-line install, abridged real Claude Code session (`docs/assets/agent-demo/`, generator checks every quoted fact against the transcript), URDF-in-MuJoCo demo (`docs/assets/render-urdf-mujoco.py`); review evidence moved below. Lands with the release that ships the installer | Complete |
+| MCAD-P8-008 | 3MF and GLB export | [ADR-029](../adr/ADR-029-3mf-and-glb-export.md); welded, millimetre 3MF (one object per assembly instance) and +Y-up GLB from regenerated meshes; closed-mesh and volume tests on examples; lib3mf strict, trimesh, and Khronos glTF Validator clean | Complete |
 
 ## Cross-phase verification matrix
 

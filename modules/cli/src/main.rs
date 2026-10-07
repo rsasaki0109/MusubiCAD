@@ -8,6 +8,7 @@ mod git_workflow;
 mod import;
 mod mcp;
 mod mesh;
+mod mesh_formats;
 mod new;
 mod patch;
 mod pick;
