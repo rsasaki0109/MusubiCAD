@@ -12,7 +12,7 @@
   A parametric CAD plugin for coding agents such as Claude Code. Your agent edits named,
   unit-bearing parameters in a Design Graph; MusubiCAD dry-runs every change, rebuilds the solid
   with OpenCASCADE, checks it against what the agent said it would do, and only then writes the
-  file. Export STEP, STL, drawings, and URDF for robot simulators.
+  file. Export STEP, 3MF, STL, GLB, drawings, and URDF for robot simulators.
 </p>
 
 <p align="center">
@@ -75,13 +75,16 @@ as STEP"*, or point the agent at one of the [examples](examples/README.md).
   reports the semantic diff, the mass and size change, interference counts, and whether the
   patch's declared expected effects hold. `patch_apply` refuses anything that fails and leaves
   the file unchanged. The error names the feature that broke.
+- **Eyes on the part.** `preview_document` returns a PNG the agent can look at (iso, front, top,
+  or right view) with the bounds in millimetres. It renders on the CPU, so it works in cloud
+  containers and CI without a GPU.
 - **Reviewable diffs.** `review_patch` writes an HTML before/after review with the semantic diff
   and checks (and images when a GPU is available) for a human to approve.
-- **Real outputs.** STEP (millimetre B-rep) for CAD/CAM, STL for slicers, SVG drawings, and
-  URDF for robot simulators.
+- **Real outputs.** STEP (millimetre B-rep) for CAD/CAM, 3MF and STL for slicers, GLB for
+  viewers and the web, SVG drawings, and URDF for robot simulators.
 - **Authoring from scratch.** Parameters, constrained sketches, features (extrude, hole,
   revolve, fillet, chamfer, shell, patterns, mirror, loft, sweep, helix), assemblies with
-  mates, and drawings, all as typed `DesignPatch` operations.
+  mates and robot joints, and drawings, all as typed `DesignPatch` operations.
 
 ## Why edits don't break
 
@@ -108,12 +111,16 @@ musubicad export examples/robot_arm_assembly.ocad.d urdf/robot_arm.urdf
   <img src="docs/assets/urdf-mujoco.gif" alt="The exported robot arm URDF loaded in MuJoCo, sweeping its shoulder, elbow, and wrist joints" width="640">
 </p>
 
-The grounded base becomes the root link, the three concentric mates become joints about their
-axes, each part is exported as an STL, and masses and inertia tensors come from the regenerated
-solids. Loaded in MuJoCo 3.15, the arm has three hinge joints, its link positions match the CAD
-placements within 1e-13 m, and its link masses add up to the assembly's 0.7349 kg. Joints are
-exported as `continuous` (no limits yet), parts use a 2700 kg/m³ density, and joint positions
-come from connector frames in the assembly. See [ADR-028](docs/adr/ADR-028-urdf-export.md).
+The grounded base becomes the root link, and the three concentric mates become revolute joints
+about their axes, with the limits, effort, and velocity declared in the design (shoulder ±150°,
+elbow −100° to 140°, wrist ±90°). Each part is exported as an STL, and masses and inertia
+tensors come from the regenerated solids. Loaded in MuJoCo 3.15, the arm has three limited
+hinge joints with exactly those ranges, its link positions match the CAD placements within
+1e-13 m, and with the fixed base kept as its own body (`fusestatic="false"`) its link masses
+add up to the assembly's 0.7349 kg. Parts use a 2700 kg/m³ density, and joint positions come
+from connector frames in the assembly. Changing a limit is one `set_joint` patch, verified like
+any other change, followed by a re-export. See
+[ADR-028](docs/adr/ADR-028-urdf-export.md) and [ADR-030](docs/adr/ADR-030-assembly-joints.md).
 
 ## Evidence: reviewable design changes
 
@@ -222,14 +229,16 @@ transactions; `modules/render` consumes disposable tessellation. See the
 - **Parametric modeling:** constrained sketches, extrude, hole, revolve, fillet, chamfer
 - **Patterns:** linear, circular, and mirror patterns with union and cut operations
 - **Semantic topology:** stable face references with fingerprint fallback across regeneration
-- **Assemblies and drawings:** instances, connectors, mates, orthographic SVG, hidden lines, model-driven dimensions
+- **Assemblies and drawings:** instances, connectors, mates, robot joints with limits, orthographic SVG, hidden lines, model-driven dimensions
 - **Agent API:** JSON-RPC query, explain, patch, diff, dry-run, regenerate, pick, export
 - **Structural authoring:** create and remove parameters, sketches, features, references,
   assembly components/instances/mates, and drawing sheets/views/dimensions through `DesignPatch`
 - **MCP server and agent plugin:** `musubicad mcp` exposes inspection, authoring, verified dry-run,
-  review, apply, and export; a Claude Code plugin and skill package it with a checksum-verified installer
+  review, apply, GPU-free preview images, and export; a Claude Code plugin and skill package it with a
+  checksum-verified installer
 - **Git-native review:** deterministic JSON/HTML/GIF artifacts, policy checks, patch rebase, three-way semantic merge
-- **Headless output:** PNG/GIF rendering plus STEP (millimetre B-rep), STL, SVG, and URDF export
+- **Headless output:** PNG/GIF rendering, CPU preview without a GPU, and STEP (millimetre B-rep),
+  3MF, STL, GLB, SVG, and URDF export
 
 Every desktop UI command is also available through the CLI or Agent API. See the
 [Agent API reference](docs/api/agent.md) and
@@ -243,7 +252,7 @@ wgpu viewport. See the [desktop guide](apps/desktop/README.md).
 
 | Example | Demonstrates |
 |---|---|
-| [`robot_arm_assembly.ocad.d`](examples/robot_arm_assembly.ocad.d) | Four-part articulated arm, six connectors, three concentric joints; exports to URDF |
+| [`robot_arm_assembly.ocad.d`](examples/robot_arm_assembly.ocad.d) | Four-part articulated arm, six connectors, three revolute joints with limits; exports to URDF |
 | [`robot_joint_actuator.ocad.d`](examples/robot_joint_actuator.ocad.d) | 22-feature housing: stepped hubs, bearing seats, 8-hole PCD, ribs, mirrored mounts |
 | [`bearing_carrier.ocad.d`](examples/bearing_carrier.ocad.d) | Joined hub, through bore, four-hole circular cut pattern |
 | [`bracket.ocad.d`](examples/bracket.ocad.d) | Plate, centered hole, and semantic face reference |
@@ -264,8 +273,8 @@ tests, but APIs and schemas may evolve before 1.0. Dynamic plugin loading is not
 Next priorities, per the [roadmap](docs/plans/roadmap.md) and
 [implementation status](docs/plans/implementation-status.md):
 
-1. Joint limits, prismatic joints, and joint-angle parameters in the Design Graph, so URDF joints
-   carry ranges and connector frames follow part parameters (Phase 8)
+1. Connector frames that follow part parameters, so lengthening a link moves its joint origins,
+   and joint-angle parameters for posing an assembly (Phase 8)
 2. Per-part materials and densities for mass, inertia, and URDF
 3. Verified installs on Windows hosts and on Codex, Cursor, and Gemini CLI
 
