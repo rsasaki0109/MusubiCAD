@@ -40,6 +40,7 @@ pub fn run() -> Result<()> {
         Some("pick") => cmd_pick(args.next().as_deref(), args.collect()),
         Some("view") => cmd_view(args.next().as_deref()),
         Some("screenshot") => cmd_screenshot(args.next().as_deref(), args.next().as_deref()),
+        Some("preview") => cmd_preview(args.collect()),
         Some("animate") => {
             let input = args.next();
             let output = args.next();
@@ -433,6 +434,24 @@ fn cmd_animate_features(
     Ok(())
 }
 
+fn cmd_preview(args: Vec<String>) -> Result<()> {
+    let (params, output) = crate::preview::parse_preview_args(&args)?;
+    let (png, summary) = crate::preview::preview_document(&params)?;
+    std::fs::write(&output, png).map_err(|err| {
+        opencad_core::OpenCadError::Other(format!("cannot write '{output}': {err}"))
+    })?;
+    println!("preview: {output}");
+    println!(
+        "view: {} ({}x{}), {} triangles, {} object(s)",
+        summary.view,
+        summary.width,
+        summary.height,
+        summary.triangles,
+        summary.objects.len()
+    );
+    Ok(())
+}
+
 fn cmd_patch(args: Vec<String>) -> Result<()> {
     let parsed = patch::parse_patch_args(args)?;
     patch::patch_document_with_options(&parsed)
@@ -625,6 +644,7 @@ COMMANDS:
     pick        Query viewport selection at a pixel coordinate
     view        Open an interactive 3D viewport
     screenshot  Render a PNG preview of the active body
+    preview     Render a PNG of a part or assembly without a GPU
     animate     Render a deterministic presentation orbit GIF
     animate-features  Render Feature Graph body milestones as a deterministic GIF
     patch       Apply a DesignPatch JSON to parameters

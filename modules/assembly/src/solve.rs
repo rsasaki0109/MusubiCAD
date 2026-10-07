@@ -206,6 +206,7 @@ mod tests {
             ],
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         })
     }
 

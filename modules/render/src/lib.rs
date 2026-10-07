@@ -11,6 +11,7 @@ pub mod png;
 pub mod presentation;
 pub mod scene;
 pub mod selection;
+pub mod software;
 pub mod solid;
 pub mod stroke_font;
 pub mod viewport;
@@ -23,13 +24,14 @@ pub use mesh::RenderMesh;
 pub use overlay::{
     build_sketch_overlay, label_depth_offset_for_bounds, PickableSketchLine, SketchOverlay,
 };
-pub use png::write_png;
+pub use png::{encode_png, write_png};
 pub use presentation::presentation_overlay;
 pub use scene::{BoundingBox, RenderScene};
 pub use selection::{
     face_group_boundary_edges, face_group_highlight_edges, triangle_world_positions, PickResult,
     SelectionCatalog, SelectionId,
 };
+pub use software::{render_preview, PreviewImage, PreviewMesh, PreviewView};
 pub use viewport::{
     run_viewport, run_viewport_with_callbacks, run_viewport_with_pick, ViewportCameraCallback,
     ViewportPickCallback,

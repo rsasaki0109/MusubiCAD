@@ -675,6 +675,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         }
     }
 
@@ -707,6 +708,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         };
 
         let dir = tempdir().expect("tempdir");
@@ -751,6 +753,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         };
 
         let dir = tempdir().expect("tempdir");
@@ -868,6 +871,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         };
         let kernel = MockGeometryKernel::new();
         let registry = FeatureRegistry::with_defaults();
@@ -923,6 +927,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         };
         let kernel = MockGeometryKernel::new();
         let registry = FeatureRegistry::with_defaults();
@@ -1027,6 +1032,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         };
         let kernel = MockGeometryKernel::new();
         let registry = FeatureRegistry::with_defaults();

@@ -36,6 +36,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 | `opencad.history_redo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.regen_document` | `{ path }` | `RegenResult` |
 | `opencad.export` | `{ path, output }` | `ExportSummary` |
+| `opencad.preview_document` | `{ path, view?, width?, height? }` | `{ view, width, height, triangles, bounds_mm, objects, png_base64 }` (GPU-free, [ADR-031](../adr/ADR-031-gpu-free-preview.md)) |
 | `opencad.diff_document` | `{ before, after? \| patch?, geometry? }` | `DesignDiff` |
 | `opencad.query_document` | `{ path, query }` | `QueryResult` |
 | `opencad.pick_document` | `{ path, x, y, width?, height? }` | `PickSummary` |
@@ -444,7 +445,8 @@ its kind.
 | `remove_semantic_ref` | `ref_id` | Remove a semantic reference nothing consumes |
 | `add_component` / `remove_component` | `component` / `id` | Add an assembly component, or remove one no instance or pattern uses |
 | `add_instance` / `remove_instance` | `instance` / `id` | Add a placed instance, or remove one no mate or connector references |
-| `add_mate` / `remove_mate` | `mate` / `id` | Add or remove an assembly mate |
+| `add_mate` / `remove_mate` | `mate` / `id` | Add or remove an assembly mate; a mate a joint uses cannot be removed |
+| `add_joint` / `set_joint` / `remove_joint` | `joint` / `joint` / `id` | Add, replace, or remove a robot joint over a mate: `revolute` (`lower_rad`, `upper_rad`, `effort_n_m`, `velocity_rad_s`), `continuous`, `prismatic` (`lower_m`, `upper_m`, `effort_n`, `velocity_m_s`), or `fixed` ([ADR-030](../adr/ADR-030-assembly-joints.md)) |
 | `remove_connector` | `id` | Remove a connector no mate references by name (`add_connector` already existed) |
 | `add_assembly_pattern` / `remove_assembly_pattern` | `pattern` / `id` | Add or remove an assembly pattern |
 | `add_sheet` / `remove_sheet` | `sheet` / `id` | Add an empty sheet, or remove a sheet with the views and dimensions it owns |

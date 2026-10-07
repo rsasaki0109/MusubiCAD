@@ -64,6 +64,9 @@
             "remove_component",
             "remove_instance",
             "remove_mate",
+            "add_joint",
+            "remove_joint",
+            "set_joint",
             "remove_connector",
             "remove_assembly_pattern",
             "remove_sheet",
@@ -337,6 +340,23 @@
           }
         },
         {
+          "if": { "properties": { "type": { "enum": ["add_joint", "set_joint"] } } },
+          "then": {
+            "required": ["type", "joint"],
+            "properties": {
+              "joint": {
+                "type": "object",
+                "required": ["id", "mate", "type"],
+                "properties": {
+                  "id": { "$ref": "#/$defs/stable_id_joint" },
+                  "mate": { "type": "string", "pattern": "^mate:" },
+                  "type": { "enum": ["revolute", "continuous", "prismatic", "fixed"] }
+                }
+              }
+            }
+          }
+        },
+        {
           "if": { "properties": { "type": { "const": "add_assembly_pattern" } } },
           "then": {
             "required": ["type", "pattern"],
@@ -381,6 +401,13 @@
           "then": {
             "required": ["type", "id"],
             "properties": { "id": { "type": "string", "pattern": "^mate:" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "remove_joint" } } },
+          "then": {
+            "required": ["type", "id"],
+            "properties": { "id": { "type": "string", "pattern": "^joint:" } }
           }
         },
         {
@@ -529,6 +556,11 @@
       "type": "string",
       "maxLength": 128,
       "pattern": "^mate:[a-z0-9_]+([.][a-z0-9_]+)*$"
+    },
+    "stable_id_joint": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^joint:[a-z0-9_]+([.][a-z0-9_]+)*$"
     },
     "stable_id_pattern": {
       "type": "string",

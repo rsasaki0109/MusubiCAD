@@ -14,6 +14,7 @@ mod patch;
 mod pick;
 mod plugin;
 mod policy_check;
+mod preview;
 mod regen;
 mod review;
 mod review_gif;

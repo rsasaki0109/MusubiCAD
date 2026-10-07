@@ -119,8 +119,11 @@ inertia tensors come from the regenerated solids:
 cargo run -p opencad-cli -- export examples/robot_arm_assembly.ocad.d urdf/robot_arm.urdf
 ```
 
-The URDF loads in MuJoCo 3.15 with three hinge joints; link poses match the CAD
-placements to 1e-13 m and the link masses sum to the assembly mass.
+The assembly declares joint limits (ADR-030): shoulder ±150°, elbow −100° to
++140°, wrist ±90°, measured from the authored pose, so the URDF joints are
+`revolute` with `<limit>` elements. The URDF loads in MuJoCo 3.15 with three
+limited hinge joints; link poses match the CAD placements to 1e-13 m and the
+link masses sum to the assembly mass.
 
 A ready-to-run agent review,
 [`examples/agent/review_robot_arm_patch.json`](agent/review_robot_arm_patch.json),

@@ -293,3 +293,80 @@ fn failed_model_patches_leave_the_document_unchanged() {
     assert!(apply_patch_to_document(&mut doc, &failing).is_err());
     assert_eq!(serialize_document_files(&doc).expect("serialize"), snapshot);
 }
+
+/// ADR-030: joints over mates are added, changed, removed, diffed, and
+/// persisted, and a mate a joint uses cannot be removed.
+#[test]
+fn joints_are_patched_diffed_persisted_and_guard_their_mates() {
+    let robot = example("robot_arm_assembly.ocad.d");
+    let elbow = robot
+        .assembly
+        .as_ref()
+        .and_then(|assembly| {
+            assembly
+                .joints
+                .iter()
+                .find(|joint| joint.id.as_str() == "joint:elbow")
+        })
+        .expect("example elbow joint");
+    assert!(matches!(
+        elbow.motion,
+        opencad_assembly::JointMotion::Revolute { .. }
+    ));
+
+    // Narrow the elbow range.
+    let narrower = json!([{ "type": "set_joint", "joint": {
+        "id": "joint:elbow", "mate": "mate:elbow", "type": "revolute",
+        "lower_rad": -1.0, "upper_rad": 1.0, "effort_n_m": 1.0, "velocity_rad_s": 3.0
+    } }]);
+    let report = dry_run_patch_document(&robot, &patch(narrower.clone()));
+    assert!(report.validation.is_ok(), "{:?}", report.validation);
+    assert!(report.diff.changes.iter().any(|change| matches!(
+        change,
+        SemanticChange::AssemblyJointChanged { id, .. } if id == "joint:elbow"
+    )));
+    let mut edited = robot.clone();
+    apply_patch_to_document(&mut edited, &patch(narrower)).expect("apply");
+    let dir = tempfile::tempdir().expect("tempdir");
+    write_expanded_dir(dir.path(), &edited).expect("write");
+    assert_eq!(
+        read_ocad(dir.path()).expect("read back").assembly,
+        edited.assembly
+    );
+
+    // The elbow mate is guarded by its joint until the joint goes too.
+    let mate = rejection(
+        &robot,
+        json!([{ "type": "remove_mate", "id": "mate:elbow" }]),
+    );
+    assert!(
+        mate.contains("cannot remove 'mate:elbow': still used by joint joint:elbow"),
+        "{mate}"
+    );
+    let after = candidate(
+        &robot,
+        json!([
+            { "type": "remove_joint", "id": "joint:elbow" },
+            { "type": "remove_mate", "id": "mate:elbow" }
+        ]),
+    )
+    .expect("remove joint then mate");
+    assert_eq!(after.assembly.expect("assembly").joints.len(), 2);
+
+    // Invalid joints are rejected with the reason.
+    let reversed = rejection(
+        &robot,
+        json!([{ "type": "set_joint", "joint": {
+            "id": "joint:elbow", "mate": "mate:elbow", "type": "revolute",
+            "lower_rad": 1.0, "upper_rad": -1.0, "effort_n_m": 1.0, "velocity_rad_s": 3.0
+        } }]),
+    );
+    assert!(reversed.contains("lower <= upper"), "{reversed}");
+    let duplicate = rejection(
+        &robot,
+        json!([{ "type": "add_joint", "joint": {
+            "id": "joint:elbow_twice", "mate": "mate:elbow", "type": "continuous"
+        } }]),
+    );
+    assert!(duplicate.contains("already has a joint"), "{duplicate}");
+}

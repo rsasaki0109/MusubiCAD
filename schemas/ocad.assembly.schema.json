@@ -23,6 +23,10 @@
     "patterns": {
       "type": "array",
       "items": { "$ref": "#/$defs/pattern" }
+    },
+    "joints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/joint" }
     }
   },
   "$defs": {
@@ -199,6 +203,35 @@
           "pattern": "^instance:[a-zA-Z0-9_:/-]+$"
         }
       },
+      "additionalProperties": false
+    },
+    "joint": {
+      "description": "Robot joint over one mate (ADR-030). Limits are SI: radians or metres.",
+      "type": "object",
+      "required": ["id", "mate", "type"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$" },
+        "mate": { "type": "string", "pattern": "^mate:[a-zA-Z0-9_:/-]+$" },
+        "type": { "type": "string", "enum": ["revolute", "continuous", "prismatic", "fixed"] },
+        "lower_rad": { "type": "number" },
+        "upper_rad": { "type": "number" },
+        "effort_n_m": { "type": "number", "exclusiveMinimum": 0 },
+        "velocity_rad_s": { "type": "number", "exclusiveMinimum": 0 },
+        "lower_m": { "type": "number" },
+        "upper_m": { "type": "number" },
+        "effort_n": { "type": "number", "exclusiveMinimum": 0 },
+        "velocity_m_s": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "revolute" } } },
+          "then": { "required": ["lower_rad", "upper_rad", "effort_n_m", "velocity_rad_s"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "prismatic" } } },
+          "then": { "required": ["lower_m", "upper_m", "effort_n", "velocity_m_s"] }
+        }
+      ],
       "additionalProperties": false
     }
   }

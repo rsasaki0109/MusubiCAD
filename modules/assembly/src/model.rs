@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::component::Component;
 use crate::connector::{validate_connectors, Connector};
 use crate::instance::Instance;
+use crate::joint::{validate_joints, AssemblyJoint};
 use crate::mate::Mate;
 use crate::pattern::{validate_patterns, AssemblyPattern};
 
@@ -24,6 +25,9 @@ pub struct AssemblyModel {
     pub connectors: Vec<Connector>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub patterns: Vec<AssemblyPattern>,
+    /// Robot joints refining mates (ADR-030).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub joints: Vec<AssemblyJoint>,
 }
 
 impl AssemblyModel {
@@ -45,6 +49,7 @@ impl AssemblyModel {
             .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         self.patterns
             .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
+        self.joints.sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         self
     }
 
@@ -73,6 +78,7 @@ impl AssemblyModel {
         crate::mate::validate_mates(&self.mates, &instance_ids, &self.connectors)?;
         validate_connectors(&self.connectors, &instance_ids)?;
         validate_patterns(self)?;
+        validate_joints(&self.joints, &self.mates)?;
         Ok(())
     }
 
@@ -114,6 +120,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         };
         let json = serde_json::to_string(&model).expect("serialize");
         let restored: AssemblyModel = serde_json::from_str(&json).expect("deserialize");
@@ -134,6 +141,7 @@ mod tests {
             mates: Vec::new(),
             connectors: Vec::new(),
             patterns: Vec::new(),
+            joints: Vec::new(),
         };
         assert!(model.validate_no_self_reference(&assembly_id).is_err());
         Ok(())

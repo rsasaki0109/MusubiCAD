@@ -842,12 +842,16 @@ fn model_structure_target(operation: &PatchOperation) -> Option<(ConflictKind, &
         }
         PatchOperation::AddInstance { instance } => (ConflictKind::Assembly, instance.id.as_str()),
         PatchOperation::AddMate { mate } => (ConflictKind::Assembly, mate.id.as_str()),
+        PatchOperation::AddJoint { joint } | PatchOperation::SetJoint { joint } => {
+            (ConflictKind::Assembly, joint.id.as_str())
+        }
         PatchOperation::AddAssemblyPattern { pattern } => {
             (ConflictKind::Assembly, pattern.id.as_str())
         }
         PatchOperation::RemoveComponent { id }
         | PatchOperation::RemoveInstance { id }
         | PatchOperation::RemoveMate { id }
+        | PatchOperation::RemoveJoint { id }
         | PatchOperation::RemoveConnector { id }
         | PatchOperation::RemoveAssemblyPattern { id } => (ConflictKind::Assembly, id.as_str()),
         PatchOperation::AddSheet { sheet } => (ConflictKind::Drawing, sheet.id.as_str()),
@@ -894,6 +898,13 @@ fn model_object_snapshot(state: &DesignState, kind: &ConflictKind, id: &str) -> 
             .or_else(|| {
                 assembly
                     .connectors
+                    .iter()
+                    .find(|item| item.id.as_str() == id)
+                    .and_then(|item| serde_json::to_value(item).ok())
+            })
+            .or_else(|| {
+                assembly
+                    .joints
                     .iter()
                     .find(|item| item.id.as_str() == id)
                     .and_then(|item| serde_json::to_value(item).ok())

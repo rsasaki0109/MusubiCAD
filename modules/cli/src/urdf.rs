@@ -217,6 +217,8 @@ fn write_joint(xml: &mut String, link: &KinematicLink) {
         .unwrap_or_else(|| format!("{child}_fixed"));
     let kind = match joint.kind {
         JointKind::Continuous { .. } => "continuous",
+        JointKind::Revolute { .. } => "revolute",
+        JointKind::Prismatic { .. } => "prismatic",
         JointKind::Fixed => "fixed",
     };
     let _ = writeln!(
@@ -236,8 +238,35 @@ fn write_joint(xml: &mut String, link: &KinematicLink) {
         vector(joint.origin.translation_m),
         vector(roll_pitch_yaw(&joint.origin))
     );
-    if let JointKind::Continuous { axis } = joint.kind {
-        let _ = writeln!(xml, "    <axis xyz=\"{}\"/>", vector(axis));
+    match joint.kind {
+        JointKind::Continuous { axis } => {
+            let _ = writeln!(xml, "    <axis xyz=\"{}\"/>", vector(axis));
+        }
+        JointKind::Revolute {
+            axis,
+            lower,
+            upper,
+            effort,
+            velocity,
+        }
+        | JointKind::Prismatic {
+            axis,
+            lower,
+            upper,
+            effort,
+            velocity,
+        } => {
+            let _ = writeln!(xml, "    <axis xyz=\"{}\"/>", vector(axis));
+            let _ = writeln!(
+                xml,
+                "    <limit lower=\"{}\" upper=\"{}\" effort=\"{}\" velocity=\"{}\"/>",
+                number(lower),
+                number(upper),
+                number(effort),
+                number(velocity)
+            );
+        }
+        JointKind::Fixed => {}
     }
     let _ = writeln!(xml, "  </joint>");
 }
@@ -339,7 +368,12 @@ mod tests {
         let xml = fs::read_to_string(&output).expect("urdf");
 
         assert_eq!(xml.matches("<link name=").count(), 4);
-        assert_eq!(xml.matches("type=\"continuous\"").count(), 3);
+        assert_eq!(xml.matches("type=\"revolute\"").count(), 3);
+        // Elbow limits from the Design Graph: -100° to +140°, 1 N·m, 3 rad/s.
+        assert!(
+            xml.contains("<limit lower=\"-1.74532925199\" upper=\"2.44346095279\" effort=\"1\" velocity=\"3\"/>"),
+            "{xml}"
+        );
         for joint in ["shoulder", "elbow", "wrist"] {
             assert!(xml.contains(&format!("<joint name=\"{joint}\"")), "{joint}");
         }

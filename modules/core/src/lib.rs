@@ -16,8 +16,8 @@ pub use document::{DocumentKind, DocumentMetadata};
 pub use error::{OpenCadError, Result};
 pub use id::{
     BodyId, ComponentId, ConnectorId, ConstraintId, DimensionId, DocumentId, EntityId, FeatureId,
-    InstanceId, MateId, MaterialId, ParameterId, PatchId, PatternId, SheetId, SketchId, TopoRefId,
-    ViewId,
+    InstanceId, JointId, MateId, MaterialId, ParameterId, PatchId, PatternId, SheetId, SketchId,
+    TopoRefId, ViewId,
 };
 pub use manifest::OcadManifest;
 pub use serialize::{sha256_hex, sorted_map, to_pretty_json};

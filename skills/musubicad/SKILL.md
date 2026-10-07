@@ -103,11 +103,20 @@ constraint `expr`) that uses its name.
 
 Components reference part documents (`source_path`), instances place them,
 and mates (`concentric`, `coincident`, `distance`, `angle`, `parallel`,
-`ground`) relate connectors. Add `no_assembly_interference` to the expected
+`ground`) relate connectors. Robot joints (`add_joint`, `set_joint`,
+`remove_joint`) put a motion type and limits on a concentric mate, for
+example a `revolute` elbow with `lower_rad`, `upper_rad`, `effort_n_m`, and
+`velocity_rad_s`; zero is the current pose, and URDF export writes them.
+Add `no_assembly_interference` to the expected
 effects of any patch that moves parts; `verification.geometry.after_interference_count`
 reports the count.
 
-## 5. Review and export
+## 5. Look, review, and export
+
+- `preview_document` with `{path, view}` returns a PNG you can see (no GPU
+  needed; views `iso`, `front`, `top`, `right`) plus bounds in mm. Look at
+  the part after authoring or after a change that alters its shape, and
+  describe what you see before claiming it matches the request.
 
 - `review_patch` with `{path, patch, output_dir}` writes `review.html`,
   `review.json`, and, when a GPU is available, before/after PNGs and a GIF
@@ -141,6 +150,7 @@ musubicad intent part.ocad.d param:bore_diameter --json     # what it drives
 musubicad patch part.ocad.d change.json --dry-run --geometry --json
 musubicad patch part.ocad.d change.json                     # verifies, then writes
 musubicad review part.ocad.d change.json --output review    # HTML review
+musubicad preview part.ocad.d look.png --view iso           # PNG, no GPU needed
 musubicad regen part.ocad.d                                 # mass, volume, assertions
 musubicad export part.ocad.d part.step                      # or part.3mf / part.stl / part.glb / sheet.svg
 musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description
