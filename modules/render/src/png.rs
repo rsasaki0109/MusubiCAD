@@ -5,6 +5,19 @@ use std::path::Path;
 use image::{ImageBuffer, RgbaImage};
 use opencad_core::{OpenCadError, Result};
 
+/// Encode RGBA8 pixels as PNG bytes in memory.
+pub fn encode_png(width: u32, height: u32, rgba: &[u8]) -> Result<Vec<u8>> {
+    let image: RgbaImage =
+        ImageBuffer::from_vec(width, height, rgba.to_vec()).ok_or_else(|| {
+            OpenCadError::validation(format!("invalid RGBA buffer for {width}x{height} image"))
+        })?;
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .map_err(|err| OpenCadError::Other(format!("failed to encode PNG: {err}")))?;
+    Ok(bytes.into_inner())
+}
+
 /// Write tightly packed RGBA8 pixels to a PNG file.
 pub fn write_png(path: impl AsRef<Path>, width: u32, height: u32, rgba: &[u8]) -> Result<()> {
     let expected = (width as usize)

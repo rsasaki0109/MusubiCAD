@@ -84,7 +84,7 @@ fn document_mesh(input: &str, doc: OcadDocument) -> Result<opencad_geometry::Mes
 }
 
 /// Named meshes: the part itself, or one placed mesh per assembly instance.
-fn document_meshes(
+pub(crate) fn document_meshes(
     input: &str,
     doc: OcadDocument,
 ) -> Result<Vec<(String, opencad_geometry::MeshSet)>> {
