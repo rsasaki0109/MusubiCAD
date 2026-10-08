@@ -1,12 +1,13 @@
 use std::path::{Path, PathBuf};
 
 use opencad_desktop::{
-    create_document, inspect_document, list_document_parameters, load_view_data, pick_document,
+    create_document, inspect_document, inspect_document_regeneration, inspect_parameter_intent,
+    inspect_reference_intent, list_document_parameters, load_view_data, pick_document,
     preview_document, redo_document_with_history, run_desktop_smoke,
     run_document_viewport_with_sync, set_document_parameter_with_history,
     undo_document_with_history, DocumentHistory, DocumentHistoryState, DocumentInspect,
-    DocumentPreview, DocumentTemplate, ParameterRow, PickOptions, PickSummary, PreviewSynced,
-    PREVIEW_HEIGHT, PREVIEW_WIDTH,
+    DocumentPreview, DocumentTemplate, ParameterIntent, ParameterRow, PickOptions, PickSummary,
+    PreviewSynced, ReferenceIntent, RegenInspectionResult, PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -59,6 +60,24 @@ fn inspect_document_cmd(path: String) -> Result<DocumentInspect, String> {
 #[tauri::command]
 fn preview_document_cmd(path: String) -> Result<DocumentPreview, String> {
     preview_document(&path).map_err(map_error)
+}
+
+#[tauri::command]
+fn inspect_regeneration_cmd(path: String) -> Result<RegenInspectionResult, String> {
+    inspect_document_regeneration(&path).map_err(map_error)
+}
+
+#[tauri::command]
+fn inspect_parameter_intent_cmd(path: String, id: String) -> Result<ParameterIntent, String> {
+    inspect_parameter_intent(&path, &id).map_err(map_error)
+}
+
+#[tauri::command]
+fn inspect_reference_intent_cmd(
+    path: String,
+    reference: String,
+) -> Result<ReferenceIntent, String> {
+    inspect_reference_intent(&path, &reference).map_err(map_error)
 }
 
 #[tauri::command]
@@ -215,6 +234,9 @@ fn run_gui() {
             default_example_path,
             inspect_document_cmd,
             preview_document_cmd,
+            inspect_regeneration_cmd,
+            inspect_parameter_intent_cmd,
+            inspect_reference_intent_cmd,
             create_template_document,
             list_document_parameters_cmd,
             set_document_parameter_cmd,

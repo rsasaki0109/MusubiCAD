@@ -7,9 +7,7 @@ use opencad_ai::{
 };
 use opencad_assembly::{regenerate_assembly, ChildPart, InstanceRegenStatus, ResolvedChild};
 use opencad_core::{Assertion, DocumentKind, OpenCadError};
-use opencad_feature::{
-    FeatureRegistry, PartModel, RegenReport, RegenerationFailure, RegenerationTrace,
-};
+use opencad_feature::{FeatureRegistry, PartModel, RegenReport, RegenerationTrace};
 use opencad_file::{read_ocad, write_expanded_dir, OcadDocument};
 use opencad_geometry::{GeometryKernel, ReferenceProvenance, ReferenceStatus};
 use opencad_graph::{evaluate_param_graph, FeatureGraph, ParamGraph};
@@ -21,7 +19,9 @@ use opencad_kernel_occt::OcctGeometryKernel;
 
 use opencad_core::Result;
 
-pub(crate) const DEFAULT_DENSITY_KG_PER_M3: f64 = 2700.0;
+pub(crate) const DEFAULT_DENSITY_KG_PER_M3: f64 = opencad_desktop::DEFAULT_DENSITY_KG_PER_M3;
+
+pub use opencad_desktop::{inspect_document_regeneration, RegenInspectionResult};
 
 /// Summary printed by `musubicad regen`.
 #[derive(Debug, Clone, PartialEq)]
@@ -357,98 +357,6 @@ pub fn regenerate_part(
     }
 }
 
-/// Whether a regeneration inspection found a failure.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum RegenInspectionStatus {
-    Regenerated,
-    Failed,
-}
-
-/// Failed-regeneration inspection of a part document (MCAD-P6-006).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RegenInspectionResult {
-    pub kernel: String,
-    pub status: RegenInspectionStatus,
-    /// The first failing node and how the failure splits the other features.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub failure: Option<RegenerationFailure>,
-    /// The feature whose body is reported: the final body on success, the
-    /// body the failing feature was building on after a failure.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub body_feature: Option<String>,
-    pub volume_m3: Option<f64>,
-    pub mass_kg: Option<f64>,
-    pub density_kg_per_m3: f64,
-}
-
-/// Regenerate a part document in memory and report where it fails.
-///
-/// Read-only: the document on disk is never written, and a failure is a
-/// result rather than an error.  Errors are reserved for unreadable or
-/// non-part documents.
-pub fn inspect_document_regeneration(path: &str) -> Result<RegenInspectionResult> {
-    let doc = read_ocad(path)?;
-    if doc.metadata.kind != DocumentKind::Part {
-        return Err(OpenCadError::validation(
-            "regeneration inspection accepts part documents; regenerate an assembly with `regen`",
-        ));
-    }
-    let model = doc.clone().into_part_model();
-    let kernel = part_kernel();
-    let inspection = model.inspect_regeneration(
-        &kernel,
-        &FeatureRegistry::with_defaults(),
-        Some(&doc.parameters),
-        Some(&doc.semantic_refs),
-    );
-    let body_feature = match &inspection.outcome {
-        Ok(_) => inspection
-            .model
-            .graph
-            .ordered_ids()
-            .iter()
-            .rev()
-            .find(|id| {
-                inspection
-                    .model
-                    .outputs
-                    .get(*id)
-                    .is_some_and(|output| output.body.is_some())
-            })
-            .cloned(),
-        Err(failure) => failure.upstream_body_feature.clone(),
-    };
-    let mass = body_feature
-        .as_ref()
-        .and_then(|id| inspection.model.outputs.get(id))
-        .and_then(|output| output.body.as_ref())
-        .and_then(|body| kernel.mass_properties(body, DEFAULT_DENSITY_KG_PER_M3).ok());
-    let (status, failure) = match inspection.outcome {
-        Ok(_) => (RegenInspectionStatus::Regenerated, None),
-        Err(failure) => (RegenInspectionStatus::Failed, Some(failure)),
-    };
-    Ok(RegenInspectionResult {
-        kernel: part_kernel_name(),
-        status,
-        failure,
-        body_feature,
-        volume_m3: mass.as_ref().map(|mass| mass.volume_m3),
-        mass_kg: mass.as_ref().map(|mass| mass.mass_kg),
-        density_kg_per_m3: DEFAULT_DENSITY_KG_PER_M3,
-    })
-}
-
-#[cfg(feature = "occt")]
-fn part_kernel_name() -> String {
-    OcctGeometryKernel::occt_version().to_string()
-}
-
-#[cfg(not(feature = "occt"))]
-fn part_kernel_name() -> String {
-    "MockGeometryKernel".into()
-}
-
 fn mass_for_active_body<K: GeometryKernel>(
     model: &PartModel,
     kernel: &K,
@@ -543,6 +451,7 @@ pub fn print_summary(summary: &RegenSummary) {
 mod tests {
     use super::*;
     use opencad_core::{DocumentId, DocumentMetadata};
+    use opencad_desktop::RegenInspectionStatus;
     use opencad_feature::bracket_with_hole;
     use opencad_file::{write_expanded_dir, OcadDocument};
     use opencad_graph::bracket_parameters;
