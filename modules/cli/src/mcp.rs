@@ -158,6 +158,12 @@ fn tools() -> Vec<Tool> {
             schema: path_schema,
         },
         Tool {
+            name: "inspect_regeneration",
+            description: "Regenerate a part in memory without writing it and, when it fails, name the first failing sketch or feature, the error, the features that completed (with the last usable body's volume and mass), the features the failure blocks, and those never reached. Use it to find what to repair.",
+            handler: Handler::Agent("opencad.inspect_regeneration_document"),
+            schema: path_schema,
+        },
+        Tool {
             name: "import_step",
             description: "Import a STEP file (millimetres) into a part as a fixed imported solid: new body, or join/cut against target_feature. Writes the document.",
             handler: Handler::ImportStep,
@@ -608,7 +614,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 17);
+        assert_eq!(tools.len(), 18);
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
             assert!(tool["description"]

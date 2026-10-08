@@ -55,6 +55,7 @@ the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,
 | `review_patch` | `path`, `patch`, `output_dir` | review artifacts only | `musubicad review` |
 | `patch_apply` | `path`, `patch`, `verify` | yes, only when verified | `opencad.patch_apply_document` |
 | `regen_document` | `path` | no | `opencad.regen_document` |
+| `inspect_regeneration` | `path` | no | `opencad.inspect_regeneration_document` |
 | `import_step` | `path`, `step_path`, `feature_id`, `name`, `operation`, `target_feature`, `translation_mm` | yes | `musubicad import-step` |
 | `preview_document` | `path`, `view` (`iso`/`front`/`top`/`right`), `width`, `height`, `style` (`plain`/`studio`/`dark`) | no | `opencad.preview_document`; returns MCP `image` content (PNG) plus a text summary |
 | `export_document` | `path`, `output` (`.step`/`.stp`, `.stl`, `.3mf`, `.glb`, `.svg`, `.urdf`, `.html`) | output files only | `opencad.export` |

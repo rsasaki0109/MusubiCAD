@@ -33,6 +33,9 @@ The constructor performs no file-system or network I/O. The desktop template
 layer owns `.ocad` persistence through the `robot-joint` template.
 `RegenReport.trace` records deterministic execution evidence; see
 [Change impact and regeneration trace](change-impact-and-regeneration-trace.md).
+`PartModel::inspect_regeneration` regenerates a copy and, on failure, names
+the first failing sketch or feature and the features it blocks; see
+[`RegenerationFailure`](change-impact-and-regeneration-trace.md#regenerationfailure).
 
 ## Robot-arm assembly parts
 

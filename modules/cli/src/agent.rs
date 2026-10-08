@@ -194,6 +194,7 @@ pub fn handle_agent_request_with_plugins(
         "opencad.history_undo_document" => handle_history_undo_document(request),
         "opencad.history_redo_document" => handle_history_redo_document(request),
         "opencad.regen_document" => handle_regen_document(request),
+        "opencad.inspect_regeneration_document" => handle_inspect_regeneration_document(request),
         "opencad.regen" => handle_regen(request),
         "opencad.export" => handle_export(request),
         "opencad.preview_document" => handle_preview_document(request),
@@ -591,6 +592,27 @@ fn handle_regen_document(request: &JsonRpcRequest) -> JsonRpcResponse {
                 JsonRpcError::application_error(err.to_string()),
             ),
         },
+        Err(err) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(err.to_string()),
+        ),
+    }
+}
+
+fn handle_inspect_regeneration_document(request: &JsonRpcRequest) -> JsonRpcResponse {
+    let params = match serde_json::from_value::<DocumentPathParams>(request.params.clone()) {
+        Ok(params) => params,
+        Err(err) => {
+            return JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::invalid_params(err.to_string()),
+            );
+        }
+    };
+    match regen::inspect_document_regeneration(&params.path)
+        .and_then(|result| serde_json::to_value(result).map_err(Into::into))
+    {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
         Err(err) => JsonRpcResponse::error(
             request.id.clone(),
             JsonRpcError::application_error(err.to_string()),
@@ -1526,6 +1548,24 @@ mod tests {
             result["item"]["predicted_dirty_features"],
             serde_json::json!(["feature:extrude_base", "feature:hole_mount"])
         );
+    }
+
+    #[test]
+    fn inspect_regeneration_document_reports_a_regenerating_part() {
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: serde_json::json!(9),
+            method: "opencad.inspect_regeneration_document".into(),
+            params: serde_json::json!({
+                "path": concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/bracket.ocad.d"),
+            }),
+        };
+        let response = handle_agent_request(&request);
+        assert!(response.error.is_none(), "{:?}", response.error);
+        let result = response.result.expect("result");
+        assert_eq!(result["status"], "regenerated");
+        assert!(result.get("failure").is_none());
+        assert!(result["volume_m3"].as_f64().unwrap_or(0.0) > 0.0);
     }
 
     #[test]

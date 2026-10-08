@@ -7,7 +7,9 @@ use opencad_ai::{
 };
 use opencad_assembly::{regenerate_assembly, ChildPart, InstanceRegenStatus, ResolvedChild};
 use opencad_core::{Assertion, DocumentKind, OpenCadError};
-use opencad_feature::{FeatureRegistry, PartModel, RegenReport, RegenerationTrace};
+use opencad_feature::{
+    FeatureRegistry, PartModel, RegenReport, RegenerationFailure, RegenerationTrace,
+};
 use opencad_file::{read_ocad, write_expanded_dir, OcadDocument};
 use opencad_geometry::{GeometryKernel, ReferenceProvenance, ReferenceStatus};
 use opencad_graph::{evaluate_param_graph, FeatureGraph, ParamGraph};
@@ -355,6 +357,98 @@ pub fn regenerate_part(
     }
 }
 
+/// Whether a regeneration inspection found a failure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RegenInspectionStatus {
+    Regenerated,
+    Failed,
+}
+
+/// Failed-regeneration inspection of a part document (MCAD-P6-006).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RegenInspectionResult {
+    pub kernel: String,
+    pub status: RegenInspectionStatus,
+    /// The first failing node and how the failure splits the other features.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure: Option<RegenerationFailure>,
+    /// The feature whose body is reported: the final body on success, the
+    /// body the failing feature was building on after a failure.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub body_feature: Option<String>,
+    pub volume_m3: Option<f64>,
+    pub mass_kg: Option<f64>,
+    pub density_kg_per_m3: f64,
+}
+
+/// Regenerate a part document in memory and report where it fails.
+///
+/// Read-only: the document on disk is never written, and a failure is a
+/// result rather than an error.  Errors are reserved for unreadable or
+/// non-part documents.
+pub fn inspect_document_regeneration(path: &str) -> Result<RegenInspectionResult> {
+    let doc = read_ocad(path)?;
+    if doc.metadata.kind != DocumentKind::Part {
+        return Err(OpenCadError::validation(
+            "regeneration inspection accepts part documents; regenerate an assembly with `regen`",
+        ));
+    }
+    let model = doc.clone().into_part_model();
+    let kernel = part_kernel();
+    let inspection = model.inspect_regeneration(
+        &kernel,
+        &FeatureRegistry::with_defaults(),
+        Some(&doc.parameters),
+        Some(&doc.semantic_refs),
+    );
+    let body_feature = match &inspection.outcome {
+        Ok(_) => inspection
+            .model
+            .graph
+            .ordered_ids()
+            .iter()
+            .rev()
+            .find(|id| {
+                inspection
+                    .model
+                    .outputs
+                    .get(*id)
+                    .is_some_and(|output| output.body.is_some())
+            })
+            .cloned(),
+        Err(failure) => failure.upstream_body_feature.clone(),
+    };
+    let mass = body_feature
+        .as_ref()
+        .and_then(|id| inspection.model.outputs.get(id))
+        .and_then(|output| output.body.as_ref())
+        .and_then(|body| kernel.mass_properties(body, DEFAULT_DENSITY_KG_PER_M3).ok());
+    let (status, failure) = match inspection.outcome {
+        Ok(_) => (RegenInspectionStatus::Regenerated, None),
+        Err(failure) => (RegenInspectionStatus::Failed, Some(failure)),
+    };
+    Ok(RegenInspectionResult {
+        kernel: part_kernel_name(),
+        status,
+        failure,
+        body_feature,
+        volume_m3: mass.as_ref().map(|mass| mass.volume_m3),
+        mass_kg: mass.as_ref().map(|mass| mass.mass_kg),
+        density_kg_per_m3: DEFAULT_DENSITY_KG_PER_M3,
+    })
+}
+
+#[cfg(feature = "occt")]
+fn part_kernel_name() -> String {
+    OcctGeometryKernel::occt_version().to_string()
+}
+
+#[cfg(not(feature = "occt"))]
+fn part_kernel_name() -> String {
+    "MockGeometryKernel".into()
+}
+
 fn mass_for_active_body<K: GeometryKernel>(
     model: &PartModel,
     kernel: &K,
@@ -469,5 +563,91 @@ mod tests {
         let summary = regen_document(dir.path().to_str().expect("path"), false).expect("regen");
         assert_eq!(summary.report.regenerated.len(), 4);
         assert!(summary.volume_m3.unwrap_or(0.0) > 0.0);
+    }
+
+    fn write_bracket(part: &PartModel) -> tempfile::TempDir {
+        let metadata = DocumentMetadata::new(
+            DocumentId::new("doc:bracket_001").expect("id"),
+            "Bracket with Mounting Hole",
+        );
+        let mut doc = OcadDocument::from_part_model(metadata, part);
+        doc.parameters = bracket_parameters();
+        let dir = tempdir().expect("tempdir");
+        write_expanded_dir(dir.path(), &doc).expect("write");
+        dir
+    }
+
+    fn file_bytes(dir: &Path) -> Vec<(std::path::PathBuf, Vec<u8>)> {
+        let mut files = Vec::new();
+        let mut pending = vec![dir.to_path_buf()];
+        while let Some(path) = pending.pop() {
+            for entry in std::fs::read_dir(&path).expect("dir") {
+                let path = entry.expect("entry").path();
+                if path.is_dir() {
+                    pending.push(path);
+                } else {
+                    files.push((path.clone(), std::fs::read(&path).expect("read")));
+                }
+            }
+        }
+        files.sort();
+        files
+    }
+
+    #[test]
+    fn inspecting_a_regenerating_part_reports_its_final_body() {
+        let dir = write_bracket(&bracket_with_hole().expect("model"));
+        let result =
+            inspect_document_regeneration(dir.path().to_str().expect("path")).expect("inspect");
+        assert_eq!(result.status, RegenInspectionStatus::Regenerated);
+        assert_eq!(result.failure, None);
+        assert_eq!(result.body_feature.as_deref(), Some("feature:hole_mount"));
+        assert!(result.volume_m3.unwrap_or(0.0) > 0.0);
+    }
+
+    #[test]
+    fn inspecting_a_failing_part_names_the_failure_and_leaves_the_document_unchanged() {
+        let mut part = bracket_with_hole().expect("model");
+        part.add_node(opencad_feature::FeatureNode::new(
+            "feature:broken",
+            "Broken Extrude",
+            opencad_feature::FeatureDefinition::Extrude(opencad_feature::ExtrudeFeature {
+                sketch_feature: "feature:missing_sketch".into(),
+                profile_ref: "sketch:missing/profile:outer".into(),
+                extent: opencad_geometry::ExtrudeExtent::Distance {
+                    length: opencad_core::Length::from_meters(0.01),
+                },
+                operation: opencad_geometry::ExtrudeOperation::NewBody,
+                length_expr: None,
+                target_feature: None,
+            }),
+        ))
+        .expect("node");
+        part.add_dependency("feature:extrude_base", "feature:broken")
+            .expect("edge");
+        let dir = write_bracket(&part);
+        let before = file_bytes(dir.path());
+
+        let result =
+            inspect_document_regeneration(dir.path().to_str().expect("path")).expect("inspect");
+        assert_eq!(result.status, RegenInspectionStatus::Failed);
+        let failure = result.failure.expect("failure");
+        assert_eq!(failure.node.as_deref(), Some("feature:broken"));
+        assert_eq!(result.body_feature.as_deref(), Some("feature:extrude_base"));
+        assert!(result.volume_m3.unwrap_or(0.0) > 0.0);
+        assert_eq!(file_bytes(dir.path()), before);
+
+        let json = serde_json::to_value(&failure).expect("json");
+        assert_eq!(json["stage"], "feature");
+    }
+
+    #[test]
+    fn inspecting_an_assembly_is_rejected() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../examples/assembly_two_brackets.ocad.d"
+        );
+        let error = inspect_document_regeneration(path).expect_err("assembly");
+        assert!(error.to_string().contains("part documents"), "{error}");
     }
 }
