@@ -281,12 +281,31 @@
             "line": "ent:gripper_body_e1"
           },
           "expr": "gripper_width"
+        },
+        {
+          "type": "vertical",
+          "id": "con:gripper_body_e0_vertical",
+          "line": "ent:gripper_body_e0"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:gripper_body_e1_horizontal",
+          "line": "ent:gripper_body_e1"
+        },
+        {
+          "type": "vertical",
+          "id": "con:gripper_body_e2_vertical",
+          "line": "ent:gripper_body_e2"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:gripper_body_e3_horizontal",
+          "line": "ent:gripper_body_e3"
         }
       ],
       "dimensions": [],
       "solve_state": {
-        "status": "under_constrained",
-        "dof": 4
+        "status": "fully_constrained"
       },
       "profiles": [
         {

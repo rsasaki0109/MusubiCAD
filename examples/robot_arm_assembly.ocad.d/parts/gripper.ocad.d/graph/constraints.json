@@ -97,6 +97,38 @@
     {
       "sketch_id": "sketch:gripper_body",
       "constraint": {
+        "type": "vertical",
+        "id": "con:gripper_body_e0_vertical",
+        "line": "ent:gripper_body_e0"
+      }
+    },
+    {
+      "sketch_id": "sketch:gripper_body",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:gripper_body_e1_horizontal",
+        "line": "ent:gripper_body_e1"
+      }
+    },
+    {
+      "sketch_id": "sketch:gripper_body",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:gripper_body_e2_vertical",
+        "line": "ent:gripper_body_e2"
+      }
+    },
+    {
+      "sketch_id": "sketch:gripper_body",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:gripper_body_e3_horizontal",
+        "line": "ent:gripper_body_e3"
+      }
+    },
+    {
+      "sketch_id": "sketch:gripper_body",
+      "constraint": {
         "type": "distance",
         "id": "con:gripper_body_length",
         "target": {
