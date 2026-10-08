@@ -20,6 +20,7 @@ mod reach;
 mod regen;
 mod review;
 mod review_gif;
+mod robot_api;
 mod scene_query;
 mod sweep_animation;
 mod topo_sync;

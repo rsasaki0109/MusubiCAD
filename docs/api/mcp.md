@@ -58,7 +58,16 @@ the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,
 | `import_step` | `path`, `step_path`, `feature_id`, `name`, `operation`, `target_feature`, `translation_mm` | yes | `musubicad import-step` |
 | `preview_document` | `path`, `view` (`iso`/`front`/`top`/`right`), `width`, `height`, `style` (`plain`/`studio`/`dark`) | no | `opencad.preview_document`; returns MCP `image` content (PNG) plus a text summary |
 | `export_document` | `path`, `output` (`.step`/`.stp`, `.stl`, `.3mf`, `.glb`, `.svg`, `.urdf`, `.html`) | output files only | `opencad.export` |
+| `reach` | `path`, `tool`, `point_m`, `target_m`, `tolerance_m`, `gif`, `frames_per_move`, GIF options | `gif` only | `opencad.reach_document` |
+| `animate_joints` | `path`, `output`, `poses` (`"shoulder=60deg,elbow=-45deg"`), `frames_per_move`, GIF options | output GIF only | `opencad.animate_joints_document` |
+| `animate_sweep` | `path`, `output`, `param`, `from`, `to` (`"32mm"`), `steps`, GIF options | output GIF only | `opencad.animate_sweep_document` |
 | `diff_document` | `before`, `after` or `patch`, `geometry` | no | `opencad.diff_document` |
+
+GIF options are `view`, `style` (`studio` default, `dark`, `plain`), `width`,
+`height` or `aspect` (`W:H`), `fps`, and `caption`. The three robot tools build
+the same flags the CLI commands parse (`musubicad reach`, `animate-joints`,
+`animate-sweep`), so their validation and units are the CLI's; an unknown
+parameter name is an error, not ignored.
 
 A successful call returns the delegated JSON result as `structuredContent` and
 a pretty-printed text copy in `content`. A failed operation returns
