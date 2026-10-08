@@ -39,7 +39,7 @@ passes.
    configuration, both lockfiles, and intended tag agree:
 
 ```bash
-python tools/test_release_version.py --tag v0.1.1
+python tools/test_release_version.py --tag v0.2.0
 ```
 
 3. Wait for CI and the Release matrix to pass on `main`.
@@ -48,8 +48,8 @@ python tools/test_release_version.py --tag v0.1.1
 ```bash
 git switch main
 git pull --ff-only
-git tag -a v0.1.0 -m "MusubiCAD CLI v0.1.0"
-git push origin v0.1.0
+git tag -a v0.2.0 -m "MusubiCAD CLI v0.2.0"
+git push origin v0.2.0
 ```
 
 5. Verify the GitHub Release has four platform archives and `SHA256SUMS`.
