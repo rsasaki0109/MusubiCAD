@@ -8,8 +8,10 @@ use opencad_ai::{
     AssertionResult, DesignPatch, ExpectedEffect,
 };
 use opencad_core::{OpenCadError, Result};
-use opencad_desktop::{load_assembly_scene_from_document, load_view_data};
-use opencad_feature::FeatureRegistry;
+use opencad_desktop::{
+    inspect_ocad_regeneration, load_assembly_scene_from_document, load_view_data,
+};
+use opencad_feature::{FeatureRegistry, RegenerationFailure};
 use opencad_file::{apply_patch_to_document, dry_run_patch_document, read_ocad, OcadDocument};
 use opencad_geometry::{GeometryKernel, ReferenceProvenance, TessellationSettings};
 use opencad_graph::{evaluate_param_graph, DesignDiff, SemanticChange};
@@ -165,6 +167,10 @@ pub struct VerificationReport {
     /// Why verification could not complete (for example the failing feature).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    /// When the patched part does not regenerate: the first failing node, the
+    /// features it blocks, and the body it was building on (MCAD-P6-006).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub regeneration_failure: Option<RegenerationFailure>,
     #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
     pub evidence: Option<PatchVerification>,
 }
@@ -173,7 +179,12 @@ impl VerificationReport {
     /// One line naming everything that failed, for error messages.
     pub fn failure_summary(&self) -> String {
         if let Some(error) = &self.error {
-            return error.clone();
+            return match &self.regeneration_failure {
+                Some(failure) if !failure.blocked_features.is_empty() => {
+                    format!("{error}; blocks {}", failure.blocked_features.join(", "))
+                }
+                _ => error.clone(),
+            };
         }
         let failed: Vec<String> = self
             .evidence
@@ -204,14 +215,27 @@ pub fn verification_report(
         Ok(evidence) => VerificationReport {
             passed: evidence.failed_expected_effects().is_empty(),
             error: None,
+            regeneration_failure: None,
             evidence: Some(evidence),
         },
         Err(error) => VerificationReport {
             passed: false,
             error: Some(error.to_string()),
+            regeneration_failure: patched_regeneration_failure(before, patch),
             evidence: None,
         },
     }
+}
+
+/// Where a patched part stops regenerating, or `None` when it is not a part,
+/// the patch does not apply, or it regenerates (the failure lay elsewhere).
+fn patched_regeneration_failure(
+    before: &OcadDocument,
+    patch: &DesignPatch,
+) -> Option<RegenerationFailure> {
+    let mut after = before.clone();
+    apply_patch_to_document(&mut after, patch).ok()?;
+    inspect_ocad_regeneration(&after).ok()?.failure
 }
 
 /// Verification plus the regenerated scenes a renderer needs.
@@ -1134,6 +1158,44 @@ mod tests {
     use serde::Deserialize;
     use std::path::Path;
     use tempfile::tempdir;
+
+    #[test]
+    fn a_patch_that_breaks_regeneration_reports_where_it_fails() {
+        let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples");
+        let document = format!("{examples}/robot_joint_actuator.ocad.d");
+        let before = read_ocad(&document).expect("read");
+        let breaking = read_patch_file(&format!(
+            "{examples}/agent/repair_shaft_bore_break_patch.json"
+        ))
+        .expect("patch");
+
+        let report = verification_report(&document, &before, &breaking);
+        assert!(!report.passed);
+        let failure = report.regeneration_failure.as_ref().expect("failure");
+        assert_eq!(failure.node.as_deref(), Some("feature:radial_ribs"));
+        assert_eq!(
+            failure.upstream_body_feature.as_deref(),
+            Some("feature:pcd_fasteners")
+        );
+        assert!(
+            report
+                .failure_summary()
+                .ends_with("; blocks feature:mounting_ears, feature:mounting_holes"),
+            "{}",
+            report.failure_summary()
+        );
+        let json = serde_json::to_value(&report).expect("json");
+        assert_eq!(json["regeneration_failure"]["stage"], "feature");
+
+        // A patch that regenerates carries no failure.
+        let fix = read_patch_file(&format!(
+            "{examples}/agent/repair_shaft_bore_fix_patch.json"
+        ))
+        .expect("patch");
+        let report = verification_report(&document, &before, &fix);
+        assert!(report.passed, "{}", report.failure_summary());
+        assert!(report.regeneration_failure.is_none());
+    }
 
     const P5_005_MANIFEST: &str =
         include_str!("../../../fixtures/golden/mcad_p5_005_end_to_end.json");

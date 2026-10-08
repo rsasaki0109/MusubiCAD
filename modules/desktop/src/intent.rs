@@ -8,7 +8,7 @@
 use opencad_ai::{DesignQuery, ParameterIntent, QueryResult, ReferenceIntent};
 use opencad_core::{DocumentKind, OpenCadError, Result};
 use opencad_feature::{FeatureRegistry, RegenerationFailure};
-use opencad_file::read_ocad;
+use opencad_file::{read_ocad, OcadDocument};
 use opencad_geometry::GeometryKernel;
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +49,12 @@ pub struct RegenInspectionResult {
 /// result rather than an error.  Errors are reserved for unreadable or
 /// non-part documents.
 pub fn inspect_document_regeneration(path: &str) -> Result<RegenInspectionResult> {
-    let doc = read_ocad(path)?;
+    inspect_ocad_regeneration(&read_ocad(path)?)
+}
+
+/// [`inspect_document_regeneration`] for a document already in memory, such
+/// as a patched copy that was never written.
+pub fn inspect_ocad_regeneration(doc: &OcadDocument) -> Result<RegenInspectionResult> {
     if doc.metadata.kind != DocumentKind::Part {
         return Err(OpenCadError::validation(
             "regeneration inspection accepts part documents; regenerate an assembly with `regen`",

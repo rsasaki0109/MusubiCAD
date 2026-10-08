@@ -127,7 +127,7 @@ fn tools() -> Vec<Tool> {
         },
         Tool {
             name: "patch_dry_run",
-            description: "Check a DesignPatch without writing: validation messages, semantic diff, change impact, and `verification` (regenerates before/after; reports mass, bounds, interference, declared expected_effects, and the feature that fails to regenerate). Fix every problem until verification.passed is true.",
+            description: "Check a DesignPatch without writing: validation messages, semantic diff, change impact, and `verification` (regenerates before/after; reports mass, bounds, interference, declared expected_effects, and, when the patched part does not regenerate, regeneration_failure: the failing feature, the features it blocks, and the body it was building on). Fix every problem until verification.passed is true.",
             handler: Handler::Agent("opencad.patch_dry_run_document"),
             schema: patch_schema,
         },
