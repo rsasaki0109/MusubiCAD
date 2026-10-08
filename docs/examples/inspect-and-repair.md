@@ -23,8 +23,12 @@ is wider than the 72 mm lower hub and splits the part in two:
 
 ```text
 $ musubicad patch joint.ocad.d examples/agent/repair_shaft_bore_break_patch.json
-error: validation failed: patch rejected; the document was not changed: patched document does not regenerate: feature 'feature:radial_ribs': OCCT error: Expected exactly one resulting Solid, got 2
+error: validation failed: patch rejected; the document was not changed: patched document does not regenerate: feature 'feature:radial_ribs': OCCT error: Expected exactly one resulting Solid, got 2; blocks feature:mounting_ears, feature:mounting_holes
 ```
+
+A dry run (`patch_dry_run` through MCP, or `opencad.patch_dry_run_document`)
+returns the same failure as `verification.regeneration_failure`, so an agent
+sees the failing feature before anything is written.
 
 The scenario forces it through with `--no-verify`, the way an unverified
 staged edit or a hand edit leaves a document that no longer regenerates:

@@ -19,8 +19,9 @@ pub mod viewport;
 pub use export::{export_stl_document, ExportSummary};
 pub use inspect::{inspect_document, DocumentInspect};
 pub use intent::{
-    inspect_document_regeneration, inspect_parameter_intent, inspect_reference_intent,
-    RegenInspectionResult, RegenInspectionStatus, DEFAULT_DENSITY_KG_PER_M3,
+    inspect_document_regeneration, inspect_ocad_regeneration, inspect_parameter_intent,
+    inspect_reference_intent, RegenInspectionResult, RegenInspectionStatus,
+    DEFAULT_DENSITY_KG_PER_M3,
 };
 pub use parameters::{
     list_document_parameters, redo_document_with_history, set_document_parameter,

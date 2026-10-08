@@ -68,7 +68,10 @@ the CLI commands in section 7 instead; they enforce the same checks.
    - `verification.passed`; on failure `verification.error` names the
      feature that stopped regenerating (for example
      `feature 'feature:bearing_bore': ... got 0` means the cut removed the
-     whole solid) or the expected effect that did not hold.
+     whole solid) or the expected effect that did not hold. When the
+     patched part does not regenerate, `verification.regeneration_failure`
+     names the failing node, the features it blocks, and the body it was
+     building on; the failing feature may be downstream of the one you edited.
    - If a document on disk already fails to regenerate, `inspect_regeneration`
      names the first failing sketch or feature, the features it blocks, and
      the body it was building on, without writing anything.

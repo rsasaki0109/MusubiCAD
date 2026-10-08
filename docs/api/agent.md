@@ -77,6 +77,15 @@ assertions hold, and every declared `expected_effects` entry passed. When
 verification cannot complete, the object is `{ "passed": false, "error": "..." }`
 and the error names the failing feature, for example
 `patched document does not regenerate: feature 'feature:bearing_bore': OCCT error: ...`.
+When a patched part does not regenerate, the object also carries
+`regeneration_failure`, the same
+[`RegenerationFailure`](change-impact-and-regeneration-trace.md#regenerationfailure)
+that `opencad.inspect_regeneration_document` returns: the failing stage and
+node, the features it blocks, those that completed, and
+`upstream_body_feature`. It is absent when the failure lies elsewhere (an
+invalid patch or a violated assertion) and for assembly and drawing documents.
+The rejection message from `patch_apply_document` and `musubicad patch` ends
+with `; blocks <features>` when the failure blocks any.
 A document that did not regenerate before the patch is reported in
 `geometry.before_regen_error` rather than rejected, so a patch can repair it.
 
