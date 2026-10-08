@@ -10,6 +10,9 @@ const status = document.getElementById("status");
 const docInfo = document.getElementById("doc-info");
 const previewInfo = document.getElementById("preview-info");
 const selectionInfo = document.getElementById("selection-info");
+const regenerationInfo = document.getElementById("regeneration-info");
+const intentInfo = document.getElementById("intent-info");
+const intentHint = document.getElementById("intent-hint");
 const parametersPanel = document.getElementById("parameters");
 const templateSelect = document.getElementById("template-select");
 const openBtn = document.getElementById("open-btn");
@@ -45,6 +48,93 @@ function renderInfo(container, entries) {
 
 function formatVec3(values) {
   return values.map((v) => v.toFixed(4)).join(", ");
+}
+
+// One item per line; the panel's `dd` keeps the line breaks.
+function formatList(items) {
+  return items && items.length ? items.join("\n") : "—";
+}
+
+// Where the document stops regenerating, from the same read-only backend
+// query as `musubicad intent <path> regen`.
+function renderRegeneration(result) {
+  const failure = result.failure;
+  const entries = [["Kernel", result.kernel]];
+  if (failure) {
+    entries.push(
+      ["Status", `failed at ${failure.stage.replaceAll("_", " ")}`],
+      ["Failing node", failure.node ?? "—"],
+      ["Error", failure.error],
+      ["Blocked", formatList(failure.blocked_features)],
+      ["Not reached", formatList(failure.not_reached_features)],
+      ["Completed", `${failure.completed_features.length} features`],
+    );
+  } else {
+    entries.push(["Status", "regenerated"]);
+  }
+  if (result.body_feature) {
+    entries.push([failure ? "Upstream body" : "Body", result.body_feature]);
+  }
+  if (result.mass_kg != null) {
+    entries.push(["Mass (kg)", result.mass_kg.toFixed(4)]);
+  }
+  renderInfo(regenerationInfo, entries);
+  regenerationInfo.classList.toggle("failed", Boolean(failure));
+}
+
+function renderRegenerationUnavailable(error) {
+  renderInfo(regenerationInfo, [["Status", `unavailable: ${error}`]]);
+  regenerationInfo.classList.remove("failed");
+}
+
+function renderParameterIntent(item) {
+  const parameter = item.parameter;
+  const value = parameter.value_m == null ? "" : ` = ${parameter.value_m} m`;
+  intentHint.hidden = true;
+  renderInfo(intentInfo, [
+    ["Parameter", `${parameter.name} (${parameter.expr}${value})`],
+    ["Driven by", formatList(item.driven_by)],
+    ["Drives", formatList(item.drives_parameters)],
+    ["Sketches", formatList(item.sketches)],
+    ["Directly affects", formatList(item.directly_affected_features)],
+    ["Regenerates", formatList(item.predicted_dirty_features)],
+    ["Assertions", formatList(item.assertions)],
+  ]);
+}
+
+function renderReferenceIntent(item) {
+  const reference = item.reference;
+  intentHint.hidden = true;
+  renderInfo(intentInfo, [
+    ["Reference", reference.ref_id],
+    ["Created by", `${reference.created_by} (${reference.role ?? "—"})`],
+    ["Features", formatList(item.consuming_features)],
+    ["Mates", formatList(item.consuming_mates)],
+    ["Regenerates", formatList(item.predicted_dirty_features)],
+    ["Assertions", formatList(item.assertions)],
+  ]);
+}
+
+function clearIntent() {
+  intentHint.hidden = false;
+  renderInfo(intentInfo, []);
+}
+
+async function showParameterIntent(row) {
+  const item = await invoke("inspect_parameter_intent_cmd", {
+    path: currentPath,
+    id: row.id,
+  });
+  renderParameterIntent(item);
+  setStatus(`Intent: ${row.name}`);
+}
+
+async function showReferenceIntent(refId) {
+  const item = await invoke("inspect_reference_intent_cmd", {
+    path: currentPath,
+    reference: refId,
+  });
+  renderReferenceIntent(item);
 }
 
 function previewImageCoords(event) {
@@ -256,6 +346,10 @@ function handlePickSummary(summary, sourceLabel) {
         : "No geometry picked in 3D viewport.",
     );
     return;
+  }
+  const refId = summary.selection.inferred_topo_ref_id;
+  if (refId && currentPath) {
+    showReferenceIntent(refId).catch((error) => setStatus(`Error: ${error}`));
   }
   const label = summary.selection.kind.replaceAll("_", " ");
   const relatedNames = focusRelatedParameters(
@@ -479,7 +573,20 @@ function renderParameters(rows) {
     value.className = "param-value";
     value.textContent = formatParameterValue(row);
 
-    wrapper.append(label, input, value);
+    const intentBtn = document.createElement("button");
+    intentBtn.type = "button";
+    intentBtn.className = "param-intent";
+    intentBtn.textContent = "Intent";
+    intentBtn.title = `What drives ${row.name} and what an edit to it changes`;
+    intentBtn.addEventListener("click", () => {
+      showParameterIntent(row).catch((error) => setStatus(`Error: ${error}`));
+    });
+
+    const head = document.createElement("div");
+    head.className = "param-head";
+    head.append(label, intentBtn);
+
+    wrapper.append(head, input, value);
     if (row.unit_hint) {
       const hint = document.createElement("span");
       hint.className = "param-hint";
@@ -522,20 +629,21 @@ async function loadDocument(path, options = {}) {
   }
   setStatus(`Loading ${path}…`);
 
-  const requests = [
-    invoke("inspect_document_cmd", { path }),
-    invoke("preview_document_cmd", { path }),
-  ];
-  if (!options.skipParameters) {
-    requests.push(invoke("list_document_parameters_cmd", { path }));
+  // A document that no longer regenerates has no preview, but its info,
+  // parameters, and regeneration inspection still load so it can be repaired.
+  const [inspectResult, previewResult, regenerationResult, parametersResult] =
+    await Promise.allSettled([
+      invoke("inspect_document_cmd", { path }),
+      invoke("preview_document_cmd", { path }),
+      invoke("inspect_regeneration_cmd", { path }),
+      options.skipParameters
+        ? Promise.resolve(null)
+        : invoke("list_document_parameters_cmd", { path }),
+    ]);
+  if (inspectResult.status === "rejected") {
+    throw inspectResult.reason;
   }
-
-  const results = await Promise.all(requests);
-  const inspect = results[0];
-  const previewData = results[1];
-
-  preview.src = `data:image/png;base64,${previewData.png_base64}`;
-  preview.alt = previewData.name;
+  const inspect = inspectResult.value;
 
   renderInfo(docInfo, [
     ["Name", inspect.name],
@@ -546,6 +654,32 @@ async function loadDocument(path, options = {}) {
     ["Parameters", inspect.parameters],
     ["Topo refs", inspect.semantic_refs],
   ]);
+
+  if (regenerationResult.status === "fulfilled") {
+    renderRegeneration(regenerationResult.value);
+  } else {
+    renderRegenerationUnavailable(regenerationResult.reason);
+  }
+
+  if (parametersResult.status === "fulfilled" && parametersResult.value) {
+    renderParameters(parametersResult.value);
+  } else if (parametersResult.status === "rejected") {
+    renderParameters([]);
+  }
+
+  clearSelection();
+  clearIntent();
+
+  if (previewResult.status === "rejected") {
+    preview.removeAttribute("src");
+    preview.alt = "No preview";
+    renderInfo(previewInfo, [["Preview", "unavailable"]]);
+    setStatus(`Loaded ${inspect.name} without a preview: ${previewResult.reason}`);
+    return;
+  }
+  const previewData = previewResult.value;
+  preview.src = `data:image/png;base64,${previewData.png_base64}`;
+  preview.alt = previewData.name;
 
   renderInfo(previewInfo, [
     ["Triangles", previewData.triangles],
@@ -560,11 +694,6 @@ async function loadDocument(path, options = {}) {
     ],
   ]);
 
-  if (!options.skipParameters && results[2]) {
-    renderParameters(results[2]);
-  }
-
-  clearSelection();
   setStatus(`Loaded ${previewData.name}`);
 }
 

@@ -14,6 +14,9 @@ render/viewport layer and are not written to the document.
 | `inspect_document(path)` | Open and summarize document metadata, graph counts, and semantic references |
 | `preview_document(path)` | Regenerate, tessellate, and render a deterministic offscreen PNG preview |
 | `regenerate_document(path)` | Read-only OCCT regeneration report and triangle count for a part document |
+| `inspect_document_regeneration(path)` | Read-only `RegenInspectionResult`: where a part stops regenerating, which features the failure blocks, and the body it was building on (MCAD-P6-006) |
+| `inspect_parameter_intent(path, id)` | `ParameterIntent`: what drives a parameter and which features an edit to it regenerates |
+| `inspect_reference_intent(path, ref_id)` | `ReferenceIntent`: a semantic reference's creator, consumers, and the features a change to it regenerates |
 | `apply_patch_and_regenerate_with_trace(doc, patch, kernel, registry)` | Atomically apply a patch and return shared `ChangeImpact` plus `RegenerationTrace`; no-op performs zero kernel calls |
 | `list_document_parameters(path)` | Return parameters in deterministic evaluation order with explicit unit values |
 | `set_document_parameter(path, id, expr)` | Compatibility wrapper: apply one validated `DesignPatch` and persist without retaining history |
@@ -47,6 +50,9 @@ regeneration }`; the compatibility helper retains its `RegenReport` return.
 | Undo document edit | `undo_document_cmd` | — | `opencad.history_undo_document` |
 | Redo document edit | `redo_document_cmd` | — | `opencad.history_redo_document` |
 | Pick | `pick_document_cmd` | `pick` | `opencad.pick_document` |
+| Regeneration panel (on Open/Refresh) | `inspect_regeneration_cmd` | `intent <path> regen` | `opencad.inspect_regeneration_document` |
+| Parameter Intent button | `inspect_parameter_intent_cmd` | `intent <path> param:...` | `opencad.query_document` (`inspect_parameter`) |
+| Pick a face with a topo ref | `inspect_reference_intent_cmd` | `intent <path> ref:...` | `opencad.query_document` (`inspect_reference`) |
 | Create sample | `create_template_document` | `new` | — (CLI provides parity) |
 | Open viewport | `open_viewport_cmd` | `view` | — (CLI provides parity) |
 
@@ -59,6 +65,19 @@ command. Refresh deliberately calls the same inspect/preview load path as Open;
 there is no separate UI regenerate or export command. The test also checks that
 the UI keeps document path state separate from viewport preview synchronization
 and does not contain direct Design Graph mutation expressions.
+
+### Intent Inspector
+
+The info panel's Regeneration and Intent sections are the desktop Intent
+Inspector (MCAD-P6-006). They call the same backend functions as
+`musubicad intent` and the Agent API, and none of them writes the document.
+Open and Refresh load the document summary, preview, parameters, and
+regeneration inspection independently. A document that no longer regenerates
+still shows its parameters and the Regeneration section (failing node, error,
+blocked features, and the upstream body's mass) without a preview, so it can
+be repaired by editing a parameter. Each parameter row's Intent button shows
+what drives it and which features an edit regenerates. Picking a face whose
+topo ref is inferred shows that reference's creator and consumers.
 
 The parity test also checks the implementation boundary: the Tauri parameter
 handler delegates to the desktop history helper, the desktop helper constructs

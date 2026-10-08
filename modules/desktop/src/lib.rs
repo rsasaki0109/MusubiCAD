@@ -3,6 +3,7 @@
 pub mod export;
 pub mod fixture;
 pub mod inspect;
+pub mod intent;
 pub mod parameters;
 pub mod patch;
 pub mod pick;
@@ -17,6 +18,10 @@ pub mod viewport;
 
 pub use export::{export_stl_document, ExportSummary};
 pub use inspect::{inspect_document, DocumentInspect};
+pub use intent::{
+    inspect_document_regeneration, inspect_parameter_intent, inspect_reference_intent,
+    RegenInspectionResult, RegenInspectionStatus, DEFAULT_DENSITY_KG_PER_M3,
+};
 pub use parameters::{
     list_document_parameters, redo_document_with_history, set_document_parameter,
     set_document_parameter_with_history, undo_document_with_history, ParameterRow,
@@ -41,6 +46,7 @@ pub use smoke::{run_desktop_smoke, DesktopSmokeSummary};
 pub use template::{create_document, DocumentTemplate};
 pub use viewport::{run_document_viewport, run_document_viewport_with_sync, PreviewSynced};
 
+pub use opencad_ai::{ParameterIntent, ReferenceIntent};
 pub use opencad_file::{DocumentHistory, DocumentHistoryState};
 pub use scene_query::{infer_face_refs, topo_ref_for_group};
 

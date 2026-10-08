@@ -28,6 +28,21 @@ fn every_ui_model_command_has_a_tauri_handler_and_cli_or_agent_route() {
         ("inspect_document_cmd", "inspect_document_cmd", "inspect"),
         ("preview_document_cmd", "preview_document_cmd", "screenshot"),
         (
+            "inspect_regeneration_cmd",
+            "inspect_regeneration_cmd",
+            "opencad.inspect_regeneration_document",
+        ),
+        (
+            "inspect_parameter_intent_cmd",
+            "inspect_parameter_intent_cmd",
+            "intent",
+        ),
+        (
+            "inspect_reference_intent_cmd",
+            "inspect_reference_intent_cmd",
+            "intent",
+        ),
+        (
             "create_template_document",
             "create_template_document",
             "new",
