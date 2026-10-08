@@ -35,6 +35,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 | `opencad.history_undo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.history_redo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.regen_document` | `{ path }` | `RegenResult` |
+| `opencad.inspect_regeneration_document` | `{ path }` | `RegenInspectionResult`; see [Intent inspector](#intent-inspector-inspect_parameter--inspect_reference) |
 | `opencad.export` | `{ path, output }` | `ExportSummary` |
 | `opencad.reach_document` | `{ path, tool, point_m?, target_m?, tolerance_m?, gif?, frames_per_move?, …gif options }` | `musubicad reach` summary: `workspace` (mm), `target` (`reachable`, `gap_mm`, joint values, `pose`) |
 | `opencad.animate_joints_document` | `{ path, output, poses?: ["shoulder=60deg,…"], frames_per_move?, view?, style?, width?, height?, aspect?, fps?, caption? }` | `{ output, frames, frames_per_second, width_px, height_px, view, keyframes, joints }` |
@@ -218,6 +219,22 @@ geometry kernel. Lists are sorted, and feature lists follow recompute order.
 In-memory `opencad.query` accepts an optional `assertions` array.
 `opencad.query_document` reads assertions from the document.
 The CLI equivalent is `musubicad intent <path> <param:...|ref:...> [--json]`.
+
+`opencad.inspect_regeneration_document` answers "where does this part stop
+regenerating?". Unlike the two queries it runs the geometry kernel, on an
+in-memory copy; the document is never written, and a failing regeneration is
+a result rather than an error. It returns `RegenInspectionResult`:
+
+- `status`: `regenerated` or `failed`;
+- `failure`: the `RegenerationFailure` (first failing stage and node, error,
+  completed, blocked, and not-reached features); see
+  [`RegenerationFailure`](change-impact-and-regeneration-trace.md#regenerationfailure);
+- `body_feature`, `volume_m3`, `mass_kg` (at `density_kg_per_m3`): the final
+  body on success, or the body the failing feature was building on.
+
+Only part documents are accepted. The CLI equivalent is
+`musubicad intent <path> regen [--json]`, and the MCP tool is
+`inspect_regeneration`.
 
 ### `PickSummary`
 

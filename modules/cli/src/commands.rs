@@ -129,12 +129,13 @@ fn cmd_inspect(path: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-/// `musubicad intent <path> <param:...|ref:...> [--json]` (MCAD-P6-006): what
-/// drives a parameter or reference and what an edit to it would change.
+/// `musubicad intent <path> <param:...|ref:...|regen> [--json]` (MCAD-P6-006):
+/// what drives a parameter or reference and what an edit to it would change,
+/// or where regeneration fails.
 fn cmd_intent(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     let usage = || {
         opencad_core::OpenCadError::validation(
-            "usage: musubicad intent <path> <param:...|ref:...> [--json]",
+            "usage: musubicad intent <path> <param:...|ref:...|regen> [--json]",
         )
     };
     let path = path.ok_or_else(usage)?;
@@ -152,6 +153,9 @@ fn cmd_intent(path: Option<&str>, extra_args: &[String]) -> Result<()> {
         }
     }
     let target = target.ok_or_else(usage)?;
+    if target == "regen" {
+        return print_regen_inspection(&crate::regen::inspect_document_regeneration(path)?, json);
+    }
     let query = if target.starts_with("ref:") {
         opencad_ai::DesignQuery::InspectReference { ref_id: target }
     } else {
@@ -207,6 +211,51 @@ fn cmd_intent(path: Option<&str>, extra_args: &[String]) -> Result<()> {
             list("assertions", &item.assertions);
         }
         _ => {}
+    }
+    Ok(())
+}
+
+fn print_regen_inspection(result: &crate::regen::RegenInspectionResult, json: bool) -> Result<()> {
+    if json {
+        println!("{}", serde_json::to_string_pretty(result)?);
+        return Ok(());
+    }
+    let list = |label: &str, items: &[String]| {
+        let text = if items.is_empty() {
+            "-".to_string()
+        } else {
+            items.join(", ")
+        };
+        println!("{label}: {text}");
+    };
+    println!("kernel: {}", result.kernel);
+    match &result.failure {
+        None => println!("status: regenerated"),
+        Some(failure) => {
+            let stage = serde_json::to_value(failure.stage)?;
+            let stage = stage.as_str().unwrap_or("unknown");
+            let node = failure.node.as_deref().unwrap_or("-");
+            println!("status: failed at {stage} {node}");
+            println!("error: {}", failure.error);
+            list("completed features", &failure.completed_features);
+            list("blocked features", &failure.blocked_features);
+            list("not reached", &failure.not_reached_features);
+            list("suppressed", &failure.skipped_suppressed);
+        }
+    }
+    if let Some(feature) = &result.body_feature {
+        let label = if result.failure.is_some() {
+            "upstream body"
+        } else {
+            "body"
+        };
+        println!("{label}: {feature}");
+    }
+    if let Some(volume) = result.volume_m3 {
+        println!("volume_m3: {volume}");
+    }
+    if let Some(mass) = result.mass_kg {
+        println!("mass_kg: {mass}");
     }
     Ok(())
 }
@@ -642,6 +691,7 @@ DOCUMENT METHODS:
     opencad.patch_dry_run_document
     opencad.patch_apply_document
     opencad.regen_document
+    opencad.inspect_regeneration_document
 
 PLUGIN METHODS:
     opencad.plugin_list
@@ -673,7 +723,8 @@ COMMANDS:
     new         Create a sample bracket document
     validate    Validate a .ocad or .ocad.d document
     inspect     Show document summary
-    intent      Show what drives a parameter or reference and what it changes
+    intent      Show what drives a parameter or reference and what it changes,
+                or where regeneration fails (`intent <path> regen`)
     params      List document parameters
     regen       Regenerate features through the geometry kernel
     export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF or an HTML joint viewer

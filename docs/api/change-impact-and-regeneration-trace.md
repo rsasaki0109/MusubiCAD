@@ -56,3 +56,37 @@ not deterministic identity.
 execution evidence together and commits only after regeneration succeeds. A
 no-op patch returns `RegenerationTrace::no_op()`, performs zero solver/kernel
 calls, and leaves the document byte-for-byte unchanged.
+
+## `RegenerationFailure`
+
+`PartModel::inspect_regeneration` (MCAD-P6-006) regenerates a copy of the
+model and returns a `RegenerationInspection`: the copy, holding every output
+that was produced, and either the `RegenReport` or a `RegenerationFailure`.
+The inspected model is never changed, so it is safe on a document whose
+regeneration fails.
+
+```json
+{
+  "stage": "feature",
+  "node": "feature:shaft_bore",
+  "error": "feature 'feature:shaft_bore': OCCT error: Invalid edge: circle: invalid params (...)",
+  "completed_features": ["feature:sketch_joint_base", "feature:joint_base", "...", "feature:upper_hub"],
+  "blocked_features": ["feature:counterbore", "feature:pcd_fasteners", "feature:radial_ribs", "feature:mounting_ears", "feature:mounting_holes"],
+  "not_reached_features": [],
+  "skipped_suppressed": [],
+  "upstream_body_feature": "feature:upper_hub"
+}
+```
+
+- `stage` is `parameters` (evaluating the parameter graph), `sketch` (solving
+  one sketch), `feature_graph` (ordering features, for example a cycle), or
+  `feature` (executing one feature). `node` names the failing sketch or
+  feature and is absent for the two whole-document stages.
+- Every unsuppressed feature other than `node` lands in exactly one list, in
+  recompute order. `completed_features` produced an output, which stays in
+  the returned copy. `blocked_features` depend on the failing node: the
+  feature's downstream, the sketch features using a failing sketch and their
+  downstream, or every feature for a parameter or graph failure.
+  `not_reached_features` do not depend on the failure but come after it.
+- `upstream_body_feature` is the last completed feature upstream of a failing
+  feature that has a body: the solid the failing feature was building on.

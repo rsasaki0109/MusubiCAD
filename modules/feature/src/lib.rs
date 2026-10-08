@@ -11,6 +11,7 @@ pub mod graph_derive;
 pub mod helix_sweep;
 pub mod hole;
 pub mod imported;
+pub mod inspect;
 pub mod loft;
 pub mod param_apply;
 pub mod pattern;
@@ -33,6 +34,7 @@ pub use graph_derive::derive_feature_graph;
 pub use helix_sweep::{HelixSweepFeature, HelixSweepFeatureExecutor};
 pub use hole::{HoleFeature, HoleFeatureExecutor};
 pub use imported::{ImportedSolidExecutor, ImportedSolidFeature};
+pub use inspect::{RegenerationFailure, RegenerationInspection};
 pub use loft::{LoftFeature, LoftFeatureExecutor, LoftSection};
 pub use param_apply::{apply_parameters, sketch_solve_state};
 pub use pattern::{
@@ -46,7 +48,7 @@ pub use regenerate::{
     bracket_semantic_refs, bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet,
     revolve_bushing, revolve_sector, robot_arm_base, robot_arm_forearm, robot_arm_gripper,
     robot_arm_upper_arm, robot_joint_actuator_housing, six_axis_hand, six_axis_turntable,
-    six_axis_wrist, PartModel, RegenReport, RegenerationTrace,
+    six_axis_wrist, PartModel, RegenReport, RegenerationStage, RegenerationTrace,
 };
 pub use registry::FeatureRegistry;
 pub use revolve::{RevolveFeature, RevolveFeatureExecutor};

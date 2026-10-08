@@ -69,6 +69,9 @@ the CLI commands in section 7 instead; they enforce the same checks.
      feature that stopped regenerating (for example
      `feature 'feature:bearing_bore': ... got 0` means the cut removed the
      whole solid) or the expected effect that did not hold.
+   - If a document on disk already fails to regenerate, `inspect_regeneration`
+     names the first failing sketch or feature, the features it blocks, and
+     the body it was building on, without writing anything.
    - `verification.diff.summary` and `verification.diff.geometry`
      (`mass_before`/`mass_after` in kg, volumes in m³),
      `verification.geometry.before_bounds_m`/`after_bounds_m`.
@@ -165,6 +168,7 @@ The CLI enforces the same verification:
 ```bash
 musubicad params part.ocad.d --json                         # list parameters
 musubicad intent part.ocad.d param:bore_diameter --json     # what it drives
+musubicad intent part.ocad.d regen                          # where regeneration fails
 musubicad patch part.ocad.d change.json --dry-run --geometry --json
 musubicad patch part.ocad.d change.json                     # verifies, then writes
 musubicad review part.ocad.d change.json --output review    # HTML review

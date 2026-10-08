@@ -117,6 +117,38 @@ impl RegenerationTrace {
     }
 }
 
+/// Stage of a regeneration pass, used to attribute a failure (MCAD-P6-006).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RegenerationStage {
+    /// Evaluating the parameter graph into feature and sketch values.
+    #[default]
+    Parameters,
+    /// Solving and validating one sketch.
+    Sketch,
+    /// Ordering the feature graph (for example a dependency cycle).
+    FeatureGraph,
+    /// Executing one feature.
+    Feature,
+}
+
+/// Where a tracked regeneration is, and which features it completed.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct RegenProgress {
+    pub stage: RegenerationStage,
+    /// The sketch or feature being processed in `stage`.
+    pub node: Option<String>,
+    /// Features that produced an output (executed or cached), in order.
+    pub completed: Vec<String>,
+}
+
+impl RegenProgress {
+    fn enter(&mut self, stage: RegenerationStage, node: Option<&str>) {
+        self.stage = stage;
+        self.node = node.map(str::to_string);
+    }
+}
+
 /// Session context passed to feature executors during regeneration.
 pub struct RegenSession<'a, K: GeometryKernel> {
     pub kernel: &'a K,
@@ -282,15 +314,48 @@ impl PartModel {
         semantic_refs: Option<&[TopoRef]>,
         cache: &mut RegenerationCache,
     ) -> Result<RegenReport> {
+        let previous_outputs = self.outputs.clone();
+        let result = self.regenerate_tracked(
+            kernel,
+            registry,
+            parameters,
+            semantic_refs,
+            cache,
+            &mut RegenProgress::default(),
+        );
+        if result.is_err() {
+            self.outputs = previous_outputs;
+        }
+        result
+    }
+
+    /// Regeneration that records in `progress` where it is, so a failure can
+    /// be attributed to its stage and node (MCAD-P6-006).  On failure the
+    /// outputs of completed features are left in place; callers that must
+    /// not change the model restore them.
+    pub(crate) fn regenerate_tracked<K: GeometryKernel>(
+        &mut self,
+        kernel: &K,
+        registry: &FeatureRegistry,
+        parameters: Option<&ParamGraph>,
+        semantic_refs: Option<&[TopoRef]>,
+        cache: &mut RegenerationCache,
+        progress: &mut RegenProgress,
+    ) -> Result<RegenReport> {
         let started = Instant::now();
         if let Some(params) = parameters {
+            progress.enter(RegenerationStage::Parameters, None);
             apply_parameters(self, params)?;
         }
-        self.prepare_sketches()?;
+        for sketch in self.sketches.values_mut() {
+            progress.enter(RegenerationStage::Sketch, Some(sketch.id.as_str()));
+            prepare_sketch(sketch)?;
+            validate_sketch(sketch)?;
+        }
 
-        let previous_outputs = self.outputs.clone();
         self.outputs.clear();
 
+        progress.enter(RegenerationStage::FeatureGraph, None);
         let order = self.graph.recompute_order()?;
         let mut report = RegenReport::default();
         let refs = semantic_refs.unwrap_or(&[]);
@@ -310,6 +375,7 @@ impl PartModel {
                     report.skipped_suppressed.push(feature_id);
                     continue;
                 }
+                progress.enter(RegenerationStage::Feature, Some(&feature_id));
 
                 let mut upstream_hashes: Vec<(&str, &str)> = self
                     .graph
@@ -346,6 +412,7 @@ impl PartModel {
                     output_hashes.insert(feature_id.clone(), output_key);
                     self.outputs
                         .insert(feature_id.clone(), cached.output.clone());
+                    progress.completed.push(feature_id.clone());
                     report.cached_nodes.push(feature_id);
                     continue;
                 }
@@ -389,6 +456,7 @@ impl PartModel {
                     },
                 );
                 self.outputs.insert(feature_id.clone(), output);
+                progress.completed.push(feature_id.clone());
                 report.regenerated.push(feature_id);
             }
 
@@ -436,9 +504,6 @@ impl PartModel {
 
             Ok(report)
         })();
-        if result.is_err() {
-            self.outputs = previous_outputs;
-        }
         result
     }
 
