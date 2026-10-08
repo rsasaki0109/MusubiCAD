@@ -10,14 +10,16 @@
 
 use std::collections::BTreeMap;
 
-use opencad_assembly::{kinematic_tree, AssemblyModel, JointKind, KinematicTree};
+use opencad_assembly::{
+    kinematic_tree, solve_assembly_mates, AssemblyModel, JointKind, KinematicTree,
+};
 use opencad_core::{OpenCadError, Result};
 use opencad_file::read_ocad;
 use opencad_geometry::{MeshSet, RigidTransform};
 use opencad_render::{PreviewStyle, PreviewView};
 use serde::Serialize;
 
-use crate::preview::{aspect_height, write_preview_gif, GifFrame};
+use crate::preview::{aspect_height, marker_mesh, write_preview_gif, GifFrame, MARKER_COLOR};
 
 /// Upper bound on frames in one clip, to keep GIFs shareable.
 const MAX_FRAMES: usize = 600;
@@ -47,6 +49,10 @@ pub struct JointAnimationOptions {
     /// Label each frame with the joint positions.
     pub caption: bool,
     pub style: PreviewStyle,
+    /// World point to mark in every frame (a reach target), metres.
+    pub marker_m: Option<[f64; 3]>,
+    /// Extra caption line under the joint positions.
+    pub note: Option<String>,
 }
 
 impl Default for JointAnimationOptions {
@@ -60,6 +66,8 @@ impl Default for JointAnimationOptions {
             poses: Vec::new(),
             caption: true,
             style: PreviewStyle::STUDIO,
+            marker_m: None,
+            note: None,
         }
     }
 }
@@ -199,10 +207,10 @@ pub fn usage() -> &'static str {
 }
 
 /// A movable joint and the names it answers to.
-struct NamedJoint {
-    id: String,
+pub(crate) struct NamedJoint {
+    pub(crate) id: String,
     mate: Option<String>,
-    instance: String,
+    pub(crate) instance: String,
     kind: JointKind,
 }
 
@@ -219,7 +227,14 @@ impl NamedJoint {
         .any(|id| id == name || short(&id).as_deref() == Some(name))
     }
 
-    fn is_prismatic(&self) -> bool {
+    /// Joint ID without its `joint:` (or `mate:`) prefix.
+    pub(crate) fn short_name(&self) -> String {
+        self.id
+            .split_once(':')
+            .map_or(self.id.clone(), |(_, short)| short.to_string())
+    }
+
+    pub(crate) fn is_prismatic(&self) -> bool {
         matches!(self.kind, JointKind::Prismatic { .. })
     }
 
@@ -233,7 +248,7 @@ impl NamedJoint {
     }
 }
 
-fn movable_joints(model: &AssemblyModel, tree: &KinematicTree) -> Vec<NamedJoint> {
+pub(crate) fn movable_joints(model: &AssemblyModel, tree: &KinematicTree) -> Vec<NamedJoint> {
     tree.links
         .iter()
         .filter_map(|link| {
@@ -389,14 +404,22 @@ fn moved(mesh: &MeshSet, delta: RigidTransform) -> MeshSet {
     }
 }
 
+/// `assembly` with instance placements solved from its mates, as assembly
+/// regeneration places them, so the kinematic tree matches the regenerated
+/// geometry even after a connector or part edit.
+pub(crate) fn solved_assembly(assembly: &AssemblyModel) -> Result<AssemblyModel> {
+    if assembly.mates.is_empty() {
+        return Ok(assembly.clone());
+    }
+    let (instances, _) = solve_assembly_mates(assembly)?;
+    let mut solved = assembly.clone();
+    solved.instances = instances;
+    Ok(solved)
+}
+
 /// One caption line per moving joint: short name and position with its unit.
 fn joint_caption(joints: &[NamedJoint], positions: &BTreeMap<String, f64>) -> Vec<String> {
-    let name = |joint: &NamedJoint| {
-        joint
-            .id
-            .split_once(':')
-            .map_or(joint.id.clone(), |(_, short)| short.to_string())
-    };
+    let name = NamedJoint::short_name;
     let width = joints
         .iter()
         .map(|joint| name(joint).len())
@@ -406,10 +429,12 @@ fn joint_caption(joints: &[NamedJoint], positions: &BTreeMap<String, f64>) -> Ve
         .iter()
         .map(|joint| {
             let position = positions.get(&joint.instance).copied().unwrap_or(0.0);
+            // Round first so a tiny negative position does not print as -0.0.
+            let tenth = |value: f64| (value * 10.0).round() / 10.0 + 0.0;
             let value = if joint.is_prismatic() {
-                format!("{:7.1} mm", position * 1000.0)
+                format!("{:7.1} mm", tenth(position * 1000.0))
             } else {
-                format!("{:7.1}°", position.to_degrees())
+                format!("{:7.1}°", tenth(position.to_degrees()))
             };
             format!("{:<width$} {value}", name(joint))
         })
@@ -431,6 +456,7 @@ pub fn animate_joints(
     let assembly = doc.assembly.clone().ok_or_else(|| {
         OpenCadError::validation("animate-joints needs an assembly document with joints")
     })?;
+    let assembly = solved_assembly(&assembly)?;
     let tree = kinematic_tree(&assembly)?;
     let joints = movable_joints(&assembly, &tree);
     let keyframes = resolve_keyframes(&joints, &options.poses)?;
@@ -470,13 +496,33 @@ pub fn animate_joints(
         );
     }
 
+    // Marker sized to 3.5 % of the largest extent of the zero pose.
+    let marker = options.marker_m.map(|centre| {
+        let mut min = [f64::INFINITY; 3];
+        let mut max = [f64::NEG_INFINITY; 3];
+        for position in meshes.iter().flat_map(|(_, _, mesh)| &mesh.positions) {
+            for axis in 0..3 {
+                min[axis] = min[axis].min(f64::from(position[axis]));
+                max[axis] = max[axis].max(f64::from(position[axis]));
+            }
+        }
+        let extent = (0..3).map(|axis| max[axis] - min[axis]).fold(0.0, f64::max);
+        marker_mesh(centre, 0.035 * extent)
+    });
     let gif_frames: Vec<GifFrame> = posed_frames
         .into_iter()
         .zip(&frames)
         .map(|(meshes, positions)| GifFrame {
             meshes,
+            accents: marker
+                .iter()
+                .cloned()
+                .map(|mesh| (mesh, MARKER_COLOR))
+                .collect(),
             caption: if options.caption {
-                joint_caption(&joints, positions)
+                let mut lines = joint_caption(&joints, positions);
+                lines.extend(options.note.clone());
+                lines
             } else {
                 Vec::new()
             },
@@ -630,7 +676,10 @@ mod tests {
         let model = robot_arm_assembly_model().expect("model");
         let tree = kinematic_tree(&model).expect("tree");
         let joints = movable_joints(&model, &tree);
-        let positions = BTreeMap::from([("instance:forearm".to_string(), -0.5_f64.to_radians())]);
+        let positions = BTreeMap::from([
+            ("instance:forearm".to_string(), -0.5_f64.to_radians()),
+            ("instance:gripper".to_string(), -0.01_f64.to_radians()),
+        ]);
         assert_eq!(
             joint_caption(&joints, &positions),
             [

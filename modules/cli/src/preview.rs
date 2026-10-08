@@ -135,22 +135,59 @@ pub fn preview_document(params: &PreviewParams) -> Result<(Vec<u8>, PreviewSumma
     ))
 }
 
-/// One animation frame: meshes in palette order and caption lines.
+/// One animation frame: meshes in palette order, extra meshes with their own
+/// colours (markers), and caption lines.
 pub(crate) struct GifFrame {
     pub meshes: Vec<MeshSet>,
+    pub accents: Vec<(MeshSet, [f32; 3])>,
     pub caption: Vec<String>,
 }
 
-/// Meshes coloured in palette order, matching `musubicad preview`.
-fn palette_meshes(meshes: &[MeshSet]) -> Vec<PreviewMesh<'_>> {
-    meshes
-        .iter()
-        .enumerate()
-        .map(|(index, mesh)| PreviewMesh {
-            mesh,
-            color: PALETTE[index % PALETTE.len()],
-        })
-        .collect()
+impl GifFrame {
+    /// Meshes coloured in palette order, matching `musubicad preview`, then accents.
+    fn preview_meshes(&self) -> Vec<PreviewMesh<'_>> {
+        self.meshes
+            .iter()
+            .enumerate()
+            .map(|(index, mesh)| PreviewMesh {
+                mesh,
+                color: PALETTE[index % PALETTE.len()],
+            })
+            .chain(self.accents.iter().map(|(mesh, color)| PreviewMesh {
+                mesh,
+                color: *color,
+            }))
+            .collect()
+    }
+}
+
+/// Colour of target markers.
+pub(crate) const MARKER_COLOR: [f32; 3] = [0.9, 0.18, 0.22];
+
+/// A small octahedron centred on `centre_m` with the given half size, metres.
+pub(crate) fn marker_mesh(centre_m: [f64; 3], half_size_m: f64) -> MeshSet {
+    let [x, y, z] = centre_m;
+    let r = half_size_m;
+    let positions: Vec<[f32; 3]> = [
+        [x + r, y, z],
+        [x - r, y, z],
+        [x, y + r, z],
+        [x, y - r, z],
+        [x, y, z + r],
+        [x, y, z - r],
+    ]
+    .iter()
+    .map(|point| point.map(|value| value as f32))
+    .collect();
+    let indices = vec![
+        0, 2, 4, 2, 1, 4, 1, 3, 4, 3, 0, 4, 2, 0, 5, 1, 2, 5, 3, 1, 5, 0, 3, 5,
+    ];
+    MeshSet {
+        normals: positions.clone(),
+        positions,
+        triangle_face_ids: vec![0; indices.len() / 3],
+        indices,
+    }
 }
 
 /// Render `frames` on the CPU with one framing fitted to all of them, so the
@@ -179,17 +216,12 @@ pub(crate) fn write_preview_gif(
         .with_bottom_inset(caption_px as f32 / height.max(1) as f32)
         .with_shadow(style.shadow_opacity > 0.0);
     for frame in frames {
-        framing.include(&palette_meshes(&frame.meshes));
+        framing.include(&frame.preview_meshes());
     }
     let mut images = Vec::with_capacity(frames.len());
     for frame in frames {
-        let mut image = render_preview_styled(
-            &palette_meshes(&frame.meshes),
-            &framing,
-            width,
-            height,
-            style,
-        )?;
+        let mut image =
+            render_preview_styled(&frame.preview_meshes(), &framing, width, height, style)?;
         let lines: Vec<&str> = frame.caption.iter().map(String::as_str).collect();
         draw_caption(&mut image, &lines, CaptionCorner::BottomLeft, scale);
         images.push(RenderImage {

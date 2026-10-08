@@ -83,6 +83,40 @@ against the limits before that. The command prints the frames written and the
 range each joint covered, in degrees or millimetres. Frames are captioned with
 every moving joint's position (`--no-caption` turns that off).
 
+### Reach and workspace
+
+`opencad_assembly::workspace(&tree, &tool)` and
+`solve_reach(&tree, &tool, target_m, tolerance_m)` answer where a `ToolPoint`
+(an instance and a point in its part frame, metres) can go, without the
+geometry kernel. Joint space is sampled on a deterministic grid inside the
+declared limits (continuous joints over −π to π, at most 20 000 samples); the
+six best samples are refined by damped least squares on a finite-difference
+Jacobian with a backtracking step, clamped to the limits. `Workspace` reports
+the sampled tool bounds and the closest and farthest tool distance from the
+first moving joint. `ReachSolution` gives the joint positions, the tool point,
+the remaining distance, and `reachable` when that distance is within the
+tolerance. Reachable targets converge to about a micrometre; for targets out
+of reach the gap is accurate to about 0.1 mm, because the stretched pose is
+singular.
+
+`musubicad reach <assembly> --tool gripper --point 0,40,7mm --target 0,330,63mm`
+prints the workspace (millimetres), whether the target is reachable, the gap,
+each joint's value in degrees or millimetres, and the pose as an
+`animate-joints --pose` argument. `--tolerance` defaults to 0.5 mm. Mates are
+solved first, as assembly regeneration does, so the answer follows connector
+and link-length edits; `animate-joints` uses the same solved placements.
+`--gif out.gif [animate-joints options]` also draws the arm moving to that
+pose with the target marked and the result in the caption.
+
+[`examples/agent/reach_upper_arm_length_patch.json`](../../examples/agent/reach_upper_arm_length_patch.json)
+and [`reach_elbow_connector_patch.json`](../../examples/agent/reach_elbow_connector_patch.json)
+are the design loop the README shows: the arm falls 20 mm short of
+`(0, 330, 63) mm`; the first patch lengthens the upper arm from 160 mm to 200 mm
+and requires its mass to rise by 30–50 g; the second moves the elbow connector
+to the new link end and carries the forearm and gripper 40 mm with it (the mate
+solver needs a nearby start for a move that large); after both, the target is
+reached. `docs/assets/generate-reach-demo.sh` replays it on a temporary copy.
+
 `musubicad export <assembly> <name>.urdf` (Agent `opencad.export`, MCP
 `export_document`) writes the URDF and one binary STL per component next to
 it (`<robot>_<component>.stl`, metres, referenced by file name). Inertials use

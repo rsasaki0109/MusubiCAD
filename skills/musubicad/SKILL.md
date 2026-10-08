@@ -158,6 +158,7 @@ musubicad export part.ocad.d part.step                      # or part.3mf / part
 musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description
 musubicad animate-joints arm.ocad.d arm.gif --pose shoulder=60deg,elbow=-45deg  # joint motion GIF, no GPU
 musubicad animate-sweep part.ocad.d sweep.gif --param bore_diameter --from 8mm --to 20mm  # every frame regenerated
+musubicad reach arm.ocad.d --tool gripper --point 0,40,7mm --target 0,330,63mm  # reachable? joint angles
 ```
 
 `musubicad patch` refuses a patch that does not regenerate or misses its

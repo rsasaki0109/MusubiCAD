@@ -1,0 +1,23 @@
+{
+  "intent": "Lengthen the upper arm link from 160 mm to 200 mm so the gripper reaches farther",
+  "operations": [
+    {
+      "type": "set_parameter",
+      "id": "param:upper_arm_length",
+      "expr": "200 mm"
+    }
+  ],
+  "expected_effects": [
+    {
+      "type": "parameter_expr_equals",
+      "id": "param:upper_arm_length",
+      "expr": "200 mm"
+    },
+    {
+      "type": "mass_delta_kg",
+      "min": 0.03,
+      "max": 0.05
+    }
+  ],
+  "rationale": "A longer link must add material: a mass that drops means the bar did not stay a rectangle."
+}

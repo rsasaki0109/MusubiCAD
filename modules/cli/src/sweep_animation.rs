@@ -316,6 +316,7 @@ pub fn animate_sweep(input: &str, output: &str, options: &SweepOptions) -> Resul
         .into_iter()
         .map(|index| GifFrame {
             meshes: regenerated[index].clone(),
+            accents: Vec::new(),
             caption: if options.caption {
                 let [x, y, z] = samples[index].size_mm;
                 vec![

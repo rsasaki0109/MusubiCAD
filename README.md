@@ -123,6 +123,35 @@ same gate runs on `musubicad patch` for agents that use the CLI instead of MCP. 
   the 200 mm bore is refused because the part no longer regenerates, and the file stays at 8 mm.</sub>
 </p>
 
+## Design for reach
+
+The arm falls 20 mm short of a target. The agent lengthens the upper arm with two verified patches
+and asks again; the same target is reached, and the URDF it exports carries the longer link.
+
+```bash
+musubicad reach examples/robot_arm_assembly.ocad.d --tool gripper --point 0,40,7mm --target 0,330,63mm
+```
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/assets/reach-before.gif" alt="The robot arm stretching toward a red target marker and stopping 20.0 mm short, captioned with its joint angles" width="100%">
+      <br>
+      <sub><strong>160 mm upper arm</strong>: out of reach, 20.0 mm short.</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/assets/reach-after.gif" alt="The same arm with a 200 mm upper arm moving its gripper onto the target, captioned target reached" width="100%">
+      <br>
+      <sub><strong>200 mm upper arm</strong>: reached, after
+      <a href="examples/agent/reach_upper_arm_length_patch.json">lengthening the link</a> (its mass must rise 30–50 g) and
+      <a href="examples/agent/reach_elbow_connector_patch.json">moving the elbow</a>.</sub>
+    </td>
+  </tr>
+</table>
+
+The reach query needs no geometry kernel: it searches the joint limits declared in the design, so an
+agent can check a target in milliseconds before rebuilding anything.
+
 ## From CAD to simulator: URDF
 
 Move the arm through its declared joints before it leaves MusubiCAD (CPU only, no GPU):
