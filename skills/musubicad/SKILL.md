@@ -131,8 +131,25 @@ reports the count.
   is declared; other mates become fixed joints; and one STL per part is
   written next to the URDF. Re-export after every
   design change instead of editing the URDF.
+- `.html` exports an assembly as one self-contained web page with a slider
+  per joint; offer it when the user wants to show the robot to someone.
 - `import_step` brings a STEP solid (for example a purchased motor) into a
   part as a fixed body, a join, or a cut.
+
+## Robots: reach and motion
+
+- `reach` with `{path, tool, point_m, target_m}` answers whether a tool
+  point (for example the gripper tip) reaches a world target within the
+  declared joint limits, and how far short it falls. It needs no geometry
+  kernel, so ask it before and after a change meant to extend reach. A
+  longer link usually also needs its connector moved (and the downstream
+  instances carried along) in the assembly.
+- `animate_joints` writes a GIF of the assembly moving through poses you
+  give (`"shoulder=60deg,elbow=-45deg"`); poses past a limit are refused.
+- `animate_sweep` regenerates a design across one parameter's range; a
+  value that breaks the model stops the sweep and is named, so it doubles
+  as a robustness check. Use `style: "studio"` and `aspect: "1:1"` or
+  `"16:9"` when the user wants something to share.
 
 ## 6. Report honestly
 
@@ -152,9 +169,14 @@ musubicad patch part.ocad.d change.json --dry-run --geometry --json
 musubicad patch part.ocad.d change.json                     # verifies, then writes
 musubicad review part.ocad.d change.json --output review    # HTML review
 musubicad preview part.ocad.d look.png --view iso           # PNG, no GPU needed
+musubicad preview part.ocad.d share.png --style studio --aspect 1:1  # image to share
 musubicad regen part.ocad.d                                 # mass, volume, assertions
 musubicad export part.ocad.d part.step                      # or part.3mf / part.stl / part.glb / sheet.svg
 musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description
+musubicad export arm.ocad.d arm.html                        # web page: 3D view + joint sliders
+musubicad animate-joints arm.ocad.d arm.gif --pose shoulder=60deg,elbow=-45deg  # joint motion GIF, no GPU
+musubicad animate-sweep part.ocad.d sweep.gif --param bore_diameter --from 8mm --to 20mm  # every frame regenerated
+musubicad reach arm.ocad.d --tool gripper --point 0,40,7mm --target 0,330,63mm  # reachable? joint angles
 ```
 
 `musubicad patch` refuses a patch that does not regenerate or misses its

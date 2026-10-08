@@ -6,6 +6,7 @@ mod export;
 mod git_driver;
 mod git_workflow;
 mod import;
+mod joint_animation;
 mod mcp;
 mod mesh;
 mod mesh_formats;
@@ -15,13 +16,17 @@ mod pick;
 mod plugin;
 mod policy_check;
 mod preview;
+mod reach;
 mod regen;
 mod review;
 mod review_gif;
+mod robot_api;
 mod scene_query;
+mod sweep_animation;
 mod topo_sync;
 mod urdf;
 mod view;
+mod web_viewer;
 
 fn main() {
     if let Err(err) = commands::run() {

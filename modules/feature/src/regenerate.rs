@@ -1894,6 +1894,23 @@ fn robot_arm_bar_sketch(
         },
         expr: Expression::new(width_expr)?,
     })?;
+    // Keep the bar a rectangle when the length or width changes: the long
+    // edges stay vertical and the ends horizontal.  Lengths alone let the
+    // free corners stay where they were, so a longer link came out a wedge.
+    for (edge, vertical) in [(0, true), (1, false), (2, true), (3, false)] {
+        let line = EntityId::new(&edges[edge])?;
+        sketch.add_constraint(if vertical {
+            Constraint::Vertical {
+                id: ConstraintId::new(format!("con:{prefix}_e{edge}_vertical"))?,
+                line,
+            }
+        } else {
+            Constraint::Horizontal {
+                id: ConstraintId::new(format!("con:{prefix}_e{edge}_horizontal"))?,
+                line,
+            }
+        })?;
+    }
     Ok(sketch)
 }
 
@@ -3226,6 +3243,36 @@ mod tests {
             })
             .expect("distal hub center");
         assert!((center.1 - 0.200).abs() < 1e-6, "distal hub y {}", center.1);
+    }
+
+    #[test]
+    fn robot_arm_links_stay_rectangular_when_lengthened() {
+        let mut model = robot_arm_upper_arm().expect("model");
+        let mut params = opencad_graph::robot_arm_upper_arm_parameters();
+        params
+            .set_expr("param:upper_arm_length", "200 mm")
+            .expect("edit length");
+        crate::param_apply::apply_parameters(&mut model, &params).expect("apply");
+        let sketch = model.sketches.get("sketch:upper_arm_bar").expect("bar");
+        let corner = |id: &str| match sketch.find_entity(id) {
+            Some(opencad_sketch::SketchEntity::Point(point)) => match (&point.x, &point.y) {
+                (opencad_sketch::Coord::Literal(x), opencad_sketch::Coord::Literal(y)) => (*x, *y),
+                other => panic!("{id}: {other:?}"),
+            },
+            other => panic!("{id}: {other:?}"),
+        };
+        for (id, expected) in [
+            ("ent:upper_arm_bar_c0", (-0.013, 0.0)),
+            ("ent:upper_arm_bar_c1", (-0.013, 0.200)),
+            ("ent:upper_arm_bar_c2", (0.013, 0.200)),
+            ("ent:upper_arm_bar_c3", (0.013, 0.0)),
+        ] {
+            let (x, y) = corner(id);
+            assert!(
+                (x - expected.0).abs() < 1e-6 && (y - expected.1).abs() < 1e-6,
+                "{id}: ({x}, {y}) != {expected:?}"
+            );
+        }
     }
 
     #[test]

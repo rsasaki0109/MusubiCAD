@@ -36,7 +36,10 @@ echo '{"jsonrpc":"2.0","id":1,"method":"opencad.inspect","params":{"path":"brack
 | `opencad.history_redo_document` | `{ path, history }` | `{ history, can_undo, can_redo }` |
 | `opencad.regen_document` | `{ path }` | `RegenResult` |
 | `opencad.export` | `{ path, output }` | `ExportSummary` |
-| `opencad.preview_document` | `{ path, view?, width?, height? }` | `{ view, width, height, triangles, bounds_mm, objects, png_base64 }` (GPU-free, [ADR-031](../adr/ADR-031-gpu-free-preview.md)) |
+| `opencad.reach_document` | `{ path, tool, point_m?, target_m?, tolerance_m?, gif?, frames_per_move?, …gif options }` | `musubicad reach` summary: `workspace` (mm), `target` (`reachable`, `gap_mm`, joint values, `pose`) |
+| `opencad.animate_joints_document` | `{ path, output, poses?: ["shoulder=60deg,…"], frames_per_move?, view?, style?, width?, height?, aspect?, fps?, caption? }` | `{ output, frames, frames_per_second, width_px, height_px, view, keyframes, joints }` |
+| `opencad.animate_sweep_document` | `{ path, output, param, from: "32mm", to: "64mm", steps?, …gif options }` | `{ output, parameter, original_expr, samples: [{ expr, size_mm, triangles }], frames, … }` |
+| `opencad.preview_document` | `{ path, view?, width?, height?, style? }` | `{ view, width, height, triangles, bounds_mm, objects, png_base64 }` (GPU-free, [ADR-031](../adr/ADR-031-gpu-free-preview.md)) |
 | `opencad.diff_document` | `{ before, after? \| patch?, geometry? }` | `DesignDiff` |
 | `opencad.query_document` | `{ path, query }` | `QueryResult` |
 | `opencad.pick_document` | `{ path, x, y, width?, height? }` | `PickSummary` |

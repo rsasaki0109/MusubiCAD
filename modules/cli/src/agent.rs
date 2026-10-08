@@ -183,6 +183,9 @@ pub fn handle_agent_request_with_plugins(
         );
     }
 
+    if let Some(response) = crate::robot_api::handle(request) {
+        return response;
+    }
     match request.method.as_str() {
         "opencad.inspect" => handle_inspect(request),
         "opencad.validate" => handle_validate(request),

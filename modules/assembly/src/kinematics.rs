@@ -88,6 +88,130 @@ pub struct KinematicTree {
     pub warnings: Vec<String>,
 }
 
+/// Tolerance on joint positions checked against declared limits (radians or
+/// metres): positions this far past a limit still count as within it.
+const LIMIT_TOLERANCE: f64 = 1e-9;
+
+impl JointKind {
+    /// `true` for joints that can move.
+    pub fn is_movable(&self) -> bool {
+        !matches!(self, Self::Fixed)
+    }
+
+    /// `(lower, upper)` limits in radians or metres; `None` for continuous
+    /// and fixed joints.
+    pub fn limits(&self) -> Option<(f64, f64)> {
+        match *self {
+            Self::Revolute { lower, upper, .. } | Self::Prismatic { lower, upper, .. } => {
+                Some((lower, upper))
+            }
+            Self::Continuous { .. } | Self::Fixed => None,
+        }
+    }
+
+    /// Child link frame relative to its zero position for joint position
+    /// `position` (radians for rotation, metres for translation).  Positions
+    /// outside declared limits are rejected, not clamped.
+    pub fn motion(&self, position: f64) -> Result<RigidTransform> {
+        if !position.is_finite() {
+            return Err(OpenCadError::validation("joint position must be finite"));
+        }
+        if let Some((lower, upper)) = self.limits() {
+            if position < lower - LIMIT_TOLERANCE || position > upper + LIMIT_TOLERANCE {
+                let (scale, unit) = match self {
+                    Self::Prismatic { .. } => (1000.0, "mm"),
+                    _ => (180.0 / std::f64::consts::PI, "deg"),
+                };
+                return Err(OpenCadError::validation(format!(
+                    "joint position {:.3} {unit} is outside its limits [{:.3}, {:.3}] {unit}",
+                    position * scale,
+                    lower * scale,
+                    upper * scale
+                )));
+            }
+        }
+        Ok(match *self {
+            Self::Continuous { axis } | Self::Revolute { axis, .. } => RigidTransform {
+                translation_m: [0.0; 3],
+                rotation: axis_angle_rotation(axis, position),
+            },
+            Self::Prismatic { axis, .. } => {
+                RigidTransform::from_translation(axis.map(|a| a * position))
+            }
+            Self::Fixed if position.abs() <= LIMIT_TOLERANCE => RigidTransform::identity(),
+            Self::Fixed => {
+                return Err(OpenCadError::validation(
+                    "a fixed joint has no position other than zero",
+                ))
+            }
+        })
+    }
+}
+
+impl KinematicTree {
+    /// World transform of every instance (part frame) with the joints of the
+    /// child links (keyed by instance ID) at the given positions, in link
+    /// order.  Joints not
+    /// named stay at zero, which is the assembly's current pose.
+    pub fn pose(
+        &self,
+        positions: &BTreeMap<String, f64>,
+    ) -> Result<Vec<(InstanceId, RigidTransform)>> {
+        for instance in positions.keys() {
+            if !self
+                .links
+                .iter()
+                .any(|link| link.instance.as_str() == instance)
+            {
+                return Err(OpenCadError::validation(format!(
+                    "no joint moves instance '{instance}'"
+                )));
+            }
+        }
+        let mut link_world: BTreeMap<&str, RigidTransform> = BTreeMap::new();
+        let mut placed = Vec::with_capacity(self.links.len());
+        for link in &self.links {
+            let world = match &link.joint {
+                None => link.world,
+                Some(joint) => {
+                    let parent = link_world.get(joint.parent.as_str()).ok_or_else(|| {
+                        OpenCadError::validation(format!(
+                            "parent '{}' of '{}' is not posed before it",
+                            joint.parent, link.instance
+                        ))
+                    })?;
+                    let position = positions
+                        .get(link.instance.as_str())
+                        .copied()
+                        .unwrap_or(0.0);
+                    let motion = joint.kind.motion(position).map_err(|error| {
+                        error.with_context(format!("joint of '{}'", link.instance))
+                    })?;
+                    parent.compose(joint.origin).compose(motion)
+                }
+            };
+            link_world.insert(link.instance.as_str(), world);
+            placed.push((
+                link.instance.clone(),
+                world.compose(link.frame_in_part.inverse()?),
+            ));
+        }
+        Ok(placed)
+    }
+}
+
+/// Rotation matrix for `angle_rad` about the unit vector `axis` (Rodrigues).
+fn axis_angle_rotation(axis: [f64; 3], angle_rad: f64) -> [[f64; 3]; 3] {
+    let [x, y, z] = axis;
+    let (sin, cos) = angle_rad.sin_cos();
+    let t = 1.0 - cos;
+    [
+        [t * x * x + cos, t * x * y - sin * z, t * x * z + sin * y],
+        [t * x * y + sin * z, t * y * y + cos, t * y * z - sin * x],
+        [t * x * z - sin * y, t * y * z + sin * x, t * z * z + cos],
+    ]
+}
+
 /// Derive a kinematic tree from the assembly's instances and mates.
 pub fn kinematic_tree(model: &AssemblyModel) -> Result<KinematicTree> {
     let instances: BTreeMap<&str, &Instance> = model
@@ -457,6 +581,109 @@ mod tests {
                 TOLERANCE_M
             ));
         }
+    }
+
+    #[test]
+    fn the_zero_pose_reproduces_the_placements() {
+        let model = robot_arm_assembly_model().expect("model");
+        let tree = kinematic_tree(&model).expect("tree");
+        let posed = tree.pose(&BTreeMap::new()).expect("pose");
+        assert_eq!(posed.len(), model.instances.len());
+        for (instance, world) in posed {
+            let placement = model
+                .instances
+                .iter()
+                .find(|candidate| candidate.id == instance)
+                .expect("instance")
+                .placement
+                .transform;
+            assert!(RigidTransform::points_near(
+                world.translation_m,
+                placement.translation_m,
+                TOLERANCE_M
+            ));
+            assert!(RigidTransform::matrices_near(
+                &world.rotation,
+                &placement.rotation,
+                1e-12
+            ));
+        }
+    }
+
+    #[test]
+    fn turning_the_shoulder_swings_the_whole_arm_about_its_axis() {
+        let model = robot_arm_assembly_model().expect("model");
+        let tree = kinematic_tree(&model).expect("tree");
+        let shoulder = link(&tree, "instance:upper_arm").world.translation_m;
+        let zero = tree.pose(&BTreeMap::new()).expect("zero");
+        let quarter = tree
+            .pose(&BTreeMap::from([(
+                "instance:upper_arm".to_string(),
+                90.0_f64.to_radians(),
+            )]))
+            .expect("quarter turn");
+        let at = |posed: &[(InstanceId, RigidTransform)], id: &str| {
+            posed
+                .iter()
+                .find(|(instance, _)| instance.as_str() == id)
+                .expect("posed")
+                .1
+        };
+        // Base stays put; every link downstream turns 90° about +Z through the shoulder.
+        assert_eq!(at(&zero, "instance:base"), at(&quarter, "instance:base"));
+        for id in ["instance:forearm", "instance:gripper"] {
+            let before = at(&zero, id).translation_m;
+            let after = at(&quarter, id).translation_m;
+            let (dx, dy) = (before[0] - shoulder[0], before[1] - shoulder[1]);
+            let expected = [shoulder[0] - dy, shoulder[1] + dx, before[2]];
+            assert!(
+                RigidTransform::points_near(after, expected, TOLERANCE_M),
+                "{id}: {after:?} != {expected:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn positions_outside_limits_and_unknown_links_are_rejected() {
+        let model = robot_arm_assembly_model().expect("model");
+        let tree = kinematic_tree(&model).expect("tree");
+        // Elbow is limited to [-100°, 140°].
+        let error = tree
+            .pose(&BTreeMap::from([(
+                "instance:forearm".to_string(),
+                150.0_f64.to_radians(),
+            )]))
+            .expect_err("past the limit");
+        assert!(error.to_string().contains("instance:forearm"), "{error}");
+        assert!(tree
+            .pose(&BTreeMap::from([("instance:tail".to_string(), 0.1)]))
+            .is_err());
+        assert!(tree
+            .pose(&BTreeMap::from([(
+                "instance:forearm".to_string(),
+                f64::NAN
+            )]))
+            .is_err());
+    }
+
+    #[test]
+    fn prismatic_and_fixed_motions() {
+        let slide = JointKind::Prismatic {
+            axis: [0.0, 1.0, 0.0],
+            lower: 0.0,
+            upper: 0.05,
+            effort: 10.0,
+            velocity: 0.1,
+        };
+        assert_eq!(
+            slide.motion(0.02).expect("slide"),
+            RigidTransform::from_translation([0.0, 0.02, 0.0])
+        );
+        assert!(slide.motion(0.06).is_err());
+        assert_eq!(slide.limits(), Some((0.0, 0.05)));
+        assert!(!JointKind::Fixed.is_movable());
+        assert!(JointKind::Fixed.motion(0.0).is_ok());
+        assert!(JointKind::Fixed.motion(0.1).is_err());
     }
 
     #[test]

@@ -185,14 +185,15 @@ fn tools() -> Vec<Tool> {
                     "path": { "type": "string", "description": "Part or assembly .ocad.d / .ocad" },
                     "view": { "enum": ["iso", "front", "top", "right"] },
                     "width": { "type": "integer", "minimum": 16, "maximum": 2048 },
-                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 }
+                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "style": { "enum": ["plain", "studio", "dark"], "description": "plain (default) for checking; studio or dark for an image to share" }
                 },
                 "required": ["path"]
             }),
         },
         Tool {
             name: "export_document",
-            description: "Regenerate and export geometry: .step/.stp (millimetre B-rep for other CAD/CAM tools), .stl (mesh), .3mf (watertight millimetre mesh for slicers; one object per assembly instance), .glb (binary glTF for viewers and the web), .svg (drawing sheet), or .urdf (an assembly as a robot description with one STL per part next to it; mates become joints).",
+            description: "Regenerate and export geometry: .step/.stp (millimetre B-rep for other CAD/CAM tools), .stl (mesh), .3mf (watertight millimetre mesh for slicers; one object per assembly instance), .glb (binary glTF for viewers and the web), .svg (drawing sheet), .urdf (an assembly as a robot description with one STL per part next to it; mates become joints), or .html (an assembly as a self-contained 3D web page with one slider per joint, within its limits).",
             handler: Handler::Agent("opencad.export"),
             schema: || json!({
                 "type": "object",
@@ -201,6 +202,77 @@ fn tools() -> Vec<Tool> {
                     "output": { "type": "string", "description": "Output file; the extension selects the format" }
                 },
                 "required": ["path", "output"]
+            }),
+        },
+        Tool {
+            name: "reach",
+            description: "Can a tool point on a robot assembly reach a target? Kernel-free and fast: searches the joint limits declared in the design (mates solved first). Returns the workspace (mm), whether the target is reachable, the remaining gap in mm, each joint's angle, and a pose string for animate_joints. Use it before and after a design change that should extend reach; with gif, also writes an animation of the arm moving to that pose with the target marked.",
+            handler: Handler::Agent("opencad.reach_document"),
+            schema: || json!({
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string", "description": "Assembly .ocad.d" },
+                    "tool": { "type": "string", "description": "Instance carrying the tool, such as gripper" },
+                    "point_m": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3, "description": "Tool point in that part's frame, metres (default its origin)" },
+                    "target_m": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3, "description": "World target, metres" },
+                    "tolerance_m": { "type": "number", "exclusiveMinimum": 0, "description": "default 0.0005" },
+                    "gif": { "type": "string", "description": "Optional .gif path; needs target_m" },
+                    "frames_per_move": { "type": "integer", "minimum": 1 },
+                    "view": { "enum": ["iso", "front", "top", "right"] },
+                    "style": { "enum": ["studio", "dark", "plain"], "description": "default studio" },
+                    "width": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "aspect": { "type": "string", "description": "W:H such as 16:9, 1:1, 9:16; instead of height" },
+                    "fps": { "type": "integer", "minimum": 1 },
+                    "caption": { "type": "boolean", "description": "label frames with the values (default true)" }
+                },
+                "required": ["path", "tool"]
+            }),
+        },
+        Tool {
+            name: "animate_joints",
+            description: "Write a GIF of a robot assembly moving through its joints (no GPU needed). Poses are keyframes such as \"shoulder=60deg,elbow=-45deg\" (deg or rad; mm or m for prismatic joints); without poses every joint swings to 60% of its limits. Poses past a declared limit are refused. Returns the frames written and the range each joint covered.",
+            handler: Handler::Agent("opencad.animate_joints_document"),
+            schema: || json!({
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string", "description": "Assembly .ocad.d" },
+                    "output": { "type": "string", "description": "Output .gif" },
+                    "poses": { "type": "array", "items": { "type": "string" } },
+                    "frames_per_move": { "type": "integer", "minimum": 1 },
+                    "view": { "enum": ["iso", "front", "top", "right"] },
+                    "style": { "enum": ["studio", "dark", "plain"], "description": "default studio" },
+                    "width": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "aspect": { "type": "string", "description": "W:H such as 16:9, 1:1, 9:16; instead of height" },
+                    "fps": { "type": "integer", "minimum": 1 },
+                    "caption": { "type": "boolean", "description": "label frames with the values (default true)" }
+                },
+                "required": ["path", "output"]
+            }),
+        },
+        Tool {
+            name: "animate_sweep",
+            description: "Write a GIF of a part or assembly regenerated at each value of one parameter, forward and back (no GPU needed). Every frame is a real regeneration through a validated set_parameter patch on an in-memory copy; the file is not changed. A value that does not regenerate stops the sweep and is named, which makes this a quick robustness check across a range. Returns each value with its size in mm.",
+            handler: Handler::Agent("opencad.animate_sweep_document"),
+            schema: || json!({
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string" },
+                    "output": { "type": "string", "description": "Output .gif" },
+                    "param": { "type": "string", "description": "Parameter name or ID" },
+                    "from": { "type": "string", "description": "Start value with a unit, such as 32mm" },
+                    "to": { "type": "string", "description": "End value, same unit" },
+                    "steps": { "type": "integer", "minimum": 2, "maximum": 120 },
+                    "view": { "enum": ["iso", "front", "top", "right"] },
+                    "style": { "enum": ["studio", "dark", "plain"], "description": "default studio" },
+                    "width": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "aspect": { "type": "string", "description": "W:H such as 16:9, 1:1, 9:16; instead of height" },
+                    "fps": { "type": "integer", "minimum": 1 },
+                    "caption": { "type": "boolean", "description": "label frames with the values (default true)" }
+                },
+                "required": ["path", "output", "param", "from", "to"]
             }),
         },
         Tool {
@@ -536,7 +608,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 14);
+        assert_eq!(tools.len(), 17);
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
             assert!(tool["description"]

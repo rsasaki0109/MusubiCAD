@@ -41,8 +41,9 @@ pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
         Some("urdf") => crate::urdf::export_urdf(input, output),
         Some("3mf") => export_mesh_package(input, output, "3mf"),
         Some("glb") => export_mesh_package(input, output, "glb"),
+        Some("html") => crate::web_viewer::export_web_viewer(input, output),
         _ => Err(OpenCadError::validation(
-            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, or .urdf extension",
+            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, .urdf, or .html extension",
         )),
     }
 }
@@ -88,15 +89,30 @@ pub(crate) fn document_meshes(
     input: &str,
     doc: OcadDocument,
 ) -> Result<Vec<(String, opencad_geometry::MeshSet)>> {
-    let Some(assembly) = doc.assembly.clone() else {
+    if doc.assembly.is_none() {
         let name = doc.metadata.name.clone();
         return Ok(vec![(name, document_mesh(input, doc)?)]);
-    };
+    }
+    Ok(assembly_instance_meshes(input, &doc)?
+        .into_iter()
+        .map(|(_, name, mesh)| (name, mesh))
+        .collect())
+}
+
+/// Instance ID, name, and placed mesh of every assembly instance with a body.
+pub(crate) fn assembly_instance_meshes(
+    input: &str,
+    doc: &OcadDocument,
+) -> Result<Vec<(opencad_core::InstanceId, String, opencad_geometry::MeshSet)>> {
+    let assembly = doc
+        .assembly
+        .as_ref()
+        .ok_or_else(|| OpenCadError::validation("document is not an assembly"))?;
     #[cfg(feature = "occt")]
     {
         let kernel = OcctGeometryKernel::new();
         let report = regenerate_assembly(
-            &assembly,
+            assembly,
             &doc.metadata.id,
             &assembly_root(input),
             &kernel,
@@ -117,7 +133,7 @@ pub(crate) fn document_meshes(
                     .find(|candidate| candidate.id == instance.instance_id)
                     .map(|candidate| candidate.name.clone())
                     .unwrap_or_else(|| instance.instance_id.as_str().to_string());
-                (name, instance.mesh_set)
+                (instance.instance_id, name, instance.mesh_set)
             })
             .collect())
     }

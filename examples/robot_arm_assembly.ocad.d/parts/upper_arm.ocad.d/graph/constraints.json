@@ -3,6 +3,38 @@
     {
       "sketch_id": "sketch:upper_arm_bar",
       "constraint": {
+        "type": "vertical",
+        "id": "con:upper_arm_bar_e0_vertical",
+        "line": "ent:upper_arm_bar_e0"
+      }
+    },
+    {
+      "sketch_id": "sketch:upper_arm_bar",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:upper_arm_bar_e1_horizontal",
+        "line": "ent:upper_arm_bar_e1"
+      }
+    },
+    {
+      "sketch_id": "sketch:upper_arm_bar",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:upper_arm_bar_e2_vertical",
+        "line": "ent:upper_arm_bar_e2"
+      }
+    },
+    {
+      "sketch_id": "sketch:upper_arm_bar",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:upper_arm_bar_e3_horizontal",
+        "line": "ent:upper_arm_bar_e3"
+      }
+    },
+    {
+      "sketch_id": "sketch:upper_arm_bar",
+      "constraint": {
         "type": "distance",
         "id": "con:upper_arm_bar_length",
         "target": {

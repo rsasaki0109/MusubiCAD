@@ -51,6 +51,9 @@ pub fn run() -> Result<()> {
             let output = args.next();
             cmd_animate_features(input.as_deref(), output.as_deref(), args.collect())
         }
+        Some("animate-joints") => cmd_animate_joints(args.collect()),
+        Some("animate-sweep") => cmd_animate_sweep(args.collect()),
+        Some("reach") => cmd_reach(args.collect()),
         Some("patch") => cmd_patch(args.collect()),
         Some("plugin") => cmd_plugin(args.collect()),
         Some("diff") => cmd_diff(args.collect()),
@@ -434,6 +437,40 @@ fn cmd_animate_features(
     Ok(())
 }
 
+fn cmd_animate_joints(args: Vec<String>) -> Result<()> {
+    let [input, output, flags @ ..] = args.as_slice() else {
+        return Err(opencad_core::OpenCadError::validation(
+            crate::joint_animation::usage(),
+        ));
+    };
+    let options = crate::joint_animation::parse_joint_animation_args(flags)?;
+    let summary = crate::joint_animation::animate_joints(input, output, &options)?;
+    println!("{}", serde_json::to_string_pretty(&summary)?);
+    Ok(())
+}
+
+fn cmd_animate_sweep(args: Vec<String>) -> Result<()> {
+    let [input, output, flags @ ..] = args.as_slice() else {
+        return Err(opencad_core::OpenCadError::validation(
+            crate::sweep_animation::usage(),
+        ));
+    };
+    let options = crate::sweep_animation::parse_sweep_args(flags)?;
+    let summary = crate::sweep_animation::animate_sweep(input, output, &options)?;
+    println!("{}", serde_json::to_string_pretty(&summary)?);
+    Ok(())
+}
+
+fn cmd_reach(args: Vec<String>) -> Result<()> {
+    let [input, flags @ ..] = args.as_slice() else {
+        return Err(opencad_core::OpenCadError::validation(crate::reach::usage()));
+    };
+    let options = crate::reach::parse_reach_args(flags)?;
+    let summary = crate::reach::reach(input, &options)?;
+    println!("{}", serde_json::to_string_pretty(&summary)?);
+    Ok(())
+}
+
 fn cmd_preview(args: Vec<String>) -> Result<()> {
     let (params, output) = crate::preview::parse_preview_args(&args)?;
     let (png, summary) = crate::preview::preview_document(&params)?;
@@ -639,7 +676,7 @@ COMMANDS:
     intent      Show what drives a parameter or reference and what it changes
     params      List document parameters
     regen       Regenerate features through the geometry kernel
-    export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF
+    export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF or an HTML joint viewer
     mesh        Tessellate and summarize viewport scene data
     pick        Query viewport selection at a pixel coordinate
     view        Open an interactive 3D viewport
@@ -647,6 +684,9 @@ COMMANDS:
     preview     Render a PNG of a part or assembly without a GPU
     animate     Render a deterministic presentation orbit GIF
     animate-features  Render Feature Graph body milestones as a deterministic GIF
+    animate-joints  Render an assembly moving through its robot joints as a GIF, without a GPU
+    animate-sweep   Render a design regenerating across a parameter range as a GIF, without a GPU
+    reach       Workspace of a tool point on an assembly and whether it reaches a target
     patch       Apply a DesignPatch JSON to parameters
     plugin      List or invoke linked feature/importer/exporter plugins
     diff        Show semantic diff between documents or a patch preview
@@ -690,6 +730,7 @@ EXAMPLES:
     musubicad export bracket.ocad.d bracket.3mf
     musubicad export bracket_front_view.ocad.d bracket_front.svg
     musubicad export robot_arm_assembly.ocad.d urdf/robot_arm.urdf
+    musubicad export robot_arm_assembly.ocad.d robot_arm.html
     musubicad mesh bracket.ocad.d
     musubicad mesh bracket.ocad.d --json --render
     musubicad mesh bracket.ocad.d --png preview.png
@@ -698,6 +739,9 @@ EXAMPLES:
     musubicad screenshot bracket.ocad.d preview.png
     musubicad animate bracket.ocad.d showcase.gif --frames 48 --fps 12 --orbit-deg 220
     musubicad animate-features robot_joint.ocad.d build.gif --frames 54 --fps 9
+    musubicad animate-joints robot_arm_assembly.ocad.d arm.gif --pose shoulder=60deg,elbow=-45deg
+    musubicad animate-sweep robot_joint.ocad.d hub.gif --param upper_hub_height --from 32mm --to 60mm
+    musubicad reach robot_arm_assembly.ocad.d --tool gripper --point 0,40,7mm --target 120,170,63mm
     musubicad patch bracket.ocad.d width.patch.json
     musubicad patch bracket.ocad.d combined.patch.json --dry-run --geometry
     musubicad diff bracket.ocad.d --patch width.patch.json --geometry

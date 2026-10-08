@@ -534,6 +534,23 @@ verified before it is written.
 | MCAD-P8-009 | Assembly joints with limits | [ADR-030](../adr/ADR-030-assembly-joints.md); `AssemblyJoint` over mates (`revolute`, `continuous`, `prismatic`, `fixed`; SI limits, effort, velocity); `add_joint`/`set_joint`/`remove_joint` with fail-closed mate removal, diff, merge, authoring, and schemas; kinematic tree and URDF `<limit>`; robot arm example limits verified in MuJoCo | Complete |
 | MCAD-P8-010 | GPU-free preview for agents | [ADR-031](../adr/ADR-031-gpu-free-preview.md); CPU rasterizer (`iso`/`front`/`top`/`right`, outlines, 2× supersampling); `musubicad preview`, Agent `opencad.preview_document`, MCP `preview_document` returning image content; skill asks agents to look after shape changes | Complete |
 
+## Phase 9 — Robot showcase
+
+**Objective:** make the CAD → robot path something people can see: the arm
+moving, its dimensions changing, and the result in a simulator, all from the
+Design Graph and all reproducible without a GPU.
+
+**Dependencies:** Phase 8 (URDF export, joints with limits, CPU preview).
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P9-001 | Joint motion GIF | `KinematicTree::pose` forward kinematics (limits enforced, not clamped); `PreviewFraming` and `render_preview_framed` for a still camera; `musubicad animate-joints` with unit-bearing `--pose` keyframes, eased motion, and a per-joint range summary; README GIF `docs/assets/robot-arm-joints.gif` | Complete |
+| MCAD-P9-002 | Parameter sweep GIF | `musubicad animate-sweep` regenerating a part or assembly across a unit-bearing parameter range through validated in-memory `set_parameter` patches, eased ping-pong loop, fixed framing; a value that does not validate or regenerate stops the sweep and is named; 5 × 7 bitmap captions (`draw_caption`) with a reserved bottom band, also on joint animations; README GIF `docs/assets/robot-joint-sweep.gif` | Complete |
+| MCAD-P9-003 | Presentation style for CPU renders | `PreviewStyle` (`plain`, `studio`, `dark`): background gradient and a blurred ground shadow cast toward the viewer; `--style` on `preview` (MCP and Agent `style`), `animate-joints`, and `animate-sweep` (animations default to `studio`); `--aspect W:H` presets; `plain` output byte-identical to before | Complete |
+| MCAD-P9-004 | Reach and workspace | Kernel-free `workspace` and `solve_reach` (grid within limits, damped least squares with backtracking); `musubicad reach` with joint values, an `animate-joints` pose, and `--gif` with a target marker; mates solved first so edits are reflected (also in `animate-joints`); arm link sketches constrained so length edits keep rectangles; checked-in reach loop patches with a mass expectation, end-to-end test, and README GIFs `reach-before.gif`/`reach-after.gif` | Complete |
+| MCAD-P9-005 | Web joint viewer | `export *.html`: self-contained page (inline WebGL, no network) with regenerated meshes, orbit/zoom/pinch, a slider per joint within its limits, Animate and Reset; same forward kinematics as `KinematicTree::pose` (cross-checked to 1e-10 m); deterministic bytes; CLI, Agent, and MCP via `export`; README screenshot and `docs/assets/robot-arm-viewer.html` | Complete |
+| MCAD-P9-006 | Agent access | [ADR-032](../adr/ADR-032-robot-showcase.md); Agent API `opencad.reach_document`, `opencad.animate_joints_document`, `opencad.animate_sweep_document` building the CLI's flags (unknown params rejected); MCP tools `reach`, `animate_joints`, `animate_sweep`; skill section on reach and motion | Complete |
+
 ## Cross-phase verification matrix
 
 Every implementation PR must select the applicable rows and record the command

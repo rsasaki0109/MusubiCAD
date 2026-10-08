@@ -81,12 +81,31 @@
             "line": "ent:forearm_bar_e1"
           },
           "expr": "forearm_width"
+        },
+        {
+          "type": "vertical",
+          "id": "con:forearm_bar_e0_vertical",
+          "line": "ent:forearm_bar_e0"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:forearm_bar_e1_horizontal",
+          "line": "ent:forearm_bar_e1"
+        },
+        {
+          "type": "vertical",
+          "id": "con:forearm_bar_e2_vertical",
+          "line": "ent:forearm_bar_e2"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:forearm_bar_e3_horizontal",
+          "line": "ent:forearm_bar_e3"
         }
       ],
       "dimensions": [],
       "solve_state": {
-        "status": "under_constrained",
-        "dof": 4
+        "status": "fully_constrained"
       },
       "profiles": [
         {

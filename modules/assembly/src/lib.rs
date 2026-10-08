@@ -11,6 +11,7 @@ pub mod model;
 pub mod models;
 pub mod pattern;
 pub mod pose;
+pub mod reach;
 pub mod regen;
 pub mod residual;
 pub mod solve;
@@ -25,6 +26,10 @@ pub use mate::{validate_mates, Mate, MateEntity, MateKind};
 pub use model::AssemblyModel;
 pub use models::{robot_arm, robot_arm_assembly_model};
 pub use pattern::{expand_patterns, validate_patterns, AssemblyPattern};
+pub use reach::{
+    reach_joints, solve_reach, tool_point_at, workspace, ReachJoint, ReachSolution, ToolPoint,
+    Workspace,
+};
 pub use regen::{
     detect_interferences, detect_interferences_with_tolerance, regenerate_assembly,
     resolve_component_path, tessellate_assembly_instances, tessellate_assembly_scene,

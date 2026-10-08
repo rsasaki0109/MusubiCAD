@@ -86,6 +86,21 @@ as STEP"*, or point the agent at one of the [examples](examples/README.md).
   revolve, fillet, chamfer, shell, patterns, mirror, loft, sweep, helix), assemblies with
   mates and robot joints, and drawings, all as typed `DesignPatch` operations.
 
+## One parameter, every frame regenerated
+
+```bash
+musubicad animate-sweep examples/robot_joint_actuator.ocad.d hub.gif \
+  --param upper_hub_height --from 32mm --to 64mm --steps 14
+```
+
+<p align="center">
+  <img src="docs/assets/robot-joint-sweep.gif" alt="The robot joint actuator housing regenerating as its upper hub height sweeps from 32 mm to 64 mm and back, captioned with the value and overall size" width="640">
+</p>
+
+Each frame is the part rebuilt by OpenCASCADE at that value, through the same validated
+`set_parameter` patch an agent sends. A value the part cannot survive stops the sweep and names
+itself; the file on disk never changes.
+
 ## Why edits don't break
 
 The Design Graph is the source of truth, and the geometry is rebuilt from it on every check. On
@@ -108,7 +123,66 @@ same gate runs on `musubicad patch` for agents that use the CLI instead of MCP. 
   the 200 mm bore is refused because the part no longer regenerates, and the file stays at 8 mm.</sub>
 </p>
 
+## Design for reach
+
+The arm falls 20 mm short of a target. The agent lengthens the upper arm with two verified patches
+and asks again; the same target is reached, and the URDF it exports carries the longer link.
+
+```bash
+musubicad reach examples/robot_arm_assembly.ocad.d --tool gripper --point 0,40,7mm --target 0,330,63mm
+```
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/assets/reach-before.gif" alt="The robot arm stretching toward a red target marker and stopping 20.0 mm short, captioned with its joint angles" width="100%">
+      <br>
+      <sub><strong>160 mm upper arm</strong>: out of reach, 20.0 mm short.</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/assets/reach-after.gif" alt="The same arm with a 200 mm upper arm moving its gripper onto the target, captioned target reached" width="100%">
+      <br>
+      <sub><strong>200 mm upper arm</strong>: reached, after
+      <a href="examples/agent/reach_upper_arm_length_patch.json">lengthening the link</a> (its mass must rise 30–50 g) and
+      <a href="examples/agent/reach_elbow_connector_patch.json">moving the elbow</a>.</sub>
+    </td>
+  </tr>
+</table>
+
+The reach query needs no geometry kernel: it searches the joint limits declared in the design, so an
+agent can check a target in milliseconds before rebuilding anything.
+
+## In the browser
+
+```bash
+musubicad export examples/robot_arm_assembly.ocad.d robot_arm.html
+```
+
+<p align="center">
+  <a href="docs/assets/robot-arm-viewer.html"><img src="docs/assets/robot-arm-viewer.png" alt="The exported robot arm web page: a 3D view of the arm with shoulder at 30 degrees, elbow at 80 degrees, and wrist at minus 45 degrees, and a slider for each joint" width="720"></a>
+</p>
+
+One HTML file, nothing to install and nothing loaded from the network: drag to orbit, and move each
+joint with a slider bounded by the limits declared in the design. Host it on GitHub Pages or attach it
+to an issue; the page is regenerated from the Design Graph, so it never drifts from the model.
+
 ## From CAD to simulator: URDF
+
+Move the arm through its declared joints before it leaves MusubiCAD (CPU only, no GPU):
+
+```bash
+musubicad animate-joints examples/robot_arm_assembly.ocad.d arm.gif \
+  --pose shoulder=70deg,elbow=-80deg,wrist=45deg \
+  --pose shoulder=-60deg,elbow=110deg,wrist=-60deg \
+  --pose shoulder=20deg,elbow=40deg,wrist=80deg
+```
+
+<p align="center">
+  <img src="docs/assets/robot-arm-joints.gif" alt="The robot arm assembly moving through three poses in MusubiCAD's CPU renderer, each joint turning about its declared axis within its limits" width="640">
+</p>
+
+A pose past a joint limit is refused before anything renders. Then export the same tree for a
+simulator:
 
 ```bash
 musubicad export examples/robot_arm_assembly.ocad.d urdf/robot_arm.urdf
