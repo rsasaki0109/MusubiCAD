@@ -1365,7 +1365,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "opencad-ai"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64",
  "indexmap",
@@ -1382,7 +1382,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-assembly"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "opencad-core",
  "opencad-feature",
@@ -1397,7 +1397,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-cli"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64",
  "opencad-ai",
@@ -1422,7 +1422,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-core"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "indexmap",
  "serde",
@@ -1433,7 +1433,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-desktop"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64",
  "image",
@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-drawing"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "opencad-core",
  "opencad-feature",
@@ -1468,7 +1468,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-feature"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "indexmap",
  "opencad-ai",
@@ -1484,7 +1484,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-file"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "opencad-ai",
  "opencad-assembly",
@@ -1505,7 +1505,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-geometry"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "opencad-core",
  "serde",
@@ -1515,7 +1515,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-graph"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "indexmap",
  "opencad-core",
@@ -1526,7 +1526,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-kernel-occt"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cadrum",
  "opencad-core",
@@ -1536,7 +1536,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-plugin-api"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "opencad-ai",
  "opencad-core",
@@ -1546,7 +1546,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-plugin-example"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "opencad-ai",
  "opencad-core",
@@ -1556,7 +1556,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-render"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "bytemuck",
  "image",
@@ -1574,7 +1574,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-sketch"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "indexmap",
  "opencad-core",
@@ -1585,7 +1585,7 @@ dependencies = [
 
 [[package]]
 name = "opencad-solver"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "opencad-core",
 ]

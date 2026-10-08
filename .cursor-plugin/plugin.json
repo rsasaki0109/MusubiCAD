@@ -1,6 +1,6 @@
 {
   "name": "musubicad",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Parametric CAD your agent can iterate on without breaking it: a Design Graph with named, unit-bearing parameters is the source of truth, and every change is dry-run, regenerated with OpenCASCADE, and checked against its declared intent before it is written. Exports STEP for CAD/CAM and STL for 3D printing.",
   "author": {
     "name": "rsasaki0109",
