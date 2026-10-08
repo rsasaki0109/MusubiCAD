@@ -193,6 +193,7 @@ fn assembly_and_drawing_examples_are_rebuilt_byte_for_byte() {
             "bracket_front_view.ocad.d",
             "robot_arm_assembly.ocad.d",
             "robot_arm_assembly_drawing.ocad.d",
+            "six_axis_arm.ocad.d",
         ]
     );
 }

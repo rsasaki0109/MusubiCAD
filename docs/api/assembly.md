@@ -130,7 +130,8 @@ agrees to 1e-10 m. Meshes are stored as base64 little-endian `f32` positions
 and `u32` indices and shaded with flat face normals and the preview palette;
 the page loads nothing from the network, follows the system light or dark
 theme, and is byte-identical for the same document.
-`docs/assets/robot-arm-viewer.html` is the robot arm, and
+`docs/assets/robot-arm-viewer.html` and `docs/assets/six-axis-viewer.html`
+are the two example arms, and
 `docs/assets/generate-viewer-demo.sh` regenerates it with a screenshot.
 
 `musubicad export <assembly> <name>.urdf` (Agent `opencad.export`, MCP

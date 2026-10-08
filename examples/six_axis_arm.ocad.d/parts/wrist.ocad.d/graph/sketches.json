@@ -1,0 +1,363 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:wrist_link_bar",
+      "name": "Wrist Link Bar",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:wrist_link_bar_c0",
+          "construction": false,
+          "x": -0.011,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:wrist_link_bar_c1",
+          "construction": false,
+          "x": -0.011,
+          "y": 0.04
+        },
+        {
+          "type": "point",
+          "id": "ent:wrist_link_bar_c2",
+          "construction": false,
+          "x": 0.011,
+          "y": 0.04
+        },
+        {
+          "type": "point",
+          "id": "ent:wrist_link_bar_c3",
+          "construction": false,
+          "x": 0.011,
+          "y": 0.0
+        },
+        {
+          "type": "line",
+          "id": "ent:wrist_link_bar_e0",
+          "construction": false,
+          "start": "ent:wrist_link_bar_c0",
+          "end": "ent:wrist_link_bar_c1"
+        },
+        {
+          "type": "line",
+          "id": "ent:wrist_link_bar_e1",
+          "construction": false,
+          "start": "ent:wrist_link_bar_c1",
+          "end": "ent:wrist_link_bar_c2"
+        },
+        {
+          "type": "line",
+          "id": "ent:wrist_link_bar_e2",
+          "construction": false,
+          "start": "ent:wrist_link_bar_c2",
+          "end": "ent:wrist_link_bar_c3"
+        },
+        {
+          "type": "line",
+          "id": "ent:wrist_link_bar_e3",
+          "construction": false,
+          "start": "ent:wrist_link_bar_c3",
+          "end": "ent:wrist_link_bar_c0"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "distance",
+          "id": "con:wrist_link_bar_length",
+          "target": {
+            "line": "ent:wrist_link_bar_e0"
+          },
+          "expr": "wrist_link_length"
+        },
+        {
+          "type": "distance",
+          "id": "con:wrist_link_bar_width",
+          "target": {
+            "line": "ent:wrist_link_bar_e1"
+          },
+          "expr": "wrist_link_width"
+        },
+        {
+          "type": "vertical",
+          "id": "con:wrist_link_bar_e0_vertical",
+          "line": "ent:wrist_link_bar_e0"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:wrist_link_bar_e1_horizontal",
+          "line": "ent:wrist_link_bar_e1"
+        },
+        {
+          "type": "vertical",
+          "id": "con:wrist_link_bar_e2_vertical",
+          "line": "ent:wrist_link_bar_e2"
+        },
+        {
+          "type": "horizontal",
+          "id": "con:wrist_link_bar_e3_horizontal",
+          "line": "ent:wrist_link_bar_e3"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:wrist_link_bar_e0",
+            "ent:wrist_link_bar_e1",
+            "ent:wrist_link_bar_e2",
+            "ent:wrist_link_bar_e3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:wrist_link_bar/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:wrist_link_distal_bore",
+      "name": "Wrist Pitch Bore",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:wrist_link_distal_bore_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:wrist_link_distal_bore_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.04
+        },
+        {
+          "type": "circle",
+          "id": "ent:wrist_link_distal_bore_circle",
+          "construction": false,
+          "center": "ent:wrist_link_distal_bore_center",
+          "radius": 0.003999999960008003
+        },
+        {
+          "type": "line",
+          "id": "ent:wrist_link_distal_bore_offset_line",
+          "construction": true,
+          "start": "ent:wrist_link_distal_bore_origin",
+          "end": "ent:wrist_link_distal_bore_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:wrist_link_distal_bore_vertical",
+          "line": "ent:wrist_link_distal_bore_offset_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:wrist_link_distal_bore_offset",
+          "target": {
+            "line": "ent:wrist_link_distal_bore_offset_line"
+          },
+          "expr": "wrist_link_length"
+        },
+        {
+          "type": "radius",
+          "id": "con:wrist_link_distal_bore_radius",
+          "target": "ent:wrist_link_distal_bore_circle",
+          "expr": "wrist_pitch_bore_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:wrist_link_distal_bore_circle",
+          "entity_ids": [
+            "ent:wrist_link_distal_bore_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:wrist_link_distal_bore/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:wrist_link_distal_hub",
+      "name": "Wrist Pitch Hub",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:wrist_link_distal_hub_origin",
+          "construction": true,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:wrist_link_distal_hub_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.04
+        },
+        {
+          "type": "circle",
+          "id": "ent:wrist_link_distal_hub_circle",
+          "construction": false,
+          "center": "ent:wrist_link_distal_hub_center",
+          "radius": 0.011999999880024013
+        },
+        {
+          "type": "line",
+          "id": "ent:wrist_link_distal_hub_offset_line",
+          "construction": true,
+          "start": "ent:wrist_link_distal_hub_origin",
+          "end": "ent:wrist_link_distal_hub_center"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "vertical",
+          "id": "con:wrist_link_distal_hub_vertical",
+          "line": "ent:wrist_link_distal_hub_offset_line"
+        },
+        {
+          "type": "distance",
+          "id": "con:wrist_link_distal_hub_offset",
+          "target": {
+            "line": "ent:wrist_link_distal_hub_offset_line"
+          },
+          "expr": "wrist_link_length"
+        },
+        {
+          "type": "radius",
+          "id": "con:wrist_link_distal_hub_radius",
+          "target": "ent:wrist_link_distal_hub_circle",
+          "expr": "wrist_pitch_hub_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:wrist_link_distal_hub_circle",
+          "entity_ids": [
+            "ent:wrist_link_distal_hub_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:wrist_link_distal_hub/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:wrist_link_proximal_bore",
+      "name": "Wrist Roll Bore",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:wrist_link_proximal_bore_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:wrist_link_proximal_bore_circle",
+          "construction": false,
+          "center": "ent:wrist_link_proximal_bore_center",
+          "radius": 0.0049999999500100045
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:wrist_link_proximal_bore_radius",
+          "target": "ent:wrist_link_proximal_bore_circle",
+          "expr": "wrist_roll_bore_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:wrist_link_proximal_bore_circle",
+          "entity_ids": [
+            "ent:wrist_link_proximal_bore_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:wrist_link_proximal_bore/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:wrist_link_proximal_hub",
+      "name": "Wrist Roll Hub",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:wrist_link_proximal_hub_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:wrist_link_proximal_hub_circle",
+          "construction": false,
+          "center": "ent:wrist_link_proximal_hub_center",
+          "radius": 0.012999999870026016
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:wrist_link_proximal_hub_radius",
+          "target": "ent:wrist_link_proximal_hub_circle",
+          "expr": "wrist_roll_hub_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:wrist_link_proximal_hub_circle",
+          "entity_ids": [
+            "ent:wrist_link_proximal_hub_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:wrist_link_proximal_hub/profile:outer"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:base_plate",
+      "name": "Base Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:base_plate_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:base_plate_circle",
+          "construction": false,
+          "center": "ent:base_plate_center",
+          "radius": 0.05999999940011797
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:base_plate_radius",
+          "target": "ent:base_plate_circle",
+          "expr": "base_plate_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:base_plate_circle",
+          "entity_ids": [
+            "ent:base_plate_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:base_plate/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:bolt_hole",
+      "name": "Bolt Hole Tool",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:bolt_hole_center",
+          "construction": false,
+          "x": 0.05,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:bolt_hole_circle",
+          "construction": false,
+          "center": "ent:bolt_hole_center",
+          "radius": 0.003999999960008003
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:bolt_hole_radius",
+          "target": "ent:bolt_hole_circle",
+          "expr": "bolt_hole_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:bolt_hole_circle",
+          "entity_ids": [
+            "ent:bolt_hole_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:bolt_hole/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:turret",
+      "name": "Turret Column",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:turret_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:turret_circle",
+          "construction": false,
+          "center": "ent:turret_center",
+          "radius": 0.021999999780043255
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:turret_radius",
+          "target": "ent:turret_circle",
+          "expr": "turret_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:turret_circle",
+          "entity_ids": [
+            "ent:turret_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:turret/profile:outer"
+        }
+      ]
+    }
+  ]
+}

@@ -69,6 +69,77 @@ fn example_robot_arm_assembly_regenerates_with_occt() {
 }
 
 #[test]
+fn example_six_axis_arm_regenerates_with_occt_without_interference() {
+    use opencad_assembly::{
+        detect_interferences, kinematic_tree, regenerate_assembly, six_axis_arm_model, ChildPart,
+        ResolvedChild,
+    };
+
+    let root = workspace_root().join("examples/six_axis_arm.ocad.d");
+    validate_expanded_dir(&root).expect("validate");
+    let doc = read_expanded_dir(&root).expect("read");
+    let assembly = doc.assembly.clone().expect("assembly");
+    // The committed example is the generator's model; placements match to
+    // within the last bit the JSON writer keeps.
+    let model = six_axis_arm_model().expect("model");
+    assert_eq!(assembly.joints, model.joints);
+    assert_eq!(assembly.connectors.len(), model.connectors.len());
+    for (stored, built) in assembly.instances.iter().zip(&model.instances) {
+        assert_eq!(stored.id, built.id);
+        let (a, b) = (stored.placement.transform, built.placement.transform);
+        assert!(opencad_geometry::RigidTransform::points_near(
+            a.translation_m,
+            b.translation_m,
+            1e-12
+        ));
+        assert!(opencad_geometry::RigidTransform::matrices_near(
+            &a.rotation,
+            &b.rotation,
+            1e-12
+        ));
+    }
+    assert_eq!(kinematic_tree(&assembly).expect("tree").links.len(), 7);
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let assembly_id = opencad_core::DocumentId::new("doc:six_axis_arm_001").expect("id");
+    let mut loader = |child_path: &std::path::Path| {
+        let child = read_expanded_dir(child_path).expect("read child");
+        let doc_id = child.metadata.id.clone();
+        let parameters = child.parameters.clone();
+        let part = child.into_part_model();
+        Ok(ResolvedChild::Part(Box::new(ChildPart {
+            doc_id,
+            parameters,
+            part,
+            semantic_refs: Vec::new(),
+        })))
+    };
+    let report = regenerate_assembly(
+        &assembly,
+        &assembly_id,
+        &root,
+        &kernel,
+        &registry,
+        &mut loader,
+    )
+    .expect("regen");
+    assert_eq!(report.successful_instances, 7);
+    let solve = report.mate_solve.expect("mate solve report");
+    assert!(
+        solve.max_error < 1e-6,
+        "mate solve max error {}",
+        solve.max_error
+    );
+    // Links meet face to face or tangent; none overlap at the zero pose.
+    let interferences = detect_interferences(&kernel, &report.scene, 1e-12).expect("interferences");
+    assert!(
+        interferences.is_empty(),
+        "six-axis arm should have zero interference: {interferences:?}"
+    );
+}
+
+#[test]
 fn example_robot_arm_assembly_preview_renders_png() {
     use opencad_desktop::load_view_data;
 

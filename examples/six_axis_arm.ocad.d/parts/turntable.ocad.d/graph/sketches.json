@@ -1,0 +1,50 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:turntable_disc",
+      "name": "Turntable Disc",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:turntable_disc_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:turntable_disc_circle",
+          "construction": false,
+          "center": "ent:turntable_disc_center",
+          "radius": 0.03799999962007471
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:turntable_disc_radius",
+          "target": "ent:turntable_disc_circle",
+          "expr": "turntable_diameter / 2"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "fully_constrained"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:turntable_disc_circle",
+          "entity_ids": [
+            "ent:turntable_disc_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:turntable_disc/profile:outer"
+        }
+      ]
+    }
+  ]
+}

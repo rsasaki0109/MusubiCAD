@@ -140,10 +140,11 @@ impl Default for PreviewStyle {
     }
 }
 
-/// Direction toward the light that casts ground shadows: overhead and behind
-/// the iso camera's line of sight, so shadows fall toward the viewer
-/// (+X, -Y) where they are visible instead of hiding behind the part.
-const SHADOW_LIGHT: [f32; 3] = [-0.35, 0.5, 1.0];
+/// Direction toward the light that casts ground shadows: high overhead and
+/// behind the iso camera's line of sight, so shadows fall toward the viewer
+/// (+X, -Y) where they are visible instead of hiding behind the part, and a
+/// tall model's shadow stays about a third of its height long.
+const SHADOW_LIGHT: [f32; 3] = [-0.2, 0.3, 1.0];
 /// Shadow blur radius as a fraction of the image height.
 const SHADOW_SOFTNESS: f32 = 0.035;
 

@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:turntable_diameter": {
+      "id": "param:turntable_diameter",
+      "name": "turntable_diameter",
+      "expr": "76 mm",
+      "dirty": false
+    },
+    "param:turntable_height": {
+      "id": "param:turntable_height",
+      "name": "turntable_height",
+      "expr": "22 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

@@ -45,7 +45,8 @@ pub use regenerate::{
     bracket_hole_ring, bracket_hole_row, bracket_pin_mirror, bracket_pin_ring, bracket_pin_row,
     bracket_semantic_refs, bracket_with_hole, bracket_with_top_chamfer, bracket_with_top_fillet,
     revolve_bushing, revolve_sector, robot_arm_base, robot_arm_forearm, robot_arm_gripper,
-    robot_arm_upper_arm, robot_joint_actuator_housing, PartModel, RegenReport, RegenerationTrace,
+    robot_arm_upper_arm, robot_joint_actuator_housing, six_axis_hand, six_axis_turntable,
+    six_axis_wrist, PartModel, RegenReport, RegenerationTrace,
 };
 pub use registry::FeatureRegistry;
 pub use revolve::{RevolveFeature, RevolveFeatureExecutor};

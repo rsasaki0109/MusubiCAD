@@ -1,0 +1,132 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:wrist_link_bar",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:wrist_link_bar_e0_vertical",
+        "line": "ent:wrist_link_bar_e0"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_bar",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:wrist_link_bar_e1_horizontal",
+        "line": "ent:wrist_link_bar_e1"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_bar",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:wrist_link_bar_e2_vertical",
+        "line": "ent:wrist_link_bar_e2"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_bar",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:wrist_link_bar_e3_horizontal",
+        "line": "ent:wrist_link_bar_e3"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_bar",
+      "constraint": {
+        "type": "distance",
+        "id": "con:wrist_link_bar_length",
+        "target": {
+          "line": "ent:wrist_link_bar_e0"
+        },
+        "expr": "wrist_link_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_bar",
+      "constraint": {
+        "type": "distance",
+        "id": "con:wrist_link_bar_width",
+        "target": {
+          "line": "ent:wrist_link_bar_e1"
+        },
+        "expr": "wrist_link_width"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_distal_bore",
+      "constraint": {
+        "type": "distance",
+        "id": "con:wrist_link_distal_bore_offset",
+        "target": {
+          "line": "ent:wrist_link_distal_bore_offset_line"
+        },
+        "expr": "wrist_link_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_distal_bore",
+      "constraint": {
+        "type": "radius",
+        "id": "con:wrist_link_distal_bore_radius",
+        "target": "ent:wrist_link_distal_bore_circle",
+        "expr": "wrist_pitch_bore_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_distal_bore",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:wrist_link_distal_bore_vertical",
+        "line": "ent:wrist_link_distal_bore_offset_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_distal_hub",
+      "constraint": {
+        "type": "distance",
+        "id": "con:wrist_link_distal_hub_offset",
+        "target": {
+          "line": "ent:wrist_link_distal_hub_offset_line"
+        },
+        "expr": "wrist_link_length"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_distal_hub",
+      "constraint": {
+        "type": "radius",
+        "id": "con:wrist_link_distal_hub_radius",
+        "target": "ent:wrist_link_distal_hub_circle",
+        "expr": "wrist_pitch_hub_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_distal_hub",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:wrist_link_distal_hub_vertical",
+        "line": "ent:wrist_link_distal_hub_offset_line"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_proximal_bore",
+      "constraint": {
+        "type": "radius",
+        "id": "con:wrist_link_proximal_bore_radius",
+        "target": "ent:wrist_link_proximal_bore_circle",
+        "expr": "wrist_roll_bore_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:wrist_link_proximal_hub",
+      "constraint": {
+        "type": "radius",
+        "id": "con:wrist_link_proximal_hub_radius",
+        "target": "ent:wrist_link_proximal_hub_circle",
+        "expr": "wrist_roll_hub_diameter / 2"
+      }
+    }
+  ]
+}
