@@ -75,6 +75,97 @@ pub struct PreviewImage {
     pub rgba: Vec<u8>,
 }
 
+/// Look of a preview image.  [`PreviewStyle::PLAIN`] is the agent preview;
+/// `studio` and `dark` are presentation looks for shared images and GIFs.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PreviewStyle {
+    /// Background at the top and bottom edges (0–1 RGB), blended per row.
+    pub background_top: [f32; 3],
+    pub background_bottom: [f32; 3],
+    pub outline: [f32; 3],
+    /// Darkening under the model's soft ground shadow, 0–1; 0 draws none.
+    pub shadow_opacity: f32,
+}
+
+impl PreviewStyle {
+    /// Flat light background, no shadow.
+    pub const PLAIN: Self = Self {
+        background_top: BACKGROUND,
+        background_bottom: BACKGROUND,
+        outline: OUTLINE,
+        shadow_opacity: 0.0,
+    };
+    /// Light grey gradient with a soft ground shadow.
+    pub const STUDIO: Self = Self {
+        background_top: [0.975, 0.98, 0.988],
+        background_bottom: [0.84, 0.86, 0.895],
+        outline: OUTLINE,
+        shadow_opacity: 0.38,
+    };
+    /// Dark slate gradient with a soft ground shadow.
+    pub const DARK: Self = Self {
+        background_top: [0.17, 0.19, 0.24],
+        background_bottom: [0.055, 0.063, 0.082],
+        outline: [0.03, 0.035, 0.05],
+        shadow_opacity: 0.55,
+    };
+
+    pub fn parse(name: &str) -> Result<Self> {
+        match name {
+            "plain" => Ok(Self::PLAIN),
+            "studio" => Ok(Self::STUDIO),
+            "dark" => Ok(Self::DARK),
+            other => Err(OpenCadError::validation(format!(
+                "unknown preview style '{other}'; expected plain, studio, or dark"
+            ))),
+        }
+    }
+
+    fn has_shadow(&self) -> bool {
+        self.shadow_opacity > 0.0
+    }
+
+    fn background(&self, row: usize, rows: usize) -> [f32; 3] {
+        let t = row as f32 / (rows.max(2) - 1) as f32;
+        std::array::from_fn(|channel| {
+            self.background_top[channel]
+                + (self.background_bottom[channel] - self.background_top[channel]) * t
+        })
+    }
+}
+
+impl Default for PreviewStyle {
+    fn default() -> Self {
+        Self::PLAIN
+    }
+}
+
+/// Direction toward the light that casts ground shadows: overhead and behind
+/// the iso camera's line of sight, so shadows fall toward the viewer
+/// (+X, -Y) where they are visible instead of hiding behind the part.
+const SHADOW_LIGHT: [f32; 3] = [-0.35, 0.5, 1.0];
+/// Shadow blur radius as a fraction of the image height.
+const SHADOW_SOFTNESS: f32 = 0.035;
+
+/// `point` dropped along the shadow light onto the plane `z = ground`.
+fn shadow_point(point: [f32; 3], ground: f32) -> [f32; 3] {
+    let drop = (point[2] - ground) / SHADOW_LIGHT[2];
+    [
+        point[0] - SHADOW_LIGHT[0] * drop,
+        point[1] - SHADOW_LIGHT[1] * drop,
+        ground,
+    ]
+}
+
+/// Lowest Z of every vertex, the plane shadows fall on.
+fn ground_z(meshes: &[PreviewMesh<'_>]) -> f32 {
+    meshes
+        .iter()
+        .flat_map(|item| &item.mesh.positions)
+        .map(|position| position[2])
+        .fold(f32::INFINITY, f32::min)
+}
+
 const SUPERSAMPLE: usize = 2;
 const BACKGROUND: [f32; 3] = [0.965, 0.972, 0.984];
 const OUTLINE: [f32; 3] = [0.16, 0.19, 0.24];
@@ -91,6 +182,8 @@ pub struct PreviewFraming {
     max: [f32; 2],
     /// Fraction of the image height kept clear at the bottom (for a caption).
     bottom_inset: f32,
+    /// Also fit each included frame's ground shadow.
+    shadow: bool,
 }
 
 impl PreviewFraming {
@@ -101,6 +194,7 @@ impl PreviewFraming {
             min: [f32::INFINITY; 2],
             max: [f32::NEG_INFINITY; 2],
             bottom_inset: 0.0,
+            shadow: false,
         }
     }
 
@@ -111,16 +205,27 @@ impl PreviewFraming {
         framing
     }
 
-    /// Grow the framing to also fit `meshes`.
+    /// Grow the framing to also fit `meshes` (and their ground shadow when
+    /// the framing was made [`with_shadow`](Self::with_shadow)).
     pub fn include(&mut self, meshes: &[PreviewMesh<'_>]) {
         let (right, up, _) = self.view.basis();
+        let ground = ground_z(meshes);
         for item in meshes {
             for position in &item.mesh.positions {
-                let (u, v) = (dot(*position, right), dot(*position, up));
-                self.min = [self.min[0].min(u), self.min[1].min(v)];
-                self.max = [self.max[0].max(u), self.max[1].max(v)];
+                let shadow = self.shadow.then(|| shadow_point(*position, ground));
+                for point in std::iter::once(*position).chain(shadow) {
+                    let (u, v) = (dot(point, right), dot(point, up));
+                    self.min = [self.min[0].min(u), self.min[1].min(v)];
+                    self.max = [self.max[0].max(u), self.max[1].max(v)];
+                }
             }
         }
+    }
+
+    /// Fit ground shadows too; use with a style that draws them.
+    pub fn with_shadow(mut self, shadow: bool) -> Self {
+        self.shadow = shadow;
+        self
     }
 
     pub fn view(&self) -> PreviewView {
@@ -156,6 +261,17 @@ pub fn render_preview_framed(
     width: u32,
     height: u32,
 ) -> Result<PreviewImage> {
+    render_preview_styled(meshes, framing, width, height, &PreviewStyle::PLAIN)
+}
+
+/// Render meshes with a fixed `framing` and a presentation `style`.
+pub fn render_preview_styled(
+    meshes: &[PreviewMesh<'_>],
+    framing: &PreviewFraming,
+    width: u32,
+    height: u32,
+    style: &PreviewStyle,
+) -> Result<PreviewImage> {
     if !(16..=2048).contains(&width) || !(16..=2048).contains(&height) {
         return Err(OpenCadError::validation(
             "preview size must be between 16 and 2048 pixels",
@@ -186,8 +302,35 @@ pub fn render_preview_framed(
     let light_a = normalize([0.35, -0.55, 0.75]);
     let light_b = normalize([-0.6, 0.3, 0.4]);
     let mut depth = vec![f32::INFINITY; w * h];
-    let mut color = vec![BACKGROUND; w * h];
+    let mut color: Vec<[f32; 3]> = (0..h)
+        .flat_map(|row| std::iter::repeat(style.background(row, h)).take(w))
+        .collect();
     let mut normal = vec![[0.0f32; 3]; w * h];
+
+    if style.has_shadow() {
+        let ground = ground_z(meshes);
+        let mut mask = vec![0.0f32; w * h];
+        for item in meshes {
+            let mesh = item.mesh;
+            for triangle in mesh.indices.chunks_exact(3) {
+                let projected = [0, 1, 2].map(|corner| {
+                    let point = shadow_point(mesh.positions[triangle[corner] as usize], ground);
+                    let (u, v, _) = project(point);
+                    let (x, y) = to_pixel(u, v);
+                    (x, y, 0.0)
+                });
+                rasterize(&projected, w, h, |index, _| mask[index] = 1.0);
+            }
+        }
+        let radius = ((h as f32 * SHADOW_SOFTNESS).round() as usize).max(1);
+        for _ in 0..2 {
+            box_blur(&mut mask, w, h, radius);
+        }
+        for (pixel, coverage) in color.iter_mut().zip(&mask) {
+            let keep = 1.0 - style.shadow_opacity * coverage;
+            *pixel = pixel.map(|channel| channel * keep);
+        }
+    }
 
     for item in meshes {
         let mesh = item.mesh;
@@ -249,7 +392,7 @@ pub fn render_preview_framed(
                 }
             }
             if edge {
-                outlined[index] = OUTLINE;
+                outlined[index] = style.outline;
             }
         }
     }
@@ -278,6 +421,30 @@ pub fn render_preview_framed(
         height,
         rgba,
     })
+}
+
+/// Separable box blur of a `w` × `h` mask with the given radius in pixels.
+fn box_blur(mask: &mut [f32], w: usize, h: usize, radius: usize) {
+    let mut line = Vec::new();
+    for (stride, count, length) in [(1, h, w), (w, w, h)] {
+        for start in 0..count {
+            let base = if stride == 1 { start * w } else { start };
+            line.clear();
+            line.extend((0..length).map(|i| mask[base + i * stride]));
+            let mut sum: f32 = line.iter().take(radius + 1).sum();
+            for i in 0..length {
+                let lo = i.saturating_sub(radius);
+                let hi = (i + radius).min(length - 1);
+                mask[base + i * stride] = sum / (hi - lo + 1) as f32;
+                if i + radius + 1 < length {
+                    sum += line[i + radius + 1];
+                }
+                if i >= radius {
+                    sum -= line[i - radius];
+                }
+            }
+        }
+    }
 }
 
 /// Fill a screen-space triangle, calling `plot(pixel_index, depth)` for
@@ -466,6 +633,66 @@ mod tests {
             assert!(is_background(pixel(&image, 50, y)), "row {y}");
         }
         assert!(!is_background(pixel(&image, 50, 35)));
+    }
+
+    #[test]
+    fn studio_style_casts_a_soft_shadow_and_plain_matches_the_default() {
+        let mesh = cuboid([0.0, 0.0, 0.0], [0.02, 0.02, 0.03]);
+        let item = [PreviewMesh {
+            mesh: &mesh,
+            color: [0.2, 0.5, 0.85],
+        }];
+        let plain = render_preview(&item, PreviewView::Iso, 120, 90).expect("plain");
+        let framing = PreviewFraming::fit(PreviewView::Iso, &item);
+        assert_eq!(
+            render_preview_styled(&item, &framing, 120, 90, &PreviewStyle::PLAIN)
+                .expect("styled plain"),
+            plain
+        );
+
+        let mut framing = PreviewFraming::new(PreviewView::Iso).with_shadow(true);
+        framing.include(&item);
+        let studio =
+            render_preview_styled(&item, &framing, 120, 90, &PreviewStyle::STUDIO).expect("studio");
+        let without = render_preview_styled(
+            &item,
+            &framing,
+            120,
+            90,
+            &PreviewStyle {
+                shadow_opacity: 0.0,
+                ..PreviewStyle::STUDIO
+            },
+        )
+        .expect("no shadow");
+        // Some background pixels darken under the shadow; none lighten.
+        let darker = studio
+            .rgba
+            .chunks_exact(4)
+            .zip(without.rgba.chunks_exact(4))
+            .filter(|(a, b)| a[0] + 3 < b[0])
+            .count();
+        assert!(darker > 50, "{darker} shadowed pixels");
+        assert!(studio.rgba.iter().zip(&without.rgba).all(|(a, b)| a <= b));
+        // The gradient runs light to dark from top to bottom.
+        assert!(pixel(&without, 1, 1)[0] > pixel(&without, 1, 88)[0]);
+        assert_eq!(
+            PreviewStyle::parse("dark").expect("dark"),
+            PreviewStyle::DARK
+        );
+        assert!(PreviewStyle::parse("neon").is_err());
+    }
+
+    #[test]
+    fn box_blur_spreads_and_preserves_a_uniform_field() {
+        let mut uniform = vec![1.0; 12];
+        box_blur(&mut uniform, 4, 3, 1);
+        assert!(uniform.iter().all(|value| (value - 1.0).abs() < 1e-6));
+        let mut dot = vec![0.0; 25];
+        dot[12] = 1.0;
+        box_blur(&mut dot, 5, 5, 1);
+        assert!((dot[12] - 1.0 / 9.0).abs() < 1e-6);
+        assert!(dot[6] > 0.0 && dot[0] == 0.0);
     }
 
     #[test]

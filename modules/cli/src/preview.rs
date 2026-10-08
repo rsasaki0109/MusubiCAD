@@ -8,8 +8,8 @@ use opencad_core::{OpenCadError, Result};
 use opencad_file::read_ocad;
 use opencad_geometry::MeshSet;
 use opencad_render::{
-    caption_extent, draw_caption, encode_png, render_preview, render_preview_framed,
-    write_gif_frames, CaptionCorner, PreviewFraming, PreviewMesh, PreviewView, RenderImage,
+    caption_extent, draw_caption, encode_png, render_preview_styled, write_gif_frames,
+    CaptionCorner, PreviewFraming, PreviewMesh, PreviewStyle, PreviewView, RenderImage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -36,6 +36,9 @@ pub struct PreviewParams {
     pub width: u32,
     #[serde(default = "default_height")]
     pub height: u32,
+    /// `plain` (default), `studio`, or `dark`.
+    #[serde(default = "default_style")]
+    pub style: String,
 }
 
 fn default_view() -> String {
@@ -48,6 +51,24 @@ fn default_width() -> u32 {
 
 fn default_height() -> u32 {
     DEFAULT_HEIGHT
+}
+
+fn default_style() -> String {
+    "plain".into()
+}
+
+/// Height for `width` at an aspect ratio written `W:H` (`16:9`, `1:1`, `9:16`).
+pub(crate) fn aspect_height(width: u32, aspect: &str) -> Result<u32> {
+    let parse = |text: &str| text.trim().parse::<u32>().ok().filter(|value| *value > 0);
+    let (w, h) = aspect
+        .split_once(':')
+        .and_then(|(w, h)| Some((parse(w)?, parse(h)?)))
+        .ok_or_else(|| {
+            OpenCadError::validation(format!(
+                "aspect '{aspect}' must be W:H with positive integers, for example 16:9"
+            ))
+        })?;
+    Ok(((u64::from(width) * u64::from(h) + u64::from(w) / 2) / u64::from(w)) as u32)
 }
 
 /// What the image shows, for agents that also read text.
@@ -66,6 +87,7 @@ pub struct PreviewSummary {
 /// Regenerate `params.path` and render it to PNG bytes.
 pub fn preview_document(params: &PreviewParams) -> Result<(Vec<u8>, PreviewSummary)> {
     let view = PreviewView::parse(&params.view)?;
+    let style = PreviewStyle::parse(&params.style)?;
     let doc = read_ocad(&params.path)?;
     if doc.drawing.is_some() {
         return Err(OpenCadError::validation(
@@ -81,7 +103,9 @@ pub fn preview_document(params: &PreviewParams) -> Result<(Vec<u8>, PreviewSumma
             color: PALETTE[index % PALETTE.len()],
         })
         .collect();
-    let image = render_preview(&meshes, view, params.width, params.height)?;
+    let mut framing = PreviewFraming::new(view).with_shadow(style.shadow_opacity > 0.0);
+    framing.include(&meshes);
+    let image = render_preview_styled(&meshes, &framing, params.width, params.height, &style)?;
     let png = encode_png(image.width, image.height, &image.rgba)?;
 
     let mut min = [f64::INFINITY; 3];
@@ -135,6 +159,7 @@ fn palette_meshes(meshes: &[MeshSet]) -> Vec<PreviewMesh<'_>> {
 pub(crate) fn write_preview_gif(
     frames: &[GifFrame],
     view: PreviewView,
+    style: &PreviewStyle,
     width: u32,
     height: u32,
     frames_per_second: u32,
@@ -150,15 +175,21 @@ pub(crate) fn write_preview_gif(
         })
         .max()
         .unwrap_or(0);
-    let mut framing =
-        PreviewFraming::new(view).with_bottom_inset(caption_px as f32 / height.max(1) as f32);
+    let mut framing = PreviewFraming::new(view)
+        .with_bottom_inset(caption_px as f32 / height.max(1) as f32)
+        .with_shadow(style.shadow_opacity > 0.0);
     for frame in frames {
         framing.include(&palette_meshes(&frame.meshes));
     }
     let mut images = Vec::with_capacity(frames.len());
     for frame in frames {
-        let mut image =
-            render_preview_framed(&palette_meshes(&frame.meshes), &framing, width, height)?;
+        let mut image = render_preview_styled(
+            &palette_meshes(&frame.meshes),
+            &framing,
+            width,
+            height,
+            style,
+        )?;
         let lines: Vec<&str> = frame.caption.iter().map(String::as_str).collect();
         draw_caption(&mut image, &lines, CaptionCorner::BottomLeft, scale);
         images.push(RenderImage {
@@ -175,14 +206,16 @@ pub(crate) fn write_preview_gif(
 /// Parse `preview <document> <output.png> [--view iso|front|top|right]
 /// [--width N] [--height N]`.
 pub fn parse_preview_args(args: &[String]) -> Result<(PreviewParams, String)> {
-    let usage = "usage: musubicad preview <document> <output.png> [--view iso|front|top|right] [--width N] [--height N]";
+    let usage = "usage: musubicad preview <document> <output.png> [--view iso|front|top|right] [--width N] [--height N | --aspect W:H] [--style plain|studio|dark]";
     let mut positional = Vec::new();
     let mut params = PreviewParams {
         path: String::new(),
         view: default_view(),
         width: DEFAULT_WIDTH,
         height: DEFAULT_HEIGHT,
+        style: default_style(),
     };
+    let mut aspect = None;
     let mut index = 0;
     while index < args.len() {
         let value = || {
@@ -193,6 +226,14 @@ pub fn parse_preview_args(args: &[String]) -> Result<(PreviewParams, String)> {
         match args[index].as_str() {
             "--view" => {
                 params.view = value()?;
+                index += 2;
+            }
+            "--style" => {
+                params.style = value()?;
+                index += 2;
+            }
+            "--aspect" => {
+                aspect = Some(value()?);
                 index += 2;
             }
             "--width" | "--height" => {
@@ -216,6 +257,14 @@ pub fn parse_preview_args(args: &[String]) -> Result<(PreviewParams, String)> {
     let [path, output] =
         <[String; 2]>::try_from(positional).map_err(|_| OpenCadError::validation(usage))?;
     params.path = path;
+    if let Some(aspect) = aspect {
+        if args.iter().any(|arg| arg == "--height") {
+            return Err(OpenCadError::validation(
+                "use --height or --aspect, not both",
+            ));
+        }
+        params.height = aspect_height(params.width, &aspect)?;
+    }
     Ok((params, output))
 }
 
@@ -238,6 +287,7 @@ mod tests {
                 view: "iso".into(),
                 width: 200,
                 height: 150,
+                style: "plain".into(),
             })
             .expect("preview");
             assert_eq!(&png[1..4], b"PNG", "{name}");
@@ -250,6 +300,7 @@ mod tests {
             view: "top".into(),
             width: 64,
             height: 64,
+            style: "studio".into(),
         })
         .expect("top");
         // 96 × 72 × 14 mm carrier.
@@ -269,5 +320,21 @@ mod tests {
             ("top", 320, 480)
         );
         assert!(parse_preview_args(&args[..1]).is_err());
+        let square: Vec<String> = ["p.ocad.d", "o.png", "--aspect", "1:1", "--style", "dark"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let (params, _) = parse_preview_args(&square).expect("square");
+        assert_eq!((params.width, params.height), (640, 640));
+        assert_eq!(params.style, "dark");
+        assert_eq!(aspect_height(720, "16:9").expect("16:9"), 405);
+        assert_eq!(aspect_height(720, "9:16").expect("9:16"), 1280);
+        assert!(aspect_height(720, "wide").is_err());
+        assert!(aspect_height(720, "0:1").is_err());
+        let both: Vec<String> = ["p", "o.png", "--height", "10", "--aspect", "1:1"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        assert!(parse_preview_args(&both).is_err());
     }
 }

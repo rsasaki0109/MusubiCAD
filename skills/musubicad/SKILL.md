@@ -152,6 +152,7 @@ musubicad patch part.ocad.d change.json --dry-run --geometry --json
 musubicad patch part.ocad.d change.json                     # verifies, then writes
 musubicad review part.ocad.d change.json --output review    # HTML review
 musubicad preview part.ocad.d look.png --view iso           # PNG, no GPU needed
+musubicad preview part.ocad.d share.png --style studio --aspect 1:1  # image to share
 musubicad regen part.ocad.d                                 # mass, volume, assertions
 musubicad export part.ocad.d part.step                      # or part.3mf / part.stl / part.glb / sheet.svg
 musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description

@@ -185,7 +185,8 @@ fn tools() -> Vec<Tool> {
                     "path": { "type": "string", "description": "Part or assembly .ocad.d / .ocad" },
                     "view": { "enum": ["iso", "front", "top", "right"] },
                     "width": { "type": "integer", "minimum": 16, "maximum": 2048 },
-                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 }
+                    "height": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "style": { "enum": ["plain", "studio", "dark"], "description": "plain (default) for checking; studio or dark for an image to share" }
                 },
                 "required": ["path"]
             }),

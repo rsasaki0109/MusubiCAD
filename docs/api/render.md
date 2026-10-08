@@ -41,6 +41,29 @@ parts move. `PreviewFraming::with_bottom_inset(fraction)` keeps that share of
 the image height clear at the bottom so a caption does not cover the model.
 `musubicad animate-joints` and `musubicad animate-sweep` render this way.
 
+## Presentation styles
+
+`render_preview_styled(meshes, &framing, width, height, &style)` draws with a
+`PreviewStyle`: a vertical background gradient, an outline colour, and a soft
+ground shadow. `PreviewStyle::PLAIN` is the agent preview (flat light
+background, no shadow) and renders exactly like `render_preview_framed`;
+`STUDIO` is a light grey gradient and `DARK` a dark slate gradient, both with a
+shadow; `PreviewStyle::parse` accepts `plain`, `studio`, and `dark`. The shadow
+is every triangle dropped onto the plane through the lowest vertex along a light
+from overhead and behind the iso camera (direction `[-0.35, 0.5, 1]`), so it
+falls toward the viewer; the mask is box-blurred twice with a radius of 3.5 % of
+the image height and darkens only the background. Fit the framing
+`with_shadow(true)` so the shadow is not cut off.
+
+`musubicad preview` takes `--style` (default `plain`) and, like the animation
+commands, `--aspect W:H` to derive the height from `--width` (`16:9`, `1:1`,
+`9:16`; not together with `--height`). `musubicad animate-joints` and
+`musubicad animate-sweep` default to `studio`.
+
+```bash
+musubicad preview examples/robot_arm_assembly.ocad.d arm.png --style dark --width 1080 --aspect 1:1
+```
+
 ## Captions
 
 `draw_caption(&mut image, lines, CaptionCorner::BottomLeft, scale)` draws text

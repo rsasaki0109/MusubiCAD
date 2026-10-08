@@ -34,7 +34,8 @@ pub use selection::{
     SelectionCatalog, SelectionId,
 };
 pub use software::{
-    render_preview, render_preview_framed, PreviewFraming, PreviewImage, PreviewMesh, PreviewView,
+    render_preview, render_preview_framed, render_preview_styled, PreviewFraming, PreviewImage,
+    PreviewMesh, PreviewStyle, PreviewView,
 };
 pub use viewport::{
     run_viewport, run_viewport_with_callbacks, run_viewport_with_pick, ViewportCameraCallback,

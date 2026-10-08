@@ -14,10 +14,10 @@ use opencad_assembly::{kinematic_tree, AssemblyModel, JointKind, KinematicTree};
 use opencad_core::{OpenCadError, Result};
 use opencad_file::read_ocad;
 use opencad_geometry::{MeshSet, RigidTransform};
-use opencad_render::PreviewView;
+use opencad_render::{PreviewStyle, PreviewView};
 use serde::Serialize;
 
-use crate::preview::{write_preview_gif, GifFrame};
+use crate::preview::{aspect_height, write_preview_gif, GifFrame};
 
 /// Upper bound on frames in one clip, to keep GIFs shareable.
 const MAX_FRAMES: usize = 600;
@@ -28,7 +28,8 @@ const CONTINUOUS_SWING_RAD: f64 = std::f64::consts::FRAC_PI_2;
 
 const USAGE: &str = "usage: musubicad animate-joints <assembly> <output.gif> \
 [--pose JOINT=VALUE[,JOINT=VALUE...]]... [--frames-per-move N] [--fps N] \
-[--view iso|front|top|right] [--width N] [--height N] [--no-caption]
+[--view iso|front|top|right] [--width N] [--height N | --aspect W:H] \
+[--style studio|dark|plain] [--no-caption]
   VALUE carries a unit: deg or rad for revolute and continuous joints, mm or m for prismatic ones.
   JOINT is a joint ID (joint:shoulder), its short name (shoulder), its mate, or the moving instance.";
 
@@ -45,6 +46,7 @@ pub struct JointAnimationOptions {
     pub poses: Vec<Vec<(String, JointValue)>>,
     /// Label each frame with the joint positions.
     pub caption: bool,
+    pub style: PreviewStyle,
 }
 
 impl Default for JointAnimationOptions {
@@ -57,6 +59,7 @@ impl Default for JointAnimationOptions {
             frames_per_move: 14,
             poses: Vec::new(),
             caption: true,
+            style: PreviewStyle::STUDIO,
         }
     }
 }
@@ -128,6 +131,7 @@ pub struct JointAnimationSummary {
 /// Parse the flags after `<assembly> <output.gif>`.
 pub fn parse_joint_animation_args(args: &[String]) -> Result<JointAnimationOptions> {
     let mut options = JointAnimationOptions::default();
+    let mut aspect = None;
     let mut index = 0;
     while index < args.len() {
         let flag = args[index].as_str();
@@ -151,6 +155,8 @@ pub fn parse_joint_animation_args(args: &[String]) -> Result<JointAnimationOptio
             "--width" => options.width_px = number()?,
             "--height" => options.height_px = number()?,
             "--view" => options.view = PreviewView::parse(value)?,
+            "--style" => options.style = PreviewStyle::parse(value)?,
+            "--aspect" => aspect = Some(value.clone()),
             _ => {
                 return Err(OpenCadError::validation(format!(
                     "unknown option '{flag}'\n{USAGE}"
@@ -158,6 +164,14 @@ pub fn parse_joint_animation_args(args: &[String]) -> Result<JointAnimationOptio
             }
         }
         index += 2;
+    }
+    if let Some(aspect) = aspect {
+        if args.iter().any(|arg| arg == "--height") {
+            return Err(OpenCadError::validation(
+                "use --height or --aspect, not both",
+            ));
+        }
+        options.height_px = aspect_height(options.width_px, &aspect)?;
     }
     if options.frames_per_move == 0 || options.frames_per_second == 0 {
         return Err(OpenCadError::validation(
@@ -471,6 +485,7 @@ pub fn animate_joints(
     let frame_count = write_preview_gif(
         &gif_frames,
         options.view,
+        &options.style,
         options.width_px,
         options.height_px,
         options.frames_per_second,
@@ -570,6 +585,11 @@ mod tests {
         assert!(parse_joint_animation_args(&strings(&["--pose", "shoulder"])).is_err());
         assert!(parse_joint_animation_args(&strings(&["--speed", "2"])).is_err());
         assert!(parse_joint_animation_args(&strings(&["--fps", "0"])).is_err());
+        let square = parse_joint_animation_args(&strings(&["--aspect", "1:1", "--style", "dark"]))
+            .expect("square");
+        assert_eq!((square.width_px, square.height_px), (720, 720));
+        assert_eq!(square.style, PreviewStyle::DARK);
+        assert_eq!(options.style, PreviewStyle::STUDIO);
     }
 
     #[test]

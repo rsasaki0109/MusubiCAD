@@ -13,10 +13,10 @@ use opencad_ai::{ensure_patch_valid, DesignPatch};
 use opencad_core::{OpenCadError, Result};
 use opencad_file::{apply_patch_to_document, dry_run_patch_document, read_ocad};
 use opencad_geometry::MeshSet;
-use opencad_render::PreviewView;
+use opencad_render::{PreviewStyle, PreviewView};
 use serde::Serialize;
 
-use crate::preview::{write_preview_gif, GifFrame};
+use crate::preview::{aspect_height, write_preview_gif, GifFrame};
 
 /// Most distinct values in one sweep; each is a full regeneration.
 const MAX_STEPS: u32 = 120;
@@ -25,7 +25,8 @@ const UNITS: [&str; 4] = ["deg", "rad", "mm", "m"];
 
 const USAGE: &str = "usage: musubicad animate-sweep <document> <output.gif> \
 --param NAME --from VALUE --to VALUE [--steps N] [--fps N] \
-[--view iso|front|top|right] [--width N] [--height N] [--no-caption]
+[--view iso|front|top|right] [--width N] [--height N | --aspect W:H] \
+[--style studio|dark|plain] [--no-caption]
   VALUE carries a unit (mm, m, deg, rad), the same for --from and --to.
   NAME is a parameter name (upper_hub_height) or ID (param:upper_hub_height).";
 
@@ -42,6 +43,7 @@ pub struct SweepOptions {
     pub width_px: u32,
     pub height_px: u32,
     pub caption: bool,
+    pub style: PreviewStyle,
 }
 
 /// A number with an explicit unit, as written.
@@ -123,6 +125,8 @@ pub fn parse_sweep_args(args: &[String]) -> Result<SweepOptions> {
     let mut view = PreviewView::Iso;
     let (mut width_px, mut height_px) = (720, 540);
     let mut caption = true;
+    let mut style = PreviewStyle::STUDIO;
+    let mut aspect: Option<String> = None;
     let mut index = 0;
     while index < args.len() {
         let flag = args[index].as_str();
@@ -148,6 +152,8 @@ pub fn parse_sweep_args(args: &[String]) -> Result<SweepOptions> {
             "--width" => width_px = number()?,
             "--height" => height_px = number()?,
             "--view" => view = PreviewView::parse(value)?,
+            "--style" => style = PreviewStyle::parse(value)?,
+            "--aspect" => aspect = Some(value.clone()),
             _ => {
                 return Err(OpenCadError::validation(format!(
                     "unknown option '{flag}'\n{USAGE}"
@@ -176,6 +182,14 @@ pub fn parse_sweep_args(args: &[String]) -> Result<SweepOptions> {
     if frames_per_second == 0 {
         return Err(OpenCadError::validation("--fps must be positive"));
     }
+    if let Some(aspect) = aspect {
+        if args.iter().any(|arg| arg == "--height") {
+            return Err(OpenCadError::validation(
+                "use --height or --aspect, not both",
+            ));
+        }
+        height_px = aspect_height(width_px, &aspect)?;
+    }
     Ok(SweepOptions {
         parameter,
         from,
@@ -186,6 +200,7 @@ pub fn parse_sweep_args(args: &[String]) -> Result<SweepOptions> {
         width_px,
         height_px,
         caption,
+        style,
     })
 }
 
@@ -320,6 +335,7 @@ pub fn animate_sweep(input: &str, output: &str, options: &SweepOptions) -> Resul
     let frame_count = write_preview_gif(
         &frames,
         options.view,
+        &options.style,
         options.width_px,
         options.height_px,
         options.frames_per_second,
@@ -377,6 +393,10 @@ mod tests {
         };
         let options = parse_sweep_args(&args("20mm")).expect("options");
         assert_eq!((options.steps, options.view), (4, PreviewView::Iso));
+        assert_eq!(options.style, PreviewStyle::STUDIO);
+        let vertical = parse_sweep_args(&[args("20mm"), strings(&["--aspect", "9:16"])].concat())
+            .expect("9:16");
+        assert_eq!((vertical.width_px, vertical.height_px), (720, 1280));
         assert!(parse_sweep_args(&args("2m")).is_err());
         assert!(parse_sweep_args(&strings(&["--param", "x", "--from", "1mm"])).is_err());
         assert!(parse_sweep_args(&[args("20mm"), strings(&["--steps", "1"])].concat()).is_err());
