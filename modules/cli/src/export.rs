@@ -41,8 +41,9 @@ pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
         Some("urdf") => crate::urdf::export_urdf(input, output),
         Some("3mf") => export_mesh_package(input, output, "3mf"),
         Some("glb") => export_mesh_package(input, output, "glb"),
+        Some("html") => crate::web_viewer::export_web_viewer(input, output),
         _ => Err(OpenCadError::validation(
-            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, or .urdf extension",
+            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, .urdf, or .html extension",
         )),
     }
 }

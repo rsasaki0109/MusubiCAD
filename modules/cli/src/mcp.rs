@@ -193,7 +193,7 @@ fn tools() -> Vec<Tool> {
         },
         Tool {
             name: "export_document",
-            description: "Regenerate and export geometry: .step/.stp (millimetre B-rep for other CAD/CAM tools), .stl (mesh), .3mf (watertight millimetre mesh for slicers; one object per assembly instance), .glb (binary glTF for viewers and the web), .svg (drawing sheet), or .urdf (an assembly as a robot description with one STL per part next to it; mates become joints).",
+            description: "Regenerate and export geometry: .step/.stp (millimetre B-rep for other CAD/CAM tools), .stl (mesh), .3mf (watertight millimetre mesh for slicers; one object per assembly instance), .glb (binary glTF for viewers and the web), .svg (drawing sheet), .urdf (an assembly as a robot description with one STL per part next to it; mates become joints), or .html (an assembly as a self-contained 3D web page with one slider per joint, within its limits).",
             handler: Handler::Agent("opencad.export"),
             schema: || json!({
                 "type": "object",

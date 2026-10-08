@@ -156,6 +156,7 @@ musubicad preview part.ocad.d share.png --style studio --aspect 1:1  # image to 
 musubicad regen part.ocad.d                                 # mass, volume, assertions
 musubicad export part.ocad.d part.step                      # or part.3mf / part.stl / part.glb / sheet.svg
 musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description
+musubicad export arm.ocad.d arm.html                        # web page: 3D view + joint sliders
 musubicad animate-joints arm.ocad.d arm.gif --pose shoulder=60deg,elbow=-45deg  # joint motion GIF, no GPU
 musubicad animate-sweep part.ocad.d sweep.gif --param bore_diameter --from 8mm --to 20mm  # every frame regenerated
 musubicad reach arm.ocad.d --tool gripper --point 0,40,7mm --target 0,330,63mm  # reachable? joint angles

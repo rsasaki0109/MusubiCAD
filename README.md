@@ -152,6 +152,20 @@ musubicad reach examples/robot_arm_assembly.ocad.d --tool gripper --point 0,40,7
 The reach query needs no geometry kernel: it searches the joint limits declared in the design, so an
 agent can check a target in milliseconds before rebuilding anything.
 
+## In the browser
+
+```bash
+musubicad export examples/robot_arm_assembly.ocad.d robot_arm.html
+```
+
+<p align="center">
+  <a href="docs/assets/robot-arm-viewer.html"><img src="docs/assets/robot-arm-viewer.png" alt="The exported robot arm web page: a 3D view of the arm with shoulder at 30 degrees, elbow at 80 degrees, and wrist at minus 45 degrees, and a slider for each joint" width="720"></a>
+</p>
+
+One HTML file, nothing to install and nothing loaded from the network: drag to orbit, and move each
+joint with a slider bounded by the limits declared in the design. Host it on GitHub Pages or attach it
+to an issue; the page is regenerated from the Design Graph, so it never drifts from the model.
+
 ## From CAD to simulator: URDF
 
 Move the arm through its declared joints before it leaves MusubiCAD (CPU only, no GPU):

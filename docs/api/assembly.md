@@ -117,6 +117,22 @@ to the new link end and carries the forearm and gripper 40 mm with it (the mate
 solver needs a nearby start for a move that large); after both, the target is
 reached. `docs/assets/generate-reach-demo.sh` replays it on a temporary copy.
 
+### Web joint viewer
+
+`musubicad export <assembly> <name>.html` (Agent `opencad.export`, MCP
+`export_document`) writes one self-contained page: the regenerated part
+meshes, a small inline WebGL renderer, orbit and zoom (mouse, touch, pinch),
+and one slider per movable joint, bounded by the declared limits (continuous
+joints by one turn), plus Animate and Reset. The sliders run the same chain as
+`KinematicTree::pose` (after solving mates): each link is its parent's frame
+composed with the joint origin and motion; a check against the Rust pose
+agrees to 1e-10 m. Meshes are stored as base64 little-endian `f32` positions
+and `u32` indices and shaded with flat face normals and the preview palette;
+the page loads nothing from the network, follows the system light or dark
+theme, and is byte-identical for the same document.
+`docs/assets/robot-arm-viewer.html` is the robot arm, and
+`docs/assets/generate-viewer-demo.sh` regenerates it with a screenshot.
+
 `musubicad export <assembly> <name>.urdf` (Agent `opencad.export`, MCP
 `export_document`) writes the URDF and one binary STL per component next to
 it (`<robot>_<component>.stl`, metres, referenced by file name). Inertials use

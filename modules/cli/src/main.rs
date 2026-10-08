@@ -25,6 +25,7 @@ mod sweep_animation;
 mod topo_sync;
 mod urdf;
 mod view;
+mod web_viewer;
 
 fn main() {
     if let Err(err) = commands::run() {

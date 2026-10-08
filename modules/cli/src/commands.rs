@@ -676,7 +676,7 @@ COMMANDS:
     intent      Show what drives a parameter or reference and what it changes
     params      List document parameters
     regen       Regenerate features through the geometry kernel
-    export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF
+    export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF or an HTML joint viewer
     mesh        Tessellate and summarize viewport scene data
     pick        Query viewport selection at a pixel coordinate
     view        Open an interactive 3D viewport
@@ -730,6 +730,7 @@ EXAMPLES:
     musubicad export bracket.ocad.d bracket.3mf
     musubicad export bracket_front_view.ocad.d bracket_front.svg
     musubicad export robot_arm_assembly.ocad.d urdf/robot_arm.urdf
+    musubicad export robot_arm_assembly.ocad.d robot_arm.html
     musubicad mesh bracket.ocad.d
     musubicad mesh bracket.ocad.d --json --render
     musubicad mesh bracket.ocad.d --png preview.png
