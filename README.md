@@ -123,6 +123,24 @@ same gate runs on `musubicad patch` for agents that use the CLI instead of MCP. 
   the 200 mm bore is refused because the part no longer regenerates, and the file stays at 8 mm.</sub>
 </p>
 
+## A six-axis arm
+
+```bash
+musubicad animate-joints examples/six_axis_arm.ocad.d six_axis.gif \
+  --pose base_yaw=70deg,shoulder=20deg,elbow=-25deg,wrist_pitch=-30deg \
+  --pose base_yaw=-60deg,shoulder=-15deg,elbow=35deg,wrist_roll=90deg,wrist_pitch=40deg,flange_roll=90deg
+```
+
+<p align="center">
+  <img src="docs/assets/six-axis-joints.gif" alt="A six-axis robot arm turning on its turntable, pitching at the shoulder, elbow, and wrist, and rolling its wrist and flange, captioned with all six joint angles" width="640">
+</p>
+
+Turntable yaw, shoulder and elbow pitch, wrist roll and pitch, and a flange roll: seven parametric
+parts, twelve connectors, and six limited joints in one Design Graph
+([`examples/six_axis_arm.ocad.d`](examples/six_axis_arm.ocad.d)). The links meet without
+interference (checked with OpenCASCADE), and `reach`, the URDF export, and the web viewer below all
+work on it unchanged.
+
 ## Design for reach
 
 The arm falls 20 mm short of a target. The agent lengthens the upper arm with two verified patches
@@ -155,11 +173,11 @@ agent can check a target in milliseconds before rebuilding anything.
 ## In the browser
 
 ```bash
-musubicad export examples/robot_arm_assembly.ocad.d robot_arm.html
+musubicad export examples/six_axis_arm.ocad.d six_axis_arm.html
 ```
 
 <p align="center">
-  <a href="docs/assets/robot-arm-viewer.html"><img src="docs/assets/robot-arm-viewer.png" alt="The exported robot arm web page: a 3D view of the arm with shoulder at 30 degrees, elbow at 80 degrees, and wrist at minus 45 degrees, and a slider for each joint" width="720"></a>
+  <a href="docs/assets/six-axis-viewer.html"><img src="docs/assets/six-axis-viewer.png" alt="The exported six-axis arm web page: a 3D view of the arm with its base turned 35 degrees and the wrist rolled 60 degrees, and a slider for each of the six joints" width="720"></a>
 </p>
 
 One HTML file, nothing to install and nothing loaded from the network: drag to orbit, and move each

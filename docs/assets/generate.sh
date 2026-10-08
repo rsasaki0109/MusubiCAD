@@ -33,6 +33,12 @@ cargo run -p opencad-cli -- animate-joints \
 cargo run -p opencad-cli -- animate-sweep \
   "$ROOT/examples/robot_joint_actuator.ocad.d" "$ASSETS/robot-joint-sweep.gif" \
   --param upper_hub_height --from 32mm --to 64mm --steps 14 --fps 12 --width 640 --height 400
+cargo run -p opencad-cli -- animate-joints \
+  "$ROOT/examples/six_axis_arm.ocad.d" "$ASSETS/six-axis-joints.gif" \
+  --width 640 --aspect 4:3 --frames-per-move 16 --fps 16 \
+  --pose base_yaw=70deg,shoulder=20deg,elbow=-25deg,wrist_pitch=-30deg \
+  --pose base_yaw=-60deg,shoulder=-15deg,elbow=35deg,wrist_roll=90deg,wrist_pitch=40deg,flange_roll=90deg \
+  --pose base_yaw=10deg,shoulder=30deg,elbow=-60deg,wrist_roll=-60deg,wrist_pitch=-60deg,flange_roll=-120deg
 ffmpeg -y \
   -loop 1 -t 1.5 -framerate 4 -i "$ASSETS/frame_base.png" \
   -loop 1 -t 1.5 -framerate 4 -i "$ASSETS/frame_wide.png" \
@@ -40,4 +46,4 @@ ffmpeg -y \
   -r 4 "$ASSETS/preview.gif"
 rm -f "$ASSETS/frame_base.png" "$ASSETS/frame_wide.png" "$ASSETS/frame_pin_row.png" "$ASSETS/frame_pin_ring.png" "$ASSETS/frame_pin_mirror.png"
 rm -rf "$(dirname "$TMP_WIDE")"
-echo "wrote README preview images, robot-joint feature/orbit GIFs, and the arm joint and hub sweep GIFs"
+echo "wrote README preview images, robot-joint feature/orbit GIFs, and the arm joint, six-axis, and hub sweep GIFs"

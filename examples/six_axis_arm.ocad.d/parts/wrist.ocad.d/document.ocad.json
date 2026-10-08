@@ -1,0 +1,11 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:six_axis_wrist_001",
+    "name": "Six-Axis Arm Wrist Link",
+    "units": "mm",
+    "kind": "part",
+    "created_with": "OpenCAD 0.2.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

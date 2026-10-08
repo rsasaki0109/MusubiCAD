@@ -1,0 +1,274 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_upper_arm_bar",
+      "feature:upper_arm_extrude",
+      "feature:sketch_upper_arm_proximal_hub",
+      "feature:upper_arm_proximal_hub",
+      "feature:sketch_upper_arm_distal_hub",
+      "feature:upper_arm_distal_hub",
+      "feature:sketch_upper_arm_proximal_bore",
+      "feature:upper_arm_proximal_bore",
+      "feature:sketch_upper_arm_distal_bore",
+      "feature:upper_arm_distal_bore"
+    ],
+    "features": {
+      "feature:sketch_upper_arm_bar": {
+        "id": "feature:sketch_upper_arm_bar",
+        "name": "Upper Arm Bar Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:upper_arm_extrude": {
+        "id": "feature:upper_arm_extrude",
+        "name": "Upper Arm Body",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_upper_arm_proximal_hub": {
+        "id": "feature:sketch_upper_arm_proximal_hub",
+        "name": "Shoulder Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:upper_arm_proximal_hub": {
+        "id": "feature:upper_arm_proximal_hub",
+        "name": "Shoulder Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_upper_arm_distal_hub": {
+        "id": "feature:sketch_upper_arm_distal_hub",
+        "name": "Elbow Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:upper_arm_distal_hub": {
+        "id": "feature:upper_arm_distal_hub",
+        "name": "Elbow Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_upper_arm_proximal_bore": {
+        "id": "feature:sketch_upper_arm_proximal_bore",
+        "name": "Shoulder Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:upper_arm_proximal_bore": {
+        "id": "feature:upper_arm_proximal_bore",
+        "name": "Shoulder Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_upper_arm_distal_bore": {
+        "id": "feature:sketch_upper_arm_distal_bore",
+        "name": "Elbow Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:upper_arm_distal_bore": {
+        "id": "feature:upper_arm_distal_bore",
+        "name": "Elbow Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_upper_arm_bar",
+        "target": "feature:upper_arm_extrude",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_upper_arm_proximal_hub",
+        "target": "feature:upper_arm_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:upper_arm_extrude",
+        "target": "feature:upper_arm_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_upper_arm_distal_hub",
+        "target": "feature:upper_arm_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:upper_arm_proximal_hub",
+        "target": "feature:upper_arm_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_upper_arm_proximal_bore",
+        "target": "feature:upper_arm_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:upper_arm_distal_hub",
+        "target": "feature:upper_arm_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_upper_arm_distal_bore",
+        "target": "feature:upper_arm_distal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:upper_arm_proximal_bore",
+        "target": "feature:upper_arm_distal_bore",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:sketch_upper_arm_bar",
+      "name": "Upper Arm Bar Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:upper_arm_bar"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_upper_arm_distal_bore",
+      "name": "Elbow Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:upper_arm_distal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_upper_arm_distal_hub",
+      "name": "Elbow Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:upper_arm_distal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_upper_arm_proximal_bore",
+      "name": "Shoulder Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:upper_arm_proximal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_upper_arm_proximal_hub",
+      "name": "Shoulder Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:upper_arm_proximal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:upper_arm_distal_bore",
+      "name": "Elbow Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_upper_arm_distal_bore",
+        "profile_ref": "sketch:upper_arm_distal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.014
+          }
+        },
+        "target_feature": "feature:upper_arm_proximal_bore",
+        "depth_expr": "upper_arm_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:upper_arm_distal_hub",
+      "name": "Elbow Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_upper_arm_distal_hub",
+        "profile_ref": "sketch:upper_arm_distal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.014
+          }
+        },
+        "operation": "join",
+        "length_expr": "upper_arm_thickness",
+        "target_feature": "feature:upper_arm_proximal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:upper_arm_extrude",
+      "name": "Upper Arm Body",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_upper_arm_bar",
+        "profile_ref": "sketch:upper_arm_bar/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.014
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "upper_arm_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:upper_arm_proximal_bore",
+      "name": "Shoulder Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_upper_arm_proximal_bore",
+        "profile_ref": "sketch:upper_arm_proximal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.014
+          }
+        },
+        "target_feature": "feature:upper_arm_distal_hub",
+        "depth_expr": "upper_arm_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:upper_arm_proximal_hub",
+      "name": "Shoulder Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_upper_arm_proximal_hub",
+        "profile_ref": "sketch:upper_arm_proximal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.014
+          }
+        },
+        "operation": "join",
+        "length_expr": "upper_arm_thickness",
+        "target_feature": "feature:upper_arm_extrude"
+      },
+      "suppressed": false
+    }
+  ]
+}

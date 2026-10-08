@@ -1,0 +1,60 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_turntable_disc",
+      "feature:turntable_disc"
+    ],
+    "features": {
+      "feature:sketch_turntable_disc": {
+        "id": "feature:sketch_turntable_disc",
+        "name": "Turntable Disc Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:turntable_disc": {
+        "id": "feature:turntable_disc",
+        "name": "Turntable Disc",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_turntable_disc",
+        "target": "feature:turntable_disc",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:sketch_turntable_disc",
+      "name": "Turntable Disc Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:turntable_disc"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:turntable_disc",
+      "name": "Turntable Disc",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_turntable_disc",
+        "profile_ref": "sketch:turntable_disc/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.022
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "turntable_height"
+      },
+      "suppressed": false
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:turntable_disc",
+      "constraint": {
+        "type": "radius",
+        "id": "con:turntable_disc_radius",
+        "target": "ent:turntable_disc_circle",
+        "expr": "turntable_diameter / 2"
+      }
+    }
+  ]
+}

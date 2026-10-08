@@ -24,7 +24,7 @@ pub use joint::{validate_joints, AssemblyJoint, JointMotion};
 pub use kinematics::{kinematic_tree, JointKind, KinematicJoint, KinematicLink, KinematicTree};
 pub use mate::{validate_mates, Mate, MateEntity, MateKind};
 pub use model::AssemblyModel;
-pub use models::{robot_arm, robot_arm_assembly_model};
+pub use models::{robot_arm, robot_arm_assembly_model, six_axis_arm, six_axis_arm_model};
 pub use pattern::{expand_patterns, validate_patterns, AssemblyPattern};
 pub use reach::{
     reach_joints, solve_reach, tool_point_at, workspace, ReachJoint, ReachSolution, ToolPoint,

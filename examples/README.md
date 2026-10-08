@@ -7,6 +7,7 @@ Ready-to-use MusubiCAD documents and Agent API requests.
 | Directory | Template | Features |
 |---|---|---|
 | `robot_arm_assembly.ocad.d` | `musubicad new <path> robot-arm` | 4-part articulated arm: base turret, upper link, forearm link, wrist gripper; 3 concentric joints via connectors and mates |
+| `six_axis_arm.ocad.d` | generated example | 7-part six-axis arm: turntable yaw, shoulder and elbow pitch, wrist roll and pitch, flange roll; 12 connectors, 6 revolute joints with limits |
 | `robot_arm_assembly_drawing.ocad.d` | generated example | A4 front-view drawing of the arm assembly with a model-driven 160 mm upper-arm dimension |
 | `robot_joint_actuator.ocad.d` | `musubicad new <path> robot-joint` | 22 nodes: stepped hubs, shaft/counterbore cuts, 8-hole PCD, 6 ribs, mirrored ears and holes |
 | `bearing_carrier.ocad.d` | `musubicad new <path> bearing-carrier` | Base extrude, joined hub, through bore, four-hole circular cut pattern |
@@ -91,6 +92,28 @@ Focused assembly tests cover canonical aliases, path/symlink escape, nested
 cycles, sibling reuse, localized failure, retry, and the explicit `m`/`m³`
 interference policy documented in
 [`docs/api/assembly.md`](../docs/api/assembly.md).
+
+### Six-axis arm
+
+`six_axis_arm.ocad.d` reuses the planar arm's base, upper arm, forearm, and
+gripper and adds a turntable, a wrist link, and a hand. Joint 1 turns the
+turntable about the vertical axis, joints 2 and 3 pitch the shoulder and elbow
+about horizontal axes, joint 4 rolls the wrist about the forearm, joint 5 pitches
+the hand, and joint 6 rolls the gripper. Roll connectors use a symmetric frame
+whose third row and column are both the link's `+Y`, so the joint axis is the
+same whichever way it is read. Every placement is composed from its parent's
+through coincident connector frames, so all concentric mates start with zero
+residual, and exact OCCT interference detection reports no overlap. Regenerate
+it with `cargo test -p opencad-assembly --test write_six_axis_arm -- --ignored`.
+
+```bash
+cargo run -p opencad-cli -- regen examples/six_axis_arm.ocad.d
+cargo run -p opencad-cli -- animate-joints examples/six_axis_arm.ocad.d six_axis.gif \
+  --pose base_yaw=60deg,shoulder=25deg,elbow=-30deg,wrist_roll=90deg
+cargo run -p opencad-cli -- reach examples/six_axis_arm.ocad.d \
+  --tool gripper --point 0,40,7mm --target 200,100,150mm
+cargo run -p opencad-cli -- export examples/six_axis_arm.ocad.d urdf/six_axis_arm.urdf
+```
 
 ### Robot arm flagship assembly
 

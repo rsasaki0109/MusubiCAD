@@ -455,6 +455,78 @@ pub fn robot_arm_forearm_parameters() -> ParamGraph {
     graph
 }
 
+fn static_parameters(entries: &[(&str, &str, &str)]) -> ParamGraph {
+    let mut graph = ParamGraph::new();
+    for (id, name, expression) in entries {
+        graph
+            .add_parameter(ParameterEntry::new(*id, *name, *expression))
+            .expect("static six-axis arm parameter must be valid");
+    }
+    graph
+}
+
+/// Parameters for the six-axis arm turntable (joint 1).
+pub fn six_axis_turntable_parameters() -> ParamGraph {
+    static_parameters(&[
+        ("param:turntable_diameter", "turntable_diameter", "76 mm"),
+        ("param:turntable_height", "turntable_height", "22 mm"),
+    ])
+}
+
+/// Parameters for the six-axis arm wrist link (joints 4 and 5).
+pub fn six_axis_wrist_parameters() -> ParamGraph {
+    static_parameters(&[
+        ("param:wrist_link_length", "wrist_link_length", "40 mm"),
+        ("param:wrist_link_width", "wrist_link_width", "22 mm"),
+        (
+            "param:wrist_link_thickness",
+            "wrist_link_thickness",
+            "12 mm",
+        ),
+        (
+            "param:wrist_roll_hub_diameter",
+            "wrist_roll_hub_diameter",
+            "26 mm",
+        ),
+        (
+            "param:wrist_roll_bore_diameter",
+            "wrist_roll_bore_diameter",
+            "10 mm",
+        ),
+        (
+            "param:wrist_pitch_hub_diameter",
+            "wrist_pitch_hub_diameter",
+            "24 mm",
+        ),
+        (
+            "param:wrist_pitch_bore_diameter",
+            "wrist_pitch_bore_diameter",
+            "8 mm",
+        ),
+    ])
+}
+
+/// Parameters for the six-axis arm hand link (joints 5 and 6).
+pub fn six_axis_hand_parameters() -> ParamGraph {
+    static_parameters(&[
+        ("param:hand_length", "hand_length", "32 mm"),
+        ("param:hand_width", "hand_width", "20 mm"),
+        ("param:hand_thickness", "hand_thickness", "10 mm"),
+        (
+            "param:hand_pitch_hub_diameter",
+            "hand_pitch_hub_diameter",
+            "24 mm",
+        ),
+        (
+            "param:hand_pitch_bore_diameter",
+            "hand_pitch_bore_diameter",
+            "8 mm",
+        ),
+        ("param:flange_hub_diameter", "flange_hub_diameter", "22 mm"),
+        ("param:flange_bore_diameter", "flange_bore_diameter", "8 mm"),
+    ])
+}
+
 /// Parameters for the robot-arm wrist gripper part.
 pub fn robot_arm_gripper_parameters() -> ParamGraph {
     let mut graph = ParamGraph::new();

@@ -50,7 +50,7 @@ background, no shadow) and renders exactly like `render_preview_framed`;
 `STUDIO` is a light grey gradient and `DARK` a dark slate gradient, both with a
 shadow; `PreviewStyle::parse` accepts `plain`, `studio`, and `dark`. The shadow
 is every triangle dropped onto the plane through the lowest vertex along a light
-from overhead and behind the iso camera (direction `[-0.35, 0.5, 1]`), so it
+from high overhead and behind the iso camera (direction `[-0.2, 0.3, 1]`), so it
 falls toward the viewer; the mask is box-blurred twice with a radius of 3.5 % of
 the image height and darkens only the background. Fit the framing
 `with_shadow(true)` so the shadow is not cut off.

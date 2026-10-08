@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "param:wrist_link_length": {
+      "id": "param:wrist_link_length",
+      "name": "wrist_link_length",
+      "expr": "40 mm",
+      "dirty": false
+    },
+    "param:wrist_link_width": {
+      "id": "param:wrist_link_width",
+      "name": "wrist_link_width",
+      "expr": "22 mm",
+      "dirty": false
+    },
+    "param:wrist_link_thickness": {
+      "id": "param:wrist_link_thickness",
+      "name": "wrist_link_thickness",
+      "expr": "12 mm",
+      "dirty": false
+    },
+    "param:wrist_roll_hub_diameter": {
+      "id": "param:wrist_roll_hub_diameter",
+      "name": "wrist_roll_hub_diameter",
+      "expr": "26 mm",
+      "dirty": false
+    },
+    "param:wrist_roll_bore_diameter": {
+      "id": "param:wrist_roll_bore_diameter",
+      "name": "wrist_roll_bore_diameter",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:wrist_pitch_hub_diameter": {
+      "id": "param:wrist_pitch_hub_diameter",
+      "name": "wrist_pitch_hub_diameter",
+      "expr": "24 mm",
+      "dirty": false
+    },
+    "param:wrist_pitch_bore_diameter": {
+      "id": "param:wrist_pitch_bore_diameter",
+      "name": "wrist_pitch_bore_diameter",
+      "expr": "8 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

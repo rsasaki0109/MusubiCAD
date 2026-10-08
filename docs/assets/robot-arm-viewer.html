@@ -178,7 +178,9 @@ for (let x = -extent; x <= extent + 1e-9; x += step) {
 }
 const gridBuf = gl && buffer(new Float32Array(grid));
 
-const camera = { yaw: -Math.PI / 4, pitch: 0.5, distance: radius * 3.2 };
+// A sphere around the zero pose fills about 70 % of the view height, leaving room
+// for the arm to move without leaving the frame.
+const camera = { yaw: -Math.PI / 4, pitch: 0.45, distance: radius * 4.4 };
 function draw() {
   if (!gl) return;
   const dpr = window.devicePixelRatio || 1;

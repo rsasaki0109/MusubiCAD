@@ -2265,6 +2265,90 @@ pub fn robot_arm_forearm() -> Result<PartModel> {
     )
 }
 
+/// Six-axis arm turntable: a disc that turns about `+Z` on the base turret
+/// (joint 1) and carries the shoulder hub on its top face.
+pub fn six_axis_turntable() -> Result<PartModel> {
+    let parameters = opencad_graph::six_axis_turntable_parameters();
+    let mut model = PartModel::new();
+    robot_arm_add_sketch_feature(
+        &mut model,
+        robot_arm_circle_sketch(
+            "sketch:turntable_disc",
+            "Turntable Disc",
+            "turntable_disc",
+            [0.0, 0.0],
+            "turntable_diameter / 2",
+        )?,
+        "feature:sketch_turntable_disc",
+        "Turntable Disc Sketch",
+    )?;
+    model.add_node(FeatureNode::new(
+        "feature:turntable_disc",
+        "Turntable Disc",
+        FeatureDefinition::Extrude(ExtrudeFeature {
+            sketch_feature: "feature:sketch_turntable_disc".into(),
+            profile_ref: "sketch:turntable_disc/profile:outer".into(),
+            extent: ExtrudeExtent::Distance {
+                length: Length::from_meters(0.022),
+            },
+            operation: opencad_geometry::ExtrudeOperation::NewBody,
+            length_expr: Some("turntable_height".into()),
+            target_feature: None,
+        }),
+    ))?;
+    model.add_dependency("feature:sketch_turntable_disc", "feature:turntable_disc")?;
+    apply_parameters(&mut model, &parameters)?;
+    Ok(model)
+}
+
+/// Six-axis arm wrist link: rolls about its length at the forearm (joint 4)
+/// and carries the wrist pitch hub (joint 5).
+pub fn six_axis_wrist() -> Result<PartModel> {
+    robot_arm_link(
+        RobotArmLinkSpec {
+            prefix: "wrist_link",
+            link_name: "Wrist Link",
+            length_expr: "wrist_link_length",
+            width_expr: "wrist_link_width",
+            thickness_expr: "wrist_link_thickness",
+            proximal_hub_radius_expr: "wrist_roll_hub_diameter / 2",
+            proximal_bore_radius_expr: "wrist_roll_bore_diameter / 2",
+            distal_hub_radius_expr: "wrist_pitch_hub_diameter / 2",
+            distal_bore_radius_expr: "wrist_pitch_bore_diameter / 2",
+            proximal_hub_name: "Wrist Roll",
+            distal_hub_name: "Wrist Pitch",
+            initial_length: 0.040,
+            initial_width: 0.022,
+            initial_thickness: 0.012,
+        },
+        &opencad_graph::six_axis_wrist_parameters(),
+    )
+}
+
+/// Six-axis arm hand link: pitches at the wrist (joint 5) and carries the
+/// tool flange that rolls the gripper (joint 6).
+pub fn six_axis_hand() -> Result<PartModel> {
+    robot_arm_link(
+        RobotArmLinkSpec {
+            prefix: "hand",
+            link_name: "Hand",
+            length_expr: "hand_length",
+            width_expr: "hand_width",
+            thickness_expr: "hand_thickness",
+            proximal_hub_radius_expr: "hand_pitch_hub_diameter / 2",
+            proximal_bore_radius_expr: "hand_pitch_bore_diameter / 2",
+            distal_hub_radius_expr: "flange_hub_diameter / 2",
+            distal_bore_radius_expr: "flange_bore_diameter / 2",
+            proximal_hub_name: "Hand Pitch",
+            distal_hub_name: "Flange",
+            initial_length: 0.032,
+            initial_width: 0.020,
+            initial_thickness: 0.010,
+        },
+        &opencad_graph::six_axis_hand_parameters(),
+    )
+}
+
 /// Robot-arm wrist gripper: body block, wrist bore, and two gripper fingers.
 pub fn robot_arm_gripper() -> Result<PartModel> {
     let parameters = opencad_graph::robot_arm_gripper_parameters();

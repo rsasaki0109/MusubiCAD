@@ -1,0 +1,274 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_hand_bar",
+      "feature:hand_extrude",
+      "feature:sketch_hand_proximal_hub",
+      "feature:hand_proximal_hub",
+      "feature:sketch_hand_distal_hub",
+      "feature:hand_distal_hub",
+      "feature:sketch_hand_proximal_bore",
+      "feature:hand_proximal_bore",
+      "feature:sketch_hand_distal_bore",
+      "feature:hand_distal_bore"
+    ],
+    "features": {
+      "feature:sketch_hand_bar": {
+        "id": "feature:sketch_hand_bar",
+        "name": "Hand Bar Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:hand_extrude": {
+        "id": "feature:hand_extrude",
+        "name": "Hand Body",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_hand_proximal_hub": {
+        "id": "feature:sketch_hand_proximal_hub",
+        "name": "Hand Pitch Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:hand_proximal_hub": {
+        "id": "feature:hand_proximal_hub",
+        "name": "Hand Pitch Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_hand_distal_hub": {
+        "id": "feature:sketch_hand_distal_hub",
+        "name": "Flange Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:hand_distal_hub": {
+        "id": "feature:hand_distal_hub",
+        "name": "Flange Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_hand_proximal_bore": {
+        "id": "feature:sketch_hand_proximal_bore",
+        "name": "Hand Pitch Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:hand_proximal_bore": {
+        "id": "feature:hand_proximal_bore",
+        "name": "Hand Pitch Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_hand_distal_bore": {
+        "id": "feature:sketch_hand_distal_bore",
+        "name": "Flange Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:hand_distal_bore": {
+        "id": "feature:hand_distal_bore",
+        "name": "Flange Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_hand_bar",
+        "target": "feature:hand_extrude",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_hand_proximal_hub",
+        "target": "feature:hand_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:hand_extrude",
+        "target": "feature:hand_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_hand_distal_hub",
+        "target": "feature:hand_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:hand_proximal_hub",
+        "target": "feature:hand_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_hand_proximal_bore",
+        "target": "feature:hand_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:hand_distal_hub",
+        "target": "feature:hand_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_hand_distal_bore",
+        "target": "feature:hand_distal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:hand_proximal_bore",
+        "target": "feature:hand_distal_bore",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:hand_distal_bore",
+      "name": "Flange Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_hand_distal_bore",
+        "profile_ref": "sketch:hand_distal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "target_feature": "feature:hand_proximal_bore",
+        "depth_expr": "hand_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:hand_distal_hub",
+      "name": "Flange Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_hand_distal_hub",
+        "profile_ref": "sketch:hand_distal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "join",
+        "length_expr": "hand_thickness",
+        "target_feature": "feature:hand_proximal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:hand_extrude",
+      "name": "Hand Body",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_hand_bar",
+        "profile_ref": "sketch:hand_bar/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "hand_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:hand_proximal_bore",
+      "name": "Hand Pitch Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_hand_proximal_bore",
+        "profile_ref": "sketch:hand_proximal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "target_feature": "feature:hand_distal_hub",
+        "depth_expr": "hand_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:hand_proximal_hub",
+      "name": "Hand Pitch Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_hand_proximal_hub",
+        "profile_ref": "sketch:hand_proximal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "join",
+        "length_expr": "hand_thickness",
+        "target_feature": "feature:hand_extrude"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_hand_bar",
+      "name": "Hand Bar Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:hand_bar"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_hand_distal_bore",
+      "name": "Flange Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:hand_distal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_hand_distal_hub",
+      "name": "Flange Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:hand_distal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_hand_proximal_bore",
+      "name": "Hand Pitch Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:hand_proximal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_hand_proximal_hub",
+      "name": "Hand Pitch Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:hand_proximal_hub"
+      },
+      "suppressed": false
+    }
+  ]
+}

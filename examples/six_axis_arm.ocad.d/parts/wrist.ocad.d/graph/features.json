@@ -1,0 +1,274 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_wrist_link_bar",
+      "feature:wrist_link_extrude",
+      "feature:sketch_wrist_link_proximal_hub",
+      "feature:wrist_link_proximal_hub",
+      "feature:sketch_wrist_link_distal_hub",
+      "feature:wrist_link_distal_hub",
+      "feature:sketch_wrist_link_proximal_bore",
+      "feature:wrist_link_proximal_bore",
+      "feature:sketch_wrist_link_distal_bore",
+      "feature:wrist_link_distal_bore"
+    ],
+    "features": {
+      "feature:sketch_wrist_link_bar": {
+        "id": "feature:sketch_wrist_link_bar",
+        "name": "Wrist Link Bar Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:wrist_link_extrude": {
+        "id": "feature:wrist_link_extrude",
+        "name": "Wrist Link Body",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_wrist_link_proximal_hub": {
+        "id": "feature:sketch_wrist_link_proximal_hub",
+        "name": "Wrist Roll Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:wrist_link_proximal_hub": {
+        "id": "feature:wrist_link_proximal_hub",
+        "name": "Wrist Roll Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_wrist_link_distal_hub": {
+        "id": "feature:sketch_wrist_link_distal_hub",
+        "name": "Wrist Pitch Hub Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:wrist_link_distal_hub": {
+        "id": "feature:wrist_link_distal_hub",
+        "name": "Wrist Pitch Hub",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_wrist_link_proximal_bore": {
+        "id": "feature:sketch_wrist_link_proximal_bore",
+        "name": "Wrist Roll Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:wrist_link_proximal_bore": {
+        "id": "feature:wrist_link_proximal_bore",
+        "name": "Wrist Roll Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_wrist_link_distal_bore": {
+        "id": "feature:sketch_wrist_link_distal_bore",
+        "name": "Wrist Pitch Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:wrist_link_distal_bore": {
+        "id": "feature:wrist_link_distal_bore",
+        "name": "Wrist Pitch Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_wrist_link_bar",
+        "target": "feature:wrist_link_extrude",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_wrist_link_proximal_hub",
+        "target": "feature:wrist_link_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:wrist_link_extrude",
+        "target": "feature:wrist_link_proximal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_wrist_link_distal_hub",
+        "target": "feature:wrist_link_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:wrist_link_proximal_hub",
+        "target": "feature:wrist_link_distal_hub",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_wrist_link_proximal_bore",
+        "target": "feature:wrist_link_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:wrist_link_distal_hub",
+        "target": "feature:wrist_link_proximal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_wrist_link_distal_bore",
+        "target": "feature:wrist_link_distal_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:wrist_link_proximal_bore",
+        "target": "feature:wrist_link_distal_bore",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:sketch_wrist_link_bar",
+      "name": "Wrist Link Bar Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:wrist_link_bar"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_wrist_link_distal_bore",
+      "name": "Wrist Pitch Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:wrist_link_distal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_wrist_link_distal_hub",
+      "name": "Wrist Pitch Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:wrist_link_distal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_wrist_link_proximal_bore",
+      "name": "Wrist Roll Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:wrist_link_proximal_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_wrist_link_proximal_hub",
+      "name": "Wrist Roll Hub Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:wrist_link_proximal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:wrist_link_distal_bore",
+      "name": "Wrist Pitch Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_wrist_link_distal_bore",
+        "profile_ref": "sketch:wrist_link_distal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "target_feature": "feature:wrist_link_proximal_bore",
+        "depth_expr": "wrist_link_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:wrist_link_distal_hub",
+      "name": "Wrist Pitch Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_wrist_link_distal_hub",
+        "profile_ref": "sketch:wrist_link_distal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "operation": "join",
+        "length_expr": "wrist_link_thickness",
+        "target_feature": "feature:wrist_link_proximal_hub"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:wrist_link_extrude",
+      "name": "Wrist Link Body",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_wrist_link_bar",
+        "profile_ref": "sketch:wrist_link_bar/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "wrist_link_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:wrist_link_proximal_bore",
+      "name": "Wrist Roll Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_wrist_link_proximal_bore",
+        "profile_ref": "sketch:wrist_link_proximal_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "target_feature": "feature:wrist_link_distal_hub",
+        "depth_expr": "wrist_link_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:wrist_link_proximal_hub",
+      "name": "Wrist Roll Hub",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_wrist_link_proximal_hub",
+        "profile_ref": "sketch:wrist_link_proximal_hub/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "operation": "join",
+        "length_expr": "wrist_link_thickness",
+        "target_feature": "feature:wrist_link_extrude"
+      },
+      "suppressed": false
+    }
+  ]
+}

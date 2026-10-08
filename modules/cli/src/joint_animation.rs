@@ -25,6 +25,8 @@ use crate::preview::{aspect_height, marker_mesh, write_preview_gif, GifFrame, MA
 const MAX_FRAMES: usize = 600;
 /// Default keyframes move each joint to this fraction of its limits.
 const DEFAULT_REACH: f64 = 0.6;
+/// Joint captions longer than this many lines wrap into two columns.
+const MAX_CAPTION_ROWS: usize = 4;
 /// Continuous joints have no limits; the default keyframes swing them ±90°.
 const CONTINUOUS_SWING_RAD: f64 = std::f64::consts::FRAC_PI_2;
 
@@ -425,7 +427,7 @@ fn joint_caption(joints: &[NamedJoint], positions: &BTreeMap<String, f64>) -> Ve
         .map(|joint| name(joint).len())
         .max()
         .unwrap_or(0);
-    joints
+    let entries: Vec<String> = joints
         .iter()
         .map(|joint| {
             let position = positions.get(&joint.instance).copied().unwrap_or(0.0);
@@ -437,6 +439,23 @@ fn joint_caption(joints: &[NamedJoint], positions: &BTreeMap<String, f64>) -> Ve
                 format!("{:7.1}°", tenth(position.to_degrees()))
             };
             format!("{:<width$} {value}", name(joint))
+        })
+        .collect();
+    // More than four joints go in two columns so the caption band stays short
+    // and the model keeps most of the frame.
+    if entries.len() <= MAX_CAPTION_ROWS {
+        return entries;
+    }
+    let rows = entries.len().div_ceil(2);
+    let column = entries
+        .iter()
+        .map(|entry| entry.chars().count())
+        .max()
+        .unwrap_or(0);
+    (0..rows)
+        .map(|row| match entries.get(row + rows) {
+            Some(right) => format!("{:<column$}   {right}", entries[row]),
+            None => entries[row].clone(),
         })
         .collect()
 }
@@ -687,6 +706,15 @@ mod tests {
                 "elbow       -0.5°",
                 "wrist        0.0°"
             ]
+        );
+        // Six joints fold into three rows of two columns.
+        let model = opencad_assembly::six_axis_arm_model().expect("six-axis");
+        let tree = kinematic_tree(&model).expect("tree");
+        let six = joint_caption(&movable_joints(&model, &tree), &BTreeMap::new());
+        assert_eq!(six.len(), 3);
+        assert!(
+            six[0].starts_with("base_yaw") && six[0].contains("wrist_roll"),
+            "{six:?}"
         );
         let options = parse_joint_animation_args(&strings(&["--no-caption"])).expect("flag");
         assert!(!options.caption);

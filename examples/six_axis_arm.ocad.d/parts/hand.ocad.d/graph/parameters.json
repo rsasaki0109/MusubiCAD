@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "param:hand_length": {
+      "id": "param:hand_length",
+      "name": "hand_length",
+      "expr": "32 mm",
+      "dirty": false
+    },
+    "param:hand_width": {
+      "id": "param:hand_width",
+      "name": "hand_width",
+      "expr": "20 mm",
+      "dirty": false
+    },
+    "param:hand_thickness": {
+      "id": "param:hand_thickness",
+      "name": "hand_thickness",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:hand_pitch_hub_diameter": {
+      "id": "param:hand_pitch_hub_diameter",
+      "name": "hand_pitch_hub_diameter",
+      "expr": "24 mm",
+      "dirty": false
+    },
+    "param:hand_pitch_bore_diameter": {
+      "id": "param:hand_pitch_bore_diameter",
+      "name": "hand_pitch_bore_diameter",
+      "expr": "8 mm",
+      "dirty": false
+    },
+    "param:flange_hub_diameter": {
+      "id": "param:flange_hub_diameter",
+      "name": "flange_hub_diameter",
+      "expr": "22 mm",
+      "dirty": false
+    },
+    "param:flange_bore_diameter": {
+      "id": "param:flange_bore_diameter",
+      "name": "flange_bore_diameter",
+      "expr": "8 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}
