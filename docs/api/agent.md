@@ -234,7 +234,9 @@ a result rather than an error. It returns `RegenInspectionResult`:
 
 Only part documents are accepted. The CLI equivalent is
 `musubicad intent <path> regen [--json]`, and the MCP tool is
-`inspect_regeneration`.
+`inspect_regeneration`. [Inspect and repair a failed
+regeneration](../examples/inspect-and-repair.md) walks through it on the
+flagship.
 
 ### `PickSummary`
 

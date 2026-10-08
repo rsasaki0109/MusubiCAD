@@ -1,0 +1,11 @@
+{
+  "intent": "Widen the shaft bore to 80 mm for a larger shaft",
+  "operations": [
+    {
+      "type": "set_parameter",
+      "id": "param:shaft_diameter",
+      "expr": "80 mm"
+    }
+  ],
+  "rationale": "The edit that breaks the robot joint housing in the inspect-and-repair scenario. An 80 mm bore is wider than the 72 mm lower hub and splits the part in two; apply it only with --no-verify to reproduce the broken document."
+}

@@ -1,0 +1,18 @@
+{
+  "intent": "Narrow the shaft bore to 32 mm so it stays inside both hubs",
+  "operations": [
+    {
+      "type": "set_parameter",
+      "id": "param:shaft_diameter",
+      "expr": "32 mm"
+    }
+  ],
+  "expected_effects": [
+    {
+      "type": "parameter_expr_equals",
+      "id": "param:shaft_diameter",
+      "expr": "32 mm"
+    }
+  ],
+  "rationale": "The largest round bore that leaves a 10 mm wall in the 52 mm upper hub. The document before this patch does not regenerate, so there is no mass to compare; verification checks that the part regenerates again."
+}
