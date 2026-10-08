@@ -155,6 +155,7 @@ musubicad preview part.ocad.d look.png --view iso           # PNG, no GPU needed
 musubicad regen part.ocad.d                                 # mass, volume, assertions
 musubicad export part.ocad.d part.step                      # or part.3mf / part.stl / part.glb / sheet.svg
 musubicad export arm.ocad.d urdf/arm.urdf                   # assembly -> robot description
+musubicad animate-joints arm.ocad.d arm.gif --pose shoulder=60deg,elbow=-45deg  # joint motion GIF, no GPU
 ```
 
 `musubicad patch` refuses a patch that does not regenerate or misses its

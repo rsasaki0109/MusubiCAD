@@ -59,6 +59,29 @@ tree from the Design Graph ([ADR-028](../adr/ADR-028-urdf-export.md)):
 - joint zero positions are the current assembly pose, and each child link
   frame is its part frame translated to the joint axis origin.
 
+`KinematicTree::pose(&positions)` is the forward kinematics over that tree.
+`positions` maps a moving instance ID to its joint position (radians for
+revolute and continuous joints, metres for prismatic ones); unnamed joints stay
+at zero, which is the current assembly pose. It returns every instance's part
+frame in world coordinates, in link order: each link is its parent's world
+frame composed with the joint origin and the joint motion
+(`JointKind::motion`: a rotation about the joint axis, or a translation along
+it). Positions past a declared limit (1e-9 tolerance) are rejected with the
+limits in degrees or millimetres, never clamped, and a non-zero position on a
+fixed joint is an error.
+
+`musubicad animate-joints <assembly> <out.gif>` uses it to draw the assembly
+moving through its joints with the CPU preview renderer, so it needs no GPU.
+Each `--pose shoulder=60deg,elbow=-45deg` adds a keyframe; positions carry a
+unit (`deg`, `rad`, `mm`, `m`) and a joint is named by its joint ID, its short
+name, its mate, or the instance it moves. The clip runs from the zero pose
+through every keyframe and back with eased motion (`--frames-per-move`, default
+14; `--fps`, default 15; at most 600 frames). Without `--pose`, every movable
+joint swings to 60 % of its upper limits, then 60 % of its lower ones
+(continuous joints ±90°). Parts are regenerated once; every keyframe is checked
+against the limits before that. The command prints the frames written and the
+range each joint covered, in degrees or millimetres.
+
 `musubicad export <assembly> <name>.urdf` (Agent `opencad.export`, MCP
 `export_document`) writes the URDF and one binary STL per component next to
 it (`<robot>_<component>.stl`, metres, referenced by file name). Inertials use

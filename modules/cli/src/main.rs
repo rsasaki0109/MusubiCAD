@@ -6,6 +6,7 @@ mod export;
 mod git_driver;
 mod git_workflow;
 mod import;
+mod joint_animation;
 mod mcp;
 mod mesh;
 mod mesh_formats;

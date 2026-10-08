@@ -24,6 +24,12 @@ WGPU_BACKEND="${WGPU_BACKEND:-vulkan}" cargo run -p opencad-cli -- animate-featu
 WGPU_BACKEND="${WGPU_BACKEND:-vulkan}" cargo run -p opencad-cli -- animate \
   "$ROOT/examples/robot_joint_actuator.ocad.d" "$ASSETS/robot-joint-orbit.gif" \
   --frames 60 --fps 12 --orbit-deg 360 --pitch-deg 28
+cargo run -p opencad-cli -- animate-joints \
+  "$ROOT/examples/robot_arm_assembly.ocad.d" "$ASSETS/robot-arm-joints.gif" \
+  --width 640 --height 400 --frames-per-move 16 --fps 16 \
+  --pose shoulder=70deg,elbow=-80deg,wrist=45deg \
+  --pose shoulder=-60deg,elbow=110deg,wrist=-60deg \
+  --pose shoulder=20deg,elbow=40deg,wrist=80deg
 ffmpeg -y \
   -loop 1 -t 1.5 -framerate 4 -i "$ASSETS/frame_base.png" \
   -loop 1 -t 1.5 -framerate 4 -i "$ASSETS/frame_wide.png" \
@@ -31,4 +37,4 @@ ffmpeg -y \
   -r 4 "$ASSETS/preview.gif"
 rm -f "$ASSETS/frame_base.png" "$ASSETS/frame_wide.png" "$ASSETS/frame_pin_row.png" "$ASSETS/frame_pin_ring.png" "$ASSETS/frame_pin_mirror.png"
 rm -rf "$(dirname "$TMP_WIDE")"
-echo "wrote README preview images and robot-joint feature/orbit GIFs"
+echo "wrote README preview images, robot-joint feature/orbit GIFs, and the arm joint GIF"

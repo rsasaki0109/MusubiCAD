@@ -82,10 +82,63 @@ const OUTLINE: [f32; 3] = [0.16, 0.19, 0.24];
 const CREASE_COS: f32 = 0.82;
 const MARGIN: f32 = 0.08;
 
+/// Screen-space extent a preview is framed to.  Fitting it once to every
+/// frame of an animation keeps the camera still while the model moves.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PreviewFraming {
+    view: PreviewView,
+    min: [f32; 2],
+    max: [f32; 2],
+}
+
+impl PreviewFraming {
+    /// Empty framing for `view`; grow it with [`PreviewFraming::include`].
+    pub fn new(view: PreviewView) -> Self {
+        Self {
+            view,
+            min: [f32::INFINITY; 2],
+            max: [f32::NEG_INFINITY; 2],
+        }
+    }
+
+    /// Framing that fits `meshes` seen from `view`.
+    pub fn fit(view: PreviewView, meshes: &[PreviewMesh<'_>]) -> Self {
+        let mut framing = Self::new(view);
+        framing.include(meshes);
+        framing
+    }
+
+    /// Grow the framing to also fit `meshes`.
+    pub fn include(&mut self, meshes: &[PreviewMesh<'_>]) {
+        let (right, up, _) = self.view.basis();
+        for item in meshes {
+            for position in &item.mesh.positions {
+                let (u, v) = (dot(*position, right), dot(*position, up));
+                self.min = [self.min[0].min(u), self.min[1].min(v)];
+                self.max = [self.max[0].max(u), self.max[1].max(v)];
+            }
+        }
+    }
+
+    pub fn view(&self) -> PreviewView {
+        self.view
+    }
+}
+
 /// Render meshes from `view` into a `width` × `height` image.
 pub fn render_preview(
     meshes: &[PreviewMesh<'_>],
     view: PreviewView,
+    width: u32,
+    height: u32,
+) -> Result<PreviewImage> {
+    render_preview_framed(meshes, &PreviewFraming::fit(view, meshes), width, height)
+}
+
+/// Render meshes into a `width` × `height` image with a fixed `framing`.
+pub fn render_preview_framed(
+    meshes: &[PreviewMesh<'_>],
+    framing: &PreviewFraming,
     width: u32,
     height: u32,
 ) -> Result<PreviewImage> {
@@ -94,19 +147,10 @@ pub fn render_preview(
             "preview size must be between 16 and 2048 pixels",
         ));
     }
-    let (right, up, forward) = view.basis();
+    let (right, up, forward) = framing.view.basis();
     let project = |p: [f32; 3]| (dot(p, right), dot(p, up), dot(p, forward));
-
-    let mut min = [f32::INFINITY; 2];
-    let mut max = [f32::NEG_INFINITY; 2];
-    for item in meshes {
-        for position in &item.mesh.positions {
-            let (u, v, _) = project(*position);
-            min = [min[0].min(u), min[1].min(v)];
-            max = [max[0].max(u), max[1].max(v)];
-        }
-    }
-    if !min[0].is_finite() {
+    let (min, max) = (framing.min, framing.max);
+    if !min[0].is_finite() || meshes.iter().all(|item| item.mesh.indices.is_empty()) {
         return Err(OpenCadError::validation(
             "nothing to preview: the model has no triangles",
         ));
@@ -359,6 +403,38 @@ mod tests {
         let image = render_preview(&item, PreviewView::Top, 200, 200).expect("render");
         assert!(!is_background(pixel(&image, 30, 100)));
         assert!(is_background(pixel(&image, 100, 30)));
+    }
+
+    #[test]
+    fn a_shared_framing_keeps_a_still_part_in_place() {
+        // The left box renders the same with or without a far-away second box
+        // only when both frames share one framing.
+        let left = cuboid([0.0, 0.0, 0.0], [0.02, 0.02, 0.02]);
+        let right = cuboid([0.08, 0.0, 0.0], [0.1, 0.02, 0.02]);
+        let alone = [PreviewMesh {
+            mesh: &left,
+            color: [0.2, 0.5, 0.85],
+        }];
+        let both = [
+            PreviewMesh {
+                mesh: &left,
+                color: [0.2, 0.5, 0.85],
+            },
+            PreviewMesh {
+                mesh: &right,
+                color: [0.9, 0.5, 0.1],
+            },
+        ];
+        let mut framing = PreviewFraming::fit(PreviewView::Front, &alone);
+        framing.include(&both);
+        let first = render_preview_framed(&alone, &framing, 200, 100).expect("alone");
+        let second = render_preview_framed(&both, &framing, 200, 100).expect("both");
+        for (x, y) in [(30, 50), (100, 50)] {
+            assert_eq!(pixel(&first, x, y), pixel(&second, x, y), "({x}, {y})");
+        }
+        assert!(!is_background(pixel(&first, 30, 50)));
+        assert!(is_background(pixel(&first, 170, 50)));
+        assert!(!is_background(pixel(&second, 170, 50)));
     }
 
     #[test]

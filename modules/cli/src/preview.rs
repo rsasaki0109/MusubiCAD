@@ -10,7 +10,7 @@ use opencad_render::{encode_png, render_preview, PreviewMesh, PreviewView};
 use serde::{Deserialize, Serialize};
 
 /// Part colour, then one colour per assembly instance in order.
-const PALETTE: [[f32; 3]; 6] = [
+pub(crate) const PALETTE: [[f32; 3]; 6] = [
     [0.13, 0.47, 0.84],
     [0.95, 0.55, 0.15],
     [0.20, 0.70, 0.45],

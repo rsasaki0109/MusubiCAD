@@ -110,6 +110,22 @@ same gate runs on `musubicad patch` for agents that use the CLI instead of MCP. 
 
 ## From CAD to simulator: URDF
 
+Move the arm through its declared joints before it leaves MusubiCAD (CPU only, no GPU):
+
+```bash
+musubicad animate-joints examples/robot_arm_assembly.ocad.d arm.gif \
+  --pose shoulder=70deg,elbow=-80deg,wrist=45deg \
+  --pose shoulder=-60deg,elbow=110deg,wrist=-60deg \
+  --pose shoulder=20deg,elbow=40deg,wrist=80deg
+```
+
+<p align="center">
+  <img src="docs/assets/robot-arm-joints.gif" alt="The robot arm assembly moving through three poses in MusubiCAD's CPU renderer, each joint turning about its declared axis within its limits" width="640">
+</p>
+
+A pose past a joint limit is refused before anything renders. Then export the same tree for a
+simulator:
+
 ```bash
 musubicad export examples/robot_arm_assembly.ocad.d urdf/robot_arm.urdf
 ```

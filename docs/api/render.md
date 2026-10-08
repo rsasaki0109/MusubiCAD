@@ -29,6 +29,16 @@ musubicad animate model.ocad.d showcase.gif \
 
 Add `--show-sketch` to include sketch entities and constraint labels.
 
+## CPU previews and fixed framing
+
+`render_preview(meshes, view, width, height)` is the GPU-free renderer behind
+`musubicad preview` ([ADR-031](../adr/ADR-031-gpu-free-preview.md)). It frames
+each image to its own meshes. Animations that move parts use
+`PreviewFraming` instead: `PreviewFraming::new(view)` then `include(meshes)`
+for every frame, and `render_preview_framed(meshes, &framing, width, height)`
+draws each frame with that one framing, so the camera stays still while the
+parts move. `musubicad animate-joints` renders this way.
+
 ## Shaded previews
 
 `OffscreenRenderer` images (`musubicad screenshot`, `musubicad animate`, and the

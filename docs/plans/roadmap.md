@@ -534,6 +534,23 @@ verified before it is written.
 | MCAD-P8-009 | Assembly joints with limits | [ADR-030](../adr/ADR-030-assembly-joints.md); `AssemblyJoint` over mates (`revolute`, `continuous`, `prismatic`, `fixed`; SI limits, effort, velocity); `add_joint`/`set_joint`/`remove_joint` with fail-closed mate removal, diff, merge, authoring, and schemas; kinematic tree and URDF `<limit>`; robot arm example limits verified in MuJoCo | Complete |
 | MCAD-P8-010 | GPU-free preview for agents | [ADR-031](../adr/ADR-031-gpu-free-preview.md); CPU rasterizer (`iso`/`front`/`top`/`right`, outlines, 2× supersampling); `musubicad preview`, Agent `opencad.preview_document`, MCP `preview_document` returning image content; skill asks agents to look after shape changes | Complete |
 
+## Phase 9 — Robot showcase
+
+**Objective:** make the CAD → robot path something people can see: the arm
+moving, its dimensions changing, and the result in a simulator, all from the
+Design Graph and all reproducible without a GPU.
+
+**Dependencies:** Phase 8 (URDF export, joints with limits, CPU preview).
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P9-001 | Joint motion GIF | `KinematicTree::pose` forward kinematics (limits enforced, not clamped); `PreviewFraming` and `render_preview_framed` for a still camera; `musubicad animate-joints` with unit-bearing `--pose` keyframes, eased motion, and a per-joint range summary; README GIF `docs/assets/robot-arm-joints.gif` | Complete |
+| MCAD-P9-002 | Parameter sweep GIF | `musubicad animate-sweep` regenerating a part or assembly across a unit-bearing parameter range (for example link length or rib count) with a fixed framing; refuses values that do not regenerate | Planned |
+| MCAD-P9-003 | Presentation style for CPU renders | Optional studio style: per-part colours, soft ground shadow, dark and light backgrounds, square and vertical aspect presets; existing preview output unchanged by default | Planned |
+| MCAD-P9-004 | Reach and workspace | Kernel-free reach query over the kinematic tree (tool point reachable within limits, workspace bounds); a design-in-the-loop example where an agent lengthens a link with a verified patch until a target is reachable and re-exports the URDF | Planned |
+| MCAD-P9-005 | Web joint viewer | Self-contained HTML export with the GLB links and joint sliders bounded by the declared limits, for GitHub Pages | Planned |
+| MCAD-P9-006 | Agent access | MCP and Agent API parity for joint animation and sweeps, returning the summary and the GIF path | Planned |
+
 ## Cross-phase verification matrix
 
 Every implementation PR must select the applicable rows and record the command
