@@ -14,12 +14,10 @@ use opencad_assembly::{kinematic_tree, AssemblyModel, JointKind, KinematicTree};
 use opencad_core::{OpenCadError, Result};
 use opencad_file::read_ocad;
 use opencad_geometry::{MeshSet, RigidTransform};
-use opencad_render::{
-    render_preview_framed, write_gif_frames, PreviewFraming, PreviewMesh, PreviewView, RenderImage,
-};
+use opencad_render::PreviewView;
 use serde::Serialize;
 
-use crate::preview::PALETTE;
+use crate::preview::{write_preview_gif, GifFrame};
 
 /// Upper bound on frames in one clip, to keep GIFs shareable.
 const MAX_FRAMES: usize = 600;
@@ -30,7 +28,7 @@ const CONTINUOUS_SWING_RAD: f64 = std::f64::consts::FRAC_PI_2;
 
 const USAGE: &str = "usage: musubicad animate-joints <assembly> <output.gif> \
 [--pose JOINT=VALUE[,JOINT=VALUE...]]... [--frames-per-move N] [--fps N] \
-[--view iso|front|top|right] [--width N] [--height N]
+[--view iso|front|top|right] [--width N] [--height N] [--no-caption]
   VALUE carries a unit: deg or rad for revolute and continuous joints, mm or m for prismatic ones.
   JOINT is a joint ID (joint:shoulder), its short name (shoulder), its mate, or the moving instance.";
 
@@ -45,6 +43,8 @@ pub struct JointAnimationOptions {
     pub frames_per_move: u32,
     /// Keyframes as written on the command line, unresolved.
     pub poses: Vec<Vec<(String, JointValue)>>,
+    /// Label each frame with the joint positions.
+    pub caption: bool,
 }
 
 impl Default for JointAnimationOptions {
@@ -56,6 +56,7 @@ impl Default for JointAnimationOptions {
             frames_per_second: 15,
             frames_per_move: 14,
             poses: Vec::new(),
+            caption: true,
         }
     }
 }
@@ -130,6 +131,11 @@ pub fn parse_joint_animation_args(args: &[String]) -> Result<JointAnimationOptio
     let mut index = 0;
     while index < args.len() {
         let flag = args[index].as_str();
+        if flag == "--no-caption" {
+            options.caption = false;
+            index += 1;
+            continue;
+        }
         let value = args
             .get(index + 1)
             .ok_or_else(|| OpenCadError::validation(format!("{flag} needs a value\n{USAGE}")))?;
@@ -369,14 +375,29 @@ fn moved(mesh: &MeshSet, delta: RigidTransform) -> MeshSet {
     }
 }
 
-/// Instance meshes in palette order, matching `musubicad preview` colours.
-fn colored(frame: &[MeshSet]) -> Vec<PreviewMesh<'_>> {
-    frame
+/// One caption line per moving joint: short name and position with its unit.
+fn joint_caption(joints: &[NamedJoint], positions: &BTreeMap<String, f64>) -> Vec<String> {
+    let name = |joint: &NamedJoint| {
+        joint
+            .id
+            .split_once(':')
+            .map_or(joint.id.clone(), |(_, short)| short.to_string())
+    };
+    let width = joints
         .iter()
-        .enumerate()
-        .map(|(index, mesh)| PreviewMesh {
-            mesh,
-            color: PALETTE[index % PALETTE.len()],
+        .map(|joint| name(joint).len())
+        .max()
+        .unwrap_or(0);
+    joints
+        .iter()
+        .map(|joint| {
+            let position = positions.get(&joint.instance).copied().unwrap_or(0.0);
+            let value = if joint.is_prismatic() {
+                format!("{:7.1} mm", position * 1000.0)
+            } else {
+                format!("{:7.1}°", position.to_degrees())
+            };
+            format!("{:<width$} {value}", name(joint))
         })
         .collect()
 }
@@ -435,26 +456,26 @@ pub fn animate_joints(
         );
     }
 
-    let mut framing = PreviewFraming::new(options.view);
-    for frame in &posed_frames {
-        framing.include(&colored(frame));
-    }
-    let mut images = Vec::with_capacity(posed_frames.len());
-    for frame in &posed_frames {
-        let image = render_preview_framed(
-            &colored(frame),
-            &framing,
-            options.width_px,
-            options.height_px,
-        )?;
-        images.push(RenderImage {
-            width: image.width,
-            height: image.height,
-            non_background_pixels: 0,
-            rgba: image.rgba,
-        });
-    }
-    write_gif_frames(&images, options.frames_per_second, output)?;
+    let gif_frames: Vec<GifFrame> = posed_frames
+        .into_iter()
+        .zip(&frames)
+        .map(|(meshes, positions)| GifFrame {
+            meshes,
+            caption: if options.caption {
+                joint_caption(&joints, positions)
+            } else {
+                Vec::new()
+            },
+        })
+        .collect();
+    let frame_count = write_preview_gif(
+        &gif_frames,
+        options.view,
+        options.width_px,
+        options.height_px,
+        options.frames_per_second,
+        output,
+    )?;
 
     let animated = joints
         .iter()
@@ -484,7 +505,7 @@ pub fn animate_joints(
         .collect();
     Ok(JointAnimationSummary {
         output: output.to_string(),
-        frames: images.len(),
+        frames: frame_count,
         frames_per_second: options.frames_per_second,
         width_px: options.width_px,
         height_px: options.height_px,
@@ -582,6 +603,24 @@ mod tests {
         let error = pose("knee=30deg").expect_err("unknown joint");
         assert!(error.to_string().contains("joint:elbow"), "{error}");
         assert!(pose("elbow=10mm").is_err());
+    }
+
+    #[test]
+    fn captions_list_every_moving_joint_with_its_unit() {
+        let model = robot_arm_assembly_model().expect("model");
+        let tree = kinematic_tree(&model).expect("tree");
+        let joints = movable_joints(&model, &tree);
+        let positions = BTreeMap::from([("instance:forearm".to_string(), -0.5_f64.to_radians())]);
+        assert_eq!(
+            joint_caption(&joints, &positions),
+            [
+                "shoulder     0.0°",
+                "elbow       -0.5°",
+                "wrist        0.0°"
+            ]
+        );
+        let options = parse_joint_animation_args(&strings(&["--no-caption"])).expect("flag");
+        assert!(!options.caption);
     }
 
     #[test]

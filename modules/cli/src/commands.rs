@@ -52,6 +52,7 @@ pub fn run() -> Result<()> {
             cmd_animate_features(input.as_deref(), output.as_deref(), args.collect())
         }
         Some("animate-joints") => cmd_animate_joints(args.collect()),
+        Some("animate-sweep") => cmd_animate_sweep(args.collect()),
         Some("patch") => cmd_patch(args.collect()),
         Some("plugin") => cmd_plugin(args.collect()),
         Some("diff") => cmd_diff(args.collect()),
@@ -447,6 +448,18 @@ fn cmd_animate_joints(args: Vec<String>) -> Result<()> {
     Ok(())
 }
 
+fn cmd_animate_sweep(args: Vec<String>) -> Result<()> {
+    let [input, output, flags @ ..] = args.as_slice() else {
+        return Err(opencad_core::OpenCadError::validation(
+            crate::sweep_animation::usage(),
+        ));
+    };
+    let options = crate::sweep_animation::parse_sweep_args(flags)?;
+    let summary = crate::sweep_animation::animate_sweep(input, output, &options)?;
+    println!("{}", serde_json::to_string_pretty(&summary)?);
+    Ok(())
+}
+
 fn cmd_preview(args: Vec<String>) -> Result<()> {
     let (params, output) = crate::preview::parse_preview_args(&args)?;
     let (png, summary) = crate::preview::preview_document(&params)?;
@@ -661,6 +674,7 @@ COMMANDS:
     animate     Render a deterministic presentation orbit GIF
     animate-features  Render Feature Graph body milestones as a deterministic GIF
     animate-joints  Render an assembly moving through its robot joints as a GIF, without a GPU
+    animate-sweep   Render a design regenerating across a parameter range as a GIF, without a GPU
     patch       Apply a DesignPatch JSON to parameters
     plugin      List or invoke linked feature/importer/exporter plugins
     diff        Show semantic diff between documents or a patch preview
@@ -713,6 +727,7 @@ EXAMPLES:
     musubicad animate bracket.ocad.d showcase.gif --frames 48 --fps 12 --orbit-deg 220
     musubicad animate-features robot_joint.ocad.d build.gif --frames 54 --fps 9
     musubicad animate-joints robot_arm_assembly.ocad.d arm.gif --pose shoulder=60deg,elbow=-45deg
+    musubicad animate-sweep robot_joint.ocad.d hub.gif --param upper_hub_height --from 32mm --to 60mm
     musubicad patch bracket.ocad.d width.patch.json
     musubicad patch bracket.ocad.d combined.patch.json --dry-run --geometry
     musubicad diff bracket.ocad.d --patch width.patch.json --geometry

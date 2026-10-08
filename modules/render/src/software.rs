@@ -89,6 +89,8 @@ pub struct PreviewFraming {
     view: PreviewView,
     min: [f32; 2],
     max: [f32; 2],
+    /// Fraction of the image height kept clear at the bottom (for a caption).
+    bottom_inset: f32,
 }
 
 impl PreviewFraming {
@@ -98,6 +100,7 @@ impl PreviewFraming {
             view,
             min: [f32::INFINITY; 2],
             max: [f32::NEG_INFINITY; 2],
+            bottom_inset: 0.0,
         }
     }
 
@@ -122,6 +125,17 @@ impl PreviewFraming {
 
     pub fn view(&self) -> PreviewView {
         self.view
+    }
+
+    /// Keep `fraction` (clamped to 0–0.5) of the image height clear at the
+    /// bottom, so a caption there does not cover the model.
+    pub fn with_bottom_inset(mut self, fraction: f32) -> Self {
+        self.bottom_inset = if fraction.is_finite() {
+            fraction.clamp(0.0, 0.5)
+        } else {
+            0.0
+        };
+        self
     }
 }
 
@@ -158,13 +172,14 @@ pub fn render_preview_framed(
 
     let (w, h) = (width as usize * SUPERSAMPLE, height as usize * SUPERSAMPLE);
     let span = [(max[0] - min[0]).max(1e-9), (max[1] - min[1]).max(1e-9)];
+    let inset = framing.bottom_inset;
     let scale = ((w as f32) * (1.0 - 2.0 * MARGIN) / span[0])
-        .min((h as f32) * (1.0 - 2.0 * MARGIN) / span[1]);
+        .min((h as f32) * (1.0 - 2.0 * MARGIN - inset) / span[1]);
     let centre = [(min[0] + max[0]) * 0.5, (min[1] + max[1]) * 0.5];
     let to_pixel = |u: f32, v: f32| {
         (
             (u - centre[0]) * scale + w as f32 * 0.5,
-            h as f32 * 0.5 - (v - centre[1]) * scale,
+            h as f32 * (1.0 - inset) * 0.5 - (v - centre[1]) * scale,
         )
     };
 
@@ -435,6 +450,22 @@ mod tests {
         assert!(!is_background(pixel(&first, 30, 50)));
         assert!(is_background(pixel(&first, 170, 50)));
         assert!(!is_background(pixel(&second, 170, 50)));
+    }
+
+    #[test]
+    fn a_bottom_inset_lifts_the_model_clear_of_the_band() {
+        let mesh = cuboid([0.0, 0.0, 0.0], [0.02, 0.02, 0.02]);
+        let item = [PreviewMesh {
+            mesh: &mesh,
+            color: [0.2, 0.5, 0.85],
+        }];
+        let framing = PreviewFraming::fit(PreviewView::Front, &item).with_bottom_inset(0.3);
+        let image = render_preview_framed(&item, &framing, 100, 100).expect("render");
+        // The bottom 30 % stays background; the model fills above it.
+        for y in 72..100 {
+            assert!(is_background(pixel(&image, 50, y)), "row {y}");
+        }
+        assert!(!is_background(pixel(&image, 50, 35)));
     }
 
     #[test]

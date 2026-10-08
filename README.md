@@ -86,6 +86,21 @@ as STEP"*, or point the agent at one of the [examples](examples/README.md).
   revolve, fillet, chamfer, shell, patterns, mirror, loft, sweep, helix), assemblies with
   mates and robot joints, and drawings, all as typed `DesignPatch` operations.
 
+## One parameter, every frame regenerated
+
+```bash
+musubicad animate-sweep examples/robot_joint_actuator.ocad.d hub.gif \
+  --param upper_hub_height --from 32mm --to 64mm --steps 14
+```
+
+<p align="center">
+  <img src="docs/assets/robot-joint-sweep.gif" alt="The robot joint actuator housing regenerating as its upper hub height sweeps from 32 mm to 64 mm and back, captioned with the value and overall size" width="640">
+</p>
+
+Each frame is the part rebuilt by OpenCASCADE at that value, through the same validated
+`set_parameter` patch an agent sends. A value the part cannot survive stops the sweep and names
+itself; the file on disk never changes.
+
 ## Why edits don't break
 
 The Design Graph is the source of truth, and the geometry is rebuilt from it on every check. On

@@ -119,6 +119,8 @@ inertia tensors come from the regenerated solids:
 cargo run -p opencad-cli -- export examples/robot_arm_assembly.ocad.d urdf/robot_arm.urdf
 cargo run -p opencad-cli -- animate-joints examples/robot_arm_assembly.ocad.d arm.gif \
   --pose shoulder=70deg,elbow=-80deg,wrist=45deg --pose shoulder=-60deg,elbow=110deg,wrist=-60deg
+cargo run -p opencad-cli -- animate-sweep examples/robot_joint_actuator.ocad.d hub.gif \
+  --param upper_hub_height --from 32mm --to 64mm --steps 14
 ```
 
 The assembly declares joint limits (ADR-030): shoulder ±150°, elbow −100° to

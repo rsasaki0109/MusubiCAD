@@ -80,7 +80,8 @@ through every keyframe and back with eased motion (`--frames-per-move`, default
 joint swings to 60 % of its upper limits, then 60 % of its lower ones
 (continuous joints ±90°). Parts are regenerated once; every keyframe is checked
 against the limits before that. The command prints the frames written and the
-range each joint covered, in degrees or millimetres.
+range each joint covered, in degrees or millimetres. Frames are captioned with
+every moving joint's position (`--no-caption` turns that off).
 
 `musubicad export <assembly> <name>.urdf` (Agent `opencad.export`, MCP
 `export_document`) writes the URDF and one binary STL per component next to

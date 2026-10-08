@@ -20,6 +20,7 @@ mod regen;
 mod review;
 mod review_gif;
 mod scene_query;
+mod sweep_animation;
 mod topo_sync;
 mod urdf;
 mod view;

@@ -30,6 +30,9 @@ cargo run -p opencad-cli -- animate-joints \
   --pose shoulder=70deg,elbow=-80deg,wrist=45deg \
   --pose shoulder=-60deg,elbow=110deg,wrist=-60deg \
   --pose shoulder=20deg,elbow=40deg,wrist=80deg
+cargo run -p opencad-cli -- animate-sweep \
+  "$ROOT/examples/robot_joint_actuator.ocad.d" "$ASSETS/robot-joint-sweep.gif" \
+  --param upper_hub_height --from 32mm --to 64mm --steps 14 --fps 12 --width 640 --height 400
 ffmpeg -y \
   -loop 1 -t 1.5 -framerate 4 -i "$ASSETS/frame_base.png" \
   -loop 1 -t 1.5 -framerate 4 -i "$ASSETS/frame_wide.png" \
@@ -37,4 +40,4 @@ ffmpeg -y \
   -r 4 "$ASSETS/preview.gif"
 rm -f "$ASSETS/frame_base.png" "$ASSETS/frame_wide.png" "$ASSETS/frame_pin_row.png" "$ASSETS/frame_pin_ring.png" "$ASSETS/frame_pin_mirror.png"
 rm -rf "$(dirname "$TMP_WIDE")"
-echo "wrote README preview images, robot-joint feature/orbit GIFs, and the arm joint GIF"
+echo "wrote README preview images, robot-joint feature/orbit GIFs, and the arm joint and hub sweep GIFs"

@@ -6,11 +6,15 @@
 
 use opencad_core::{OpenCadError, Result};
 use opencad_file::read_ocad;
-use opencad_render::{encode_png, render_preview, PreviewMesh, PreviewView};
+use opencad_geometry::MeshSet;
+use opencad_render::{
+    caption_extent, draw_caption, encode_png, render_preview, render_preview_framed,
+    write_gif_frames, CaptionCorner, PreviewFraming, PreviewMesh, PreviewView, RenderImage,
+};
 use serde::{Deserialize, Serialize};
 
 /// Part colour, then one colour per assembly instance in order.
-pub(crate) const PALETTE: [[f32; 3]; 6] = [
+const PALETTE: [[f32; 3]; 6] = [
     [0.13, 0.47, 0.84],
     [0.95, 0.55, 0.15],
     [0.20, 0.70, 0.45],
@@ -105,6 +109,67 @@ pub fn preview_document(params: &PreviewParams) -> Result<(Vec<u8>, PreviewSumma
             objects: objects.into_iter().map(|(name, _)| name).collect(),
         },
     ))
+}
+
+/// One animation frame: meshes in palette order and caption lines.
+pub(crate) struct GifFrame {
+    pub meshes: Vec<MeshSet>,
+    pub caption: Vec<String>,
+}
+
+/// Meshes coloured in palette order, matching `musubicad preview`.
+fn palette_meshes(meshes: &[MeshSet]) -> Vec<PreviewMesh<'_>> {
+    meshes
+        .iter()
+        .enumerate()
+        .map(|(index, mesh)| PreviewMesh {
+            mesh,
+            color: PALETTE[index % PALETTE.len()],
+        })
+        .collect()
+}
+
+/// Render `frames` on the CPU with one framing fitted to all of them, so the
+/// camera stays still, caption each, and write a looping GIF.  Returns the
+/// number of frames written.
+pub(crate) fn write_preview_gif(
+    frames: &[GifFrame],
+    view: PreviewView,
+    width: u32,
+    height: u32,
+    frames_per_second: u32,
+    output: &str,
+) -> Result<usize> {
+    // Caption text grows with the image: 7-pixel glyphs at 180 px high.
+    let scale = (height / 180).max(1);
+    let caption_px = frames
+        .iter()
+        .map(|frame| {
+            let lines: Vec<&str> = frame.caption.iter().map(String::as_str).collect();
+            caption_extent(&lines, scale)
+        })
+        .max()
+        .unwrap_or(0);
+    let mut framing =
+        PreviewFraming::new(view).with_bottom_inset(caption_px as f32 / height.max(1) as f32);
+    for frame in frames {
+        framing.include(&palette_meshes(&frame.meshes));
+    }
+    let mut images = Vec::with_capacity(frames.len());
+    for frame in frames {
+        let mut image =
+            render_preview_framed(&palette_meshes(&frame.meshes), &framing, width, height)?;
+        let lines: Vec<&str> = frame.caption.iter().map(String::as_str).collect();
+        draw_caption(&mut image, &lines, CaptionCorner::BottomLeft, scale);
+        images.push(RenderImage {
+            width: image.width,
+            height: image.height,
+            non_background_pixels: 0,
+            rgba: image.rgba,
+        });
+    }
+    write_gif_frames(&images, frames_per_second, output)?;
+    Ok(images.len())
 }
 
 /// Parse `preview <document> <output.png> [--view iso|front|top|right]

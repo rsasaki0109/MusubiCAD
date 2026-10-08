@@ -3,6 +3,7 @@
 pub mod animation;
 mod ao;
 pub mod camera;
+pub mod caption;
 mod edges;
 pub mod face_catalog;
 pub mod mesh;
@@ -19,6 +20,7 @@ pub mod wgpu_renderer;
 
 pub use animation::{render_orbit_gif, write_gif_frames, AnimationOptions, AnimationSummary};
 pub use camera::{project_world_to_screen, OrbitCamera};
+pub use caption::{caption_extent, draw_caption, draw_text, text_size, CaptionCorner};
 pub use face_catalog::{FaceCatalog, FaceGroup, FaceRole};
 pub use mesh::RenderMesh;
 pub use overlay::{
