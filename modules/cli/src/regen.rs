@@ -641,6 +641,90 @@ mod tests {
         assert_eq!(json["stage"], "feature");
     }
 
+    fn copy_dir(from: &Path, to: &Path) {
+        std::fs::create_dir_all(to).expect("mkdir");
+        for entry in std::fs::read_dir(from).expect("read dir") {
+            let entry = entry.expect("entry");
+            let target = to.join(entry.file_name());
+            if entry.file_type().expect("type").is_dir() {
+                copy_dir(&entry.path(), &target);
+            } else {
+                std::fs::copy(entry.path(), &target).expect("copy");
+            }
+        }
+    }
+
+    /// The scripted inspect-and-repair scenario on the flagship
+    /// (MCAD-P6-006, `docs/examples/inspect-and-repair.md`): an unverified
+    /// edit breaks the part, inspection names the failing feature and links
+    /// it to the edit, and a verified patch repairs it.
+    #[test]
+    fn the_flagship_inspect_and_repair_scenario() {
+        let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples");
+        let dir = tempdir().expect("tempdir");
+        let document = dir.path().join("robot_joint_actuator.ocad.d");
+        copy_dir(
+            &Path::new(examples).join("robot_joint_actuator.ocad.d"),
+            &document,
+        );
+        let document = document.to_str().expect("utf-8").to_string();
+        let patch = |name: &str, no_verify: bool| {
+            crate::patch::patch_document_with_options(&crate::patch::PatchArgs {
+                doc_path: document.clone(),
+                patch_path: format!("{examples}/agent/{name}"),
+                options: crate::patch::PatchOptions {
+                    no_verify,
+                    ..Default::default()
+                },
+            })
+        };
+
+        // 1. The 80 mm bore splits the part; only an unverified edit lands.
+        assert!(patch("repair_shaft_bore_break_patch.json", false).is_err());
+        patch("repair_shaft_bore_break_patch.json", true).expect("staged edit");
+
+        // 2. Inspection names the failing feature, which is not the edited one.
+        let broken = inspect_document_regeneration(&document).expect("inspect");
+        let failure = broken.failure.expect("failure");
+        assert_eq!(failure.stage, opencad_feature::RegenerationStage::Feature);
+        assert_eq!(failure.node.as_deref(), Some("feature:radial_ribs"));
+        assert!(failure.error.contains("got 2"), "{}", failure.error);
+        assert_eq!(
+            failure.blocked_features,
+            vec!["feature:mounting_ears", "feature:mounting_holes"]
+        );
+        assert_eq!(
+            broken.body_feature.as_deref(),
+            Some("feature:pcd_fasteners")
+        );
+
+        // 3. The parameter intent links the edit to the failure.
+        let query = opencad_ai::DesignQuery::InspectParameter {
+            id: "param:shaft_diameter".into(),
+        };
+        let intent =
+            opencad_ai::run_query(&read_ocad(&document).expect("read").into_query_params(query))
+                .expect("intent");
+        let opencad_ai::QueryResult::ParameterIntent { item } = intent else {
+            panic!("unexpected {intent:?}");
+        };
+        assert!(item
+            .predicted_dirty_features
+            .iter()
+            .any(|id| id == "feature:radial_ribs"));
+
+        // 4. A verified repair regenerates the whole part again.
+        patch("repair_shaft_bore_fix_patch.json", false).expect("repair");
+        let repaired = inspect_document_regeneration(&document).expect("inspect");
+        assert_eq!(repaired.status, RegenInspectionStatus::Regenerated);
+        assert_eq!(
+            repaired.body_feature.as_deref(),
+            Some("feature:mounting_holes")
+        );
+        let mass = repaired.mass_kg.expect("mass");
+        assert!((0.5..0.61).contains(&mass), "{mass} kg");
+    }
+
     #[test]
     fn inspecting_an_assembly_is_rejected() {
         let path = concat!(

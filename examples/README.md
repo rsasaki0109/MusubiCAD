@@ -64,6 +64,15 @@ cargo run -p opencad-cli -- patch examples/bracket_hole_row.ocad.d examples/agen
 
 See `agent/` for JSON-RPC payloads. Pipe them to `musubicad agent` on stdio.
 
+### Inspect and repair a failed regeneration
+
+[`agent/repair_shaft_bore_break_patch.json`](agent/repair_shaft_bore_break_patch.json)
+breaks `robot_joint_actuator.ocad.d` (an 80 mm bore splits the part), and
+[`agent/repair_shaft_bore_fix_patch.json`](agent/repair_shaft_bore_fix_patch.json)
+repairs it. The walkthrough in
+[`docs/examples/inspect-and-repair.md`](../docs/examples/inspect-and-repair.md)
+finds the failing feature with `musubicad intent <path> regen`.
+
 ## Semantic TopoRef
 
 [`topo-ref-semantic.json`](topo-ref-semantic.json) shows the existing persisted
