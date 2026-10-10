@@ -102,6 +102,22 @@ cycles, sibling reuse, localized failure, retry, and the explicit `m`/`m³`
 interference policy documented in
 [`docs/api/assembly.md`](../docs/api/assembly.md).
 
+Assemblies evaluate design assertions like parts do (MCAD-P10-001).
+[`examples/agent/assembly_clearance_assertion_patch.json`](agent/assembly_clearance_assertion_patch.json)
+adds two required assertions to the two-bracket assembly: zero interference
+and two regenerated bodies. With them in place, a spacing change that makes
+the brackets overlap is refused and the file is left unchanged:
+
+```bash
+cp -r examples/assembly_two_brackets.ocad.d /tmp/brackets.ocad.d
+cargo run -p opencad-cli -- patch /tmp/brackets.ocad.d \
+  examples/agent/assembly_clearance_assertion_patch.json
+cargo run -p opencad-cli -- regen /tmp/brackets.ocad.d   # assertion ...: PASS
+```
+
+A later `set_mate_distance` of `0.01` m on `mate:spacing` fails with
+`assertion:clearance (assembly interference count 1 <= 0)`.
+
 ### Six-axis arm
 
 `six_axis_arm.ocad.d` reuses the planar arm's base, upper arm, forearm, and

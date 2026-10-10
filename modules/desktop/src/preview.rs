@@ -191,6 +191,27 @@ pub fn load_assembly_scene_from_document(
     input: &str,
     doc: &OcadDocument,
 ) -> Result<(RenderScene, usize)> {
+    let evidence = load_assembly_evidence_from_document(input, doc)?;
+    Ok((evidence.scene, evidence.interference_count))
+}
+
+/// A regenerated assembly: its viewport scene, the regeneration report (DOF,
+/// mass, bounds, per-instance status), and the exact interference count.
+#[cfg(feature = "occt")]
+#[derive(Debug, Clone)]
+pub struct AssemblyEvidence {
+    pub scene: RenderScene,
+    pub report: opencad_assembly::AssemblyRegenReport,
+    pub interference_count: usize,
+}
+
+/// Regenerate an assembly document once and return everything its review
+/// and assertions need (MCAD-P10-001).
+#[cfg(feature = "occt")]
+pub fn load_assembly_evidence_from_document(
+    input: &str,
+    doc: &OcadDocument,
+) -> Result<AssemblyEvidence> {
     use opencad_kernel_occt::OcctGeometryKernel;
 
     let assembly = doc
@@ -221,7 +242,11 @@ pub fn load_assembly_scene_from_document(
         .collect();
     let render_scene = RenderScene::from_mesh_sets_with_colors(&mesh_sets, Some(&colors))?;
     let interference_count = detect_interferences(&kernel, &report.scene, 1e-12)?.len();
-    Ok((render_scene, interference_count))
+    Ok(AssemblyEvidence {
+        scene: render_scene,
+        report,
+        interference_count,
+    })
 }
 
 fn assembly_root_for_path(path: &Path) -> PathBuf {

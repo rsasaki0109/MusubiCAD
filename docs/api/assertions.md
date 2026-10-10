@@ -71,11 +71,44 @@ if !required_assertions_pass(&results) {
 `required_assertions_pass` only checks `required` assertions; an `advisory`
 failure is reported but never blocks.
 
+### Assembly documents (MCAD-P10-001)
+
+Assembly documents declare assertions in the same `graph/assertions.json` and
+evaluate them against their own regeneration. `assembly_assertion_context`
+builds the context from an `AssemblyRegenReport`:
+
+```rust
+use opencad_ai::{assembly_assertion_context, evaluate_assertions};
+
+let context = assembly_assertion_context(&doc.parameters, &report, interference_count);
+let results = evaluate_assertions(&doc.assertions, &context);
+```
+
+| Metric | Assembly evidence |
+|---|---|
+| `mass_kg`, `bounding_box_size_m` | All placed instance bodies (density 2700 kg/m³) |
+| `body_count` | Instances that regenerated to a body; a failed instance is not counted |
+| `assembly_dof` | `AssemblyRegenReport::dof`: the mate solver's remaining DOF, or 6 per movable instance when there are no mates |
+| `interference_count` | Exact instance-pair count with the default explicit tolerances (`1e-9 m` bounds, `1e-12 m³` common volume) |
+| `parameter_values` | The assembly document's own parameters |
+| `reference_provenance` | Empty: semantic references are part-level, so `required_reference` fails closed on an assembly |
+
+An assembly with no instances yet reports zero bodies, zero DOF, and zero
+interference, with no mass or bounds.
+
 ## Surfaces
 
 - `musubicad regen` evaluates the document's assertions after regeneration,
   prints `assertion <id>: PASS/FAIL (<evidence>)` per rule, and exits with an
-  error when a `required` assertion fails.
+  error when a `required` assertion fails. The error names each failed
+  required assertion and its evidence, for example
+  `assertion:clearance (assembly interference count 1 <= 0)`. Assemblies
+  compute interference only when they declare assertions.
+- `verify_patch` (Agent API and MCP `patch_dry_run` / `patch_apply`,
+  `musubicad patch`, and `musubicad review`) evaluates the patched document's
+  assertions, for parts and assemblies alike. A failed `required` assertion
+  fails verification with the same message, and apply leaves the file
+  unchanged.
 - The design review artifact embeds the same assertion results and rejects the
   reviewed change when a `required` assertion fails.
 - The Agent API `regen` result carries the assertion results alongside

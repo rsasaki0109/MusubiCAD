@@ -39,6 +39,15 @@ the exact volumes of every resulting piece. Common volume must be strictly
 greater than the threshold; output pairs are sorted by `InstanceId` regardless
 of scene input order.
 
+## Regeneration report
+
+`regenerate_assembly` returns an `AssemblyRegenReport` with per-instance
+status, the aggregated `AssemblyScene` (bodies, bounds, mass), the mate solve
+report when the assembly has mates, and `dof`: the remaining assembly degrees
+of freedom. `dof` is the mate solver's estimate, or six per movable instance
+when there are no mates. Assembly design assertions read it for
+`assembly_dof_at_most` ([assertions](assertions.md#assembly-documents-mcad-p10-001)).
+
 ## Kinematic tree and URDF export
 
 `opencad_assembly::kinematic_tree(&AssemblyModel)` derives a robot kinematic

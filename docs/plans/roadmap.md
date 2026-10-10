@@ -39,6 +39,9 @@ the public model carry explicit units.
 | 5 | CAD reference and output quality | 2, 3, existing assembly/drawing | Stable references and end-to-end regression coverage |
 | 6 | Intent Integrity | 3, 5 | Fail-closed, explainable, incremental, Git-native regeneration |
 | 7 | Design authoring | 3, 6 | New designs authored end-to-end through validated, reviewable `DesignPatch` operations |
+| 8 | Agent distribution | 7 | A coding-agent plugin that installs in two lines and verifies every change |
+| 9 | Robot showcase | 8 | Visible, reproducible CAD → robot motion without a GPU |
+| 10 | Assembly intent | 6, 9 | Assembly and motion intent checked by the same fail-closed assertions as parts |
 
 Phase 1 and Phase 2 may proceed in parallel after Phase 0. Phase 3 is the
 integration gate for mutating workflows; Phase 4 depends on that gate so plugins
@@ -551,6 +554,38 @@ Design Graph and all reproducible without a GPU.
 | MCAD-P9-005 | Web joint viewer | `export *.html`: self-contained page (inline WebGL, no network) with regenerated meshes, orbit/zoom/pinch, a slider per joint within its limits, Animate and Reset; same forward kinematics as `KinematicTree::pose` (cross-checked to 1e-10 m); deterministic bytes; CLI, Agent, and MCP via `export`; README screenshot and `docs/assets/robot-arm-viewer.html` | Complete |
 | MCAD-P9-007 | Six-axis arm example | `six_axis_arm_model` and `examples/six_axis_arm.ocad.d`: turntable yaw, shoulder/elbow pitch, wrist roll/pitch, flange roll; new turntable, wrist, and hand parts; symmetric roll connector frames; placements composed through coincident connectors (zero mate residual); OCCT regeneration with zero interference tested; two-column joint captions and shorter shadows for tall models; README GIF and web viewer | Complete |
 | MCAD-P9-006 | Agent access | [ADR-032](../adr/ADR-032-robot-showcase.md); Agent API `opencad.reach_document`, `opencad.animate_joints_document`, `opencad.animate_sweep_document` building the CLI's flags (unknown params rejected); MCP tools `reach`, `animate_joints`, `animate_sweep`; skill section on reach and motion | Complete |
+
+## Phase 10 — Assembly intent
+
+**Objective:** extend Intent Integrity from single parts to assemblies and
+their motion. An agent that lengthens a robot link must get the same
+fail-closed answer for "do the parts still clear each other, at every joint
+position" that it already gets for a part's mass or bounds.
+
+**Dependencies:** Phase 6 (executable assertions, verified dry-run), Phase 8
+(joints with limits), and Phase 9 (forward kinematics and joint poses).
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P10-001 | Assembly assertions | Assembly documents evaluate their assertions (`assembly_dof_at_most`, `interference_at_most`, mass, bounds, body count, parameter range) in `musubicad regen`, `verify_patch` / `patch_dry_run`, `patch_apply`, and `musubicad review`; a violated required assertion refuses the change, names the assertion and its evidence, and leaves the file unchanged | Complete |
+| MCAD-P10-002 | Interference across joint motion | A typed assertion that samples every joint within its limits and counts interfering instance pairs at each pose with the existing explicit tolerances; deterministic pose order; the failing pose is named with unit-bearing joint values | Planned |
+| MCAD-P10-003 | Semantic drawing dimensions | Drawing dimensions bound to semantic references and checked on every regeneration; ambiguous or missing references fail closed instead of measuring a different edge | Planned |
+| MCAD-P10-004 | Robot eval task | MCP eval task that adds a joint, exports URDF, and reaches a target, graded by the kinematic tree and the reach residual | Planned |
+
+**Definition of done:** a patch that makes two instances of a checked-in
+robot assembly collide, at rest or at any sampled joint pose, is refused by
+dry-run and apply with the instance pair and pose named, and the same patch
+without the collision is accepted with identical evidence across CLI, Agent
+API, and MCP.
+
+**Tests:** pure assertion evaluation tests; assembly assertion round trips in
+`.ocad.d`; OCCT integration tests on `examples/robot_arm_assembly.ocad.d` and
+`examples/six_axis_arm.ocad.d` for accepted and refused patches; deterministic
+pose sampling tests without a kernel.
+
+**Known risks:** pose sampling cost on large assemblies (pairs × poses exact
+Booleans), sampling resolution missing a narrow collision window, and
+intentional contact between connected links being counted as interference.
 
 ## Cross-phase verification matrix
 

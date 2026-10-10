@@ -1194,6 +1194,99 @@ mod tests {
         assert_eq!(bore_expr(&path), "18 mm");
     }
 
+    /// The two-bracket assembly guarded by the checked-in clearance
+    /// assertion patch (MCAD-P10-001).
+    fn guarded_bracket_assembly_copy(dir: &Path) -> String {
+        let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples");
+        let source = format!("{examples}/assembly_two_brackets.ocad.d");
+        let part = read_ocad(format!("{source}/parts/bracket.ocad.d")).expect("read part");
+        let doc = read_ocad(&source).expect("read assembly");
+        let path = dir.join("assembly_two_brackets.ocad.d");
+        write_expanded_dir(&path, &doc).expect("write assembly");
+        write_expanded_dir(path.join("parts/bracket.ocad.d"), &part).expect("write part");
+        let path = path.to_str().expect("path").to_string();
+
+        let guard: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(format!(
+                "{examples}/agent/assembly_clearance_assertion_patch.json"
+            ))
+            .expect("read guard patch"),
+        )
+        .expect("guard patch json");
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({ "path": path, "patch": guard }),
+        ));
+        let result = response.result.expect("guard applied");
+        let ids: Vec<_> = result["verification"]["assertions"]
+            .as_array()
+            .expect("assertions")
+            .iter()
+            .map(|item| (item["id"].clone(), item["passed"].clone()))
+            .collect();
+        assert_eq!(
+            ids,
+            [
+                (
+                    serde_json::json!("assertion:bodies"),
+                    serde_json::json!(true)
+                ),
+                (
+                    serde_json::json!("assertion:clearance"),
+                    serde_json::json!(true)
+                ),
+            ]
+        );
+        path
+    }
+
+    fn spacing_m(path: &str) -> f64 {
+        let doc = read_ocad(path).expect("read");
+        let assembly = doc.assembly.expect("assembly");
+        let mate = assembly
+            .mates
+            .iter()
+            .find(|mate| mate.id.as_str() == "mate:spacing")
+            .expect("spacing mate");
+        match mate.kind {
+            opencad_assembly::MateKind::Distance { distance_m, .. } => distance_m,
+            _ => panic!("spacing is a distance mate"),
+        }
+    }
+
+    fn spacing_patch(distance_m: f64) -> serde_json::Value {
+        serde_json::json!({
+            "intent": format!("Space the brackets {distance_m} m apart"),
+            "operations": [{ "type": "set_mate_distance", "mate_id": "mate:spacing", "distance_m": distance_m }],
+        })
+    }
+
+    #[test]
+    fn apply_document_refuses_an_assembly_patch_that_violates_an_assertion() {
+        let dir = tempdir().expect("tempdir");
+        let path = guarded_bracket_assembly_copy(dir.path());
+
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({ "path": path, "patch": spacing_patch(0.01) }),
+        ));
+        let message = response.error.expect("rejected").message;
+        assert!(message.contains("document was not changed"), "{message}");
+        assert!(message.contains("assertion:clearance"), "{message}");
+        assert!(message.contains("interference count 1"), "{message}");
+        assert!((spacing_m(&path) - 0.12).abs() < 1e-12);
+
+        let response = handle_agent_request(&patch_request(
+            "opencad.patch_apply_document",
+            serde_json::json!({ "path": path, "patch": spacing_patch(0.15) }),
+        ));
+        let result = response.result.expect("applied");
+        let assertions = &result["verification"]["assertions"];
+        assert_eq!(assertions[1]["id"], "assertion:clearance");
+        assert_eq!(assertions[1]["passed"], true);
+        assert!((spacing_m(&path) - 0.15).abs() < 1e-12);
+    }
+
     #[test]
     fn apply_document_writes_a_verified_patch_and_returns_its_evidence() {
         let dir = tempdir().expect("tempdir");

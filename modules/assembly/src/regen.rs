@@ -72,6 +72,9 @@ pub struct AssemblyRegenReport {
     pub successful_instances: usize,
     pub scene: AssemblyScene,
     pub mate_solve: Option<crate::solve::AssemblySolveReport>,
+    /// Remaining assembly degrees of freedom: the mate solver's estimate, or
+    /// six per movable instance when the assembly has no mates.
+    pub dof: i32,
 }
 
 /// Pair of placed instances whose common solid volume exceeds the requested tolerance.
@@ -298,6 +301,12 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
             (solved, Some(report))
         };
 
+        let dof = match &mate_solve {
+            Some(solve) => solve.dof,
+            None => crate::dof::AssemblyDofModel::build(&model.instances, &model.mates)
+                .total_instance_dof() as i32,
+        };
+
         let mut instance_results = Vec::new();
         let mut placed_bodies = Vec::new();
 
@@ -367,6 +376,7 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
             successful_instances,
             instances: instance_results,
             scene,
+            dof,
             mate_solve,
         })
     })();

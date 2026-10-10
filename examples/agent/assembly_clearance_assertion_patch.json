@@ -1,0 +1,31 @@
+{
+  "intent": "Guard bracket clearance with required assembly assertions",
+  "rationale": "Any later spacing or placement change that makes the brackets overlap, or loses a bracket, must be refused instead of written.",
+  "expected_effects": [
+    {
+      "type": "no_assembly_interference"
+    }
+  ],
+  "operations": [
+    {
+      "type": "add_assertion",
+      "assertion": {
+        "id": "assertion:clearance",
+        "name": "Brackets clear each other",
+        "severity": "required",
+        "type": "interference_at_most",
+        "max_count": 0
+      }
+    },
+    {
+      "type": "add_assertion",
+      "assertion": {
+        "id": "assertion:bodies",
+        "name": "Both brackets regenerate",
+        "severity": "required",
+        "type": "body_count",
+        "expected": 2
+      }
+    }
+  ]
+}

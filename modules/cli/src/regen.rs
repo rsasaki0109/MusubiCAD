@@ -3,10 +3,14 @@
 use std::path::Path;
 
 use opencad_ai::{
-    evaluate_assertions, required_assertions_pass, AssertionContext, AssertionResult,
+    assembly_assertion_context, evaluate_assertions, required_assertions_pass, AssertionContext,
+    AssertionResult,
 };
-use opencad_assembly::{regenerate_assembly, ChildPart, InstanceRegenStatus, ResolvedChild};
-use opencad_core::{Assertion, DocumentKind, OpenCadError};
+use opencad_assembly::{
+    detect_interferences_with_tolerance, regenerate_assembly, ChildPart, InstanceRegenStatus,
+    ResolvedChild,
+};
+use opencad_core::{Assertion, AssertionSeverity, DocumentKind, OpenCadError};
 use opencad_feature::{FeatureRegistry, PartModel, RegenReport, RegenerationTrace};
 use opencad_file::{read_ocad, write_expanded_dir, OcadDocument};
 use opencad_geometry::{GeometryKernel, ReferenceProvenance, ReferenceStatus};
@@ -115,12 +119,23 @@ pub fn regen_ocad_document(path: &str, doc: &OcadDocument) -> Result<RegenSummar
             &assertions,
         );
         if !required_assertions_pass(&summary.assertions) {
-            return Err(OpenCadError::validation(
+            return Err(assertion_violation(
                 "regeneration violated a required document assertion",
+                &summary.assertions,
             ));
         }
     }
     Ok(summary)
+}
+
+/// A validation error that names every failed required assertion and why.
+pub(crate) fn assertion_violation(prefix: &str, results: &[AssertionResult]) -> OpenCadError {
+    let failed = results
+        .iter()
+        .filter(|result| result.severity == AssertionSeverity::Required && !result.passed)
+        .map(|result| format!("{} ({})", result.id, result.message))
+        .collect::<Vec<_>>();
+    OpenCadError::validation(format!("{prefix}: {}", failed.join("; ")))
 }
 
 #[cfg(feature = "occt")]
@@ -189,65 +204,71 @@ fn regen_assembly_document(
     doc: &OcadDocument,
     assembly: &opencad_assembly::AssemblyModel,
 ) -> Result<RegenSummary> {
-    let registry = FeatureRegistry::with_defaults();
-    let assembly_root = assembly_root(path);
-
     #[cfg(feature = "occt")]
     {
         let kernel = OcctGeometryKernel::new();
         let kernel_name = OcctGeometryKernel::occt_version().to_string();
-        let report = regenerate_assembly(
-            assembly,
-            &doc.metadata.id,
-            &assembly_root,
-            &kernel,
-            &registry,
-            &mut load_child_document,
-        )?;
-        let (volume_m3, mass_kg) = report
-            .scene
-            .mass
-            .map(|mass| (Some(mass.volume_m3), Some(mass.mass_kg)))
-            .unwrap_or((None, None));
-        Ok(RegenSummary {
-            kernel: kernel_name,
-            report: assembly_regen_report(&report),
-            volume_m3,
-            mass_kg,
-            instances: Some(report.instance_count),
-            mate_dof: report.mate_solve.as_ref().map(|solve| solve.dof),
-            mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
-            assertions: Vec::new(),
-        })
+        regen_assembly_with_kernel(path, doc, assembly, &kernel, kernel_name)
     }
 
     #[cfg(not(feature = "occt"))]
     {
         let kernel = opencad_geometry::MockGeometryKernel::new();
-        let report = regenerate_assembly(
-            assembly,
-            &doc.metadata.id,
-            &assembly_root,
-            &kernel,
-            &registry,
-            &mut load_child_document,
-        )?;
-        let (volume_m3, mass_kg) = report
-            .scene
-            .mass
-            .map(|mass| (Some(mass.volume_m3), Some(mass.mass_kg)))
-            .unwrap_or((None, None));
-        Ok(RegenSummary {
-            kernel: "MockGeometryKernel".into(),
-            report: assembly_regen_report(&report),
-            volume_m3,
-            mass_kg,
-            instances: Some(report.instance_count),
-            mate_dof: report.mate_solve.as_ref().map(|solve| solve.dof),
-            mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
-            assertions: Vec::new(),
-        })
+        regen_assembly_with_kernel(path, doc, assembly, &kernel, "MockGeometryKernel".into())
     }
+}
+
+/// Regenerate an assembly and evaluate its design assertions (MCAD-P10-001).
+///
+/// Interference is only computed when the document declares assertions, so
+/// a plain `regen` keeps its cost.
+fn regen_assembly_with_kernel(
+    path: &str,
+    doc: &OcadDocument,
+    assembly: &opencad_assembly::AssemblyModel,
+    kernel: &impl GeometryKernel,
+    kernel_name: String,
+) -> Result<RegenSummary> {
+    let registry = FeatureRegistry::with_defaults();
+    let assembly_root = assembly_root(path);
+    let report = regenerate_assembly(
+        assembly,
+        &doc.metadata.id,
+        &assembly_root,
+        kernel,
+        &registry,
+        &mut load_child_document,
+    )?;
+    let assertions = if doc.assertions.is_empty() {
+        Vec::new()
+    } else {
+        let interference_count =
+            detect_interferences_with_tolerance(kernel, &report.scene, Default::default())?.len();
+        let context = assembly_assertion_context(&doc.parameters, &report, interference_count);
+        let results = evaluate_assertions(&doc.assertions, &context);
+        if !required_assertions_pass(&results) {
+            return Err(assertion_violation(
+                "regeneration violated a required document assertion",
+                &results,
+            ));
+        }
+        results
+    };
+    let (volume_m3, mass_kg) = report
+        .scene
+        .mass
+        .map(|mass| (Some(mass.volume_m3), Some(mass.mass_kg)))
+        .unwrap_or((None, None));
+    Ok(RegenSummary {
+        kernel: kernel_name,
+        report: assembly_regen_report(&report),
+        volume_m3,
+        mass_kg,
+        instances: Some(report.instance_count),
+        mate_dof: report.mate_solve.as_ref().map(|solve| solve.dof),
+        mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
+        assertions,
+    })
 }
 
 fn assembly_regen_report(report: &opencad_assembly::AssemblyRegenReport) -> RegenReport {
@@ -548,6 +569,69 @@ mod tests {
 
         let json = serde_json::to_value(&failure).expect("json");
         assert_eq!(json["stage"], "feature");
+    }
+
+    #[test]
+    fn assembly_regen_evaluates_document_assertions() {
+        use opencad_core::{AssertionKind, AssertionSeverity};
+
+        let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples");
+        let dir = tempdir().expect("tempdir");
+        let document = dir.path().join("assembly_two_brackets.ocad.d");
+        copy_dir(
+            &Path::new(examples).join("assembly_two_brackets.ocad.d"),
+            &document,
+        );
+        let path = document.to_str().expect("utf-8");
+        let mut doc = read_ocad(path).expect("read");
+        doc.assertions = vec![
+            Assertion::new(
+                "assertion:clearance",
+                "Brackets clear each other",
+                AssertionSeverity::Required,
+                AssertionKind::InterferenceAtMost { max_count: 0 },
+            ),
+            Assertion::new(
+                "assertion:bodies",
+                "Two placed brackets",
+                AssertionSeverity::Required,
+                AssertionKind::BodyCount { expected: 2 },
+            ),
+            Assertion::new(
+                "assertion:dof",
+                "Spacing mate leaves the right bracket loose",
+                AssertionSeverity::Advisory,
+                AssertionKind::AssemblyDofAtMost { max_dof: 0 },
+            ),
+        ];
+        write_expanded_dir(path, &doc).expect("write");
+
+        let summary = regen_document(path, false).expect("regen");
+        let ids: Vec<_> = summary.assertions.iter().map(|r| r.id.as_str()).collect();
+        assert_eq!(
+            ids,
+            ["assertion:bodies", "assertion:clearance", "assertion:dof"]
+        );
+        assert!(
+            summary.assertions[0].passed,
+            "{}",
+            summary.assertions[0].message
+        );
+        assert!(
+            summary.assertions[1].passed,
+            "{}",
+            summary.assertions[1].message
+        );
+        // The advisory DOF bound fails without blocking regeneration.
+        assert!(!summary.assertions[2].passed);
+        assert!(summary.assertions[2].message.contains("assembly DOF"));
+
+        doc.assertions[1].kind = AssertionKind::BodyCount { expected: 3 };
+        write_expanded_dir(path, &doc).expect("write");
+        let error = regen_document(path, false).expect_err("required assertion fails");
+        let message = error.to_string();
+        assert!(message.contains("assertion:bodies"), "{message}");
+        assert!(message.contains("body count 2 == 3"), "{message}");
     }
 
     fn copy_dir(from: &Path, to: &Path) {
