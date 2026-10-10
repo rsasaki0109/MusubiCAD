@@ -2,8 +2,10 @@
 
 use std::collections::BTreeMap;
 
+use opencad_assembly::{AssemblyRegenReport, InstanceRegenStatus};
 use opencad_core::{Assertion, AssertionKind, AssertionSeverity};
 use opencad_geometry::ReferenceProvenance;
+use opencad_graph::{evaluate_param_graph, ParamGraph};
 use serde::{Deserialize, Serialize};
 
 /// Evidence available when evaluating assertions after regeneration.
@@ -23,6 +25,46 @@ pub struct AssertionContext {
     pub assembly_dof: Option<i32>,
     /// Detected assembly interference count.
     pub interference_count: Option<usize>,
+}
+
+/// Assertion evidence for a regenerated assembly (MCAD-P10-001).
+///
+/// Mass and bounds come from the placed instance bodies, the body count is
+/// the number of instances that regenerated to a body, and DOF is the
+/// report's remaining assembly DOF.  `interference_count` is the caller's
+/// exact count under its explicit interference tolerances.  Parameters that
+/// do not evaluate leave the map empty, so parameter assertions fail closed.
+/// Semantic references are part-level evidence and stay empty here.
+pub fn assembly_assertion_context(
+    parameters: &ParamGraph,
+    report: &AssemblyRegenReport,
+    interference_count: usize,
+) -> AssertionContext {
+    let body_count = report
+        .instances
+        .iter()
+        .filter(|instance| {
+            matches!(instance.status, InstanceRegenStatus::Ok) && instance.body.is_some()
+        })
+        .count();
+    AssertionContext {
+        parameter_values: evaluate_param_graph(parameters)
+            .unwrap_or_default()
+            .into_iter()
+            .collect(),
+        mass_kg: report.scene.mass.map(|mass| mass.mass_kg),
+        bounding_box_size_m: report.scene.bounding_box.map(|bounds| {
+            [
+                bounds.max[0] - bounds.min[0],
+                bounds.max[1] - bounds.min[1],
+                bounds.max[2] - bounds.min[2],
+            ]
+        }),
+        body_count: Some(u32::try_from(body_count).unwrap_or(u32::MAX)),
+        reference_provenance: Vec::new(),
+        assembly_dof: Some(report.dof),
+        interference_count: Some(interference_count),
+    }
 }
 
 /// Outcome of one assertion evaluation.
@@ -275,6 +317,104 @@ mod tests {
         let results = evaluate_assertions(&assertions, &ctx);
         assert!(!results[0].passed);
         assert!(required_assertions_pass(&results));
+    }
+
+    fn assembly_report(dof: i32) -> AssemblyRegenReport {
+        use opencad_assembly::{AssemblyScene, InstanceRegenResult};
+        use opencad_core::InstanceId;
+        use opencad_geometry::{BoundingBox, KernelBody, MassProperties};
+
+        let instances = vec![
+            InstanceRegenResult {
+                instance_id: InstanceId::new("instance:base").expect("instance id"),
+                status: InstanceRegenStatus::Ok,
+                body: Some(KernelBody(1)),
+            },
+            InstanceRegenResult {
+                instance_id: InstanceId::new("instance:arm").expect("instance id"),
+                status: InstanceRegenStatus::Ok,
+                body: Some(KernelBody(2)),
+            },
+            InstanceRegenResult {
+                instance_id: InstanceId::new("instance:missing").expect("instance id"),
+                status: InstanceRegenStatus::Failed("unknown component".into()),
+                body: None,
+            },
+        ];
+        AssemblyRegenReport {
+            instance_count: instances.len(),
+            successful_instances: 2,
+            scene: AssemblyScene {
+                instances: instances.clone(),
+                compound_body: None,
+                bounding_box: Some(BoundingBox {
+                    min: [0.0, 0.0, 0.0],
+                    max: [0.3, 0.1, 0.5],
+                }),
+                mass: Some(MassProperties {
+                    volume_m3: 1.0e-3,
+                    area_m2: 0.1,
+                    mass_kg: 2.7,
+                    center_of_mass: [0.0, 0.0, 0.0],
+                }),
+            },
+            instances,
+            mate_solve: None,
+            dof,
+        }
+    }
+
+    #[test]
+    fn assembly_context_carries_assembly_evidence() {
+        use opencad_graph::ParameterEntry;
+
+        let mut parameters = ParamGraph::new();
+        parameters
+            .add_parameter(ParameterEntry::new("param:reach", "reach", "250 mm"))
+            .expect("parameter");
+        let context = assembly_assertion_context(&parameters, &assembly_report(1), 2);
+        assert_eq!(context.parameter_values.get("reach").copied(), Some(0.25));
+        assert_eq!(context.mass_kg, Some(2.7));
+        let size = context.bounding_box_size_m.expect("bounds");
+        assert!((size[0] - 0.3).abs() < 1e-12 && (size[2] - 0.5).abs() < 1e-12);
+        assert_eq!(context.body_count, Some(2), "failed instances have no body");
+        assert_eq!(context.assembly_dof, Some(1));
+        assert_eq!(context.interference_count, Some(2));
+        assert!(context.reference_provenance.is_empty());
+    }
+
+    #[test]
+    fn assembly_assertions_block_on_interference_and_dof() {
+        let assertions = vec![
+            Assertion::new(
+                "assertion:clearance",
+                "No collisions",
+                AssertionSeverity::Required,
+                AssertionKind::InterferenceAtMost { max_count: 0 },
+            ),
+            Assertion::new(
+                "assertion:dof",
+                "One joint free",
+                AssertionSeverity::Required,
+                AssertionKind::AssemblyDofAtMost { max_dof: 1 },
+            ),
+        ];
+        let clear = assembly_assertion_context(&ParamGraph::new(), &assembly_report(1), 0);
+        assert!(required_assertions_pass(&evaluate_assertions(
+            &assertions,
+            &clear
+        )));
+
+        let colliding = assembly_assertion_context(&ParamGraph::new(), &assembly_report(1), 1);
+        let results = evaluate_assertions(&assertions, &colliding);
+        assert!(!required_assertions_pass(&results));
+        assert_eq!(results[0].id, "assertion:clearance");
+        assert!(!results[0].passed);
+        assert!(results[0].message.contains("interference count 1"));
+
+        let loose = assembly_assertion_context(&ParamGraph::new(), &assembly_report(7), 0);
+        let results = evaluate_assertions(&assertions, &loose);
+        assert!(!results[1].passed, "{}", results[1].message);
     }
 
     #[test]

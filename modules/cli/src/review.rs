@@ -4,12 +4,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use opencad_ai::{
-    ensure_patch_valid, evaluate_assertions, required_assertions_pass, AssertionContext,
-    AssertionResult, DesignPatch, ExpectedEffect,
+    assembly_assertion_context, ensure_patch_valid, evaluate_assertions, required_assertions_pass,
+    AssertionContext, AssertionResult, DesignPatch, ExpectedEffect,
 };
 use opencad_core::{OpenCadError, Result};
 use opencad_desktop::{
-    inspect_ocad_regeneration, load_assembly_scene_from_document, load_view_data,
+    inspect_ocad_regeneration, load_assembly_evidence_from_document, load_view_data,
 };
 use opencad_feature::{FeatureRegistry, RegenerationFailure};
 use opencad_file::{apply_patch_to_document, dry_run_patch_document, read_ocad, OcadDocument};
@@ -89,7 +89,7 @@ pub struct ReviewArtifact {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reference_provenance: Vec<ReferenceProvenance>,
     /// Executable design assertion results (MCAD-P6-004); populated for part
-    /// documents that declare assertions.
+    /// and assembly documents that declare assertions (MCAD-P10-001).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub assertions: Vec<AssertionResult>,
 }
@@ -275,17 +275,22 @@ fn verify_patch_with_scenes(
     // failing "before" is evidence to report, not a reason to reject.
     let (before_scene, before_interference_count, before_regen_error) =
         match document_scene(document_path, before) {
-            Ok((scene, interference)) => (scene, interference, None),
+            Ok(evidence) => (evidence.scene, evidence.interference_count, None),
             Err(error) => (RenderScene::empty()?, None, Some(error.to_string())),
         };
-    let (after_scene, after_interference_count) = document_scene(document_path, &after)
+    let DocumentScene {
+        scene: after_scene,
+        interference_count: after_interference_count,
+        assembly_assertions,
+    } = document_scene(document_path, &after)
         .map_err(|error| error.with_context("patched document does not regenerate"))?;
 
     let reference_provenance = document_reference_provenance(&after);
-    let assertions = document_assertion_results(&after);
+    let assertions = document_assertion_results(&after, assembly_assertions.as_ref());
     if !required_assertions_pass(&assertions) {
-        return Err(OpenCadError::validation(
+        return Err(crate::regen::assertion_violation(
             "reviewed change violates a required document assertion",
+            &assertions,
         ));
     }
     let diff = build_document_diff(
@@ -447,19 +452,61 @@ fn write_review_images(
     Ok(())
 }
 
-fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option<usize>)> {
+/// A regenerated document as a review sees it.
+struct DocumentScene {
+    scene: RenderScene,
+    /// Exact interference count; assemblies only.
+    interference_count: Option<usize>,
+    /// Assertion evidence from the same regeneration; assemblies only
+    /// (MCAD-P10-001).
+    assembly_assertions: Option<AssertionContext>,
+}
+
+impl DocumentScene {
+    fn without_assembly(scene: RenderScene) -> Self {
+        Self {
+            scene,
+            interference_count: None,
+            assembly_assertions: None,
+        }
+    }
+}
+
+fn document_scene(path: &str, doc: &OcadDocument) -> Result<DocumentScene> {
     // Documents that hold nothing to show yet (a new assembly without
     // instances, a drawing without views) are reviewed against an empty scene.
     if let Some(assembly) = &doc.assembly {
         if assembly.instances.is_empty() {
-            return Ok((RenderScene::empty()?, Some(0)));
+            return Ok(DocumentScene {
+                scene: RenderScene::empty()?,
+                interference_count: Some(0),
+                assembly_assertions: Some(AssertionContext {
+                    parameter_values: evaluate_param_graph(&doc.parameters)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .collect(),
+                    body_count: Some(0),
+                    assembly_dof: Some(0),
+                    interference_count: Some(0),
+                    ..AssertionContext::default()
+                }),
+            });
         }
-        let (scene, interference_count) = load_assembly_scene_from_document(path, doc)?;
-        return Ok((scene, Some(interference_count)));
+        let evidence = load_assembly_evidence_from_document(path, doc)?;
+        let context = assembly_assertion_context(
+            &doc.parameters,
+            &evidence.report,
+            evidence.interference_count,
+        );
+        return Ok(DocumentScene {
+            scene: evidence.scene,
+            interference_count: Some(evidence.interference_count),
+            assembly_assertions: Some(context),
+        });
     }
     if let Some(drawing) = &doc.drawing {
         let Some(view) = drawing.sheets.first().and_then(|sheet| sheet.views.first()) else {
-            return Ok((RenderScene::empty()?, None));
+            return Ok(DocumentScene::without_assembly(RenderScene::empty()?));
         };
         let root = if Path::new(path).extension().and_then(|ext| ext.to_str()) == Some("ocad") {
             Path::new(path).parent().unwrap_or_else(|| Path::new("."))
@@ -471,7 +518,7 @@ fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option
             load_view_data(model_path.to_str().ok_or_else(|| {
                 OpenCadError::validation("drawing model path is not valid UTF-8")
             })?)?;
-        return Ok((data.scene, None));
+        return Ok(DocumentScene::without_assembly(data.scene));
     }
     // Regenerate first so a failing feature is an error.  A part that
     // regenerates without a solid yet (a new document, or a staged authoring
@@ -487,10 +534,12 @@ fn document_scene(path: &str, doc: &OcadDocument) -> Result<(RenderScene, Option
         Some(&refs),
     )?;
     let Some(body) = model.active_body() else {
-        return Ok((RenderScene::empty()?, None));
+        return Ok(DocumentScene::without_assembly(RenderScene::empty()?));
     };
     let mesh = kernel.tessellate(body, &TessellationSettings::default())?;
-    Ok((RenderScene::from_mesh_set(&mesh)?, None))
+    Ok(DocumentScene::without_assembly(RenderScene::from_mesh_set(
+        &mesh,
+    )?))
 }
 
 /// Regenerate a part document and return fail-closed reference provenance.
@@ -513,10 +562,21 @@ fn document_reference_provenance(doc: &OcadDocument) -> Vec<ReferenceProvenance>
     report.reference_provenance
 }
 
-/// Regenerate a part document and evaluate its design assertions (MCAD-P6-004).
-fn document_assertion_results(doc: &OcadDocument) -> Vec<AssertionResult> {
-    if doc.assembly.is_some() || doc.drawing.is_some() || doc.assertions.is_empty() {
+/// Evaluate a document's design assertions: a part by regenerating it
+/// (MCAD-P6-004), an assembly against the evidence of its review
+/// regeneration (MCAD-P10-001).
+fn document_assertion_results(
+    doc: &OcadDocument,
+    assembly_assertions: Option<&AssertionContext>,
+) -> Vec<AssertionResult> {
+    if doc.drawing.is_some() || doc.assertions.is_empty() {
         return Vec::new();
+    }
+    if doc.assembly.is_some() {
+        // Without evidence every assembly metric reads as unavailable, so
+        // the assertions fail closed.
+        let fallback = AssertionContext::default();
+        return evaluate_assertions(&doc.assertions, assembly_assertions.unwrap_or(&fallback));
     }
     let parameters = doc.parameters.clone();
     let refs = doc.semantic_refs.clone();
