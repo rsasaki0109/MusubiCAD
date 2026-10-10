@@ -28,8 +28,8 @@ pub use assembly::{
     AssemblyInstanceInfo, AssemblyMateInfo, ConnectorInfo,
 };
 pub use assertions::{
-    assembly_assertion_context, evaluate_assertion, evaluate_assertions, required_assertions_pass,
-    AssertionContext, AssertionResult,
+    assembly_assertion_context, evaluate_assertion, evaluate_assertions,
+    motion_interference_evidence, required_assertions_pass, AssertionContext, AssertionResult,
 };
 pub use authoring::authoring_patch;
 pub use drawing::{

@@ -115,7 +115,11 @@ example a `revolute` elbow with `lower_rad`, `upper_rad`, `effort_n_m`, and
 `velocity_rad_s`; zero is the current pose, and URDF export writes them.
 Add `no_assembly_interference` to the expected
 effects of any patch that moves parts; `verification.geometry.after_interference_count`
-reports the count.
+reports the count. To check every joint position rather than only the current
+pose, add a required `motion_interference_at_most` assertion
+(`{"max_count": 0, "samples_per_joint": 13}`). A refusal names the joint's
+instance, its angle, and the colliding pairs; fix the design (narrow a limit,
+shorten a link) and verify again.
 
 ## 5. Look, review, and export
 

@@ -159,18 +159,7 @@ pub fn detect_interferences_with_tolerance<K: GeometryKernel>(
         for second_index in (first_index + 1)..bodies.len() {
             let (first, first_body) = bodies[first_index];
             let (second, second_body) = bodies[second_index];
-            let first_bounds = kernel.bounding_box(first_body)?;
-            let second_bounds = kernel.bounding_box(second_body)?;
-            let separated = (0..3).any(|axis| {
-                first_bounds.max[axis] <= second_bounds.min[axis] + tolerance.bounds_tolerance_m
-                    || second_bounds.max[axis]
-                        <= first_bounds.min[axis] + tolerance.bounds_tolerance_m
-            });
-            if separated {
-                continue;
-            }
-            let volume = kernel.intersection_volume(first_body, second_body)?;
-            if volume > tolerance.volume_tolerance_m3 {
+            if let Some(volume) = interference_volume(kernel, first_body, second_body, tolerance)? {
                 result.push(AssemblyInterference {
                     first: first.instance_id.clone(),
                     second: second.instance_id.clone(),
@@ -180,6 +169,28 @@ pub fn detect_interferences_with_tolerance<K: GeometryKernel>(
         }
     }
     Ok(result)
+}
+
+/// Common volume of two placed bodies when it exceeds the tolerance, or
+/// `None` when they are separated or only touch.  Bounds that overlap by no
+/// more than `bounds_tolerance_m` skip the exact Boolean.
+pub(crate) fn interference_volume<K: GeometryKernel>(
+    kernel: &K,
+    first: &KernelBody,
+    second: &KernelBody,
+    tolerance: AssemblyInterferenceTolerance,
+) -> Result<Option<f64>> {
+    let first_bounds = kernel.bounding_box(first)?;
+    let second_bounds = kernel.bounding_box(second)?;
+    let separated = (0..3).any(|axis| {
+        first_bounds.max[axis] <= second_bounds.min[axis] + tolerance.bounds_tolerance_m
+            || second_bounds.max[axis] <= first_bounds.min[axis] + tolerance.bounds_tolerance_m
+    });
+    if separated {
+        return Ok(None);
+    }
+    let volume = kernel.intersection_volume(first, second)?;
+    Ok((volume > tolerance.volume_tolerance_m3).then_some(volume))
 }
 
 pub fn resolve_component_path(assembly_root: &Path, source_path: &str) -> PathBuf {

@@ -68,6 +68,135 @@ fn example_robot_arm_assembly_regenerates_with_occt() {
     );
 }
 
+/// Joint motion sweeps (MCAD-P10-002) agree with a brute-force check: the
+/// planar arm clears itself through every joint range, and the six-axis
+/// arm's worst sampled pose has exactly the pairs a full re-pose finds.
+#[test]
+fn example_arm_motion_sweeps_match_a_full_repose() {
+    use std::collections::BTreeMap;
+
+    use opencad_assembly::{
+        detect_interferences_with_tolerance, kinematic_tree, regenerate_assembly,
+        sample_motion_interference, solve_assembly_mates, AssemblyInterferenceTolerance,
+        AssemblyScene, ChildPart, InstanceRegenResult, ResolvedChild,
+    };
+
+    let kernel = OcctGeometryKernel::new();
+    let registry = FeatureRegistry::with_defaults();
+    let regenerate = |name: &str, id: &str| {
+        let root = workspace_root().join("examples").join(name);
+        let assembly = read_expanded_dir(&root)
+            .expect("read")
+            .assembly
+            .expect("assembly");
+        let mut loader = |child_path: &std::path::Path| {
+            let child = read_expanded_dir(child_path).expect("read child");
+            Ok(ResolvedChild::Part(Box::new(ChildPart {
+                doc_id: child.metadata.id.clone(),
+                parameters: child.parameters.clone(),
+                part: child.into_part_model(),
+                semantic_refs: Vec::new(),
+            })))
+        };
+        let report = regenerate_assembly(
+            &assembly,
+            &opencad_core::DocumentId::new(id).expect("id"),
+            &root,
+            &kernel,
+            &registry,
+            &mut loader,
+        )
+        .expect("regen");
+        (assembly, report.scene)
+    };
+    let tolerance = AssemblyInterferenceTolerance::default();
+
+    let (planar, planar_scene) =
+        regenerate("robot_arm_assembly.ocad.d", "doc:robot_arm_assembly_001");
+    let sweep = sample_motion_interference(&kernel, &planar, &planar_scene, 9, tolerance)
+        .expect("planar sweep");
+    assert_eq!((sweep.joints, sweep.poses_checked), (3, 27));
+    assert_eq!(sweep.max_count, 0, "{sweep:?}");
+    assert!(sweep.worst.is_none());
+
+    let (arm, arm_scene) = regenerate("six_axis_arm.ocad.d", "doc:six_axis_arm_001");
+    let sweep =
+        sample_motion_interference(&kernel, &arm, &arm_scene, 13, tolerance).expect("arm sweep");
+    assert_eq!((sweep.joints, sweep.poses_checked), (6, 78));
+    assert_eq!(sweep.rest_count, 0);
+    let worst = sweep
+        .worst
+        .clone()
+        .expect("the elbow folds the hand into the base");
+    assert_eq!(worst.pose.joint_instance, "instance:forearm");
+    assert_eq!(worst.pairs.len(), sweep.max_count);
+    let repeated =
+        sample_motion_interference(&kernel, &arm, &arm_scene, 13, tolerance).expect("repeat");
+    assert_eq!(repeated, sweep, "sweeps are deterministic");
+
+    // Re-pose every instance at the worst pose and check all pairs.
+    let (instances, _) = solve_assembly_mates(&arm).expect("solve");
+    let mut solved = arm.clone();
+    solved.instances = instances;
+    let placements: BTreeMap<_, _> = solved
+        .instances
+        .iter()
+        .map(|instance| {
+            (
+                instance.id.as_str().to_string(),
+                instance.placement.transform,
+            )
+        })
+        .collect();
+    let posed = kinematic_tree(&solved)
+        .expect("tree")
+        .pose(&BTreeMap::from([(
+            worst.pose.joint_instance.clone(),
+            worst.pose.position,
+        )]))
+        .expect("pose");
+    let posed: BTreeMap<_, _> = posed
+        .into_iter()
+        .map(|(instance, world)| (instance.as_str().to_string(), world))
+        .collect();
+    let scene = AssemblyScene {
+        instances: arm_scene
+            .instances
+            .iter()
+            .map(|instance| {
+                let body = instance.body.clone().expect("body");
+                let world = posed[instance.instance_id.as_str()];
+                let inverse = placements[instance.instance_id.as_str()]
+                    .inverse()
+                    .expect("inverse");
+                InstanceRegenResult {
+                    instance_id: instance.instance_id.clone(),
+                    status: instance.status.clone(),
+                    body: Some(
+                        kernel
+                            .transform_body(body, world.compose(inverse))
+                            .expect("transform"),
+                    ),
+                }
+            })
+            .collect(),
+        compound_body: None,
+        bounding_box: None,
+        mass: None,
+    };
+    let full: Vec<[String; 2]> = detect_interferences_with_tolerance(&kernel, &scene, tolerance)
+        .expect("interferences")
+        .into_iter()
+        .map(|hit| {
+            [
+                hit.first.as_str().to_string(),
+                hit.second.as_str().to_string(),
+            ]
+        })
+        .collect();
+    assert_eq!(full, worst.pairs);
+}
+
 #[test]
 fn example_six_axis_arm_regenerates_with_occt_without_interference() {
     use opencad_assembly::{
@@ -689,6 +818,7 @@ fn robot_joint_actuator_assertions_pass_after_regeneration() {
         reference_provenance: report.reference_provenance.clone(),
         assembly_dof: None,
         interference_count: None,
+        motion_interference: Default::default(),
     };
     let results = evaluate_assertions(&assertions, &context);
     assert!(
