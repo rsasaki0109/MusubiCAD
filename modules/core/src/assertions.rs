@@ -6,6 +6,12 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Fewest joint positions a motion assertion may sample: both range ends.
+pub const MIN_MOTION_SAMPLES_PER_JOINT: u32 = 2;
+/// Most joint positions a motion assertion may sample; bounds the number of
+/// exact Booleans one evaluation runs.
+pub const MAX_MOTION_SAMPLES_PER_JOINT: u32 = 360;
+
 /// Severity of a design assertion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -39,6 +45,14 @@ pub enum AssertionKind {
     AssemblyDofAtMost { max_dof: i32 },
     /// Assembly interference count must not exceed the limit.
     InterferenceAtMost { max_count: u32 },
+    /// Interfering instance pairs must not exceed the limit at any sampled
+    /// joint pose (MCAD-P10-002).  Each movable joint sweeps its range in
+    /// `samples_per_joint` evenly spaced positions (a full turn for a
+    /// continuous joint) while the other joints stay at zero.
+    MotionInterferenceAtMost {
+        max_count: u32,
+        samples_per_joint: u32,
+    },
 }
 
 impl AssertionKind {
@@ -82,6 +96,25 @@ impl AssertionKind {
                     return Err(crate::OpenCadError::validation(
                         "interference limit is unreasonably large",
                     ));
+                }
+            }
+            Self::MotionInterferenceAtMost {
+                max_count,
+                samples_per_joint,
+            } => {
+                if *max_count > i32::MAX as u32 {
+                    return Err(crate::OpenCadError::validation(
+                        "interference limit is unreasonably large",
+                    ));
+                }
+                if !(MIN_MOTION_SAMPLES_PER_JOINT..=MAX_MOTION_SAMPLES_PER_JOINT)
+                    .contains(samples_per_joint)
+                {
+                    return Err(crate::OpenCadError::validation(format!(
+                        "motion interference samples per joint must be between \
+                         {MIN_MOTION_SAMPLES_PER_JOINT} and {MAX_MOTION_SAMPLES_PER_JOINT}, \
+                         got {samples_per_joint}"
+                    )));
                 }
             }
         }
@@ -158,6 +191,38 @@ mod tests {
             },
         );
         assert!(assertion.validate().is_err());
+    }
+
+    #[test]
+    fn motion_interference_round_trips_and_bounds_its_samples() {
+        let assertion = Assertion::new(
+            "assertion:motion_clearance",
+            "Clear through every joint range",
+            AssertionSeverity::Required,
+            AssertionKind::MotionInterferenceAtMost {
+                max_count: 0,
+                samples_per_joint: 13,
+            },
+        );
+        let json = serde_json::to_value(&assertion).expect("serialize");
+        assert_eq!(json["type"], "motion_interference_at_most");
+        assert_eq!(json["samples_per_joint"], 13);
+        let restored: Assertion = serde_json::from_value(json).expect("deserialize");
+        assert_eq!(assertion, restored);
+        assert!(restored.validate().is_ok());
+
+        for samples_per_joint in [0, 1, MAX_MOTION_SAMPLES_PER_JOINT + 1] {
+            let invalid = Assertion::new(
+                "assertion:motion_clearance",
+                "Clear through every joint range",
+                AssertionSeverity::Required,
+                AssertionKind::MotionInterferenceAtMost {
+                    max_count: 0,
+                    samples_per_joint,
+                },
+            );
+            assert!(invalid.validate().is_err(), "{samples_per_joint} samples");
+        }
     }
 
     #[test]

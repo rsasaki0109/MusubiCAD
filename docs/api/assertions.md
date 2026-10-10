@@ -34,6 +34,12 @@ unit-explicit rule:
   [MCAD-P6-003](topo-ref.md#reference-provenance-fail-closed-mcad-p6-003).
 - `AssemblyDofAtMost { max_dof }` — solved assembly DOF must not exceed a limit.
 - `InterferenceAtMost { max_count }` — assembly interference count limit.
+- `MotionInterferenceAtMost { max_count, samples_per_joint }` — interfering
+  instance pairs at every sampled joint pose must not exceed the limit
+  (MCAD-P10-002, [ADR-033](../adr/ADR-033-motion-interference.md)). Each
+  movable joint sweeps `samples_per_joint` (2–360) evenly spaced positions,
+  both limits included and a full turn for a continuous joint, while the
+  other joints stay at the authored pose.
 
 Invalid rules (non-finite or inverted ranges) fail closed and never silently
 pass.
@@ -92,6 +98,13 @@ let results = evaluate_assertions(&doc.assertions, &context);
 | `interference_count` | Exact instance-pair count with the default explicit tolerances (`1e-9 m` bounds, `1e-12 m³` common volume) |
 | `parameter_values` | The assembly document's own parameters |
 | `reference_provenance` | Empty: semantic references are part-level, so `required_reference` fails closed on an assembly |
+| `motion_interference` | `motion_interference_evidence(kernel, model, scene, assertions)`: one joint sweep per distinct `samples_per_joint`, computed only when a motion assertion asks for it |
+
+A motion assertion's message names the worst pose, for example
+`max interference count 5 <= 0 over 78 poses (6 joints × 13 samples); worst
+instance:forearm at 61.7 deg: instance:base × instance:gripper, …`. A sweep
+that cannot run (no grounded instance, an instance that did not regenerate)
+fails the assertion with the reason.
 
 An assembly with no instances yet reports zero bodies, zero DOF, and zero
 interference, with no mass or bounds.
