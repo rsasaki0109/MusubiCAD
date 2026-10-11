@@ -37,7 +37,7 @@ cargo run -p opencad-cli -- animate-joints \
   "$ROOT/examples/six_axis_arm.ocad.d" "$ASSETS/six-axis-joints.gif" \
   --width 640 --aspect 4:3 --frames-per-move 16 --fps 16 \
   --pose base_yaw=70deg,shoulder=20deg,elbow=-25deg,wrist_pitch=-30deg \
-  --pose base_yaw=-60deg,shoulder=-15deg,elbow=35deg,wrist_roll=90deg,wrist_pitch=40deg,flange_roll=90deg \
+  --pose base_yaw=-60deg,shoulder=-15deg,elbow=25deg,wrist_roll=90deg,wrist_pitch=40deg,flange_roll=90deg \
   --pose base_yaw=10deg,shoulder=30deg,elbow=-60deg,wrist_roll=-60deg,wrist_pitch=-60deg,flange_roll=-120deg
 ffmpeg -y \
   -loop 1 -t 1.5 -framerate 4 -i "$ASSETS/frame_base.png" \

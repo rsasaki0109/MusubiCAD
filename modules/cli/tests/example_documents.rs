@@ -119,7 +119,25 @@ fn example_arm_motion_sweeps_match_a_full_repose() {
     assert_eq!(sweep.max_count, 0, "{sweep:?}");
     assert!(sweep.worst.is_none());
 
-    let (arm, arm_scene) = regenerate("six_axis_arm.ocad.d", "doc:six_axis_arm_001");
+    let (mut arm, arm_scene) = regenerate("six_axis_arm.ocad.d", "doc:six_axis_arm_001");
+    let clear =
+        sample_motion_interference(&kernel, &arm, &arm_scene, 13, tolerance).expect("clear sweep");
+    assert_eq!((clear.joints, clear.poses_checked), (6, 78));
+    assert_eq!(clear.max_count, 0, "{clear:?}");
+    assert!(clear.worst.is_none());
+
+    // Restore the historical unsafe elbow limit in memory to retain the
+    // collision/optimized-vs-brute-force regression after fixing the example.
+    let elbow = arm
+        .joints
+        .iter_mut()
+        .find(|joint| joint.id.as_str() == "joint:elbow")
+        .expect("elbow");
+    if let opencad_assembly::JointMotion::Revolute { upper_rad, .. } = &mut elbow.motion {
+        *upper_rad = 100.0_f64.to_radians();
+    } else {
+        panic!("elbow must be revolute");
+    }
     let sweep =
         sample_motion_interference(&kernel, &arm, &arm_scene, 13, tolerance).expect("arm sweep");
     assert_eq!((sweep.joints, sweep.poses_checked), (6, 78));

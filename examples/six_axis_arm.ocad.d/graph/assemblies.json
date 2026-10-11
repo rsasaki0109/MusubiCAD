@@ -937,7 +937,7 @@
         "mate": "mate:elbow",
         "type": "revolute",
         "lower_rad": -2.2689280275926285,
-        "upper_rad": 1.7453292519943295,
+        "upper_rad": 0.5235987755982988,
         "effort_n_m": 3.0,
         "velocity_rad_s": 2.5
       },
@@ -954,7 +954,7 @@
         "id": "joint:shoulder",
         "mate": "mate:shoulder",
         "type": "revolute",
-        "lower_rad": -1.3962634015954636,
+        "lower_rad": -1.0471975511965976,
         "upper_rad": 1.3962634015954636,
         "effort_n_m": 6.0,
         "velocity_rad_s": 2.0
@@ -964,7 +964,7 @@
         "mate": "mate:wrist_pitch",
         "type": "revolute",
         "lower_rad": -1.9198621771937625,
-        "upper_rad": 1.9198621771937625,
+        "upper_rad": 1.2217304763960306,
         "effort_n_m": 0.8,
         "velocity_rad_s": 3.0
       },
