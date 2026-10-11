@@ -1529,6 +1529,8 @@ name = "opencad-kernel-occt"
 version = "0.2.0"
 dependencies = [
  "cadrum",
+ "cxx",
+ "cxx-build",
  "opencad-core",
  "opencad-geometry",
  "serde_json",

@@ -272,3 +272,20 @@ The selected circle's evaluated diameter must agree with the cut diameter to
 regeneration before applying. Unsupported sizes, pitch overrides and non-circular
 profiles fail closed. Preserve the explicit representation in saved documents.
 Reference: `examples/agent/create_standard_hole_plate_patch.json` and ADR-037.
+
+### Variable and face fillets
+
+For MCAD-P11-005, use a `fillet` with one semantic `edge_ref`, start `radius` /
+`radius_expr`, and `radius_law: {type: linear, end_radius: {value_si: ...},
+end_radius_expr: ...}`. The start/end order follows increasing world-coordinate
+lexicographic order, independent of kernel edge orientation. Radii are finite
+SI lengths >= 1e-9 m; edit their parameters through DesignPatch.
+
+Variable fillets support one straight edge only. The linear law uses 65 fixed
+radius samples with native OCCT interpolation, so treat it as an approximation.
+Curved/tangent-chain and ambiguous/missing selections fail closed. For a constant
+face-perimeter fillet, supply `face_ref` and omit both `edge_ref` and `radius_law`.
+Never supply both reference types. Run verified dry-run/apply; the native BREP
+transfer has no exact face-history relay and downstream references need geometry
+provenance. Reference: `examples/agent/create_variable_fillet_plate_patch.json`
+and ADR-038.

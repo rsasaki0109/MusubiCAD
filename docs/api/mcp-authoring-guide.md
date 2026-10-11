@@ -265,3 +265,40 @@ and extra standard fields fail closed. Structural staged authoring alone does
 not verify diameter agreement. Use verified application for completed designs.
 See `examples/agent/create_standard_hole_plate_patch.json` and
 [ADR-037](../adr/ADR-037-standard-holes-and-simplified-threads.md).
+
+## Variable and semantic face fillets (MCAD-P11-005)
+
+A `fillet` may carry `radius_law` in addition to its existing `radius` and
+`radius_expr`. The start radius is `radius`; `end_radius` is the final radius:
+
+```json
+{
+  "type":"fillet", "target_feature":"feature:plate",
+  "edge_ref":"ref:edge:plate_front",
+  "radius":{"value_si":0.0005}, "radius_expr":"start_radius",
+  "radius_law":{"type":"linear","end_radius":{"value_si":0.0015},
+                "end_radius_expr":"end_radius"}
+}
+```
+
+Endpoint order is lexicographic in world coordinates (x, then y, then z). For a
+front edge parallel to X, the start is its lower-X end. Both radii must be finite
+and at least 1e-9 m. Edit named parameters through DesignPatch; changing the
+end expression also works through `replace_feature_definition`.
+
+Variable fillets require a semantic `edge_ref` resolving to one straight edge.
+Curved edges, tangent chains, ambiguous/missing references and invalid kernel
+results fail closed. `face_ref` and `edge_ref` cannot be supplied together. For
+a constant-radius face perimeter, supply only `face_ref` and omit `radius_law`.
+For example, a `ref:face:plate_top` referencing the plate's `top` face rounds its
+perimeter with the existing constant-radius operation.
+
+The explicit linear law is approximated with 65 fixed, uniformly spaced radius
+points and OCCT interpolation. Endpoint easing is confined to the end intervals;
+it is not an arbitrary editable spline. The tested prism volume agrees with the
+circular-corner reference to 1e-3 of removed volume; arbitrary-body accuracy is
+kernel-dependent. BREP transfer does not preserve exact pointer-based face
+history, so subsequent semantic references must resolve from verified geometry.
+Use verified dry-run/apply and review its provenance after changes. See
+`examples/agent/create_variable_fillet_plate_patch.json` and
+[ADR-038](../adr/ADR-038-linear-variable-fillets.md).

@@ -100,3 +100,21 @@ TopoRef fallback tolerances are documented and unit-labelled in
 - [Future geometry requirements](../plans/future-geometry-requirements.md)
 - [Semantic TopoRef API](../api/topo-ref.md)
 - Topological reference specification: [MCAD-P5-001 in the roadmap](../plans/roadmap.md)
+
+## Native variable-fillet bridge
+
+MCAD-P11-005 adds `GeometryKernel::variable_fillet_edge`, a bounded linear-radius
+operation on one semantic straight edge. Mock validates the contract; OCCT uses
+a private cxx bridge sharing cadrum's pinned OCCT 8.0 installation. The bridge
+exchanges in-memory BREP bytes, works in millimetres internally and restores the
+public metre units. It uses 65 deterministic parameter/radius points, validates
+one unique straight edge/contour and checks the output BREP. No OCCT types or
+pointers escape `modules/kernel-occt`.
+
+Only the cxx-generated module has a scoped unsafe allowance. Other handwritten
+kernel Rust remains denied and other workspace modules retain their forbid rule.
+This transfer loses pointer-based exact face history; it does not invent a relay.
+Subsequent references require the existing geometry-provenance checks. The
+unsupported default preserves custom kernel compatibility, and counting kernels
+forward this call. [ADR-038](../adr/ADR-038-linear-variable-fillets.md) records the
+sampling, unit, precision, failure and file-compatibility decisions.

@@ -8,15 +8,26 @@ rust-version.workspace = true
 
 [features]
 default = ["occt"]
-occt = ["dep:cadrum"]
+occt = ["dep:cadrum", "dep:cxx"]
 
 [dependencies]
 opencad-core = { workspace = true }
 opencad-geometry = { workspace = true }
 cadrum = { version = "=0.8.5", optional = true, default-features = false }
 
+cxx = { version = "=1.0.194", optional = true }
+
+[build-dependencies]
+cxx-build = "=1.0.194"
+# Ensure cadrum has prepared the shared OCCT headers before compiling our bridge.
+cadrum = { version = "=0.8.5", optional = true, default-features = false }
+
 [dev-dependencies]
 serde_json = { workspace = true }
 
-[lints]
-workspace = true
+# Only the generated cxx bridge may use unsafe; handwritten Rust stays denied.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

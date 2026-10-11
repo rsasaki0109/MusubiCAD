@@ -103,6 +103,14 @@ fn resolve_feature_node(
             }
         }
         FeatureDefinition::Fillet(fillet) => {
+            if let Some(crate::FilletRadiusLaw::Linear {
+                end_radius,
+                end_radius_expr: Some(expr),
+            }) = &mut fillet.radius_law
+            {
+                *end_radius = Length::from_meters(eval_length_expr(expr, values)?);
+            }
+
             if let Some(expr) = &fillet.radius_expr {
                 let meters = eval_length_expr(expr, values)?;
                 fillet.radius = Length::from_meters(meters);
