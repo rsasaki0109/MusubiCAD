@@ -41,7 +41,14 @@ impl Sheet {
                 self.id
             )));
         }
+        let mut view_ids = std::collections::BTreeSet::new();
         for view in &self.views {
+            if !view_ids.insert(view.id.as_str()) {
+                return Err(OpenCadError::validation(format!(
+                    "duplicate drawing view id '{}'",
+                    view.id
+                )));
+            }
             view.validate(drawing_doc_id)?;
         }
         let mut dimension_ids = std::collections::BTreeSet::new();

@@ -110,6 +110,32 @@
       "expected_dimension_lengths_m": [
         0.08
       ]
+    },
+    {
+      "id": "semantic_bracket_drawing",
+      "document": "drawing.ocad.d",
+      "setup": [
+        [
+          "new",
+          "{workdir}/bracket.ocad.d"
+        ],
+        [
+          "patch",
+          "{workdir}/bracket.ocad.d",
+          "{root}/examples/agent/bracket_width_100_patch.json"
+        ]
+      ],
+      "prompt": "The part {workdir}/bracket.ocad.d has already been widened from 80 mm to 100 mm. Create a new A4 portrait drawing at {document}, with a full-scale front view referencing ../bracket.ocad.d and one semantic width dimension bound to its existing ref:edge:bracket_top_front. Do not use fixed point coordinates. Verify the patch, apply it and export {workdir}/drawing.svg. Regenerate the drawing and report its measured width.",
+      "required_parameters": [],
+      "expected_views": [
+        "front"
+      ],
+      "expected_dimension_lengths_m": [
+        0.1
+      ],
+      "expected_dimension_edge_refs": [
+        "ref:edge:bracket_top_front"
+      ]
     }
   ]
 }

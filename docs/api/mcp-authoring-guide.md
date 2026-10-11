@@ -142,3 +142,39 @@ examples to see each one. Extrude and revolve `operation` is `new_body`,
 Object shapes match `graph/assemblies.json` and `graph/drawings.json`; run
 `authoring_patch` on `examples/robot_arm_assembly.ocad.d` or
 `examples/bracket_front_view.ocad.d` for complete examples.
+
+### Semantic linear drawing dimensions
+
+Prefer a semantic binding when a dimension must follow model edits:
+
+```json
+{
+  "type": "add_drawing_dimension",
+  "sheet_id": "sheet:a4",
+  "dimension": {
+    "id": "dim:width",
+    "view_id": "view:front",
+    "edge_ref": "ref:edge:bracket_top_front",
+    "offset_m": -0.01
+  }
+}
+```
+
+The reference must exist in the part named by the view, rather than in the
+drawing. Inspect the part's semantic references first; never invent a kernel
+index or use a projected mesh segment as identity. The dimension measures the
+distance between current end vertices (model meters), not curved arc length.
+Do not include `start_model_m`/`end_model_m` with `edge_ref`.
+
+`patch_dry_run` verifies all sheets and names the dimension/ref when a binding
+is missing, ambiguous or consumed. Repair the binding explicitly; do not replace
+a failed semantic measurement with fixed coordinates. `regen_document` returns
+`drawing_dimensions` with resolved length and provenance. Inspect the SVG after
+verified apply. Assembly instance bindings and radius/diameter dimensions are
+separate future capabilities.
+
+[`semantic_bracket_dimension_patch.json`](../../examples/agent/semantic_bracket_dimension_patch.json)
+converts the current `musubicad new <path> drawing` template using a new dimension
+ID (removed IDs cannot be reused in the same patch).
+[`semantic_bracket_drawing.ocad.d`](../../examples/semantic_bracket_drawing.ocad.d)
+is the complete example; its width follows changes to the nested bracket.

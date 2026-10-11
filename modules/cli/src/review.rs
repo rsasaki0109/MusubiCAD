@@ -285,7 +285,15 @@ fn verify_patch_with_scenes(
     } = document_scene(document_path, &after, true)
         .map_err(|error| error.with_context("patched document does not regenerate"))?;
 
-    let reference_provenance = document_reference_provenance(&after);
+    let reference_provenance = if after.drawing.is_some() {
+        crate::drawing::regenerate_drawing(document_path, &after)?
+            .dimensions
+            .into_iter()
+            .filter_map(|d| d.reference_provenance)
+            .collect()
+    } else {
+        document_reference_provenance(&after)
+    };
     let assertions = document_assertion_results(&after, assembly_assertions.as_ref());
     if !required_assertions_pass(&assertions) {
         return Err(crate::regen::assertion_violation(
@@ -515,6 +523,9 @@ fn document_scene(path: &str, doc: &OcadDocument, with_assertions: bool) -> Resu
         });
     }
     if let Some(drawing) = &doc.drawing {
+        // Validate all dimensions/views, including sheets not used by the review
+        // camera. This is the shared CLI/Agent/MCP dry-run and apply gate.
+        crate::drawing::regenerate_drawing(path, doc)?;
         let Some(view) = drawing.sheets.first().and_then(|sheet| sheet.views.first()) else {
             return Ok(DocumentScene::without_assembly(RenderScene::empty()?));
         };

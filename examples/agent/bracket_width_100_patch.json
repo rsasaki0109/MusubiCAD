@@ -1,0 +1,5 @@
+{
+  "intent": "Widen the bracket to 100 mm",
+  "operations": [{ "type": "set_parameter", "id": "param:width", "expr": "100 mm" }],
+  "expected_effects": [{ "type": "parameter_expr_equals", "id": "param:width", "expr": "100 mm" }]
+}

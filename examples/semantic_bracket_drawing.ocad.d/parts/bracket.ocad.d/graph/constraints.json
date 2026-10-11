@@ -1,0 +1,67 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:e0_horizontal",
+        "line": "ent:e0"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:e1_vertical",
+        "line": "ent:e1"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:e2_horizontal",
+        "line": "ent:e2"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:e3_vertical",
+        "line": "ent:e3"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:height",
+        "target": {
+          "line": "ent:e1"
+        },
+        "expr": "height"
+      }
+    },
+    {
+      "sketch_id": "sketch:hole",
+      "constraint": {
+        "type": "radius",
+        "id": "con:hole_radius",
+        "target": "ent:hole_circle",
+        "expr": "hole_diameter / 2"
+      }
+    },
+    {
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:width",
+        "target": {
+          "line": "ent:e0"
+        },
+        "expr": "width"
+      }
+    }
+  ]
+}

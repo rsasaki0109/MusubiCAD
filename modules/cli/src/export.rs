@@ -6,7 +6,7 @@ use std::path::Path;
 use opencad_assembly::{regenerate_assembly, tessellate_assembly_scene, ChildPart, ResolvedChild};
 use opencad_core::DocumentKind;
 use opencad_core::{OpenCadError, Result};
-use opencad_drawing::{render_sheet_svg, validate_svg, ModelReference, ViewMesh};
+use opencad_drawing::{render_sheet_svg, validate_svg};
 use opencad_feature::FeatureRegistry;
 use opencad_file::{read_ocad, OcadDocument};
 use opencad_geometry::{write_binary_stl, TessellationSettings};
@@ -74,7 +74,7 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
 }
 
 /// Regenerated mesh of a part's active body, or of every placed assembly instance.
-fn document_mesh(input: &str, doc: OcadDocument) -> Result<opencad_geometry::MeshSet> {
+pub(crate) fn document_mesh(input: &str, doc: OcadDocument) -> Result<opencad_geometry::MeshSet> {
     if let Some(assembly) = &doc.assembly {
         return export_assembly_mesh(input, doc.metadata.id.as_str(), assembly);
     }
@@ -262,80 +262,15 @@ pub fn export_step(input: &str, output: &str) -> Result<ExportSummary> {
 }
 
 pub(crate) fn render_drawing_svg(input: &str, doc: &OcadDocument) -> Result<(String, usize)> {
-    let drawing = doc
-        .drawing
-        .as_ref()
-        .ok_or_else(|| OpenCadError::validation("document has no drawing model to export"))?;
-    let sheet = drawing
+    let regenerated = crate::drawing::regenerate_drawing(input, doc)?;
+    let (sheet, view_meshes) = regenerated
         .sheets
         .first()
         .ok_or_else(|| OpenCadError::validation("drawing document has no sheets"))?;
-
-    let drawing_root = document_root(input);
-    let mut view_meshes = Vec::new();
-    for view in &sheet.views {
-        let mesh = tessellate_model_reference(&drawing_root, &view.model)?;
-        view_meshes.push(ViewMesh {
-            view_id: view.id.clone(),
-            mesh_set: mesh,
-        });
-    }
-
-    let svg = render_sheet_svg(sheet, &view_meshes)?;
+    let svg = render_sheet_svg(sheet, view_meshes)?;
     validate_svg(&svg)?;
-    let segments = opencad_drawing::build_sheet_segments(sheet, &view_meshes)?.len();
+    let segments = opencad_drawing::build_sheet_segments(sheet, view_meshes)?.len();
     Ok((svg, segments))
-}
-
-fn tessellate_model_reference(
-    drawing_root: &Path,
-    reference: &ModelReference,
-) -> Result<opencad_geometry::MeshSet> {
-    let path = drawing_root.join(&reference.source_path);
-    let doc = read_ocad(&path)?;
-    if doc.metadata.id != reference.source_doc {
-        return Err(OpenCadError::validation(format!(
-            "model reference '{}' expected document '{}' but found '{}'",
-            reference.source_path, reference.source_doc, doc.metadata.id
-        )));
-    }
-
-    match doc.metadata.kind {
-        DocumentKind::Assembly => {
-            let assembly = doc.assembly.ok_or_else(|| {
-                OpenCadError::validation(format!(
-                    "assembly document '{}' is missing assembly model",
-                    path.display()
-                ))
-            })?;
-            export_assembly_mesh(
-                path.to_str().unwrap_or("."),
-                doc.metadata.id.as_str(),
-                &assembly,
-            )
-        }
-        DocumentKind::Part | DocumentKind::Drawing => {
-            let parameters = doc.parameters.clone();
-            let semantic_refs = doc.semantic_refs.clone();
-            let mut model = doc.into_part_model();
-            opencad_desktop::tessellate_active_body(
-                &mut model,
-                Some(&parameters),
-                Some(&semantic_refs),
-            )
-        }
-    }
-}
-
-fn document_root(path: &str) -> std::path::PathBuf {
-    let path = Path::new(path);
-    if path.extension().and_then(|ext| ext.to_str()) == Some("ocad") {
-        path.parent()
-            .map(|parent| parent.to_path_buf())
-            .unwrap_or_else(|| Path::new(".").to_path_buf())
-    } else {
-        path.to_path_buf()
-    }
 }
 
 fn export_assembly_mesh(

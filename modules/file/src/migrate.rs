@@ -6,6 +6,9 @@ use crate::document::OcadDocument;
 
 /// Normalize current models after deserialization.
 ///
+/// ADR-034: legacy drawing point pairs deserialize as `LinearMeasurement::Points`
+/// through the untagged wire migration. No semantic association is invented and
+/// current semantic dimensions retain only their `edge_ref` on serialization.
 /// Legacy drawing sheets deserialize without `dimensions` as an empty collection;
 /// sorting here makes newly added dimension records deterministic. Equal-target
 /// wire compatibility is handled by `opencad_sketch::EqualTarget` itself:

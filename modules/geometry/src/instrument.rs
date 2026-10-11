@@ -114,6 +114,11 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.discover_body_edges(body)
     }
 
+    fn edge_endpoints(&self, body: &KernelBody, kernel_edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        self.record();
+        self.inner.edge_endpoints(body, kernel_edge_id)
+    }
+
     fn fillet_edges(
         &self,
         body: KernelBody,

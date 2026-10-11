@@ -10,7 +10,10 @@ pub mod render;
 pub mod sheet;
 pub mod view;
 
-pub use dimension::{layout_linear_dimension, DimensionLayout, LinearDimension};
+pub use dimension::{
+    layout_linear_dimension, resolve_linear_dimension, DimensionLayout, LinearDimension,
+    LinearMeasurement, DIMENSION_LENGTH_TOLERANCE_M,
+};
 pub use export_svg::{render_sheet_svg, validate_svg};
 pub use hidden_line::{
     classify_hidden_lines, ClassifiedEdge, LineVisibility, HIDDEN_LINE_BARYCENTRIC_TOLERANCE,

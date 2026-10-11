@@ -1,0 +1,20 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:face:bracket_top",
+      "kind": "face",
+      "semantic": {
+        "created_by": "feature:extrude_base",
+        "role": "top"
+      }
+    },
+    {
+      "ref_id": "ref:edge:bracket_top_front",
+      "kind": "edge",
+      "semantic": {
+        "created_by": "feature:extrude_base",
+        "role": "top@+y"
+      }
+    }
+  ]
+}

@@ -2,6 +2,7 @@ mod agent;
 mod animate;
 mod commands;
 mod diff;
+mod drawing;
 mod export;
 mod git_driver;
 mod git_workflow;

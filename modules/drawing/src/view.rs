@@ -39,9 +39,12 @@ impl DrawingView {
     }
 
     pub fn validate(&self, drawing_doc_id: &opencad_core::DocumentId) -> Result<()> {
-        if self.scale <= 0.0 {
+        if self.scale <= 0.0
+            || !self.scale.is_finite()
+            || !self.origin_on_sheet_m.iter().all(|v| v.is_finite())
+        {
             return Err(OpenCadError::validation(format!(
-                "view '{}' scale must be > 0",
+                "view '{}' scale must be finite and > 0, and origin must be finite",
                 self.id
             )));
         }

@@ -1,0 +1,18 @@
+{
+  "intent": "Measure bracket width through its semantic top-front edge",
+  "rationale": "The drawing must follow regenerated geometry and refuse an unresolved edge.",
+  "operations": [
+    { "type": "remove_drawing_dimension", "id": "dim:overall_width" },
+    {
+      "type": "add_drawing_dimension",
+      "sheet_id": "sheet:a4",
+      "dimension": {
+        "id": "dim:semantic_width",
+        "view_id": "view:front",
+        "edge_ref": "ref:edge:bracket_top_front",
+        "offset_m": -0.01
+      }
+    }
+  ],
+  "expected_effects": [{ "type": "drawing_changed", "expected": true }]
+}

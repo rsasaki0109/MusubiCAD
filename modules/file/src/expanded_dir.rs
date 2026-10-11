@@ -498,8 +498,10 @@ mod tests {
                     dimensions: vec![LinearDimension {
                         id: DimensionId::new("dim:width").expect("id"),
                         view_id: ViewId::new("view:front").expect("id"),
-                        start_model_m: [0.0, 0.0, 0.0],
-                        end_model_m: [0.08, 0.0, 0.0],
+                        measurement: opencad_drawing::LinearMeasurement::Points {
+                            start_model_m: [0.0, 0.0, 0.0],
+                            end_model_m: [0.08, 0.0, 0.0],
+                        },
                         offset_m: -0.01,
                     }],
                 }],
