@@ -13,6 +13,14 @@ use crate::regenerate::PartModel;
 
 pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Result<()> {
     if parameters.evaluation_order()?.is_empty() {
+        for node in model.nodes.values_mut() {
+            if matches!(
+                node.definition,
+                FeatureDefinition::DatumPlane(_) | FeatureDefinition::DatumAxis(_)
+            ) {
+                resolve_feature_node(node, &IndexMap::new())?;
+            }
+        }
         return Ok(());
     }
     let values = evaluate_param_graph(parameters)?;
@@ -54,6 +62,20 @@ fn resolve_feature_node(
     values: &indexmap::IndexMap<String, f64>,
 ) -> Result<()> {
     match &mut node.definition {
+        FeatureDefinition::DatumPlane(def) => {
+            if let Some(expr) = &def.offset_expr {
+                def.offset = Length::from_meters(eval_length_expr(expr, values)?);
+            }
+        }
+        FeatureDefinition::DatumAxis(def) => {
+            if let Some(exprs) = &def.origin_expr {
+                for (i, expr) in exprs.iter().enumerate() {
+                    if let Some(expr) = expr {
+                        def.origin_m[i] = eval_length_expr(expr, values)?;
+                    }
+                }
+            }
+        }
         FeatureDefinition::Extrude(extrude) => {
             if let Some(expr) = &extrude.length_expr {
                 let meters = eval_length_expr(expr, values)?;

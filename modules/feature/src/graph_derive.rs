@@ -24,6 +24,24 @@ impl FeatureDefinition {
     /// Feature IDs this definition consumes directly, as `(field, feature_id)`
     /// in canonical field order: sketch, source, then target.
     pub fn feature_inputs(&self) -> Vec<(&'static str, &str)> {
+        if let Self::DatumPlane(def) = self {
+            return match &def.base {
+                Workplane::DatumPlane { feature_id } => {
+                    vec![("base.feature_id", feature_id.as_str())]
+                }
+                _ => vec![],
+            };
+        }
+        if let Self::Revolve(def) = self {
+            return [
+                ("sketch_feature", Some(def.sketch_feature.as_str())),
+                ("axis_feature", def.axis_feature.as_deref()),
+                ("target_feature", def.target_feature.as_deref()),
+            ]
+            .into_iter()
+            .filter_map(|(field, id)| id.map(|id| (field, id)))
+            .collect();
+        }
         if let Self::Sweep(def) = self {
             return [
                 ("sketch_feature", Some(&def.sketch_feature)),
@@ -47,7 +65,7 @@ impl FeatureDefinition {
                 .collect();
         }
         let candidates: [(&'static str, Option<&String>); 2] = match self {
-            Self::Sketch(_) => [("", None), ("", None)],
+            Self::Sketch(_) | Self::DatumPlane(_) | Self::DatumAxis(_) => [("", None), ("", None)],
             Self::Extrude(def) => [
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", def.target_feature.as_ref()),
@@ -90,6 +108,12 @@ impl FeatureDefinition {
 
     /// Semantic reference IDs this definition consumes, as `(field, ref_id)`.
     pub fn reference_inputs(&self) -> Vec<(&'static str, &str)> {
+        if let Self::DatumPlane(def) = self {
+            return match &def.base {
+                Workplane::FaceRef { face_ref } => vec![("base.face_ref", face_ref.as_str())],
+                _ => vec![],
+            };
+        }
         if let Self::Shell(def) = self {
             return def
                 .open_face_refs
@@ -110,7 +134,9 @@ impl FeatureDefinition {
             Self::MirrorPattern(def) => {
                 [("plane_face_ref", def.plane_face_ref.as_ref()), ("", None)]
             }
-            Self::Sketch(_)
+            Self::DatumPlane(_)
+            | Self::DatumAxis(_)
+            | Self::Sketch(_)
             | Self::Extrude(_)
             | Self::Revolve(_)
             | Self::LinearPattern(_)
@@ -161,6 +187,30 @@ impl FeatureDefinition {
 
     /// Parametric expressions this definition evaluates, as `(field, expr)`.
     pub fn expressions(&self) -> Vec<(&'static str, &str)> {
+        if let Self::DatumPlane(def) = self {
+            return def
+                .offset_expr
+                .as_deref()
+                .map(|expr| vec![("offset_expr", expr)])
+                .unwrap_or_default();
+        }
+        if let Self::DatumAxis(def) = self {
+            return def
+                .origin_expr
+                .as_ref()
+                .map(|exprs| {
+                    exprs
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(i, expr)| {
+                            expr.as_deref().map(|expr| {
+                                (["origin_expr.x", "origin_expr.y", "origin_expr.z"][i], expr)
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+        }
         if let Self::HelixSweep(def) = self {
             return present([
                 ("pitch_expr", def.pitch_expr.as_ref()),
@@ -175,7 +225,9 @@ impl FeatureDefinition {
             Self::Chamfer(def) => ("distance_expr", def.distance_expr.as_ref()),
             Self::Shell(def) => ("thickness_expr", def.thickness_expr.as_ref()),
             Self::LinearPattern(def) => ("spacing_expr", def.spacing_expr.as_ref()),
-            Self::Sketch(_)
+            Self::DatumPlane(_)
+            | Self::DatumAxis(_)
+            | Self::Sketch(_)
             | Self::CircularPattern(_)
             | Self::MirrorPattern(_)
             | Self::ImportedSolid(_)
@@ -252,7 +304,17 @@ pub fn derive_feature_graph(
     let mut inputs: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
     for id in order {
         let node = by_id[id.as_str()];
-        for (field, source) in node.definition.feature_inputs() {
+        let mut direct = node.definition.feature_inputs();
+        if let FeatureDefinition::Sketch(def) = &node.definition {
+            if let Some(Workplane::DatumPlane { feature_id }) = sketches
+                .iter()
+                .find(|sketch| sketch.id.as_str() == def.sketch_id)
+                .map(|sketch| &sketch.workplane)
+            {
+                direct.push(("workplane.feature_id", feature_id));
+            }
+        }
+        for (field, source) in direct {
             if !by_id.contains_key(source) {
                 return Err(OpenCadError::validation(format!(
                     "feature '{}' {field} references unknown feature '{source}'",

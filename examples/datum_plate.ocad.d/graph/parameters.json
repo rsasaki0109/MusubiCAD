@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:offset": {
+      "id": "param:offset",
+      "name": "offset",
+      "expr": "5 mm",
+      "dirty": false
+    },
+    "param:axis_x": {
+      "id": "param:axis_x",
+      "name": "axis_x",
+      "expr": "5 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

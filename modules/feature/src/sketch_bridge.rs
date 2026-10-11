@@ -59,7 +59,7 @@ pub fn profile_to_solved_with_context(
     ctx: &dyn RegenContext,
 ) -> Result<SolvedSketch> {
     let mut solved = profile_to_solved_local(sketch, profile_ref)?;
-    let workplane = resolve_workplane(sketch, ctx)?;
+    let workplane = resolve_workplane(&sketch.workplane, ctx)?;
     solved.placement = Some(placement_from_workplane(&workplane)?);
     Ok(solved)
 }
@@ -79,17 +79,26 @@ pub fn extrude_direction_for_operation(
 fn uses_face_local_workplane(sketch: &Sketch) -> bool {
     matches!(
         sketch.workplane,
-        Workplane::FaceRef { .. } | Workplane::Custom { .. }
+        Workplane::FaceRef { .. } | Workplane::DatumPlane { .. } | Workplane::Custom { .. }
     )
 }
 
 pub fn extrude_direction_for_sketch(sketch: &Sketch, ctx: &dyn RegenContext) -> Result<[f64; 3]> {
-    let workplane = resolve_workplane(sketch, ctx)?;
+    let workplane = resolve_workplane(&sketch.workplane, ctx)?;
     Ok(placement_from_workplane(&workplane)?.extrude_direction_m())
 }
 
-fn resolve_workplane(sketch: &Sketch, ctx: &dyn RegenContext) -> Result<Workplane> {
-    match &sketch.workplane {
+pub(crate) fn resolve_workplane(
+    workplane: &Workplane,
+    ctx: &dyn RegenContext,
+) -> Result<Workplane> {
+    match workplane {
+        Workplane::DatumPlane { feature_id } => match ctx.datum_for_feature(feature_id)? {
+            crate::datum::DatumGeometry::Plane { workplane } => Ok(workplane),
+            _ => Err(OpenCadError::validation(format!(
+                "feature '{feature_id}' is not a datum plane"
+            ))),
+        },
         Workplane::FaceRef { face_ref } => workplane_for_face_ref(ctx, face_ref),
         other => Ok(other.clone()),
     }
@@ -122,7 +131,7 @@ pub fn placement_from_workplane(workplane: &Workplane) -> Result<SketchPlacement
                 y_axis_m: y_axis,
             })
         }
-        Workplane::FaceRef { .. } => Err(OpenCadError::validation(
+        Workplane::FaceRef { .. } | Workplane::DatumPlane { .. } => Err(OpenCadError::validation(
             "face_ref workplane must be resolved before building sketch placement",
         )),
     }
@@ -468,7 +477,7 @@ pub fn path_to_solved_with_context(
         .filter(|(_, count)| **count == 1)
         .map(|(id, _)| id)
         .collect();
-    let placement = placement_from_workplane(&resolve_workplane(sketch, ctx)?)?;
+    let placement = placement_from_workplane(&resolve_workplane(&sketch.workplane, ctx)?)?;
     let world = |p: [f64; 2]| placement.map_point(p[0], p[1]);
     let (ordered, closed) = match ends.as_slice() {
         [] => (order_chain(&pieces, None)?, true),

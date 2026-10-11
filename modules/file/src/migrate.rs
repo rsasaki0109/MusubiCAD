@@ -6,6 +6,11 @@ use crate::document::OcadDocument;
 
 /// Normalize current models after deserialization.
 ///
+/// ADR-035 adds explicit datum feature/workplane tags. Legacy revolve axes
+/// deserialize with `axis_feature = None`; no datum association is inferred.
+/// The additive wire forms need no version branch: numeric axes and workplanes
+/// retain their meaning, and absent datum expressions default to None.
+///
 /// ADR-034: legacy drawing point pairs deserialize as `LinearMeasurement::Points`
 /// through the untagged wire migration. No semantic association is invented and
 /// current semantic dimensions retain only their `edge_ref` on serialization.

@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Workplane {
+    DatumPlane {
+        feature_id: String,
+    },
     Global {
         plane: GlobalPlane,
     },

@@ -125,7 +125,10 @@ impl Feature for ImportedSolidExecutor {
             }
             (_, None) => unreachable!("validated above"),
         };
-        Ok(FeatureOutput { body: Some(body) })
+        Ok(FeatureOutput {
+            body: Some(body),
+            datum: None,
+        })
     }
 }
 

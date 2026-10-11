@@ -91,6 +91,28 @@ impl FeatureDefinition {
     /// against the resolved parameter `scope` (metres / radians by name).
     pub fn validate_values(&self, scope: &IndexMap<String, f64>) -> Result<()> {
         match self {
+            Self::DatumPlane(def) => {
+                let offset = match &def.offset_expr {
+                    Some(expr) => eval_length_expr(expr, scope)?,
+                    None => def.offset.meters(),
+                };
+                if !offset.is_finite() {
+                    return Err(OpenCadError::validation("datum offset must be finite (m)"));
+                }
+                Ok(())
+            }
+            Self::DatumAxis(def) => {
+                let mut origin = def.origin_m;
+                if let Some(exprs) = &def.origin_expr {
+                    for (i, expr) in exprs.iter().enumerate() {
+                        if let Some(expr) = expr {
+                            origin[i] = eval_length_expr(expr, scope)?;
+                        }
+                    }
+                }
+                crate::datum::finite_origin(origin)?;
+                direction("datum axis direction", &def.direction)
+            }
             Self::Sketch(_) => Ok(()),
             Self::Extrude(def) => extent(
                 "extrude length",

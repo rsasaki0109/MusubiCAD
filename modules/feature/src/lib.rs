@@ -59,3 +59,5 @@ pub use sketch_bridge::{
 };
 pub use sketch_feature::{SketchFeature, SketchFeatureDef};
 pub use sweep::{SweepFeature, SweepFeatureExecutor};
+
+pub mod datum;

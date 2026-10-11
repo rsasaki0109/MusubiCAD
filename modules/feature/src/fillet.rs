@@ -59,7 +59,10 @@ impl Feature for FilletFeatureExecutor {
             def.edge_selector.clone()
         };
         let result = ctx.kernel().fillet_edges(body, radius_m, selector)?;
-        Ok(FeatureOutput { body: Some(result) })
+        Ok(FeatureOutput {
+            body: Some(result),
+            datum: None,
+        })
     }
 }
 

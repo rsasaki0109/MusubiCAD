@@ -180,7 +180,10 @@ impl Feature for MirrorPatternFeatureExecutor {
                 } else {
                     kernel.boolean(source, mirrored, BooleanOp::Union)?
                 };
-                Ok(FeatureOutput { body: Some(body) })
+                Ok(FeatureOutput {
+                    body: Some(body),
+                    datum: None,
+                })
             }
             PatternOperation::Cut => {
                 let target_id = def.target_feature.as_deref().ok_or_else(|| {
@@ -189,7 +192,10 @@ impl Feature for MirrorPatternFeatureExecutor {
                 let mut result = ctx.body_for_feature(target_id)?;
                 result = kernel.boolean(result, source, BooleanOp::Subtract)?;
                 result = kernel.boolean(result, mirrored, BooleanOp::Subtract)?;
-                Ok(FeatureOutput { body: Some(result) })
+                Ok(FeatureOutput {
+                    body: Some(result),
+                    datum: None,
+                })
             }
         }
     }
@@ -240,7 +246,10 @@ fn execute_pattern(
                 }
                 result
             };
-            Ok(FeatureOutput { body: Some(body) })
+            Ok(FeatureOutput {
+                body: Some(body),
+                datum: None,
+            })
         }
         PatternOperation::Cut => {
             let target_id = run
@@ -255,7 +264,10 @@ fn execute_pattern(
                 };
                 result = kernel.boolean(result, instance, BooleanOp::Subtract)?;
             }
-            Ok(FeatureOutput { body: Some(result) })
+            Ok(FeatureOutput {
+                body: Some(result),
+                datum: None,
+            })
         }
     }
 }
@@ -500,6 +512,7 @@ mod tests {
             "feature:base".into(),
             FeatureOutput {
                 body: Some(KernelBody::new(20)),
+                datum: None,
             },
         );
         let node = FeatureNode::new(
@@ -629,6 +642,7 @@ mod tests {
             "feature:base".into(),
             FeatureOutput {
                 body: Some(KernelBody::new(20)),
+                datum: None,
             },
         );
         let node = FeatureNode::new(
@@ -655,6 +669,7 @@ mod tests {
             "feature:base".into(),
             FeatureOutput {
                 body: Some(KernelBody::new(20)),
+                datum: None,
             },
         );
         let node = FeatureNode::new(
@@ -681,6 +696,7 @@ mod tests {
             "feature:base".into(),
             FeatureOutput {
                 body: Some(KernelBody::new(20)),
+                datum: None,
             },
         );
         let node = FeatureNode::new(
@@ -706,6 +722,7 @@ mod tests {
             "feature:base".into(),
             FeatureOutput {
                 body: Some(KernelBody::new(20)),
+                datum: None,
             },
         );
         let node = FeatureNode::new(

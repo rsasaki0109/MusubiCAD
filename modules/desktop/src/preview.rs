@@ -110,10 +110,10 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
     let mut model = doc.into_part_model();
     apply_parameters(&mut model, &parameters)?;
     let values = evaluate_param_graph(&parameters)?;
-    let sketches: Vec<_> = model.sketches.values().cloned().collect();
-    let overlay = build_sketch_overlay(&sketches, &values)?;
     let tessellated =
         tessellate_active_body_detailed(&mut model, Some(&parameters), Some(&semantic_refs))?;
+    let sketches = opencad_feature::datum::resolved_datum_sketches(&model)?;
+    let overlay = build_sketch_overlay(&sketches, &values)?;
     let scene = RenderScene::from_mesh_set(&tessellated.mesh_set)?;
     let parameter_ids = parameters.evaluation_order()?;
     let parameter_name_to_id = parameter_ids

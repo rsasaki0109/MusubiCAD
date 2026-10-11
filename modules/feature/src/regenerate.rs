@@ -207,6 +207,13 @@ impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
             .ok_or_else(|| OpenCadError::not_found(format!("sketch '{}'", def.sketch_id)))
     }
 
+    fn datum_for_feature(&self, feature_id: &str) -> Result<crate::datum::DatumGeometry> {
+        self.outputs
+            .get(feature_id)
+            .and_then(|o| o.datum.clone())
+            .ok_or_else(|| OpenCadError::not_found(format!("datum for feature '{feature_id}'")))
+    }
+
     fn body_for_feature(&self, feature_id: &str) -> Result<KernelBody> {
         self.outputs
             .get(feature_id)
@@ -3037,8 +3044,13 @@ impl TestRegenContext {
 
     pub(crate) fn with_body(feature_id: impl Into<String>, body: KernelBody) -> Self {
         let mut ctx = Self::empty();
-        ctx.outputs
-            .insert(feature_id.into(), FeatureOutput { body: Some(body) });
+        ctx.outputs.insert(
+            feature_id.into(),
+            FeatureOutput {
+                body: Some(body),
+                datum: None,
+            },
+        );
         ctx
     }
 }
@@ -3060,6 +3072,13 @@ impl RegenContext for TestRegenContext {
         self.sketches
             .get(&def.sketch_id)
             .ok_or_else(|| OpenCadError::not_found(format!("sketch '{}'", def.sketch_id)))
+    }
+
+    fn datum_for_feature(&self, feature_id: &str) -> Result<crate::datum::DatumGeometry> {
+        self.outputs
+            .get(feature_id)
+            .and_then(|o| o.datum.clone())
+            .ok_or_else(|| OpenCadError::not_found(format!("datum for feature '{feature_id}'")))
     }
 
     fn body_for_feature(&self, feature_id: &str) -> Result<KernelBody> {

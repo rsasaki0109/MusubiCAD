@@ -93,7 +93,10 @@ impl Feature for ExtrudeFeatureExecutor {
             }
         };
 
-        Ok(FeatureOutput { body: Some(body) })
+        Ok(FeatureOutput {
+            body: Some(body),
+            datum: None,
+        })
     }
 }
 
