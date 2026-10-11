@@ -172,8 +172,18 @@ fn exprs_from_feature(node: &FeatureNode) -> Vec<String> {
         FeatureDefinition::Hole(HoleFeature { depth_expr, .. }) => {
             push_expr_option(&mut exprs, depth_expr);
         }
-        FeatureDefinition::Fillet(FilletFeature { radius_expr, .. }) => {
+        FeatureDefinition::Fillet(FilletFeature {
+            radius_expr,
+            radius_law,
+            ..
+        }) => {
             push_expr_option(&mut exprs, radius_expr);
+            if let Some(opencad_feature::FilletRadiusLaw::Linear {
+                end_radius_expr, ..
+            }) = radius_law
+            {
+                push_expr_option(&mut exprs, end_radius_expr);
+            }
         }
         FeatureDefinition::Chamfer(ChamferFeature { distance_expr, .. }) => {
             push_expr_option(&mut exprs, distance_expr);

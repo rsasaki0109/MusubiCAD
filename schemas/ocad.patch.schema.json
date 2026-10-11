@@ -319,6 +319,128 @@
       },
       "additionalProperties": false
     },
+    "fillet": {
+      "type": "object",
+      "required": [
+        "type",
+        "target_feature",
+        "radius"
+      ],
+      "properties": {
+        "type": {
+          "const": "fillet"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "radius": {
+          "type": "object",
+          "required": [
+            "value_si"
+          ],
+          "properties": {
+            "value_si": {
+              "type": "number",
+              "minimum": 1e-09
+            }
+          },
+          "additionalProperties": false
+        },
+        "radius_expr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "radius_law": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "end_radius"
+              ],
+              "properties": {
+                "type": {
+                  "const": "linear"
+                },
+                "end_radius": {
+                  "type": "object",
+                  "required": [
+                    "value_si"
+                  ],
+                  "properties": {
+                    "value_si": {
+                      "type": "number",
+                      "minimum": 1e-09
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "end_radius_expr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "face_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "edge_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "edge_selector": {
+          "type": [
+            "string",
+            "object"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "radius_law": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "radius_law"
+            ]
+          },
+          "then": {
+            "required": [
+              "edge_ref"
+            ],
+            "properties": {
+              "edge_ref": {
+                "type": "string",
+                "pattern": "^ref:edge:"
+              },
+              "face_ref": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
     "rib": {
       "type": "object",
       "required": [
@@ -957,6 +1079,7 @@
       "allOf": [
         { "if": { "properties": { "type": { "const": "draft" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/draft" } },
         { "if": { "properties": { "type": { "const": "rib" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/rib" } },
+        { "if": { "properties": { "type": { "const": "fillet" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/fillet" } },
         { "if": { "properties": { "type": { "const": "standard_hole" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/standard_hole" } },
         {
           "if": {

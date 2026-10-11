@@ -1,0 +1,128 @@
+{
+  "intent": "Create a plate with a semantic front edge fillet varying from 0.5 mm to 1.5 mm in increasing X",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:start_radius",
+      "name": "start_radius",
+      "expr": "0.5 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:end_radius",
+      "name": "end_radius",
+      "expr": "1.5 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:plate",
+      "entity": {
+        "type": "rectangle",
+        "id": "ent:plate",
+        "construction": false,
+        "origin": [
+          0,
+          0
+        ],
+        "size": [
+          0.08,
+          0.06
+        ],
+        "corner_ids": [
+          "ent:plate_c0",
+          "ent:plate_c1",
+          "ent:plate_c2",
+          "ent:plate_c3"
+        ],
+        "edge_ids": [
+          "ent:plate_e0",
+          "ent:plate_e1",
+          "ent:plate_e2",
+          "ent:plate_e3"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:plate"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_plate",
+          "profile_ref": "sketch:plate/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_semantic_ref",
+      "topo_ref": {
+        "ref_id": "ref:edge:plate_front",
+        "kind": "edge",
+        "semantic": {
+          "created_by": "feature:plate",
+          "role": "top@-y"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:variable_fillet",
+        "name": "Linear radius front fillet",
+        "definition": {
+          "type": "fillet",
+          "target_feature": "feature:plate",
+          "edge_ref": "ref:edge:plate_front",
+          "radius": {
+            "value_si": 0.0005
+          },
+          "radius_expr": "start_radius",
+          "radius_law": {
+            "type": "linear",
+            "end_radius": {
+              "value_si": 0.0015
+            },
+            "end_radius_expr": "end_radius"
+          }
+        }
+      }
+    }
+  ]
+}

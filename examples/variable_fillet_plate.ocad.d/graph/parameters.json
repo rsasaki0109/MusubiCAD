@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:start_radius": {
+      "id": "param:start_radius",
+      "name": "start_radius",
+      "expr": "0.5 mm",
+      "dirty": false
+    },
+    "param:end_radius": {
+      "id": "param:end_radius",
+      "name": "end_radius",
+      "expr": "1.5 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

@@ -344,3 +344,11 @@ normal-clearance hole (6.6 mm diameter) and an M6 coarse simplified tapped hole
 cylinder and thread designation; it does not model a helix. The structural source
 is `agent/create_standard_hole_plate_patch.json`. Editing `tap_depth` changes the
 blind hole while the standard diameter agreement remains enforced.
+
+### Variable fillet plate
+
+`variable_fillet_plate.ocad.d` is an 80 × 60 × 6 mm plate with one semantic front
+edge rounded from 0.5 mm at lower X to 1.5 mm at higher X. The explicit linear
+radius law uses fixed native OCCT interpolation; see ADR-038 for its tolerances.
+Its source is `agent/create_variable_fillet_plate_patch.json`. Edit `end_radius`
+through DesignPatch and verify regeneration and semantic provenance.

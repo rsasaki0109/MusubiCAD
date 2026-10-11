@@ -134,6 +134,18 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.fillet_edges(body, radius_m, selector)
     }
 
+    fn variable_fillet_edge(
+        &self,
+        body: KernelBody,
+        start_radius_m: f64,
+        end_radius_m: f64,
+        selector: FilletEdgeSelector,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner
+            .variable_fillet_edge(body, start_radius_m, end_radius_m, selector)
+    }
+
     fn chamfer_edges(
         &self,
         body: KernelBody,

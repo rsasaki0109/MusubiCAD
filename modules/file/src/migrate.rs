@@ -6,6 +6,10 @@ use crate::document::OcadDocument;
 
 /// Normalize current models after deserialization.
 ///
+/// ADR-038: absent fillet radius_law defaults to None and legacy fillets remain
+/// constant-radius. The additive field needs no version branch; variable/legacy
+/// round trips verify that no law is inferred and endpoint expressions persist.
+///
 /// ADR-037 adds the standard_hole tag with required standards and explicit
 /// tap-drill representation. Legacy hole variants remain unchanged; no thread
 /// or manufacturing standard is inferred. The additive form requires no schema

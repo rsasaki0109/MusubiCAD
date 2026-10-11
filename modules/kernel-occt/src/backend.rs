@@ -956,6 +956,92 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn variable_fillet_edge(
+        &self,
+        body: KernelBody,
+        start_radius_m: f64,
+        end_radius_m: f64,
+        selector: FilletEdgeSelector,
+    ) -> Result<KernelBody> {
+        opencad_geometry::kernel::validate_variable_fillet_radii(start_radius_m, end_radius_m)?;
+        #[cfg(feature = "occt")]
+        {
+            let solid = self
+                .store
+                .borrow()
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+            let selector = if let FilletEdgeSelector::EdgeRole { role } = selector {
+                let candidates: Vec<_> = self
+                    .discover_body_edges(&body)?
+                    .into_iter()
+                    .filter(|edge| edge.role == role)
+                    .collect();
+                if candidates.len() != 1 {
+                    return Err(OpenCadError::validation(
+                        "variable fillet edge role is missing or ambiguous",
+                    ));
+                }
+                FilletEdgeSelector::KernelEdges {
+                    kernel_edge_ids: vec![candidates[0].kernel_edge_id],
+                }
+            } else {
+                selector
+            };
+            let edges = collect_edges(&solid, selector);
+            if edges.len() != 1 {
+                return Err(OpenCadError::validation(
+                    "variable fillet requires exactly one selected edge",
+                ));
+            }
+            let mut endpoints = [
+                edges[0].start_point().to_array(),
+                edges[0].end_point().to_array(),
+            ];
+            if endpoints[0].iter().zip(endpoints[1]).find_map(|(a, b)| {
+                let ordering = a.total_cmp(&b);
+                (ordering != std::cmp::Ordering::Equal).then_some(ordering)
+            }) == Some(std::cmp::Ordering::Greater)
+            {
+                endpoints.swap(0, 1);
+            }
+            let mut bytes = Vec::new();
+            let working = solid.scale(DVec3::ZERO, 1000.0);
+            Solid::write_brep_text([&working], &mut bytes).map_err(map_occt_error)?;
+            let result = crate::ffi::native::variable_fillet(
+                &bytes,
+                &endpoints
+                    .concat()
+                    .iter()
+                    .map(|value| value * 1000.0)
+                    .collect::<Vec<_>>(),
+                start_radius_m * 1000.0,
+                end_radius_m * 1000.0,
+            )
+            .map_err(|err| OpenCadError::validation(format!("variable fillet: {err}")))?;
+            let mut solids =
+                Solid::read_brep_text(&mut std::io::Cursor::new(result)).map_err(map_occt_error)?;
+            if solids.len() != 1 {
+                return Err(OpenCadError::validation(
+                    "variable fillet must produce one solid",
+                ));
+            }
+            // The opaque BREP transfer cannot preserve cadrum's pointer-based
+            // history. Subsequent references use verified geometry provenance.
+            Ok(KernelBody::new(
+                self.store
+                    .borrow_mut()
+                    .insert_body(solids.remove(0).scale(DVec3::ZERO, 0.001)),
+            ))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, selector);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn chamfer_edges(
         &self,
         body: KernelBody,

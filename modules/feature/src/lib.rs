@@ -31,7 +31,7 @@ pub use cache::{CachedFeature, RegenerationCache};
 pub use chamfer::{ChamferFeature, ChamferFeatureExecutor};
 pub use extrude::{ExtrudeFeature, ExtrudeFeatureExecutor};
 pub use feature::{Feature, FeatureDefinition, FeatureNode, FeatureOutput, RegenContext};
-pub use fillet::{FilletFeature, FilletFeatureExecutor};
+pub use fillet::{FilletFeature, FilletFeatureExecutor, FilletRadiusLaw};
 pub use graph_derive::derive_feature_graph;
 pub use helix_sweep::{HelixSweepFeature, HelixSweepFeatureExecutor};
 pub use hole::{HoleFeature, HoleFeatureExecutor};

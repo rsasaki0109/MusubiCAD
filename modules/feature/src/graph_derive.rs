@@ -254,6 +254,17 @@ impl FeatureDefinition {
                 ("height_expr", def.height_expr.as_ref()),
             ]);
         }
+        if let Self::Fillet(def) = self {
+            let mut expressions = present([("radius_expr", def.radius_expr.as_ref())]);
+            if let Some(crate::FilletRadiusLaw::Linear {
+                end_radius_expr: Some(expr),
+                ..
+            }) = &def.radius_law
+            {
+                expressions.push(("radius_law.end_radius_expr", expr));
+            }
+            return expressions;
+        }
         if let Self::Rib(def) = self {
             return present([
                 ("thickness_expr", def.thickness_expr.as_ref()),

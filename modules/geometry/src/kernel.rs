@@ -382,6 +382,21 @@ pub trait GeometryKernel {
         selector: FilletEdgeSelector,
     ) -> Result<KernelBody>;
 
+    /// Linear radius evolution on one straight edge. Endpoint radii follow
+    /// lexicographically increasing world coordinates, independent of BREP order.
+    fn variable_fillet_edge(
+        &self,
+        _body: KernelBody,
+        start_radius_m: f64,
+        end_radius_m: f64,
+        _selector: FilletEdgeSelector,
+    ) -> Result<KernelBody> {
+        validate_variable_fillet_radii(start_radius_m, end_radius_m)?;
+        Err(OpenCadError::validation(
+            "variable fillets are unsupported by this kernel",
+        ))
+    }
+
     fn chamfer_edges(
         &self,
         body: KernelBody,
@@ -717,6 +732,27 @@ impl GeometryKernel for MockGeometryKernel {
         Ok(body)
     }
 
+    fn variable_fillet_edge(
+        &self,
+        body: KernelBody,
+        start_radius_m: f64,
+        end_radius_m: f64,
+        selector: FilletEdgeSelector,
+    ) -> Result<KernelBody> {
+        validate_variable_fillet_radii(start_radius_m, end_radius_m)?;
+        match selector {
+            FilletEdgeSelector::KernelEdges { kernel_edge_ids } if kernel_edge_ids.len() == 1 => {
+                Ok(KernelBody::new(body.0 + 1))
+            }
+            FilletEdgeSelector::EdgeRole { role } if !role.trim().is_empty() => {
+                Ok(KernelBody::new(body.0 + 1))
+            }
+            _ => Err(OpenCadError::validation(
+                "variable fillet requires one edge selector",
+            )),
+        }
+    }
+
     fn chamfer_edges(
         &self,
         body: KernelBody,
@@ -790,6 +826,16 @@ impl GeometryKernel for MockGeometryKernel {
             * 1000.0) as u64;
         Ok(KernelBody::new(body.0.wrapping_add(delta.max(1))))
     }
+}
+
+/// Kernel-level check shared by Mock and OCCT before topology changes.
+pub fn validate_variable_fillet_radii(start_m: f64, end_m: f64) -> Result<()> {
+    if [start_m, end_m].iter().any(|r| !r.is_finite() || *r < 1e-9) {
+        return Err(OpenCadError::validation(
+            "variable fillet radii must be finite and at least 1e-9 m",
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]

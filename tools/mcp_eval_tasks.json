@@ -214,6 +214,17 @@
         "clearance_diameter",
         "tap_drill_diameter"
       ]
+    },
+    {
+      "id": "variable_fillet_radius",
+      "source": "examples/variable_fillet_plate.ocad.d",
+      "document": "variable_fillet.ocad.d",
+      "prompt": "Change end_radius in {document} from 1.5 mm to 2 mm while preserving start_radius = 0.5 mm, the semantic front edge and the explicit linear radius law. Keep the plate dimensions unchanged. Verify regeneration and review the reference provenance. Endpoint order follows increasing X. Compare the rounded volume to the circular-corner reference with the documented OCCT approximation.",
+      "expected_volume_mm3": 28769.95574287564,
+      "required_parameters": [
+        "start_radius",
+        "end_radius"
+      ]
     }
   ]
 }

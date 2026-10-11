@@ -143,13 +143,28 @@ impl FeatureDefinition {
                 }
                 Ok(())
             }
-            Self::Fillet(def) => length(
-                "fillet radius",
-                def.radius_expr.as_ref(),
-                def.radius.meters(),
-                scope,
-            )
-            .map(|_| ()),
+            Self::Fillet(def) => {
+                def.validate_selection()?;
+                length(
+                    "fillet radius",
+                    def.radius_expr.as_ref(),
+                    def.radius.meters(),
+                    scope,
+                )?;
+                if let Some(crate::FilletRadiusLaw::Linear {
+                    end_radius,
+                    end_radius_expr,
+                }) = &def.radius_law
+                {
+                    length(
+                        "fillet end radius",
+                        end_radius_expr.as_ref(),
+                        end_radius.meters(),
+                        scope,
+                    )?;
+                }
+                Ok(())
+            }
             Self::Chamfer(def) => length(
                 "chamfer distance",
                 def.distance_expr.as_ref(),
