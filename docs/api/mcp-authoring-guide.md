@@ -135,7 +135,9 @@ examples to see each one. Extrude and revolve `operation` is `new_body`,
   mate and how the child moves about it, with SI limits:
   `{"type": "add_joint", "joint": {"id": "joint:elbow", "mate": "mate:elbow", "type": "revolute", "lower_rad": -1.745, "upper_rad": 2.443, "effort_n_m": 1.0, "velocity_rad_s": 3.0}}`.
   Moving joints need a `concentric` mate; zero is the current pose. URDF
-  export writes these limits.
+  export writes these limits. After adding or changing a robot joint, export
+  `.urdf` and run `reach` on the same assembly so the kinematic tree, joint
+  limits, and target residual agree with the Design Graph.
 - **Drawings:** `add_sheet` (added empty), `add_drawing_view`,
   `add_drawing_dimension`, and their `remove_*` forms.
 

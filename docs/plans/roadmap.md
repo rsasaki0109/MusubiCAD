@@ -570,7 +570,7 @@ position" that it already gets for a part's mass or bounds.
 | MCAD-P10-001 | Assembly assertions | Assembly documents evaluate their assertions (`assembly_dof_at_most`, `interference_at_most`, mass, bounds, body count, parameter range) in `musubicad regen`, `verify_patch` / `patch_dry_run`, `patch_apply`, and `musubicad review`; a violated required assertion refuses the change, names the assertion and its evidence, and leaves the file unchanged | Complete |
 | MCAD-P10-002 | Interference across joint motion | A typed assertion that samples every joint within its limits and counts interfering instance pairs at each pose with the existing explicit tolerances; deterministic pose order; the failing pose is named with unit-bearing joint values; [ADR-033](../adr/ADR-033-motion-interference.md) per-joint sampling with straddling-pair checks, brute-force cross-check, six-axis arm clearance patch | Complete |
 | MCAD-P10-003 | Semantic drawing dimensions | [ADR-034](../adr/ADR-034-semantic-drawing-dimensions.md); part-edge chord dimensions with required provenance; all sheets checked by regen, verified dry-run/apply/review and SVG export; exclusive wire migration, Mock/OCCT tests, example and eval task | Complete |
-| MCAD-P10-004 | Robot eval task | MCP eval task that adds a joint, exports URDF, and reaches a target, graded by the kinematic tree and the reach residual | Planned |
+| MCAD-P10-004 | Robot eval task | MCP eval task `robot_add_wrist_joint`: starts from a robot arm with `joint:wrist` removed, requires `add_joint`, URDF export, and a reach query; grader independently checks assembly joint IDs, URDF joint names, mate residual, and reach residual | Complete |
 | MCAD-P10-005 | Six-axis motion clearance example | Apply the reviewed clearance patch to the six-axis example; regenerate URDF, joint GIF and web viewer from the updated Design Graph; preserve ADR-033 sampling limits and verify sampled clearance | Planned |
 
 **Definition of done:** a patch that makes two instances of a checked-in
@@ -592,6 +592,9 @@ Drawing checks include Mock provenance/endpoint tests, legacy and semantic file
 round trips, structural authoring, OCCT analytic width edits, real MCP parity,
 later-sheet refusal, wrong document identity, deterministic SVG and eval checker
 self-tests. Semantic assembly dimensions remain a future instance-binding task.
+Robot eval checks include the `robot_add_wrist_joint` MCP task, which removes a
+joint in setup, asks the agent to restore it, and independently re-runs URDF
+export plus `reach` against the finished document.
 
 **Known risks:** pose sampling cost on large assemblies (pairs × poses exact
 Booleans), sampling resolution missing a narrow collision window, and

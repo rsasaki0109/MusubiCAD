@@ -1,0 +1,9 @@
+{
+  "intent": "Create an eval fixture by removing the wrist joint while leaving its mate in place",
+  "operations": [
+    {
+      "type": "remove_joint",
+      "id": "joint:wrist"
+    }
+  ]
+}

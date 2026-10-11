@@ -112,7 +112,10 @@ and mates (`concentric`, `coincident`, `distance`, `angle`, `parallel`,
 `ground`) relate connectors. Robot joints (`add_joint`, `set_joint`,
 `remove_joint`) put a motion type and limits on a concentric mate, for
 example a `revolute` elbow with `lower_rad`, `upper_rad`, `effort_n_m`, and
-`velocity_rad_s`; zero is the current pose, and URDF export writes them.
+`velocity_rad_s`; zero is the current pose, and URDF export writes them. After
+you add or change a robot joint, re-export the URDF and run `reach` for the
+tool target so the kinematic tree and reach residual are checked from the same
+Design Graph.
 Add `no_assembly_interference` to the expected
 effects of any patch that moves parts; `verification.geometry.after_interference_count`
 reports the count. To check every joint position rather than only the current
