@@ -34,6 +34,7 @@ impl FeatureRegistry {
         registry.register(Box::new(ExtrudeFeatureExecutor));
         registry.register(Box::new(RevolveFeatureExecutor));
         registry.register(Box::new(HoleFeatureExecutor));
+        registry.register(Box::new(crate::standard_hole::StandardHoleFeatureExecutor));
         registry.register(Box::new(FilletFeatureExecutor));
         registry.register(Box::new(ChamferFeatureExecutor));
         registry.register(Box::new(LinearPatternFeatureExecutor));

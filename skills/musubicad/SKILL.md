@@ -256,3 +256,19 @@ The backend expands the line into a rectangular profile, extrudes along the
 sketch workplane normal, and unions the result into the target. Verify with
 regeneration and compare analytic volume when possible. Do not replace an
 ambiguous or missing centreline with a different entity.
+
+### Standard holes and simplified internal threads
+
+For MCAD-P11-004, author `standard_hole` through DesignPatch with existing hole
+inputs and an explicit `standard`. Use `iso273` + size M3/M4/M5/M6/M8/M10/M12 +
+fit `close`/`normal`/`loose` for clearance. Use `iso_metric_coarse` + size +
+`representation: tap_drill` for an internal coarse thread represented by its
+recommended nominal-minus-pitch drill cylinder. M6 normal clearance is 6.6 mm;
+M6 coarse has 1 mm pitch and a 5 mm tap drill. This does not create physical
+thread helices or manufacturing tolerance classes.
+
+The selected circle's evaluated diameter must agree with the cut diameter to
+1e-9 m. Change standard and sketch dimensions in the same patch and run verified
+regeneration before applying. Unsupported sizes, pitch overrides and non-circular
+profiles fail closed. Preserve the explicit representation in saved documents.
+Reference: `examples/agent/create_standard_hole_plate_patch.json` and ADR-037.

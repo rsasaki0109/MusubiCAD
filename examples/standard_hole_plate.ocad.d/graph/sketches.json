@@ -1,0 +1,164 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:plate",
+          "construction": false,
+          "origin": [
+            0.0,
+            0.0
+          ],
+          "size": [
+            0.08,
+            0.06
+          ],
+          "corner_ids": [
+            "ent:plate_c0",
+            "ent:plate_c1",
+            "ent:plate_c2",
+            "ent:plate_c3"
+          ],
+          "edge_ids": [
+            "ent:plate_e0",
+            "ent:plate_e1",
+            "ent:plate_e2",
+            "ent:plate_e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    },
+    {
+      "id": "sketch:clearance",
+      "name": "Clearance hole",
+      "workplane": {
+        "type": "custom",
+        "origin": [
+          0.0,
+          0.0,
+          0.012
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "x_axis": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:clearance_center",
+          "construction": false,
+          "x": 0.02,
+          "y": 0.03
+        },
+        {
+          "type": "circle",
+          "id": "ent:clearance_circle",
+          "construction": false,
+          "center": "ent:clearance_center",
+          "radius": 0.0033
+        }
+      ],
+      "constraints": [
+        {
+          "type": "diameter",
+          "id": "con:clearance_diameter",
+          "target": "ent:clearance_circle",
+          "expr": "clearance_diameter"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:clearance_circle",
+          "entity_ids": [
+            "ent:clearance_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:clearance/profile:outer"
+        }
+      ]
+    },
+    {
+      "id": "sketch:tapped",
+      "name": "Tapped hole",
+      "workplane": {
+        "type": "custom",
+        "origin": [
+          0.0,
+          0.0,
+          0.012
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "x_axis": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:tapped_center",
+          "construction": false,
+          "x": 0.05,
+          "y": 0.03
+        },
+        {
+          "type": "circle",
+          "id": "ent:tapped_circle",
+          "construction": false,
+          "center": "ent:tapped_center",
+          "radius": 0.0025
+        }
+      ],
+      "constraints": [
+        {
+          "type": "diameter",
+          "id": "con:tapped_diameter",
+          "target": "ent:tapped_circle",
+          "expr": "tap_drill_diameter"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:tapped_circle",
+          "entity_ids": [
+            "ent:tapped_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:tapped/profile:outer"
+        }
+      ]
+    }
+  ]
+}

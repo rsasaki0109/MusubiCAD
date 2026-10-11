@@ -335,3 +335,12 @@ Only convex planar solids are supported; see `docs/api/draft.md` and ADR-036.
 plate. The `rib_thickness` and `rib_height` parameters drive a `rib` feature
 that expands `ent:rib_line`, extrudes along the sketch normal, and joins the
 web to the base plate.
+
+### Standard hole plate
+
+`standard_hole_plate.ocad.d` is an 80 × 60 × 12 mm plate with an ISO 273 M6
+normal-clearance hole (6.6 mm diameter) and an M6 coarse simplified tapped hole
+(5 mm drill diameter, 1 mm pitch, 8 mm depth). `tap_drill` represents the drill
+cylinder and thread designation; it does not model a helix. The structural source
+is `agent/create_standard_hole_plate_patch.json`. Editing `tap_depth` changes the
+blind hole while the standard diameter agreement remains enforced.

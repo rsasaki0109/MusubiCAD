@@ -30,6 +30,8 @@ are defined in the [canonical roadmap](roadmap.md).
 | Neutral-plane draft (MCAD-P11-002) | Implemented | `modules/feature/src/draft.rs`, Mock kernel contract and `modules/kernel-occt/src/draft.rs`; signed parametric angles, datum neutral plane, semantic side faces; OCCT analytic wedge volume/bounds and cache/rollback tests; patch-authored `examples/draft_plate.ocad.d`; ADR-036 | Convex planar solids only, initially perpendicular selected sides; curved/concave draft requires a future native kernel operation |
 | Centerline ribs (MCAD-P11-003) | Implemented | `modules/feature/src/rib.rs` adds a straight-line rib feature that expands a sketch centerline into a rectangular profile, extrudes by distance, and unions with the target; focused Mock/OCCT tests and `examples/rib_plate.ocad.d` cover analytic volume and rollback; MCP guide, skill and eval task are updated | Curved ribs, taper, draft, and end conditions beyond distance extrusion remain future work |
 
+| Standard holes and simplified internal threads (MCAD-P11-004) | Implemented | `standard_hole` validates circular profile diameter against M3–M12 ISO 273 clearance series or metric coarse nominal-minus-pitch tap drill; required explicit representation, derived SI nominal/pitch/cut dimensions, Mock/OCCT cylinder volume and refusal tests, DesignPatch/file round trips, example, guide/skill and eval; ADR-037 | Simplified drill cylinders only; physical/external/fine/inch threads, tolerance classes and countersinks/counterbores remain future work |
+
 ## Historical plan crosswalk
 
 The older plans use implementation milestone names rather than the active

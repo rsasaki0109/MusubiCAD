@@ -179,8 +179,12 @@ fn infer_face_refs(
             .then(|| node.id.clone())
         }),
         "cylindrical" => feature_nodes.iter().find_map(|node| {
-            matches!(node.definition, opencad_feature::FeatureDefinition::Hole(_))
-                .then(|| node.id.clone())
+            matches!(
+                node.definition,
+                opencad_feature::FeatureDefinition::Hole(_)
+                    | opencad_feature::FeatureDefinition::StandardHole(_)
+            )
+            .then(|| node.id.clone())
         }),
         _ => feature_nodes.iter().find_map(|node| {
             matches!(

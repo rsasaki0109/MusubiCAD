@@ -120,6 +120,12 @@ impl FeatureDefinition {
                 def.length_expr.as_ref(),
                 scope,
             ),
+            Self::StandardHole(def) => extent(
+                "standard hole depth",
+                &def.hole.depth,
+                def.hole.depth_expr.as_ref(),
+                scope,
+            ),
             Self::Hole(def) => extent("hole depth", &def.depth, def.depth_expr.as_ref(), scope),
             Self::Revolve(def) => {
                 direction("revolve axis_direction_m", &def.axis_direction_m)?;

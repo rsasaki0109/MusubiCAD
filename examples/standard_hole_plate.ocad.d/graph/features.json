@@ -1,0 +1,174 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_plate",
+      "feature:plate",
+      "feature:sketch_clearance",
+      "feature:clearance",
+      "feature:sketch_tapped",
+      "feature:tapped"
+    ],
+    "features": {
+      "feature:sketch_plate": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:plate": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_clearance": {
+        "id": "feature:sketch_clearance",
+        "name": "Clearance sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:clearance": {
+        "id": "feature:clearance",
+        "name": "Clearance M6 hole",
+        "feature_type": "standard_hole",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_tapped": {
+        "id": "feature:sketch_tapped",
+        "name": "Tapped sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:tapped": {
+        "id": "feature:tapped",
+        "name": "Tapped M6 hole",
+        "feature_type": "standard_hole",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_plate",
+        "target": "feature:plate",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_clearance",
+        "target": "feature:clearance",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:plate",
+        "target": "feature:clearance",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_tapped",
+        "target": "feature:tapped",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:clearance",
+        "target": "feature:tapped",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:clearance",
+      "name": "Clearance M6 hole",
+      "definition": {
+        "type": "standard_hole",
+        "sketch_feature": "feature:sketch_clearance",
+        "profile_ref": "sketch:clearance/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "target_feature": "feature:plate",
+        "standard": {
+          "type": "iso273",
+          "size": "M6",
+          "fit": "normal"
+        }
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:plate",
+      "name": "Plate",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_plate",
+        "profile_ref": "sketch:plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_clearance",
+      "name": "Clearance sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:clearance"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_plate",
+      "name": "Plate sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:plate"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_tapped",
+      "name": "Tapped sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:tapped"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:tapped",
+      "name": "Tapped M6 hole",
+      "definition": {
+        "type": "standard_hole",
+        "sketch_feature": "feature:sketch_tapped",
+        "profile_ref": "sketch:tapped/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.008
+          }
+        },
+        "target_feature": "feature:clearance",
+        "depth_expr": "tap_depth",
+        "standard": {
+          "type": "iso_metric_coarse",
+          "size": "M6",
+          "representation": "tap_drill"
+        }
+      },
+      "suppressed": false
+    }
+  ]
+}

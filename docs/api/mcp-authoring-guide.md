@@ -234,3 +234,34 @@ Keep the centreline explicit and unit-bearing; do not pre-bake the rib as a
 plain rectangle extrude when the user asked for a rib. Missing centreline
 entities, zero thickness, zero height and missing target bodies fail closed.
 The current contract supports straight-line ribs with distance extent.
+
+## Standard holes and simplified internal threads (MCAD-P11-004)
+
+Use `type: standard_hole` with the same `sketch_feature`, circular `profile_ref`,
+`target_feature`, `depth`, optional `depth_expr` and `face_ref` as a hole, plus a
+required `standard`:
+
+```json
+{"type":"iso273","size":"M6","fit":"normal"}
+```
+
+This requires a 6.6 mm sketch diameter. For a simplified internal coarse thread:
+
+```json
+{"type":"iso_metric_coarse","size":"M6","representation":"tap_drill"}
+```
+
+This requires a 5 mm sketch diameter (6 mm nominal, 1 mm pitch). Supported sizes
+are M3/M4/M5/M6/M8/M10/M12; clearance fits are `close`, `normal`, `loose`.
+`StandardHoleDimensions` derives unit-explicit nominal, pitch and cut diameters.
+Tap-drill sizes use nominal minus pitch, not commercial drill rounding or thread
+tolerance limits. `tap_drill` exports a cylinder only, with no physical thread
+helix, drill point or tolerance class. The simplified thread spans the hole depth.
+
+Keep the circle diameter and designation/fit consistent in one DesignPatch.
+Regeneration and verified dry-run/apply reject diameter discrepancies above
+1e-9 m and non-circular profiles. Unsupported standards/sizes/representations
+and extra standard fields fail closed. Structural staged authoring alone does
+not verify diameter agreement. Use verified application for completed designs.
+See `examples/agent/create_standard_hole_plate_patch.json` and
+[ADR-037](../adr/ADR-037-standard-holes-and-simplified-threads.md).
