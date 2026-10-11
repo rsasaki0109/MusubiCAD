@@ -609,6 +609,29 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn body_boolean(
+        &self,
+        target: KernelBody,
+        source: KernelBody,
+        op: BooleanOp,
+    ) -> Result<KernelBody> {
+        let body = self.boolean(target, source, op)?;
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found("boolean output"))?;
+            let volume = solid.volume();
+            if !volume.is_finite() || volume <= 0.0 {
+                return Err(OpenCadError::validation(
+                    "body_boolean requires a nonempty solid with finite positive volume",
+                ));
+            }
+        }
+        Ok(body)
+    }
+
     fn face_derivation_history(&self, body: &KernelBody) -> Vec<(u64, u64)> {
         #[cfg(feature = "occt")]
         {

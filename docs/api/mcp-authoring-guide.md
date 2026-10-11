@@ -302,3 +302,32 @@ history, so subsequent semantic references must resolve from verified geometry.
 Use verified dry-run/apply and review its provenance after changes. See
 `examples/agent/create_variable_fillet_plate_patch.json` and
 [ADR-038](../adr/ADR-038-linear-variable-fillets.md).
+
+### Operations between existing bodies (MCAD-P11-006)
+
+Create a `body_boolean` feature through `add_feature`:
+
+```json
+{"type":"body_boolean","source_feature":"feature:tool",
+ "target_feature":"feature:plate","operation":"subtract"}
+```
+
+`union`, `subtract` and `intersect` are supported. Subtraction is target minus
+source; union/intersection use the same explicit operand order for provenance.
+Both inputs must be distinct solid-producing feature IDs in this document.
+Their dependency edges are derived automatically. Sketches, datums, missing
+inputs, self-inputs and cycles are refused; suppressed inputs fail regeneration.
+The result is a new body output. Input feature outputs remain available in the
+Design Graph; editing either upstream branch invalidates the downstream Boolean.
+
+OCCT refuses results with non-finite or non-positive volume, including empty
+intersection or complete subtraction. Ordinary low-level `boolean` retains its
+existing empty-result semantics for interference queries. Mock implements the
+operation contract with deterministic IDs, without geometric emptiness evidence.
+Use verified dry-run/apply: a failed operation must not be persisted. Dimensions
+and mass use metres, m³ and explicit density as usual. Exact face history covers
+the target operand; source-derived references still require verified geometric
+matching. Disconnected nonempty results follow the existing kernel compound
+representation. See `examples/agent/create_body_boolean_patch.json` and
+`examples/body_boolean.ocad.d` (80 × 60 × 6 mm plate, 30 × 20 × 8 mm tool at
+(20,10,0) mm; union 30000 mm³, subtraction 25200 mm³, intersection 3600 mm³).

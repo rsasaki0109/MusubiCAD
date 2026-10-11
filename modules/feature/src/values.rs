@@ -224,6 +224,7 @@ impl FeatureDefinition {
                 };
                 crate::draft::validate_angle(angle)
             }
+            Self::BodyBoolean(def) => def.validate(),
             Self::Rib(def) => {
                 def.validate()?;
                 length(

@@ -699,7 +699,13 @@ mod tests {
         assert_eq!(listed["result"]["resources"].as_array().unwrap().len(), 2);
         let schema = call("resources/read", json!({ "uri": PATCH_SCHEMA_URI }));
         let text = schema["result"]["contents"][0]["text"].as_str().unwrap();
-        serde_json::from_str::<Value>(text).expect("schema is JSON");
+        let schema = serde_json::from_str::<Value>(text).expect("schema is JSON");
+        assert!(
+            schema["$defs"]["feature_definition"]["properties"]["type"]["enum"]
+                .as_array()
+                .expect("advertised feature types")
+                .contains(&json!("body_boolean"))
+        );
         let guide = call("resources/read", json!({ "uri": GUIDE_URI }));
         assert!(guide["result"]["contents"][0]["text"]
             .as_str()

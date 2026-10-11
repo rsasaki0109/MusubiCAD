@@ -319,6 +319,36 @@
       },
       "additionalProperties": false
     },
+    "body_boolean": {
+      "type": "object",
+      "required": [
+        "type",
+        "source_feature",
+        "target_feature",
+        "operation"
+      ],
+      "properties": {
+        "type": {
+          "const": "body_boolean"
+        },
+        "source_feature": {
+          "type": "string",
+          "pattern": "^feature:.+"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:.+"
+        },
+        "operation": {
+          "enum": [
+            "union",
+            "subtract",
+            "intersect"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "fillet": {
       "type": "object",
       "required": [
@@ -1079,6 +1109,7 @@
       "allOf": [
         { "if": { "properties": { "type": { "const": "draft" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/draft" } },
         { "if": { "properties": { "type": { "const": "rib" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/rib" } },
+        { "if": { "properties": { "type": { "const": "body_boolean" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/body_boolean" } },
         { "if": { "properties": { "type": { "const": "fillet" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/fillet" } },
         { "if": { "properties": { "type": { "const": "standard_hole" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/standard_hole" } },
         {
@@ -1129,7 +1160,8 @@
             "datum_plane",
             "datum_axis",
             "draft",
-            "rib"
+            "rib",
+            "body_boolean"
           ]
         }
       }

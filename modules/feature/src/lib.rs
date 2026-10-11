@@ -70,3 +70,6 @@ pub use sweep::{SweepFeature, SweepFeatureExecutor};
 pub mod datum;
 pub mod draft;
 pub use draft::{DraftFeature, DraftFeatureExecutor};
+
+pub mod body_boolean;
+pub use body_boolean::BodyBooleanFeature;

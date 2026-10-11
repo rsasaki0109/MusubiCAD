@@ -95,6 +95,10 @@ impl FeatureDefinition {
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", Some(&def.target_feature)),
             ],
+            Self::BodyBoolean(def) => [
+                ("source_feature", Some(&def.source_feature)),
+                ("target_feature", Some(&def.target_feature)),
+            ],
             Self::Fillet(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
@@ -175,6 +179,7 @@ impl FeatureDefinition {
             | Self::ImportedSolid(_)
             | Self::Shell(_)
             | Self::Draft(_)
+            | Self::BodyBoolean(_)
             | Self::Rib(_)
             | Self::Loft(_)
             | Self::Sweep(_)
@@ -287,6 +292,7 @@ impl FeatureDefinition {
             | Self::CircularPattern(_)
             | Self::MirrorPattern(_)
             | Self::ImportedSolid(_)
+            | Self::BodyBoolean(_)
             | Self::Rib(_)
             | Self::Loft(_)
             | Self::Sweep(_)
@@ -361,6 +367,9 @@ pub fn derive_feature_graph(
     let mut inputs: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
     for id in order {
         let node = by_id[id.as_str()];
+        if let FeatureDefinition::BodyBoolean(def) = &node.definition {
+            def.validate()?;
+        }
         let mut direct = node.definition.feature_inputs();
         if let FeatureDefinition::Sketch(def) = &node.definition {
             if let Some(Workplane::DatumPlane { feature_id }) = sketches
@@ -375,6 +384,19 @@ pub fn derive_feature_graph(
             if !by_id.contains_key(source) {
                 return Err(OpenCadError::validation(format!(
                     "feature '{}' {field} references unknown feature '{source}'",
+                    node.id
+                )));
+            }
+            if matches!(node.definition, FeatureDefinition::BodyBoolean(_))
+                && matches!(
+                    by_id[source].definition,
+                    FeatureDefinition::Sketch(_)
+                        | FeatureDefinition::DatumPlane(_)
+                        | FeatureDefinition::DatumAxis(_)
+                )
+            {
+                return Err(OpenCadError::validation(format!(
+                    "body_boolean '{}' {field} must reference a solid-producing feature",
                     node.id
                 )));
             }

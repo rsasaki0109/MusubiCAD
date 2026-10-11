@@ -289,3 +289,18 @@ Never supply both reference types. Run verified dry-run/apply; the native BREP
 transfer has no exact face-history relay and downstream references need geometry
 provenance. Reference: `examples/agent/create_variable_fillet_plate_patch.json`
 and ADR-038.
+
+### Existing-body Boolean features (MCAD-P11-006)
+
+Use `body_boolean` with `source_feature`, `target_feature` and `operation`
+(`union`, `subtract`, `intersect`) through DesignPatch. Subtraction is target
+minus source. Inputs must be distinct existing solid-producing feature outputs;
+never use sketches/datums, suppressed inputs or a cycle. Feature dependencies
+are derived from both IDs; no GUI or direct kernel mutation is needed.
+OCCT refuses empty/non-finite-volume outputs. Use verified dry-run before apply,
+and review provenance, especially for source-derived faces whose exact history
+is not recorded. Preserve both upstream branches when editing the operation.
+Example: `examples/agent/create_body_boolean_patch.json` and
+`examples/body_boolean.ocad.d`. The 80 × 60 × 6 mm plate and overlapping
+30 × 20 × 8 mm tool yield union/subtract/intersect volumes of
+30000/25200/3600 mm³. Editing source_height to 10 mm gives union 31200 mm³.
