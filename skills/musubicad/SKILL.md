@@ -245,3 +245,14 @@ holes/cavities, nonperpendicular side faces and collapsed extents; report the
 backend error. Always verify through dry-run/apply/regeneration and compare
 analytic volume/dimensions. Mock checks the contract; physical evidence comes
 from OCCT (ADR-036).
+
+### Centerline ribs
+
+Author `rib` features through DesignPatch when the user needs a parametric
+reinforcing web. Create a sketch line for the rib centreline, then add a rib
+feature with `sketch_feature`, `centerline_ref`, `target_feature`, positive
+`thickness`/`thickness_expr`, and positive distance `extent`/`length_expr`.
+The backend expands the line into a rectangular profile, extrudes along the
+sketch workplane normal, and unions the result into the target. Verify with
+regeneration and compare analytic volume when possible. Do not replace an
+ambiguous or missing centreline with a different entity.

@@ -613,7 +613,7 @@ expressions, semantic provenance, verified DesignPatch and Mock/OCCT kernels.
 |---|---|---|---|
 | MCAD-P11-001 | Datum planes and axes | Parametric construction features; datum-plane sketch placement and datum-axis revolve input; fail-closed dependencies; Mock/OCCT analytic tests, round trips, example, authoring guide/skill and eval | Complete |
 | MCAD-P11-002 | Draft | SI signed angle and datum/semantic neutral plane; fail-closed semantic side selection on convex planar solids; Mock contract and OCCT analytic volume/bounds, patch round trips, example, guide/skill and eval (ADR-036) | Complete |
-| MCAD-P11-003 | Ribs | Parametric rib thickness from a sketch with controlled extent and body joining; both kernels and analytic geometry evidence | Planned |
+| MCAD-P11-003 | Ribs | Parametric centerline rib thickness from a sketch with controlled extent and body joining; Mock/OCCT analytic volume tests, example, guide/skill and eval | Complete |
 | MCAD-P11-004 | Threads and standard holes | Explicit hole standards/thread metadata and geometry with documented representation and tolerances | Planned |
 | MCAD-P11-005 | Variable and face fillets | Semantic face/edge selection and explicit variable-radius law, with OCCT evidence and Mock contract | Planned |
 | MCAD-P11-006 | Inter-body Booleans | Explicit source/target body references for union, subtraction and intersection through DesignPatch | Planned |

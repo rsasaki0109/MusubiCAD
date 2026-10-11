@@ -218,3 +218,19 @@ fail closed. Never substitute a different face when resolution fails.
 See [draft API](draft.md), ADR-036 and
 `examples/agent/create_draft_plate_patch.json`; dry-run/apply through the
 backend, regenerate, then check volume and dimensions.
+
+### Centerline ribs (MCAD-P11-003)
+
+Use `type: "rib"` when a reinforcing web can be defined by one open sketch
+line. Add the sketch first, usually on the face or datum plane where the rib
+starts. The rib feature consumes `sketch_feature`, `centerline_ref`,
+`target_feature`, positive `thickness` in metres, optional `thickness_expr`,
+positive distance `extent`, and optional `length_expr` for the rib height. The
+feature expands the centerline into a rectangular closed profile in the sketch
+plane, extrudes it along the workplane normal, and unions it into the target
+body.
+
+Keep the centreline explicit and unit-bearing; do not pre-bake the rib as a
+plain rectangle extrude when the user asked for a rib. Missing centreline
+entities, zero thickness, zero height and missing target bodies fail closed.
+The current contract supports straight-line ribs with distance extent.

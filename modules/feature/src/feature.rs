@@ -15,6 +15,7 @@ use crate::imported::ImportedSolidFeature;
 use crate::loft::LoftFeature;
 use crate::pattern::{CircularPatternFeature, LinearPatternFeature, MirrorPatternFeature};
 use crate::revolve::RevolveFeature;
+use crate::rib::RibFeature;
 use crate::shell::ShellFeature;
 use crate::sketch_feature::SketchFeatureDef;
 use crate::sweep::SweepFeature;
@@ -37,6 +38,7 @@ pub enum FeatureDefinition {
     ImportedSolid(ImportedSolidFeature),
     Shell(ShellFeature),
     Draft(crate::draft::DraftFeature),
+    Rib(RibFeature),
     Loft(LoftFeature),
     Sweep(SweepFeature),
     HelixSweep(HelixSweepFeature),
@@ -59,6 +61,7 @@ impl FeatureDefinition {
             Self::ImportedSolid(_) => "imported_solid",
             Self::Shell(_) => "shell",
             Self::Draft(_) => "draft",
+            Self::Rib(_) => "rib",
             Self::Loft(_) => "loft",
             Self::Sweep(_) => "sweep",
             Self::HelixSweep(_) => "helix_sweep",

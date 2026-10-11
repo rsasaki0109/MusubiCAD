@@ -203,6 +203,16 @@ impl FeatureDefinition {
                 };
                 crate::draft::validate_angle(angle)
             }
+            Self::Rib(def) => {
+                def.validate()?;
+                length(
+                    "rib thickness",
+                    def.thickness_expr.as_ref(),
+                    def.thickness.meters(),
+                    scope,
+                )?;
+                extent("rib extent", &def.extent, def.length_expr.as_ref(), scope)
+            }
             Self::Shell(def) => {
                 def.validate()?;
                 let thickness = match &def.thickness_expr {

@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:rib_thickness": {
+      "id": "param:rib_thickness",
+      "name": "rib_thickness",
+      "expr": "4 mm",
+      "dirty": false
+    },
+    "param:rib_height": {
+      "id": "param:rib_height",
+      "name": "rib_height",
+      "expr": "12 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

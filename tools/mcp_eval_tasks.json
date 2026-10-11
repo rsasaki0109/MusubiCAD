@@ -191,6 +191,17 @@
       "required_parameters": [
         "draft_angle"
       ]
+    },
+    {
+      "id": "rib_plate",
+      "source": "examples/rib_plate.ocad.d",
+      "document": "rib.ocad.d",
+      "prompt": "Change rib_height in {document} from 12 mm to 20 mm. Preserve the sketch centerline, rib_thickness and base plate dimensions. Verify regeneration and the joined rib volume.",
+      "expected_volume_mm3": 22400.0,
+      "required_parameters": [
+        "rib_height",
+        "rib_thickness"
+      ]
     }
   ]
 }

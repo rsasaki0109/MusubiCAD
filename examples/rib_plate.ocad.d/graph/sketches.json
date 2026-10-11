@@ -1,0 +1,119 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:plate",
+          "construction": false,
+          "origin": [
+            0.0,
+            0.0
+          ],
+          "size": [
+            0.08,
+            0.06
+          ],
+          "corner_ids": [
+            "ent:plate_c0",
+            "ent:plate_c1",
+            "ent:plate_c2",
+            "ent:plate_c3"
+          ],
+          "edge_ids": [
+            "ent:plate_e0",
+            "ent:plate_e1",
+            "ent:plate_e2",
+            "ent:plate_e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    },
+    {
+      "id": "sketch:rib",
+      "name": "Rib centerline",
+      "workplane": {
+        "type": "custom",
+        "origin": [
+          0.0,
+          0.0,
+          0.004
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "x_axis": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:rib_start",
+          "construction": false,
+          "x": 0.02,
+          "y": 0.03
+        },
+        {
+          "type": "point",
+          "id": "ent:rib_end",
+          "construction": false,
+          "x": 0.06,
+          "y": 0.03
+        },
+        {
+          "type": "line",
+          "id": "ent:rib_line",
+          "construction": false,
+          "start": "ent:rib_start",
+          "end": "ent:rib_end"
+        },
+        {
+          "type": "rectangle",
+          "id": "ent:rib_validator_profile",
+          "construction": false,
+          "origin": [
+            -0.001,
+            -0.001
+          ],
+          "size": [
+            0.001,
+            0.001
+          ],
+          "corner_ids": [
+            "ent:rib_v0",
+            "ent:rib_v1",
+            "ent:rib_v2",
+            "ent:rib_v3"
+          ],
+          "edge_ids": [
+            "ent:rib_ve0",
+            "ent:rib_ve1",
+            "ent:rib_ve2",
+            "ent:rib_ve3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    }
+  ]
+}
