@@ -29,7 +29,41 @@ pub fn render_sheet_svg(sheet: &Sheet, meshes: &[ViewMesh]) -> Result<String> {
             layout_linear_dimension(dimension, view)
         })
         .collect::<Result<Vec<_>>>()?;
-    Ok(sheet_content_to_svg(sheet, &segments, &dimensions))
+    let angular = sheet
+        .angular_dimensions
+        .iter()
+        .map(|dimension| {
+            let view = sheet
+                .views
+                .iter()
+                .find(|v| v.id == dimension.view_id)
+                .ok_or_else(|| OpenCadError::validation("angular view missing"))?;
+            crate::layout_angular_dimension(dimension, view)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let mut svg = sheet_content_to_svg(sheet, &segments, &dimensions);
+    if !angular.is_empty() {
+        svg.truncate(svg.len() - "</svg>\n".len());
+        for layout in angular {
+            let x1 = layout.arc_start_m[0] * 1000.;
+            let y1 = flip_y(layout.arc_start_m[1], sheet.height_m) * 1000.;
+            let x2 = layout.arc_end_m[0] * 1000.;
+            let y2 = flip_y(layout.arc_end_m[1], sheet.height_m) * 1000.;
+            let r = layout.radius_m * 1000.;
+            let sweep = u8::from(layout.clockwise);
+            let vx = layout.vertex_m[0] * 1000.;
+            let vy = flip_y(layout.vertex_m[1], sheet.height_m) * 1000.;
+            for (x, y) in [(x1, y1), (x2, y2)] {
+                svg.push_str(&format!("<line class=\"angular-witness\" x1=\"{vx:.6}\" y1=\"{vy:.6}\" x2=\"{x:.6}\" y2=\"{y:.6}\" stroke=\"#225588\" stroke-width=\"0.18\"/>\n"));
+            }
+            svg.push_str(&format!("<path class=\"angular-dimension\" d=\"M {x1:.6} {y1:.6} A {r:.6} {r:.6} 0 0 {sweep} {x2:.6} {y2:.6}\" fill=\"none\" stroke=\"#225588\" stroke-width=\"0.18\"/>\n"));
+            let x = layout.text_position_m[0] * 1000.;
+            let y = flip_y(layout.text_position_m[1], sheet.height_m) * 1000.;
+            svg.push_str(&format!("<text class=\"angular-label\" x=\"{x:.6}\" y=\"{y:.6}\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"3\" fill=\"#225588\">{}</text>\n",layout.label));
+        }
+        svg.push_str("</svg>\n");
+    }
+    Ok(svg)
 }
 
 pub fn sheet_segments_to_svg(sheet: &Sheet, segments: &[SheetSegment]) -> String {

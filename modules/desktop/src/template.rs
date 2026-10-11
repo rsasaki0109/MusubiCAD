@@ -459,6 +459,7 @@ pub fn create_bracket_front_view_document(path: &str) -> Result<()> {
                 1.0,
                 [0.05, 0.05],
             )],
+            angular_dimensions: Vec::new(),
             dimensions: vec![LinearDimension {
                 id: DimensionId::new("dim:overall_width")?,
                 view_id: ViewId::new("view:front")?,

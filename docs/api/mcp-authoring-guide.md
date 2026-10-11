@@ -331,3 +331,42 @@ matching. Disconnected nonempty results follow the existing kernel compound
 representation. See `examples/agent/create_body_boolean_patch.json` and
 `examples/body_boolean.ocad.d` (80 × 60 × 6 mm plate, 30 × 20 × 8 mm tool at
 (20,10,0) mm; union 30000 mm³, subtraction 25200 mm³, intersection 3600 mm³).
+
+### Angular drawing dimensions (MCAD-P12-001)
+
+Create an annotation through DesignPatch, on an existing view of its own sheet:
+
+```json
+{"type":"add_angular_dimension","sheet_id":"sheet:a4","dimension":{
+ "id":"dim:plate_corner","view_id":"view:front",
+ "edge_refs":["ref:edge:plate_front","ref:edge:plate_left"],
+ "ray_ends":["end","end"],"arc_radius_m":0.01}}
+```
+
+The two references belong to the view's referenced part document. Each must
+resolve uniquely to an exact native straight edge. Current semantic discovery
+covers the top-Z perimeter; other edges, curves, missing/ambiguous bindings and
+assembly-instance bindings are refused. Canonically sort each edge's endpoints
+by world x/y/z; `start` selects the lower endpoint, `end` the higher. Selected
+endpoints must lie away from the intersection of the supporting lines. Parallel,
+skew and degenerate rays fail; intersections of extended lines are allowed.
+The measured minor angle is derived in radians and shown in SVG as degrees.
+Only Front/Top/Right orthographic views parallel to the angle plane are accepted;
+isometric and foreshortened layouts fail. `arc_radius_m` is a positive finite
+length on the sheet, independent of view scale.
+
+For explicit non-associative construction rays, replace `edge_refs`/`ray_ends`
+with `vertex_model_m`, `first_model_m`, `second_model_m` (three model-space
+metre vectors). Never mix the two forms or store a label override. Semantic
+annotations persist references, with resolved point rays kept transient.
+`regen_document` returns `drawing_angular_dimensions` with `measured_angle_rad`
+and both reference provenances. Text-mode regeneration prints the same SI angle.
+
+Angular annotations live in `sheet.angular_dimensions`; old linear annotations
+keep their existing wire format and commands. IDs share the `dim:` namespace.
+Use `remove_drawing_dimension` for either kind; a view cannot be removed while
+an annotation uses it. To replace an annotation, remove it and create a new
+stable ID. Always use verified dry-run/apply and export SVG to check placement.
+See `examples/agent/create_angular_drawing_patch.json`, the companion part patch,
+`examples/angular_plate_drawing.ocad.d` and ADR-040. The 80 × 60 × 6 mm plate
+has a derived corner angle of 90°, with a 10 mm sheet arc at view scale 0.5.

@@ -189,6 +189,7 @@ fn assembly_and_drawing_examples_are_rebuilt_byte_for_byte() {
     assert_eq!(
         checked,
         vec![
+            "angular_plate_drawing.ocad.d",
             "assembly_two_brackets.ocad.d",
             "bracket_front_view.ocad.d",
             "robot_arm_assembly.ocad.d",

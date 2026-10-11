@@ -22,6 +22,7 @@ fn write_robot_arm_drawing_example() {
     let child_relative = "../robot_arm_assembly.ocad.d";
     let drawing = DrawingModel {
         sheets: vec![Sheet {
+            angular_dimensions: Vec::new(),
             id: SheetId::new("sheet:a4").expect("sheet id"),
             name: "Sheet 1".into(),
             width_m: A4_WIDTH_M,

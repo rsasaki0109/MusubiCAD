@@ -634,6 +634,41 @@ ambiguous topology must fail closed. Datums must remain non-solid construction
 outputs and never inflate body counts, mass or export meshes. Later variable
 fillets and threads need bounded complexity and documented representation.
 
+## Phase 12 — Manufacturing outputs
+
+**Objective:** expand model-driven drawing annotations and manufacturing deliverables
+(fixed rubric: about four to five weighted maturity points, awarded after merges).
+
+**Dependencies:** Phase 11 complete; P10-003 semantic dimensions, verified drawing
+DesignPatch, OCCT/Mock geometry and deterministic SVG/export infrastructure.
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P12-001 | Angular dimensions | Explicit semantic straight-edge rays; derived SI angle and orthographic SVG arc; exact native line classification, Mock/OCCT analytic angle tests, refusal/rollback, schemas/migration, example, guide/skill/eval (ADR-040) | Complete |
+| MCAD-P12-002 | Radius and diameter dimensions | Semantic circular-edge measurements, native analytic circle queries, derived labels and refusal of unsupported geometry | Planned |
+| MCAD-P12-003 | Section views | Explicit cutting plane, bounded section geometry and hatching with kernel evidence | Planned |
+| MCAD-P12-004 | Detail views | Referenced parent view, bounded region and explicit magnification | Planned |
+| MCAD-P12-005 | Title blocks | Deterministic authored metadata and sheet layout | Planned |
+| MCAD-P12-006 | PDF output | Printable drawing export preserving dimensions, sheet scale and units | Planned |
+| MCAD-P12-007 | DXF output | Drawing geometry and annotation export with explicit units; reusable I/O boundary | Planned |
+| MCAD-P12-008 | Assembly BOM | Stable component/instance counts and deterministic parts table/export | Planned |
+
+**Definition of done:** one reviewed PR per task, backend commands/DesignPatch,
+both kernel paths where geometry is queried, analytic measurements, example,
+MCP authoring guide and skill updates, feasible eval task, additive schemas,
+migration policy and deterministic round trips. No unsupported geometry is
+silently approximated or substituted. Scores change only after main merges.
+
+**Tests:** analytic angles/radii/diameters, model edits and unit conversions,
+ambiguous/missing references, invalid projections/cutting planes, atomic patch
+failures, legacy/current files, SVG/export structure and printable scale; all
+mandatory formatting, clippy, workspace and plugin checks before push.
+
+**Risks:** topology changes, foreshortened measurements, curved-edge confusion,
+section robustness, export text/font/unit differences, and incorrect BOM counts
+for repeated or nested components. New geometry/sampling decisions require ADRs;
+physical host evidence remains distinct from automated Linux checks.
+
 ## Cross-phase verification matrix
 
 Every implementation PR must select the applicable rows and record the command

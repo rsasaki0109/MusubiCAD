@@ -36,6 +36,8 @@ use crate::document::OcadDocument;
 /// MCAD-P11-006: `body_boolean` is an additive tagged definition. Existing
 /// bodies are never combined implicitly during migration; legacy documents
 /// keep their original feature graph and round-trip unchanged.
+/// MCAD-P12-001: legacy sheets default to an empty angular collection.
+/// Angular annotations are never inferred from old geometry or labels.
 pub fn migrate_to_current(mut doc: OcadDocument) -> Result<OcadDocument> {
     if let Some(assembly) = doc.assembly.take() {
         doc.assembly = Some(assembly.sorted_deterministic());

@@ -5,6 +5,7 @@
 pub(crate) mod native {
     unsafe extern "C++" {
         include!("cpp/variable_fillet.h");
+        fn is_straight_edge(brep: &[u8], endpoints: &[f64]) -> Result<bool>;
         fn variable_fillet(
             brep: &[u8],
             endpoints: &[f64],

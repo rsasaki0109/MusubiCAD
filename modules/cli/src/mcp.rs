@@ -706,6 +706,10 @@ mod tests {
                 .expect("advertised feature types")
                 .contains(&json!("body_boolean"))
         );
+        assert!(schema["$defs"]["operation"]["properties"]["type"]["enum"]
+            .as_array()
+            .expect("operation types")
+            .contains(&json!("add_angular_dimension")));
         let guide = call("resources/read", json!({ "uri": GUIDE_URI }));
         assert!(guide["result"]["contents"][0]["text"]
             .as_str()

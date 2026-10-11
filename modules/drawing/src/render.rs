@@ -129,6 +129,7 @@ mod tests {
         use opencad_core::{DocumentId, SheetId};
 
         let sheet = Sheet {
+            angular_dimensions: Vec::new(),
             id: SheetId::new("sheet:a4")?,
             name: "Sheet 1".into(),
             width_m: 0.210,

@@ -236,6 +236,29 @@
         "target_height",
         "source_height"
       ]
+    },
+    {
+      "id": "drawing_semantic_angle_layout",
+      "source": "examples/angular_plate_drawing.ocad.d",
+      "document": "angular_drawing.ocad.d",
+      "prompt": "In {document}, replace dim:plate_corner with a new semantic angular dimension dim:plate_corner_large on view:front, using the same ref:edge:plate_front and ref:edge:plate_left with both canonical ray ends end, and arc_radius_m = 0.015 (15 mm on the sheet). Preserve the view and model. Use remove_drawing_dimension then add_angular_dimension with the new stable ID; dry-run/apply and export SVG. Verify a regenerated 90 degree angle, never stored point witnesses.",
+      "expected_views": [
+        "front"
+      ],
+      "expected_dimension_lengths_m": [],
+      "expected_dimension_angles_rad": [
+        1.5707963267948966
+      ],
+      "expected_angular_edge_refs": [
+        "ref:edge:plate_front",
+        "ref:edge:plate_left"
+      ],
+      "expected_angular_ids": [
+        "dim:plate_corner_large"
+      ],
+      "expected_arc_radii_m": [
+        0.015
+      ]
     }
   ]
 }

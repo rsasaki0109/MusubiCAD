@@ -41,6 +41,7 @@ pub struct RegenSummary {
     /// document declares no assertions.
     pub assertions: Vec<AssertionResult>,
     pub drawing_dimensions: Vec<crate::drawing::DrawingDimensionResult>,
+    pub drawing_angular_dimensions: Vec<crate::drawing::DrawingAngularDimensionResult>,
 }
 
 /// Serializable regeneration result for Agent API responses.
@@ -63,6 +64,8 @@ pub struct RegenResult {
     pub assertions: Vec<AssertionResult>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub drawing_dimensions: Vec<crate::drawing::DrawingDimensionResult>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub drawing_angular_dimensions: Vec<crate::drawing::DrawingAngularDimensionResult>,
 }
 
 /// Design body required for in-memory regeneration.
@@ -89,6 +92,7 @@ impl From<RegenSummary> for RegenResult {
             reference_provenance: report.reference_provenance,
             assertions: summary.assertions,
             drawing_dimensions: summary.drawing_dimensions,
+            drawing_angular_dimensions: summary.drawing_angular_dimensions,
         }
     }
 }
@@ -140,6 +144,7 @@ pub fn regen_ocad_document(path: &str, doc: &OcadDocument) -> Result<RegenSummar
             mate_max_error: None,
             assertions: Vec::new(),
             drawing_dimensions: drawing.dimensions,
+            drawing_angular_dimensions: drawing.angular_dimensions,
         });
     }
     if let Some(assembly) = &doc.assembly {
@@ -312,6 +317,7 @@ fn regen_assembly_with_kernel(
         mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
         assertions,
         drawing_dimensions: Vec::new(),
+        drawing_angular_dimensions: Vec::new(),
     })
 }
 
@@ -402,6 +408,7 @@ pub fn regenerate_part(
             mate_max_error: None,
             assertions: Vec::new(),
             drawing_dimensions: Vec::new(),
+            drawing_angular_dimensions: Vec::new(),
         })
     }
 
@@ -420,6 +427,7 @@ pub fn regenerate_part(
             mate_max_error: None,
             assertions: Vec::new(),
             drawing_dimensions: Vec::new(),
+            drawing_angular_dimensions: Vec::new(),
         })
     }
 }
@@ -439,6 +447,12 @@ fn mass_for_active_body<K: GeometryKernel>(
 
 pub fn print_summary(summary: &RegenSummary) {
     println!("kernel: {}", summary.kernel);
+    for dimension in &summary.drawing_angular_dimensions {
+        println!(
+            "dimension: {} measured_angle_rad: {}",
+            dimension.dimension_id, dimension.measured_angle_rad
+        );
+    }
     for dimension in &summary.drawing_dimensions {
         println!(
             "dimension: {} measured_length_m: {}",

@@ -1,0 +1,20 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:edge:plate_front",
+      "kind": "edge",
+      "semantic": {
+        "created_by": "feature:plate",
+        "role": "top@-y"
+      }
+    },
+    {
+      "ref_id": "ref:edge:plate_left",
+      "kind": "edge",
+      "semantic": {
+        "created_by": "feature:plate",
+        "role": "top@-x"
+      }
+    }
+  ]
+}

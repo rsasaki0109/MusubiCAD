@@ -385,6 +385,13 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// Exact straight-edge query for angular measurements; unsupported by default.
+    fn straight_edge_endpoints(&self, _body: &KernelBody, _edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        Err(OpenCadError::validation(
+            "kernel does not expose straight-edge geometry",
+        ))
+    }
+
     fn fillet_edges(
         &self,
         body: KernelBody,
@@ -738,6 +745,10 @@ impl GeometryKernel for MockGeometryKernel {
             .filter(|i| *i < 4)
             .ok_or_else(|| OpenCadError::not_found(format!("mock edge {kernel_edge_id}")))?;
         Ok([points[index], points[(index + 1) % 4]])
+    }
+
+    fn straight_edge_endpoints(&self, body: &KernelBody, edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        self.edge_endpoints(body, edge_id)
     }
 
     fn fillet_edges(

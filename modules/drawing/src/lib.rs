@@ -26,3 +26,9 @@ pub use reference::ModelReference;
 pub use render::{build_sheet_segments, project_mesh_wireframe, SheetSegment, ViewMesh};
 pub use sheet::{Sheet, A4_HEIGHT_M, A4_WIDTH_M};
 pub use view::DrawingView;
+
+pub mod angular;
+pub use angular::{
+    layout_angular_dimension, resolve_angular_dimension, AngularDimension, AngularLayout,
+    AngularMeasurement, RayEnd,
+};
