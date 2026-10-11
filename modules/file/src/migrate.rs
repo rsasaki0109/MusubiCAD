@@ -33,6 +33,9 @@ use crate::document::OcadDocument;
 /// legacy bare strings are interpreted as line lengths and canonical
 /// serialization emits an explicit target object, so no document schema
 /// version branch is needed for that change.
+/// MCAD-P11-006: `body_boolean` is an additive tagged definition. Existing
+/// bodies are never combined implicitly during migration; legacy documents
+/// keep their original feature graph and round-trip unchanged.
 pub fn migrate_to_current(mut doc: OcadDocument) -> Result<OcadDocument> {
     if let Some(assembly) = doc.assembly.take() {
         doc.assembly = Some(assembly.sorted_deterministic());

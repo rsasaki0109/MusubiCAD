@@ -616,7 +616,7 @@ expressions, semantic provenance, verified DesignPatch and Mock/OCCT kernels.
 | MCAD-P11-003 | Ribs | Parametric centerline rib thickness from a sketch with controlled extent and body joining; Mock/OCCT analytic volume tests, example, guide/skill and eval | Complete |
 | MCAD-P11-004 | Threads and standard holes | ISO 273 clearance and ISO metric coarse tap-drill representation; diameter agreement, explicit thread metadata, Mock/OCCT analytic cylinders, patch/file round trips, example, guide/skill and eval (ADR-037) | Complete |
 | MCAD-P11-005 | Variable and face fillets | Semantic face-perimeter selection and bounded linear radius law on one straight edge; native OCCT/Mock, analytic prism evidence, endpoint orientation/cache/rollback, example, schemas/migration, guide/skill and eval (ADR-038) | Complete |
-| MCAD-P11-006 | Inter-body Booleans | Explicit source/target body references for union, subtraction and intersection through DesignPatch | Planned |
+| MCAD-P11-006 | Inter-body Booleans | Explicit source/target body references for union, subtraction and intersection; fail-closed missing/non-body/self/cyclic inputs and empty OCCT outputs; Mock/OCCT analytic box tests, cache/rollback, patch/file round trips, example, guide/skill/eval (ADR-039) | Complete |
 
 **Definition of done:** each task ships one reviewed PR with both kernel paths,
 analytic volume/dimension tests, a committed example, MCP authoring guide and

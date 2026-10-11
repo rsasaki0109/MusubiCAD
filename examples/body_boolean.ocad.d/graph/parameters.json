@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:target_height": {
+      "id": "param:target_height",
+      "name": "target_height",
+      "expr": "6 mm",
+      "dirty": false
+    },
+    "param:source_height": {
+      "id": "param:source_height",
+      "name": "source_height",
+      "expr": "8 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

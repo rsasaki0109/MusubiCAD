@@ -1,0 +1,84 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:plate",
+          "construction": false,
+          "origin": [
+            0.0,
+            0.0
+          ],
+          "size": [
+            0.08,
+            0.06
+          ],
+          "corner_ids": [
+            "ent:plate_c0",
+            "ent:plate_c1",
+            "ent:plate_c2",
+            "ent:plate_c3"
+          ],
+          "edge_ids": [
+            "ent:plate_e0",
+            "ent:plate_e1",
+            "ent:plate_e2",
+            "ent:plate_e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    },
+    {
+      "id": "sketch:tool",
+      "name": "Tool",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:tool",
+          "construction": false,
+          "origin": [
+            0.02,
+            0.01
+          ],
+          "size": [
+            0.03,
+            0.02
+          ],
+          "corner_ids": [
+            "ent:tool_c0",
+            "ent:tool_c1",
+            "ent:tool_c2",
+            "ent:tool_c3"
+          ],
+          "edge_ids": [
+            "ent:tool_e0",
+            "ent:tool_e1",
+            "ent:tool_e2",
+            "ent:tool_e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    }
+  ]
+}

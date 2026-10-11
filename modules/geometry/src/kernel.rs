@@ -257,6 +257,16 @@ pub trait GeometryKernel {
 
     fn boolean(&self, lhs: KernelBody, rhs: KernelBody, op: BooleanOp) -> Result<KernelBody>;
 
+    /// Combine existing bodies; OCCT refuses empty or non-finite-volume outputs.
+    fn body_boolean(
+        &self,
+        target: KernelBody,
+        source: KernelBody,
+        op: BooleanOp,
+    ) -> Result<KernelBody> {
+        self.boolean(target, source, op)
+    }
+
     /// Exact common-solid volume in cubic meters.
     ///
     /// The default implementation intersects the two bodies and reads the volume
@@ -618,6 +628,16 @@ impl GeometryKernel for MockGeometryKernel {
             BooleanOp::Intersect => lhs.0 & rhs.0,
         };
         Ok(KernelBody::new(id))
+    }
+
+    fn body_boolean(
+        &self,
+        target: KernelBody,
+        source: KernelBody,
+        op: BooleanOp,
+    ) -> Result<KernelBody> {
+        // Mock IDs model operation plumbing, not geometric emptiness.
+        self.boolean(target, source, op)
     }
 
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {

@@ -225,6 +225,17 @@
         "start_radius",
         "end_radius"
       ]
+    },
+    {
+      "id": "body_boolean_tool_height",
+      "source": "examples/body_boolean.ocad.d",
+      "document": "body_boolean.ocad.d",
+      "prompt": "Change source_height in {document} from 8 mm to 10 mm. Preserve target_height = 6 mm, both existing extruded bodies, and the body_boolean union with source_feature feature:tool and target_feature feature:plate. Use DesignPatch and verify regeneration. Expected union volume: 31200 mm^3.",
+      "expected_volume_mm3": 31200.0,
+      "required_parameters": [
+        "target_height",
+        "source_height"
+      ]
     }
   ]
 }

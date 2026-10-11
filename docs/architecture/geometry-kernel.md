@@ -118,3 +118,15 @@ Subsequent references require the existing geometry-provenance checks. The
 unsupported default preserves custom kernel compatibility, and counting kernels
 forward this call. [ADR-038](../adr/ADR-038-linear-variable-fillets.md) records the
 sampling, unit, precision, failure and file-compatibility decisions.
+
+### Existing-body Boolean output contract
+
+MCAD-P11-006 adds `GeometryKernel::body_boolean(target, source, operation)` for
+solid-producing Feature Graph nodes. It reuses the existing Boolean operation;
+OCCT additionally requires finite positive result volume. Low-level `boolean`
+continues to allow empty results for intersection-volume/interference queries.
+Mock returns deterministic operation IDs and counting kernels forward the full
+contract. Input and output handles remain kernel-neutral. The body feature
+records both operand feature IDs; dependency/cycle/type validation and verified
+DesignPatch persistence own document changes. Exact derivation history is kept
+for the target, with existing geometry provenance for source-derived references.

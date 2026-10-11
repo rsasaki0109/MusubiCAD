@@ -352,3 +352,9 @@ edge rounded from 0.5 mm at lower X to 1.5 mm at higher X. The explicit linear
 radius law uses fixed native OCCT interpolation; see ADR-038 for its tolerances.
 Its source is `agent/create_variable_fillet_plate_patch.json`. Edit `end_radius`
 through DesignPatch and verify regeneration and semantic provenance.
+
+`body_boolean.ocad.d` combines two explicitly referenced existing extruded
+bodies. `agent/create_body_boolean_patch.json` authors the entire graph through
+DesignPatch. The 80 × 60 × 6 mm plate and 30 × 20 × 8 mm tool at (20,10,0) mm
+have union/subtract/intersect volumes 30000/25200/3600 mm³. Empty results fail
+closed in OCCT; Mock exercises graph and operation contracts.

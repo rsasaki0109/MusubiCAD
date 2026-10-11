@@ -65,6 +65,16 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.boolean(lhs, rhs, op)
     }
 
+    fn body_boolean(
+        &self,
+        target: KernelBody,
+        source: KernelBody,
+        op: BooleanOp,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.body_boolean(target, source, op)
+    }
+
     fn intersection_volume(&self, lhs: &KernelBody, rhs: &KernelBody) -> Result<f64> {
         self.record();
         self.inner.intersection_volume(lhs, rhs)

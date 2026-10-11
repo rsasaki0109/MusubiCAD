@@ -44,6 +44,7 @@ impl FeatureRegistry {
         registry.register(Box::new(crate::shell::ShellFeatureExecutor));
         registry.register(Box::new(crate::draft::DraftFeatureExecutor));
         registry.register(Box::new(crate::rib::RibFeatureExecutor));
+        registry.register(Box::new(crate::body_boolean::BodyBooleanExecutor));
         registry.register(Box::new(crate::loft::LoftFeatureExecutor));
         registry.register(Box::new(crate::sweep::SweepFeatureExecutor));
         registry.register(Box::new(crate::helix_sweep::HelixSweepFeatureExecutor));

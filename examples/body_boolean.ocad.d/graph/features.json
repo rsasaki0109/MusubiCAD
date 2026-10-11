@@ -1,0 +1,137 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_plate",
+      "feature:plate",
+      "feature:sketch_tool",
+      "feature:tool",
+      "feature:body_boolean"
+    ],
+    "features": {
+      "feature:sketch_plate": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:plate": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_tool": {
+        "id": "feature:sketch_tool",
+        "name": "Tool sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:tool": {
+        "id": "feature:tool",
+        "name": "Tool",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:body_boolean": {
+        "id": "feature:body_boolean",
+        "name": "Union existing bodies",
+        "feature_type": "body_boolean",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_plate",
+        "target": "feature:plate",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_tool",
+        "target": "feature:tool",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:tool",
+        "target": "feature:body_boolean",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:plate",
+        "target": "feature:body_boolean",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:body_boolean",
+      "name": "Union existing bodies",
+      "definition": {
+        "type": "body_boolean",
+        "source_feature": "feature:tool",
+        "target_feature": "feature:plate",
+        "operation": "union"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:plate",
+      "name": "Plate",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_plate",
+        "profile_ref": "sketch:plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "target_height"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_plate",
+      "name": "Plate sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:plate"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_tool",
+      "name": "Tool sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:tool"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:tool",
+      "name": "Tool",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_tool",
+        "profile_ref": "sketch:tool/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.008
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "source_height"
+      },
+      "suppressed": false
+    }
+  ]
+}

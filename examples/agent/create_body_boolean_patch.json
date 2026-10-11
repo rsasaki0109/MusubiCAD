@@ -1,0 +1,183 @@
+{
+  "intent": "Combine an 80 x 60 x 6 mm plate with a 30 x 20 x 8 mm tool at (20,10,0) mm using explicit existing body references",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:target_height",
+      "name": "target_height",
+      "expr": "6 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:source_height",
+      "name": "source_height",
+      "expr": "8 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:plate",
+      "entity": {
+        "type": "rectangle",
+        "id": "ent:plate",
+        "construction": false,
+        "origin": [
+          0,
+          0
+        ],
+        "size": [
+          0.08,
+          0.06
+        ],
+        "corner_ids": [
+          "ent:plate_c0",
+          "ent:plate_c1",
+          "ent:plate_c2",
+          "ent:plate_c3"
+        ],
+        "edge_ids": [
+          "ent:plate_e0",
+          "ent:plate_e1",
+          "ent:plate_e2",
+          "ent:plate_e3"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:plate"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_plate",
+          "profile_ref": "sketch:plate/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body",
+          "length_expr": "target_height"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:tool",
+      "name": "Tool",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:tool",
+      "entity": {
+        "type": "rectangle",
+        "id": "ent:tool",
+        "construction": false,
+        "origin": [
+          0.02,
+          0.01
+        ],
+        "size": [
+          0.03,
+          0.02
+        ],
+        "corner_ids": [
+          "ent:tool_c0",
+          "ent:tool_c1",
+          "ent:tool_c2",
+          "ent:tool_c3"
+        ],
+        "edge_ids": [
+          "ent:tool_e0",
+          "ent:tool_e1",
+          "ent:tool_e2",
+          "ent:tool_e3"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_tool",
+        "name": "Tool sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:tool"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:tool",
+        "name": "Tool",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_tool",
+          "profile_ref": "sketch:tool/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.008
+            }
+          },
+          "operation": "new_body",
+          "length_expr": "source_height"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:body_boolean",
+        "name": "Union existing bodies",
+        "definition": {
+          "type": "body_boolean",
+          "source_feature": "feature:tool",
+          "target_feature": "feature:plate",
+          "operation": "union"
+        }
+      }
+    }
+  ]
+}
