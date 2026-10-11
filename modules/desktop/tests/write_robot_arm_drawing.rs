@@ -40,8 +40,10 @@ fn write_robot_arm_drawing_example() {
             dimensions: vec![LinearDimension {
                 id: DimensionId::new("dim:upper_arm_reach").expect("dim id"),
                 view_id: ViewId::new("view:front").expect("view id"),
-                start_model_m: [0.0, 0.0, 0.0],
-                end_model_m: [0.0, 0.16, 0.0],
+                measurement: opencad_drawing::LinearMeasurement::Points {
+                    start_model_m: [0.0, 0.0, 0.0],
+                    end_model_m: [0.0, 0.16, 0.0],
+                },
                 offset_m: -0.02,
             }],
         }],

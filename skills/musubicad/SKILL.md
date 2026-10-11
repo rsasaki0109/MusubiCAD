@@ -161,6 +161,23 @@ shorten a link) and verify again.
   as a robustness check. Use `style: "studio"` and `aspect: "1:1"` or
   `"16:9"` when the user wants something to share.
 
+## Semantic drawing dimensions
+
+For a dimension that must follow model edits, use `add_drawing_dimension` with
+`{id, view_id, edge_ref: "ref:edge:<name>", offset_m}`. The edge reference belongs
+to the part referenced by that drawing view; inspect that part's semantic refs
+before authoring. Never use a projected segment index or invent a kernel ID.
+The measurement is the distance between current edge end vertices in model
+meters, not arc length. Include no fixed point coordinates with `edge_ref`.
+
+Dry-run and apply verify every drawing sheet. Missing/ambiguous/consumed refs
+fail with the dimension and ref IDs; repair the binding rather than substituting
+fixed coordinates. After verified apply, inspect the SVG and
+`regen_document.drawing_dimensions` for resolved lengths and provenance.
+Assembly instance bindings and radius/diameter dimensions are not supported by
+this linear edge measurement. See `examples/semantic_bracket_drawing.ocad.d` and
+`examples/agent/semantic_bracket_dimension_patch.json`.
+
 ## 6. Report honestly
 
 State what changed (semantic diff), whether verification passed, the mass and

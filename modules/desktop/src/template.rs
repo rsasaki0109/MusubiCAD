@@ -462,8 +462,10 @@ pub fn create_bracket_front_view_document(path: &str) -> Result<()> {
             dimensions: vec![LinearDimension {
                 id: DimensionId::new("dim:overall_width")?,
                 view_id: ViewId::new("view:front")?,
-                start_model_m: [0.0, 0.0, 0.0],
-                end_model_m: [0.08, 0.0, 0.0],
+                measurement: opencad_drawing::LinearMeasurement::Points {
+                    start_model_m: [0.0, 0.0, 0.0],
+                    end_model_m: [0.08, 0.0, 0.0],
+                },
                 offset_m: -0.01,
             }],
         }],

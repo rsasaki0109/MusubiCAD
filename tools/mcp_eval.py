@@ -42,6 +42,7 @@ VOLUME_TOLERANCE_MM3 = 0.1
 
 VOLUME_LINE = re.compile(r"^volume_m3:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 MATE_ERROR_LINE = re.compile(r"^mate_max_error:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
+DIMENSION_LINE = re.compile(r"^dimension: (\S+) measured_length_m: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 
 # Largest mate residual, in metres, an assembly task accepts as satisfied.
 MATE_TOLERANCE_M = 1e-6
@@ -81,16 +82,23 @@ def assembly_counts(document: Path) -> tuple[int, int]:
     return len(assembly.get("instances", [])), len(mates)
 
 
-def drawing_contents(document: Path) -> tuple[list[str], list[float]]:
+def drawing_contents(document: Path, regen_output: str = "") -> tuple[list[str], list[float]]:
     """(sorted view projections, sorted dimension lengths in metres)."""
     path = document / "graph" / "drawings.json"
     if not path.exists():
         return [], []
     drawing = json.loads(path.read_text(encoding="utf-8")).get("drawing") or {}
     projections, lengths = [], []
+    reported = {dim_id: float(value) for dim_id, value in DIMENSION_LINE.findall(regen_output)}
     for sheet in drawing.get("sheets", []):
         projections += [view.get("projection", "") for view in sheet.get("views", [])]
         for dimension in sheet.get("dimensions", []):
+            if "edge_ref" in dimension:
+                # Grade regenerated geometry, never cached/authored coordinates.
+                # Missing evidence leaves a count mismatch and fails the task.
+                if dimension["id"] in reported:
+                    lengths.append(reported[dimension["id"]])
+                continue
             start, end = dimension["start_model_m"], dimension["end_model_m"]
             lengths.append(sum((b - a) ** 2 for a, b in zip(start, end)) ** 0.5)
     return sorted(projections), sorted(lengths)
@@ -121,7 +129,7 @@ def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str
         elif float(match.group(1)) > MATE_TOLERANCE_M:
             problems.append(f"mates unsatisfied: max error {match.group(1)} m")
     if "expected_views" in task:
-        projections, lengths = drawing_contents(document)
+        projections, lengths = drawing_contents(document, regen_output)
         if projections != sorted(task["expected_views"]):
             problems.append(f"views {projections}, expected {sorted(task['expected_views'])}")
         expected_lengths = sorted(task.get("expected_dimension_lengths_m", []))
@@ -129,6 +137,11 @@ def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str
             abs(a - b) > DIMENSION_TOLERANCE_M for a, b in zip(lengths, expected_lengths)
         ):
             problems.append(f"dimension lengths {lengths} m, expected {expected_lengths} m")
+        if "expected_dimension_edge_refs" in task:
+            drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
+            refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
+            if refs != sorted(task["expected_dimension_edge_refs"]):
+                problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
     return not problems, problems
 
 
@@ -244,6 +257,17 @@ def self_test() -> None:
         {"expected_views": ["front", "top"], "expected_dimension_lengths_m": [0.08]}, sheet, ""
     )
     assert not passed and "views" in problems[0] and "dimension" in problems[1]
+    semantic_sheet = ROOT / "examples" / "semantic_bracket_drawing.ocad.d"
+    semantic = {
+        "expected_views": ["front"],
+        "expected_dimension_lengths_m": [0.08],
+        "expected_dimension_edge_refs": ["ref:edge:bracket_top_front"],
+    }
+    evidence = "dimension: dim:semantic_width measured_length_m: 0.08\n"
+    assert check(semantic, semantic_sheet, evidence) == (True, [])
+    assert not check(semantic, semantic_sheet, "")[0]
+    assert not check(semantic, semantic_sheet, evidence.replace("0.08", "0.1"))[0]
+    assert not check({**semantic, "expected_dimension_edge_refs": ["ref:edge:wrong"]}, semantic_sheet, evidence)[0]
     tasks = json.loads(TASKS.read_text(encoding="utf-8"))["tasks"]
     assert len({task["id"] for task in tasks}) == len(tasks)
     placeholders = {"document": "d", "workdir": "w", "root": "r"}

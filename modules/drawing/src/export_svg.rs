@@ -201,8 +201,10 @@ mod tests {
         sheet.dimensions.push(LinearDimension {
             id: DimensionId::new("dim:width")?,
             view_id: view_id.clone(),
-            start_model_m: [0.0, 0.0, 0.0],
-            end_model_m: [0.08, 0.0, 0.0],
+            measurement: crate::LinearMeasurement::Points {
+                start_model_m: [0.0, 0.0, 0.0],
+                end_model_m: [0.08, 0.0, 0.0],
+            },
             offset_m: 0.01,
         });
         let svg = render_sheet_svg(

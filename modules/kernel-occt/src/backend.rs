@@ -849,6 +849,32 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn edge_endpoints(&self, body: &KernelBody, kernel_edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?;
+            let index = kernel_edge_id
+                .checked_sub(1)
+                .and_then(|id| usize::try_from(id).ok())
+                .ok_or_else(|| OpenCadError::not_found(format!("edge {kernel_edge_id}")))?;
+            let edge = solid
+                .iter_edge()
+                .nth(index)
+                .ok_or_else(|| OpenCadError::not_found(format!("edge {kernel_edge_id}")))?;
+            let start = edge.start_point();
+            let end = edge.end_point();
+            Ok([[start.x, start.y, start.z], [end.x, end.y, end.z]])
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, kernel_edge_id);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn fillet_edges(
         &self,
         body: KernelBody,

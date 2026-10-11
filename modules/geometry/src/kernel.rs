@@ -359,6 +359,14 @@ pub trait GeometryKernel {
         body: &KernelBody,
     ) -> Result<Vec<crate::topo_sync::EdgeRefDiscovery>>;
 
+    /// End vertices of one current body edge, in model meters (ADR-034).
+    /// A linear dimension measures their chord, not curved-edge arc length.
+    fn edge_endpoints(&self, _body: &KernelBody, _kernel_edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not expose edge endpoints",
+        ))
+    }
+
     fn fillet_edges(
         &self,
         body: KernelBody,
@@ -628,9 +636,48 @@ impl GeometryKernel for MockGeometryKernel {
 
     fn discover_body_edges(
         &self,
-        _body: &KernelBody,
+        body: &KernelBody,
     ) -> Result<Vec<crate::topo_sync::EdgeRefDiscovery>> {
-        Ok(Vec::new())
+        if body.0 == 0 {
+            return Ok(Vec::new());
+        }
+        let roles = ["top@-y", "top@+x", "top@+y", "top@-x"];
+        roles
+            .iter()
+            .enumerate()
+            .map(|(index, role)| {
+                let points = self.edge_endpoints(body, index as u64 + 1)?;
+                let side = body.0 as f64 * 0.001;
+                Ok(crate::topo_sync::EdgeRefDiscovery {
+                    kernel_edge_id: index as u64 + 1,
+                    role: (*role).into(),
+                    midpoint_m: std::array::from_fn(|axis| {
+                        ((points[0][axis] + points[1][axis]) * 0.5) as f32
+                    }),
+                    tangent_m: std::array::from_fn(|axis| {
+                        ((points[1][axis] - points[0][axis]) / side) as f32
+                    }),
+                    length_m: side as f32,
+                    feature_id: None,
+                })
+            })
+            .collect()
+    }
+
+    fn edge_endpoints(&self, body: &KernelBody, kernel_edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        let side = body.0 as f64 * 0.001;
+        let points = [
+            [0.0, 0.0, side],
+            [side, 0.0, side],
+            [side, side, side],
+            [0.0, side, side],
+        ];
+        let index = kernel_edge_id
+            .checked_sub(1)
+            .and_then(|i| usize::try_from(i).ok())
+            .filter(|i| *i < 4)
+            .ok_or_else(|| OpenCadError::not_found(format!("mock edge {kernel_edge_id}")))?;
+        Ok([points[index], points[(index + 1) % 4]])
     }
 
     fn fillet_edges(

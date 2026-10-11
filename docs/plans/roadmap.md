@@ -569,8 +569,9 @@ position" that it already gets for a part's mass or bounds.
 |---|---|---|---|
 | MCAD-P10-001 | Assembly assertions | Assembly documents evaluate their assertions (`assembly_dof_at_most`, `interference_at_most`, mass, bounds, body count, parameter range) in `musubicad regen`, `verify_patch` / `patch_dry_run`, `patch_apply`, and `musubicad review`; a violated required assertion refuses the change, names the assertion and its evidence, and leaves the file unchanged | Complete |
 | MCAD-P10-002 | Interference across joint motion | A typed assertion that samples every joint within its limits and counts interfering instance pairs at each pose with the existing explicit tolerances; deterministic pose order; the failing pose is named with unit-bearing joint values; [ADR-033](../adr/ADR-033-motion-interference.md) per-joint sampling with straddling-pair checks, brute-force cross-check, six-axis arm clearance patch | Complete |
-| MCAD-P10-003 | Semantic drawing dimensions | Drawing dimensions bound to semantic references and checked on every regeneration; ambiguous or missing references fail closed instead of measuring a different edge | Planned |
+| MCAD-P10-003 | Semantic drawing dimensions | [ADR-034](../adr/ADR-034-semantic-drawing-dimensions.md); part-edge chord dimensions with required provenance; all sheets checked by regen, verified dry-run/apply/review and SVG export; exclusive wire migration, Mock/OCCT tests, example and eval task | Complete |
 | MCAD-P10-004 | Robot eval task | MCP eval task that adds a joint, exports URDF, and reaches a target, graded by the kinematic tree and the reach residual | Planned |
+| MCAD-P10-005 | Six-axis motion clearance example | Apply the reviewed clearance patch to the six-axis example; regenerate URDF, joint GIF and web viewer from the updated Design Graph; preserve ADR-033 sampling limits and verify sampled clearance | Planned |
 
 **Definition of done:** a patch that makes two instances of a checked-in
 robot assembly collide, at rest or at any sampled joint pose, is refused by
@@ -578,10 +579,19 @@ dry-run and apply with the instance pair and pose named, and the same patch
 without the collision is accepted with identical evidence across CLI, Agent
 API, and MCP.
 
+Drawing semantic measurements resolve uniquely against regenerated final
+topology and follow model parameter changes. Missing/ambiguous references on any
+sheet refuse verified patches and export without changing documents or outputs.
+
 **Tests:** pure assertion evaluation tests; assembly assertion round trips in
 `.ocad.d`; OCCT integration tests on `examples/robot_arm_assembly.ocad.d` and
 `examples/six_axis_arm.ocad.d` for accepted and refused patches; deterministic
 pose sampling tests without a kernel.
+
+Drawing checks include Mock provenance/endpoint tests, legacy and semantic file
+round trips, structural authoring, OCCT analytic width edits, real MCP parity,
+later-sheet refusal, wrong document identity, deterministic SVG and eval checker
+self-tests. Semantic assembly dimensions remain a future instance-binding task.
 
 **Known risks:** pose sampling cost on large assemblies (pairs × poses exact
 Booleans), sampling resolution missing a narrow collision window, and

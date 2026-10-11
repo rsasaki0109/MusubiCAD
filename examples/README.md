@@ -12,6 +12,7 @@ Ready-to-use MusubiCAD documents and Agent API requests.
 | `robot_joint_actuator.ocad.d` | `musubicad new <path> robot-joint` | 22 nodes: stepped hubs, shaft/counterbore cuts, 8-hole PCD, 6 ribs, mirrored ears and holes |
 | `bearing_carrier.ocad.d` | `musubicad new <path> bearing-carrier` | Base extrude, joined hub, through bore, four-hole circular cut pattern |
 | `bracket.ocad.d` | `musubicad new <path>` | Sketch, extrude, hole (`face_ref`) |
+| `semantic_bracket_drawing.ocad.d` | `musubicad new <path> drawing` plus semantic dimension patch | A4 front view with an 80 mm width bound to the referenced part's semantic edge; parameter edits update the measurement |
 | `bracket_boss_join.ocad.d` | `musubicad new <path> boss-join` | + extrude join onto plate |
 | `bracket_face_pin.ocad.d` | `musubicad new <path> face-pin` | + sketch-on-face pin (`face_ref` workplane) |
 | `bracket_edge_fillet.ocad.d` | `musubicad new <path> edge-fillet` | + single-edge fillet (`edge_ref`) |
@@ -25,6 +26,25 @@ Ready-to-use MusubiCAD documents and Agent API requests.
 | `sketch_constraints_regression.ocad.d` | solver regression fixture | Equal line/circle/arc targets, Parallel/Perpendicular combination, and under/fully/over/contradictory cases |
 
 See [docs/examples/patterns.md](../docs/examples/patterns.md) for a full cut vs union comparison table.
+
+### Semantic drawing dimension
+
+The semantic example stores `ref:edge:bracket_top_front` without measurement
+coordinates. Regeneration measures the final OCCT edge and reports provenance.
+Missing or ambiguous references refuse regeneration, verified patches and export.
+Try parameter edits on a copy of the example:
+
+```bash
+cp -r examples/semantic_bracket_drawing.ocad.d /tmp/semantic-bracket.ocad.d
+musubicad regen /tmp/semantic-bracket.ocad.d
+musubicad patch /tmp/semantic-bracket.ocad.d/parts/bracket.ocad.d examples/agent/bracket_width_100_patch.json
+musubicad regen /tmp/semantic-bracket.ocad.d
+musubicad export /tmp/semantic-bracket.ocad.d /tmp/semantic-bracket.svg
+```
+
+The first measurement is 0.08 m; the second is 0.10 m. The authored binding
+remains unchanged. Use `agent/semantic_bracket_dimension_patch.json` to convert
+the current `drawing` template's legacy width dimension through DesignPatch.
 
 ### Partial-occlusion drawing golden
 

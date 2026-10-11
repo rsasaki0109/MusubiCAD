@@ -55,6 +55,15 @@ document at export time, tessellates it, and projects mesh edges onto the sheet.
 it is not serialized as editable text. Projection, view scale, sheet origin, and
 `offset_m` determine annotation placement. Existing drawing files migrate with
 an empty `dimensions` collection through the Serde default.
+
+MCAD-P10-003 adds the exclusive `edge_ref` measurement variant
+([ADR-034](../adr/ADR-034-semantic-drawing-dimensions.md)). Authored bindings name
+the view's referenced part; the common file-backed drawing regenerator derives
+transient endpoints from its final active body. It resolves required provenance
+before measuring, checks all sheets and refuses missing or ambiguous topology.
+Derived points never overwrite Design Graph state. CLI, Agent API and MCP share
+the regeneration gate for dry-run/apply/review and SVG output; endpoint queries
+stay behind the kernel-neutral `GeometryKernel` boundary.
 ## Hidden-line classification
 
 SVG drawing views classify tessellated mesh edges using projected triangle depth.

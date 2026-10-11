@@ -348,6 +348,12 @@ STEP output is deterministic: the header time stamp is fixed at
 
 ### `RegenResult`
 
+File-backed drawing regeneration also returns `drawing_dimensions`: sheet,
+view and dimension IDs, `measured_length_m`, and `reference_provenance` for
+semantic bindings. All sheets are validated before returning a result. These
+measurements are runtime evidence and do not replace authored `edge_ref` values;
+see [Drawing API](drawing.md#semantic-edge-dimensions-mcad-p10-003).
+
 ```json
 {
   "kernel": "OCCT 8.0.0 (cadrum static)",

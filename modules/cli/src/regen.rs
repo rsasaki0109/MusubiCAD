@@ -40,6 +40,7 @@ pub struct RegenSummary {
     /// Executable design assertion results (MCAD-P6-004); empty when the
     /// document declares no assertions.
     pub assertions: Vec<AssertionResult>,
+    pub drawing_dimensions: Vec<crate::drawing::DrawingDimensionResult>,
 }
 
 /// Serializable regeneration result for Agent API responses.
@@ -60,6 +61,8 @@ pub struct RegenResult {
     /// Executable design assertion results (MCAD-P6-004).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub assertions: Vec<AssertionResult>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub drawing_dimensions: Vec<crate::drawing::DrawingDimensionResult>,
 }
 
 /// Design body required for in-memory regeneration.
@@ -85,6 +88,7 @@ impl From<RegenSummary> for RegenResult {
             trace: report.trace,
             reference_provenance: report.reference_provenance,
             assertions: summary.assertions,
+            drawing_dimensions: summary.drawing_dimensions,
         }
     }
 }
@@ -102,6 +106,42 @@ pub fn regen_document(path: &str, sync_topo_refs: bool) -> Result<RegenSummary> 
 }
 
 pub fn regen_ocad_document(path: &str, doc: &OcadDocument) -> Result<RegenSummary> {
+    if doc.drawing.is_some() {
+        let drawing = crate::drawing::regenerate_drawing(path, doc)?;
+        let regenerated: Vec<String> = drawing
+            .sheets
+            .iter()
+            .flat_map(|(sheet, _)| sheet.views.iter().map(|view| view.id.as_str().to_string()))
+            .collect();
+        let reference_provenance = drawing
+            .dimensions
+            .iter()
+            .filter_map(|d| d.reference_provenance.clone())
+            .collect();
+        return Ok(RegenSummary {
+            kernel: "OCCT 8.0.0 (cadrum static)".into(),
+            report: RegenReport {
+                regenerated: regenerated.clone(),
+                reference_provenance,
+                trace: RegenerationTrace::observed(
+                    regenerated,
+                    Vec::new(),
+                    0,
+                    0,
+                    0,
+                    Default::default(),
+                ),
+                ..Default::default()
+            },
+            volume_m3: None,
+            mass_kg: None,
+            instances: None,
+            mate_dof: None,
+            mate_max_error: None,
+            assertions: Vec::new(),
+            drawing_dimensions: drawing.dimensions,
+        });
+    }
     if let Some(assembly) = &doc.assembly {
         return regen_assembly_document(path, doc, assembly);
     }
@@ -271,6 +311,7 @@ fn regen_assembly_with_kernel(
         mate_dof: report.mate_solve.as_ref().map(|solve| solve.dof),
         mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
         assertions,
+        drawing_dimensions: Vec::new(),
     })
 }
 
@@ -360,6 +401,7 @@ pub fn regenerate_part(
             mate_dof: None,
             mate_max_error: None,
             assertions: Vec::new(),
+            drawing_dimensions: Vec::new(),
         })
     }
 
@@ -377,6 +419,7 @@ pub fn regenerate_part(
             mate_dof: None,
             mate_max_error: None,
             assertions: Vec::new(),
+            drawing_dimensions: Vec::new(),
         })
     }
 }
@@ -396,6 +439,12 @@ fn mass_for_active_body<K: GeometryKernel>(
 
 pub fn print_summary(summary: &RegenSummary) {
     println!("kernel: {}", summary.kernel);
+    for dimension in &summary.drawing_dimensions {
+        println!(
+            "dimension: {} measured_length_m: {}",
+            dimension.dimension_id, dimension.measured_length_m
+        );
+    }
     if let Some(instances) = summary.instances {
         println!("instances: {instances}");
     }
