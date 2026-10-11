@@ -29,9 +29,54 @@
           "type": "array",
           "items": { "$ref": "#/$defs/linear_dimension" }
         },
+        "radial_dimensions": {"type":"array","items":{"$ref":"#/$defs/radial_dimension"}},
         "angular_dimensions": { "type": "array", "items": { "$ref": "#/$defs/angular_dimension" } }
       },
       "additionalProperties": false
+    },
+    "radial_dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "view_id",
+        "edge_ref",
+        "kind",
+        "leader_direction",
+        "leader_extension_m"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^dim:[a-zA-Z0-9_:/-]+$"
+        },
+        "view_id": {
+          "type": "string",
+          "pattern": "^view:[a-zA-Z0-9_:/-]+$"
+        },
+        "edge_ref": {
+          "type": "string",
+          "pattern": "^ref:edge:[a-zA-Z0-9_:/-]+$"
+        },
+        "kind": {
+          "enum": [
+            "radius",
+            "diameter"
+          ]
+        },
+        "leader_direction": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number"
+          }
+        },
+        "leader_extension_m": {
+          "type": "number",
+          "exclusiveMinimum": 1e-09
+        }
+      }
     },
     "angular_dimension": {
       "type": "object",

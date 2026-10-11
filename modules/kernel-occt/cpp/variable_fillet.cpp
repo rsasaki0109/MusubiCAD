@@ -42,6 +42,36 @@ bool is_straight_edge(rust::Slice<const std::uint8_t> brep, rust::Slice<const do
     } catch (const Standard_Failure& failure) { throw std::runtime_error(failure.what()); }
 }
 
+rust::Vec<double> circular_edge_geometry(rust::Slice<const std::uint8_t> brep,
+                                        rust::Slice<const double> endpoints) {
+    try {
+        if (endpoints.size() != 6) throw std::runtime_error("invalid circular edge endpoints");
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()), brep.size()));
+        TopoDS_Shape shape; BRep_Builder builder; BRepTools::Read(shape, stream, builder);
+        if (shape.IsNull()) throw std::runtime_error("circle query BREP read failed");
+        gp_Pnt first(endpoints[0], endpoints[1], endpoints[2]), last(endpoints[3], endpoints[4], endpoints[5]);
+        NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> edges; TopExp::MapShapes(shape, TopAbs_EDGE, edges);
+        TopoDS_Edge selected; int matches = 0;
+        for (int i = 1; i <= edges.Extent(); ++i) {
+            auto edge = TopoDS::Edge(edges(i));
+            auto v1 = TopExp::FirstVertex(edge, true), v2 = TopExp::LastVertex(edge, true);
+            if (v1.IsNull() || v2.IsNull()) continue;
+            auto p1 = BRep_Tool::Pnt(v1), p2 = BRep_Tool::Pnt(v2);
+            if ((p1.Distance(first) <= 1e-8 && p2.Distance(last) <= 1e-8) ||
+                (p1.Distance(last) <= 1e-8 && p2.Distance(first) <= 1e-8)) { selected = edge; ++matches; }
+        }
+        if (matches != 1) throw std::runtime_error("circle query is missing or ambiguous");
+        BRepAdaptor_Curve curve(selected);
+        if (curve.GetType() != GeomAbs_Circle ||
+            std::abs((curve.LastParameter() - curve.FirstParameter()) - 2.0 * std::acos(-1.0)) > 1e-9)
+            throw std::runtime_error("radial dimension requires an exact complete circle");
+        auto circle = curve.Circle(); auto center = circle.Location(); auto normal = circle.Axis().Direction();
+        rust::Vec<double> result;
+        for (double value : {center.X(), center.Y(), center.Z(), normal.X(), normal.Y(), normal.Z(), circle.Radius()}) result.push_back(value);
+        return result;
+    } catch (const Standard_Failure& failure) { throw std::runtime_error(failure.what()); }
+}
+
 rust::Vec<std::uint8_t> variable_fillet(rust::Slice<const std::uint8_t> brep,
                                       rust::Slice<const double> endpoints,
                                       double start_radius, double end_radius) {

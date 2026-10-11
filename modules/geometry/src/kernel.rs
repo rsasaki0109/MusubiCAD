@@ -240,6 +240,13 @@ impl HelixSpec {
     }
 }
 
+/// Analytic full circular edge in model metres; never a sampled curve fit.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct CircularEdgeGeometry {
+    pub center_m: [f64; 3],
+    pub normal: [f64; 3],
+    pub radius_m: f64,
+}
 /// Kernel-neutral geometry operations.
 pub trait GeometryKernel {
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire>;
@@ -382,6 +389,17 @@ pub trait GeometryKernel {
     fn edge_endpoints(&self, _body: &KernelBody, _kernel_edge_id: u64) -> Result<[[f64; 3]; 2]> {
         Err(OpenCadError::validation(
             "this geometry kernel does not expose edge endpoints",
+        ))
+    }
+
+    /// Query an exact, complete circle. Arcs and noncircular curves are unsupported.
+    fn circular_edge_geometry(
+        &self,
+        _body: &KernelBody,
+        _edge_id: u64,
+    ) -> Result<CircularEdgeGeometry> {
+        Err(OpenCadError::validation(
+            "kernel does not support analytic circular edges",
         ))
     }
 
@@ -745,6 +763,24 @@ impl GeometryKernel for MockGeometryKernel {
             .filter(|i| *i < 4)
             .ok_or_else(|| OpenCadError::not_found(format!("mock edge {kernel_edge_id}")))?;
         Ok([points[index], points[(index + 1) % 4]])
+    }
+
+    fn circular_edge_geometry(
+        &self,
+        body: &KernelBody,
+        edge_id: u64,
+    ) -> Result<CircularEdgeGeometry> {
+        // Mock contract: synthetic edge 5 is a complete XY circle, radius half
+        // the body's deterministic side length. Box edges 1..4 remain straight.
+        if edge_id != 5 || body.0 == 0 {
+            return Err(OpenCadError::validation("mock edge is not a circle"));
+        }
+        let side = body.0 as f64 * 0.001;
+        Ok(CircularEdgeGeometry {
+            center_m: [side / 2., side / 2., side],
+            normal: [0., 0., 1.],
+            radius_m: side / 2.,
+        })
     }
 
     fn straight_edge_endpoints(&self, body: &KernelBody, edge_id: u64) -> Result<[[f64; 3]; 2]> {

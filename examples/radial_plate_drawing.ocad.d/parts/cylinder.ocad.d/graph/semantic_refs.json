@@ -1,0 +1,12 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:edge:circle",
+      "kind": "edge",
+      "semantic": {
+        "created_by": "feature:plate",
+        "role": "top@-y"
+      }
+    }
+  ]
+}

@@ -111,6 +111,14 @@ fn structural_drawing_failures(model: &DrawingModel, operations: &[PatchOperatio
                 .filter(|d| d.view_id.as_str() == view_id)
                 .map(|d| format!("angular dimension {}", d.id)),
         );
+        users.extend(
+            model
+                .sheets
+                .iter()
+                .flat_map(|s| s.radial_dimensions.iter())
+                .filter(|d| d.view_id.as_str() == view_id)
+                .map(|d| format!("radial dimension {}", d.id)),
+        );
         if !users.is_empty() {
             failures.insert(format!(
                 "cannot remove '{view_id}': still used by {}",
@@ -124,6 +132,14 @@ fn structural_drawing_failures(model: &DrawingModel, operations: &[PatchOperatio
                 if !sheet.views.iter().any(|v| v.id == dimension.view_id) {
                     failures.insert(format!(
                         "angular dimension {} references a missing view",
+                        dimension.id
+                    ));
+                }
+            }
+            for dimension in &sheet.radial_dimensions {
+                if !sheet.views.iter().any(|v| v.id == dimension.view_id) {
+                    failures.insert(format!(
+                        "radial dimension {} references a missing view",
                         dimension.id
                     ));
                 }
@@ -152,6 +168,7 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                 if !sheet.views.is_empty()
                     || !sheet.dimensions.is_empty()
                     || !sheet.angular_dimensions.is_empty()
+                    || !sheet.radial_dimensions.is_empty()
                 {
                     return Err(OpenCadError::validation(format!(
                         "sheet '{id}' must be added empty; add views and dimensions with add_drawing_view and add_drawing_dimension"
@@ -182,6 +199,12 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                 removed.extend(
                     sheet
                         .angular_dimensions
+                        .iter()
+                        .map(|d| d.id.as_str().to_string()),
+                );
+                removed.extend(
+                    sheet
+                        .radial_dimensions
                         .iter()
                         .map(|d| d.id.as_str().to_string()),
                 );
@@ -228,7 +251,11 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                         .sheets
                         .iter()
                         .flat_map(|s| s.angular_dimensions.iter())
-                        .any(|d| d.id == dimension.id);
+                        .any(|d| d.id == dimension.id)
+                    || model
+                        .sheets
+                        .iter()
+                        .any(|s| s.radial_dimensions.iter().any(|d| d.id == dimension.id));
                 check_new_drawing_id(id, "dim", exists, &removed, "drawing dimension")?;
                 dimension.validate()?;
                 find_sheet_mut(model, sheet_id)?
@@ -243,11 +270,28 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                 let exists = model.sheets.iter().any(|s| {
                     s.dimensions.iter().any(|d| d.id == dimension.id)
                         || s.angular_dimensions.iter().any(|d| d.id == dimension.id)
+                        || s.radial_dimensions.iter().any(|d| d.id == dimension.id)
                 });
                 check_new_drawing_id(id, "dim", exists, &removed, "angular dimension")?;
                 dimension.validate()?;
                 find_sheet_mut(model, sheet_id)?
                     .angular_dimensions
+                    .push(dimension.clone());
+            }
+            PatchOperation::AddRadialDimension {
+                sheet_id,
+                dimension,
+            } => {
+                let id = dimension.id.as_str();
+                let exists = model.sheets.iter().any(|s| {
+                    s.dimensions.iter().any(|d| d.id == dimension.id)
+                        || s.angular_dimensions.iter().any(|d| d.id == dimension.id)
+                        || s.radial_dimensions.iter().any(|d| d.id == dimension.id)
+                });
+                check_new_drawing_id(id, "dim", exists, &removed, "radial dimension")?;
+                dimension.validate()?;
+                find_sheet_mut(model, sheet_id)?
+                    .radial_dimensions
                     .push(dimension.clone());
             }
             PatchOperation::RemoveDrawingDimension { id } => {
@@ -256,6 +300,7 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                     .iter_mut()
                     .find(|sheet| {
                         sheet.angular_dimensions.iter().any(|d| d.id.as_str() == id)
+                            || sheet.radial_dimensions.iter().any(|d| d.id.as_str() == id)
                             || sheet
                                 .dimensions
                                 .iter()
@@ -265,6 +310,7 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                         OpenCadError::validation(format!("unknown drawing dimension '{id}'"))
                     })?;
                 sheet.angular_dimensions.retain(|d| d.id.as_str() != id);
+                sheet.radial_dimensions.retain(|d| d.id.as_str() != id);
                 sheet
                     .dimensions
                     .retain(|dimension| dimension.id.as_str() != id);
@@ -382,6 +428,15 @@ fn diff_sheet(before: &Sheet, after: &Sheet, changes: &mut Vec<SemanticChange>) 
     diff_items_by_id(
         &before.angular_dimensions,
         &after.angular_dimensions,
+        |item| item.id.as_str(),
+        |id| SemanticChange::DrawingDimensionAdded { id },
+        |id| SemanticChange::DrawingDimensionRemoved { id },
+        |id, before, after| SemanticChange::DrawingDimensionChanged { id, before, after },
+        changes,
+    );
+    diff_items_by_id(
+        &before.radial_dimensions,
+        &after.radial_dimensions,
         |item| item.id.as_str(),
         |id| SemanticChange::DrawingDimensionAdded { id },
         |id| SemanticChange::DrawingDimensionRemoved { id },

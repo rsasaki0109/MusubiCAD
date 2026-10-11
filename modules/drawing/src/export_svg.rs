@@ -11,6 +11,22 @@ const MM_PER_M: f64 = 1000.0;
 
 /// Render one sheet and its projected view meshes to SVG (millimeter user units).
 pub fn render_sheet_svg(sheet: &Sheet, meshes: &[ViewMesh]) -> Result<String> {
+    if !sheet.radial_dimensions.is_empty() {
+        return Err(OpenCadError::validation(
+            "radial dimensions require regenerated layouts",
+        ));
+    }
+    render_sheet_svg_with_radial_layouts(sheet, meshes, &[])
+}
+
+pub fn render_sheet_svg_with_radial_layouts(
+    sheet: &Sheet,
+    meshes: &[ViewMesh],
+    radial: &[crate::RadialLayout],
+) -> Result<String> {
+    if radial.len() != sheet.radial_dimensions.len() {
+        return Err(OpenCadError::validation("missing radial dimension layouts"));
+    }
     let segments = build_sheet_segments(sheet, meshes)?;
     let dimensions = sheet
         .dimensions
@@ -60,6 +76,19 @@ pub fn render_sheet_svg(sheet: &Sheet, meshes: &[ViewMesh]) -> Result<String> {
             let x = layout.text_position_m[0] * 1000.;
             let y = flip_y(layout.text_position_m[1], sheet.height_m) * 1000.;
             svg.push_str(&format!("<text class=\"angular-label\" x=\"{x:.6}\" y=\"{y:.6}\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"3\" fill=\"#225588\">{}</text>\n",layout.label));
+        }
+        svg.push_str("</svg>\n");
+    }
+    if !radial.is_empty() {
+        svg.truncate(svg.len() - "</svg>\n".len());
+        for layout in radial {
+            let point = |p: [f64; 2]| [p[0] * 1000., flip_y(p[1], sheet.height_m) * 1000.];
+            let a = point(layout.line_start_m);
+            let b = point(layout.circle_point_m);
+            let t = point(layout.text_position_m);
+            svg.push_str(&format!("<line class=\"radial-dimension\" x1=\"{:.6}\" y1=\"{:.6}\" x2=\"{:.6}\" y2=\"{:.6}\" stroke=\"#225588\" stroke-width=\"0.18\"/>\n",a[0],a[1],b[0],b[1]));
+            svg.push_str(&format!("<line class=\"radial-leader\" x1=\"{:.6}\" y1=\"{:.6}\" x2=\"{:.6}\" y2=\"{:.6}\" stroke=\"#225588\" stroke-width=\"0.18\"/>\n",b[0],b[1],t[0],t[1]));
+            svg.push_str(&format!("<text class=\"radial-label\" x=\"{:.6}\" y=\"{:.6}\" font-family=\"sans-serif\" font-size=\"3\" fill=\"#225588\">{}</text>\n",t[0],t[1]-1.,layout.label));
         }
         svg.push_str("</svg>\n");
     }

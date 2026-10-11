@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 import re
 import shutil
@@ -47,6 +48,7 @@ VOLUME_LINE = re.compile(r"^volume_m3:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 MATE_ERROR_LINE = re.compile(r"^mate_max_error:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 ANGLE_LINE = re.compile(r"^dimension: (\S+) measured_angle_rad: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 ANGLE_TOLERANCE_RAD = 1e-9
+RADIAL_LINE = re.compile(r"^dimension: (\S+) measured_radial_length_m: ([-+0-9.eE]+) radius_m: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 
 DIMENSION_LINE = re.compile(r"^dimension: (\S+) measured_length_m: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 
@@ -254,6 +256,21 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_radial_dimensions" in task:
+        drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
+        dimensions = {dim["id"]: dim for sheet in drawing.get("sheets", []) for dim in sheet.get("radial_dimensions", [])}
+        reported = {id_: (float(length), float(radius)) for id_, length, radius in RADIAL_LINE.findall(regen_output)}
+        expected = task["expected_radial_dimensions"]
+        if sorted(dimensions) != sorted(d["id"] for d in expected):
+            problems.append("radial dimension IDs differ")
+        for desired in expected:
+            id_ = desired["id"]
+            authored = dimensions.get(id_, {})
+            measured = reported.get(id_)
+            if measured is None or any(not math.isfinite(v) for v in measured) or abs(measured[0]-desired["measured_length_m"]) > 1e-9 or abs(measured[1]-desired["radius_m"]) > 1e-9:
+                problems.append(f"radial dimension {id_} lacks matching fresh SI measurement")
+            if authored.get("edge_ref") != desired["edge_ref"] or authored.get("kind") != desired["kind"] or abs(authored.get("leader_extension_m", -1)-desired["leader_extension_m"]) > 1e-9:
+                problems.append(f"radial dimension {id_} authoring differs")
     if "expected_dimension_angles_rad" in task:
         drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
         dimensions = [dim for sheet in drawing.get("sheets", []) for dim in sheet.get("angular_dimensions", [])]
@@ -413,6 +430,15 @@ def self_test() -> None:
     assert not check({**angular, "expected_arc_radii_m": [0.015]}, angular_sheet, angle_evidence)[0]
     assert not check(angular, angular_sheet, angle_evidence.replace("1.5707963267948966", "0.5"))[0]
     assert not check({**angular, "expected_angular_edge_refs": ["ref:edge:wrong"]}, angular_sheet, angle_evidence)[0]
+    radial_sheet = ROOT / "examples" / "radial_plate_drawing.ocad.d"
+    radial = {"expected_radial_dimensions": [
+        {"id": "dim:radius", "kind": "radius", "edge_ref": "ref:edge:circle", "measured_length_m": 0.01, "radius_m": 0.01, "leader_extension_m": 0.01},
+        {"id": "dim:diameter", "kind": "diameter", "edge_ref": "ref:edge:circle", "measured_length_m": 0.02, "radius_m": 0.01, "leader_extension_m": 0.01}]}
+    radial_evidence = "dimension: dim:radius measured_radial_length_m: 0.01 radius_m: 0.01\ndimension: dim:diameter measured_radial_length_m: 0.02 radius_m: 0.01\n"
+    assert check(radial, radial_sheet, radial_evidence) == (True, [])
+    assert not check(radial, radial_sheet, "")[0]
+    assert not check(radial, radial_sheet, radial_evidence.replace("0.02", "0.03"))[0]
+    assert not check(radial, radial_sheet, radial_evidence.replace("radius_m: 0.01", "radius_m: nan"))[0]
     robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
     assert check(
         {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},

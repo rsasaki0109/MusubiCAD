@@ -42,6 +42,7 @@ pub struct RegenSummary {
     pub assertions: Vec<AssertionResult>,
     pub drawing_dimensions: Vec<crate::drawing::DrawingDimensionResult>,
     pub drawing_angular_dimensions: Vec<crate::drawing::DrawingAngularDimensionResult>,
+    pub drawing_radial_dimensions: Vec<crate::drawing::DrawingRadialDimensionResult>,
 }
 
 /// Serializable regeneration result for Agent API responses.
@@ -66,6 +67,8 @@ pub struct RegenResult {
     pub drawing_dimensions: Vec<crate::drawing::DrawingDimensionResult>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub drawing_angular_dimensions: Vec<crate::drawing::DrawingAngularDimensionResult>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub drawing_radial_dimensions: Vec<crate::drawing::DrawingRadialDimensionResult>,
 }
 
 /// Design body required for in-memory regeneration.
@@ -93,6 +96,7 @@ impl From<RegenSummary> for RegenResult {
             assertions: summary.assertions,
             drawing_dimensions: summary.drawing_dimensions,
             drawing_angular_dimensions: summary.drawing_angular_dimensions,
+            drawing_radial_dimensions: summary.drawing_radial_dimensions,
         }
     }
 }
@@ -145,6 +149,7 @@ pub fn regen_ocad_document(path: &str, doc: &OcadDocument) -> Result<RegenSummar
             assertions: Vec::new(),
             drawing_dimensions: drawing.dimensions,
             drawing_angular_dimensions: drawing.angular_dimensions,
+            drawing_radial_dimensions: drawing.radial_dimensions,
         });
     }
     if let Some(assembly) = &doc.assembly {
@@ -318,6 +323,7 @@ fn regen_assembly_with_kernel(
         assertions,
         drawing_dimensions: Vec::new(),
         drawing_angular_dimensions: Vec::new(),
+        drawing_radial_dimensions: Vec::new(),
     })
 }
 
@@ -409,6 +415,7 @@ pub fn regenerate_part(
             assertions: Vec::new(),
             drawing_dimensions: Vec::new(),
             drawing_angular_dimensions: Vec::new(),
+            drawing_radial_dimensions: Vec::new(),
         })
     }
 
@@ -428,6 +435,7 @@ pub fn regenerate_part(
             assertions: Vec::new(),
             drawing_dimensions: Vec::new(),
             drawing_angular_dimensions: Vec::new(),
+            drawing_radial_dimensions: Vec::new(),
         })
     }
 }
@@ -447,6 +455,12 @@ fn mass_for_active_body<K: GeometryKernel>(
 
 pub fn print_summary(summary: &RegenSummary) {
     println!("kernel: {}", summary.kernel);
+    for d in &summary.drawing_radial_dimensions {
+        println!(
+            "dimension: {} measured_radial_length_m: {} radius_m: {}",
+            d.dimension_id, d.measured_length_m, d.radius_m
+        );
+    }
     for dimension in &summary.drawing_angular_dimensions {
         println!(
             "dimension: {} measured_angle_rad: {}",

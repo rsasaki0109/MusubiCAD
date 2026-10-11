@@ -37,6 +37,7 @@ fn write_bracket_front_view_example() {
     let drawing = DrawingModel {
         sheets: vec![Sheet {
             angular_dimensions: Vec::new(),
+            radial_dimensions: Vec::new(),
             id: SheetId::new("sheet:a4").expect("id"),
             name: "Sheet 1".into(),
             width_m: A4_WIDTH_M,

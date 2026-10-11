@@ -321,3 +321,18 @@ Explicit non-associative point rays use `vertex_model_m`, `first_model_m`,
 annotations through `remove_drawing_dimension` before removing their view.
 Example: `examples/agent/create_angular_drawing_patch.json` and
 `examples/angular_plate_drawing.ocad.d`; verify dry-run/apply and SVG export.
+
+### Radius and diameter dimensions
+
+Use `add_radial_dimension` via DesignPatch, with `sheet_id`, and a dimension
+containing a new `dim:` ID, `view_id`, semantic `edge_ref`, `kind` (`radius` or
+`diameter`), nonzero finite `leader_direction` in sheet coordinates and positive
+`leader_extension_m` in sheet metres. Bind an exact complete circular edge on the
+referenced part; inspect its discoveries. Current semantic discovery covers only
+top-Z perimeter. Never author radius, center or label caches. Regenerate/dry-run
+and verify `drawing_radial_dimensions` SI measurements/provenance before applying
+and exporting SVG. Use a plane-parallel orthographic view; unsupported arcs,
+ellipses, ambiguous/missing refs, assembly bindings and foreshortened/isometric
+views must fail. Remove/add with a new ID to edit; remove dimensions before views.
+Example: `examples/agent/create_radial_drawing_patch.json`; eval:
+`drawing_semantic_radial_layout`. See ADR-041 and the MCP authoring guide.

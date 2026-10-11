@@ -134,6 +134,7 @@ pub fn authoring_patch(state: &DesignState) -> Result<DesignPatch> {
             empty.views.clear();
             empty.dimensions.clear();
             empty.angular_dimensions.clear();
+            empty.radial_dimensions.clear();
             let sheet_id = sheet.id.as_str().to_string();
             operations.push(PatchOperation::AddSheet { sheet: empty });
             for view in &sheet.views {
@@ -144,6 +145,12 @@ pub fn authoring_patch(state: &DesignState) -> Result<DesignPatch> {
             }
             for dimension in &sheet.angular_dimensions {
                 operations.push(PatchOperation::AddAngularDimension {
+                    sheet_id: sheet_id.clone(),
+                    dimension: dimension.clone(),
+                });
+            }
+            for dimension in &sheet.radial_dimensions {
+                operations.push(PatchOperation::AddRadialDimension {
                     sheet_id: sheet_id.clone(),
                     dimension: dimension.clone(),
                 });

@@ -370,3 +370,35 @@ stable ID. Always use verified dry-run/apply and export SVG to check placement.
 See `examples/agent/create_angular_drawing_patch.json`, the companion part patch,
 `examples/angular_plate_drawing.ocad.d` and ADR-040. The 80 × 60 × 6 mm plate
 has a derived corner angle of 90°, with a 10 mm sheet arc at view scale 0.5.
+
+### Semantic radius and diameter dimensions (MCAD-P12-002)
+
+Use `add_radial_dimension` through DesignPatch on a drawing document:
+
+```json
+{"type":"add_radial_dimension","sheet_id":"sheet:a4","dimension":{
+  "id":"dim:radius","view_id":"view:front","edge_ref":"ref:edge:circle",
+  "kind":"radius","leader_direction":[1,1],"leader_extension_m":0.01
+}}
+```
+
+`kind` is `radius` or `diameter`. Direction is in sheet coordinates and normalized
+at layout; extension is positive sheet metres independent of view scale. Choose a
+view parallel to the circle plane (`front` projects XY in the current convention).
+The exact complete circle must belong to the referenced part's current active
+body and resolve uniquely from semantic refs; current discovery covers top-Z
+perimeter edges. Inspect discovery rather than guessing roles or edge indices.
+Missing/ambiguous refs, arcs, ellipses, noncircular curves, assembly bindings and
+foreshortened/isometric views fail closed. Never supply radius/center/label caches.
+
+Verified dry-run/apply regenerates before persisting. Results expose
+`drawing_radial_dimensions` with `measured_length_m`, `radius_m`, `kind` and
+reference provenance, in SI units. SVG labels show model millimetres (`R 10.00 mm`,
+`⌀ 20.00 mm`). Edit by removing a dimension and adding a fresh stable ID; generic
+`remove_drawing_dimension` works across all dimension kinds. IDs are globally
+unique, and removing a still-dimensioned view fails atomically.
+
+See `examples/agent/create_radial_cylinder_patch.json`,
+`examples/agent/create_radial_drawing_patch.json` and the self-contained
+`examples/radial_plate_drawing.ocad.d`. Eval `drawing_semantic_radial_layout`
+requires fresh regenerated measurements alongside semantic bindings.

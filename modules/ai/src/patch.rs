@@ -295,6 +295,10 @@ pub enum PatchOperation {
         sheet_id: String,
         dimension: opencad_drawing::AngularDimension,
     },
+    AddRadialDimension {
+        sheet_id: String,
+        dimension: opencad_drawing::RadialDimension,
+    },
     /// Remove a drawing dimension.
     RemoveDrawingDimension {
         id: String,
@@ -369,6 +373,7 @@ impl PatchOperation {
                 | Self::RemoveDrawingView { .. }
                 | Self::AddDrawingDimension { .. }
                 | Self::AddAngularDimension { .. }
+                | Self::AddRadialDimension { .. }
                 | Self::RemoveDrawingDimension { .. }
         )
     }
