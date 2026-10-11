@@ -304,3 +304,20 @@ Example: `examples/agent/create_body_boolean_patch.json` and
 `examples/body_boolean.ocad.d`. The 80 × 60 × 6 mm plate and overlapping
 30 × 20 × 8 mm tool yield union/subtract/intersect volumes of
 30000/25200/3600 mm³. Editing source_height to 10 mm gives union 31200 mm³.
+
+### Angular annotations (MCAD-P12-001)
+
+Use `add_angular_dimension` with `sheet_id`, a new `dim:` ID, `view_id`, two
+`edge_refs`, explicit `ray_ends` (`start`/`end` in canonical world x/y/z order),
+and positive finite `arc_radius_m` in sheet metres. References belong to the
+view's part document and must resolve to native straight edges; current semantic
+discovery covers the top-Z perimeter. Never infer an unavailable edge or use
+curved, ambiguous, parallel/skew or degenerate geometry. Use an orthographic
+view parallel to the angle plane; isometric/foreshortened angles are refused.
+The backend derives radians and SVG displays degrees, independent of view scale.
+Explicit non-associative point rays use `vertex_model_m`, `first_model_m`,
+`second_model_m` instead of references; never mix those forms. Review
+`drawing_angular_dimensions` and both provenances from regeneration. Remove
+annotations through `remove_drawing_dimension` before removing their view.
+Example: `examples/agent/create_angular_drawing_patch.json` and
+`examples/angular_plate_drawing.ocad.d`; verify dry-run/apply and SVG export.

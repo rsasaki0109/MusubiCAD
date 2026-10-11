@@ -358,3 +358,9 @@ bodies. `agent/create_body_boolean_patch.json` authors the entire graph through
 DesignPatch. The 80 × 60 × 6 mm plate and 30 × 20 × 8 mm tool at (20,10,0) mm
 have union/subtract/intersect volumes 30000/25200/3600 mm³. Empty results fail
 closed in OCCT; Mock exercises graph and operation contracts.
+
+`angular_plate_drawing.ocad.d` contains a semantic 90° plate-corner annotation
+and its referenced 80 × 60 × 6 mm part under `parts/plate.ocad.d`. The two
+`agent/create_angular_*_patch.json` files author the part and drawing through
+DesignPatch. The 10 mm arc is a sheet-space radius at view scale 0.5; radians
+are derived from current native straight edges, with SVG degree labels.

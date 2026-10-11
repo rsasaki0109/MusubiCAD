@@ -26,6 +26,9 @@ impl DrawingModel {
         for sheet in &mut self.sheets {
             sheet.views.sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
             sheet
+                .angular_dimensions
+                .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
+            sheet
                 .dimensions
                 .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         }
@@ -34,6 +37,7 @@ impl DrawingModel {
 
     pub fn validate(&self, drawing_doc_id: &DocumentId) -> Result<()> {
         let mut seen = std::collections::BTreeSet::new();
+        let mut dimensions = std::collections::BTreeSet::new();
         for sheet in &self.sheets {
             if !seen.insert(sheet.id.as_str().to_string()) {
                 return Err(OpenCadError::validation(format!(
@@ -42,6 +46,18 @@ impl DrawingModel {
                 )));
             }
             sheet.validate(drawing_doc_id)?;
+            for id in sheet
+                .dimensions
+                .iter()
+                .map(|d| d.id.as_str())
+                .chain(sheet.angular_dimensions.iter().map(|d| d.id.as_str()))
+            {
+                if !dimensions.insert(id) {
+                    return Err(OpenCadError::validation(format!(
+                        "duplicate drawing dimension id {id}"
+                    )));
+                }
+            }
         }
         Ok(())
     }
@@ -74,6 +90,7 @@ mod tests {
                     [0.05, 0.05],
                 )],
                 dimensions: Vec::new(),
+                angular_dimensions: Vec::new(),
             }],
         };
         let json = serde_json::to_string(&model).expect("serialize");

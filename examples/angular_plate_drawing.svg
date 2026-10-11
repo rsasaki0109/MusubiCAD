@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210.000 297.000" width="210.0mm" height="297.0mm">
+<rect x="0" y="0" width="210.000" height="297.000" fill="white" stroke="#cccccc" stroke-width="0.2"/>
+<line x1="50.000" y1="247.000" x2="50.000" y2="217.000" stroke="#111111" stroke-width="0.25"/>
+<line x1="50.000" y1="247.000" x2="90.000" y2="247.000" stroke="#111111" stroke-width="0.25"/>
+<line x1="50.000" y1="217.000" x2="90.000" y2="217.000" stroke="#111111" stroke-width="0.25"/>
+<line x1="90.000" y1="247.000" x2="90.000" y2="217.000" stroke="#111111" stroke-width="0.25"/>
+<line class="angular-witness" x1="50.000000" y1="247.000000" x2="60.000000" y2="247.000000" stroke="#225588" stroke-width="0.18"/>
+<line class="angular-witness" x1="50.000000" y1="247.000000" x2="50.000000" y2="237.000000" stroke="#225588" stroke-width="0.18"/>
+<path class="angular-dimension" d="M 60.000000 247.000000 A 10.000000 10.000000 0 0 0 50.000000 237.000000" fill="none" stroke="#225588" stroke-width="0.18"/>
+<text class="angular-label" x="59.192388" y="237.807612" text-anchor="middle" font-family="sans-serif" font-size="3" fill="#225588">90.00°</text>
+</svg>

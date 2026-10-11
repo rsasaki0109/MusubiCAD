@@ -133,12 +133,19 @@ pub fn authoring_patch(state: &DesignState) -> Result<DesignPatch> {
             let mut empty = sheet.clone();
             empty.views.clear();
             empty.dimensions.clear();
+            empty.angular_dimensions.clear();
             let sheet_id = sheet.id.as_str().to_string();
             operations.push(PatchOperation::AddSheet { sheet: empty });
             for view in &sheet.views {
                 operations.push(PatchOperation::AddDrawingView {
                     sheet_id: sheet_id.clone(),
                     view: view.clone(),
+                });
+            }
+            for dimension in &sheet.angular_dimensions {
+                operations.push(PatchOperation::AddAngularDimension {
+                    sheet_id: sheet_id.clone(),
+                    dimension: dimension.clone(),
                 });
             }
             for dimension in &sheet.dimensions {

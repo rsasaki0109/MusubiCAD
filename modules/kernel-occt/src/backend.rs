@@ -936,6 +936,27 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn straight_edge_endpoints(&self, body: &KernelBody, edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        let endpoints = self.edge_endpoints(body, edge_id)?;
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?;
+            let mut bytes = Vec::new();
+            Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+            if !crate::ffi::native::is_straight_edge(&bytes, &endpoints.concat()).map_err(
+                |error| OpenCadError::validation(format!("straight edge query: {error}")),
+            )? {
+                return Err(OpenCadError::validation(
+                    "angular dimension requires a straight edge",
+                ));
+            }
+        }
+        Ok(endpoints)
+    }
+
     fn fillet_edges(
         &self,
         body: KernelBody,

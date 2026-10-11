@@ -45,6 +45,9 @@ VOLUME_TOLERANCE_MM3 = 0.1
 
 VOLUME_LINE = re.compile(r"^volume_m3:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 MATE_ERROR_LINE = re.compile(r"^mate_max_error:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
+ANGLE_LINE = re.compile(r"^dimension: (\S+) measured_angle_rad: ([-+0-9.eE]+)\s*$", re.MULTILINE)
+ANGLE_TOLERANCE_RAD = 1e-9
+
 DIMENSION_LINE = re.compile(r"^dimension: (\S+) measured_length_m: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 
 # Largest mate residual, in metres, an assembly task accepts as satisfied.
@@ -251,6 +254,25 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_dimension_angles_rad" in task:
+        drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
+        dimensions = [dim for sheet in drawing.get("sheets", []) for dim in sheet.get("angular_dimensions", [])]
+        reported = {id_: float(angle) for id_, angle in ANGLE_LINE.findall(regen_output)}
+        angles = sorted(reported[dim["id"]] for dim in dimensions if dim["id"] in reported)
+        expected = sorted(task["expected_dimension_angles_rad"])
+        if len(angles) != len(expected) or any(abs(a-b) > ANGLE_TOLERANCE_RAD for a,b in zip(angles,expected)):
+            problems.append(f"angular dimensions {angles} rad, expected {expected} rad")
+        if "expected_angular_edge_refs" in task:
+            refs = sorted(ref for dim in dimensions for ref in dim.get("edge_refs", []))
+            if refs != sorted(task["expected_angular_edge_refs"]):
+                problems.append("angular dimension semantic bindings differ")
+        if "expected_arc_radii_m" in task:
+            radii = sorted(dim["arc_radius_m"] for dim in dimensions)
+            expected_radii = sorted(task["expected_arc_radii_m"])
+            if len(radii) != len(expected_radii) or any(abs(a-b) > 1e-9 for a,b in zip(radii,expected_radii)):
+                problems.append("angular sheet arc radii differ")
+        if "expected_angular_ids" in task and sorted(dim["id"] for dim in dimensions) != sorted(task["expected_angular_ids"]):
+            problems.append("angular dimension IDs differ")
     if (
         ("expected_urdf_joints" in task or "expected_reach" in task)
         and musubicad is not None
@@ -383,6 +405,14 @@ def self_test() -> None:
     assert not check(semantic, semantic_sheet, "")[0]
     assert not check(semantic, semantic_sheet, evidence.replace("0.08", "0.1"))[0]
     assert not check({**semantic, "expected_dimension_edge_refs": ["ref:edge:wrong"]}, semantic_sheet, evidence)[0]
+    angular_sheet = ROOT / "examples" / "angular_plate_drawing.ocad.d"
+    angular = {"expected_dimension_angles_rad": [1.5707963267948966], "expected_angular_edge_refs": ["ref:edge:plate_front", "ref:edge:plate_left"], "expected_angular_ids": ["dim:plate_corner"], "expected_arc_radii_m": [0.01]}
+    angle_evidence = "dimension: dim:plate_corner measured_angle_rad: 1.5707963267948966\n"
+    assert check(angular, angular_sheet, angle_evidence) == (True, [])
+    assert not check(angular, angular_sheet, "")[0]
+    assert not check({**angular, "expected_arc_radii_m": [0.015]}, angular_sheet, angle_evidence)[0]
+    assert not check(angular, angular_sheet, angle_evidence.replace("1.5707963267948966", "0.5"))[0]
+    assert not check({**angular, "expected_angular_edge_refs": ["ref:edge:wrong"]}, angular_sheet, angle_evidence)[0]
     robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
     assert check(
         {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},

@@ -96,13 +96,21 @@ fn structural_drawing_failures(model: &DrawingModel, operations: &[PatchOperatio
         let PatchOperation::RemoveDrawingView { view_id } = operation else {
             continue;
         };
-        let users: BTreeSet<String> = model
+        let mut users: BTreeSet<String> = model
             .sheets
             .iter()
             .flat_map(|sheet| sheet.dimensions.iter())
             .filter(|dimension| dimension.view_id.as_str() == view_id)
             .map(|dimension| format!("dimension {}", dimension.id))
             .collect();
+        users.extend(
+            model
+                .sheets
+                .iter()
+                .flat_map(|s| s.angular_dimensions.iter())
+                .filter(|d| d.view_id.as_str() == view_id)
+                .map(|d| format!("angular dimension {}", d.id)),
+        );
         if !users.is_empty() {
             failures.insert(format!(
                 "cannot remove '{view_id}': still used by {}",
@@ -112,6 +120,14 @@ fn structural_drawing_failures(model: &DrawingModel, operations: &[PatchOperatio
     }
     if failures.is_empty() {
         for sheet in &model.sheets {
+            for dimension in &sheet.angular_dimensions {
+                if !sheet.views.iter().any(|v| v.id == dimension.view_id) {
+                    failures.insert(format!(
+                        "angular dimension {} references a missing view",
+                        dimension.id
+                    ));
+                }
+            }
             for dimension in &sheet.dimensions {
                 if !sheet.views.iter().any(|view| view.id == dimension.view_id) {
                     failures.insert(format!(
@@ -133,7 +149,10 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                 let id = sheet.id.as_str();
                 let exists = model.sheets.iter().any(|item| item.id == sheet.id);
                 check_new_drawing_id(id, "sheet", exists, &removed, "drawing sheet")?;
-                if !sheet.views.is_empty() || !sheet.dimensions.is_empty() {
+                if !sheet.views.is_empty()
+                    || !sheet.dimensions.is_empty()
+                    || !sheet.angular_dimensions.is_empty()
+                {
                     return Err(OpenCadError::validation(format!(
                         "sheet '{id}' must be added empty; add views and dimensions with add_drawing_view and add_drawing_dimension"
                     )));
@@ -160,6 +179,12 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                 let sheet = model.sheets.remove(index);
                 removed.insert(id.clone());
                 removed.extend(sheet.views.iter().map(|view| view.id.as_str().to_string()));
+                removed.extend(
+                    sheet
+                        .angular_dimensions
+                        .iter()
+                        .map(|d| d.id.as_str().to_string()),
+                );
                 removed.extend(
                     sheet
                         .dimensions
@@ -198,11 +223,31 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                     .sheets
                     .iter()
                     .flat_map(|sheet| sheet.dimensions.iter())
-                    .any(|item| item.id == dimension.id);
+                    .any(|item| item.id == dimension.id)
+                    || model
+                        .sheets
+                        .iter()
+                        .flat_map(|s| s.angular_dimensions.iter())
+                        .any(|d| d.id == dimension.id);
                 check_new_drawing_id(id, "dim", exists, &removed, "drawing dimension")?;
                 dimension.validate()?;
                 find_sheet_mut(model, sheet_id)?
                     .dimensions
+                    .push(dimension.clone());
+            }
+            PatchOperation::AddAngularDimension {
+                sheet_id,
+                dimension,
+            } => {
+                let id = dimension.id.as_str();
+                let exists = model.sheets.iter().any(|s| {
+                    s.dimensions.iter().any(|d| d.id == dimension.id)
+                        || s.angular_dimensions.iter().any(|d| d.id == dimension.id)
+                });
+                check_new_drawing_id(id, "dim", exists, &removed, "angular dimension")?;
+                dimension.validate()?;
+                find_sheet_mut(model, sheet_id)?
+                    .angular_dimensions
                     .push(dimension.clone());
             }
             PatchOperation::RemoveDrawingDimension { id } => {
@@ -210,14 +255,16 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                     .sheets
                     .iter_mut()
                     .find(|sheet| {
-                        sheet
-                            .dimensions
-                            .iter()
-                            .any(|dimension| dimension.id.as_str() == id)
+                        sheet.angular_dimensions.iter().any(|d| d.id.as_str() == id)
+                            || sheet
+                                .dimensions
+                                .iter()
+                                .any(|dimension| dimension.id.as_str() == id)
                     })
                     .ok_or_else(|| {
                         OpenCadError::validation(format!("unknown drawing dimension '{id}'"))
                     })?;
+                sheet.angular_dimensions.retain(|d| d.id.as_str() != id);
                 sheet
                     .dimensions
                     .retain(|dimension| dimension.id.as_str() != id);
@@ -326,6 +373,15 @@ fn diff_sheet(before: &Sheet, after: &Sheet, changes: &mut Vec<SemanticChange>) 
     diff_items_by_id(
         &before.dimensions,
         &after.dimensions,
+        |item| item.id.as_str(),
+        |id| SemanticChange::DrawingDimensionAdded { id },
+        |id| SemanticChange::DrawingDimensionRemoved { id },
+        |id, before, after| SemanticChange::DrawingDimensionChanged { id, before, after },
+        changes,
+    );
+    diff_items_by_id(
+        &before.angular_dimensions,
+        &after.angular_dimensions,
         |item| item.id.as_str(),
         |id| SemanticChange::DrawingDimensionAdded { id },
         |id| SemanticChange::DrawingDimensionRemoved { id },

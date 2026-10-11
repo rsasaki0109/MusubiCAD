@@ -610,6 +610,121 @@
         },
         "additionalProperties": false
       },
+    "angular_dimension": {
+      "type": "object",
+      "required": [
+        "id",
+        "view_id",
+        "arc_radius_m"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "edge_refs"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "vertex_model_m"
+                ]
+              },
+              {
+                "required": [
+                  "first_model_m"
+                ]
+              },
+              {
+                "required": [
+                  "second_model_m"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "vertex_model_m",
+            "first_model_m",
+            "second_model_m"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "edge_refs"
+                ]
+              },
+              {
+                "required": [
+                  "ray_ends"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^dim:[a-zA-Z0-9_:/-]+$"
+        },
+        "view_id": {
+          "type": "string",
+          "pattern": "^view:[a-zA-Z0-9_:/-]+$"
+        },
+        "arc_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 1e-09
+        },
+        "edge_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^ref:edge:[a-zA-Z0-9_:/-]+$"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "ray_ends": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "start",
+              "end"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "vertex_model_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "first_model_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "second_model_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "additionalProperties": false
+    },
     "linear_dimension": {
       "type": "object",
       "required": ["id", "view_id", "offset_m"],
@@ -681,6 +796,7 @@
             "remove_drawing_dimension",
             "add_drawing_view",
             "add_drawing_dimension",
+            "add_angular_dimension",
             "add_attachment",
             "remove_attachment"
           ]
@@ -1084,6 +1200,31 @@
                 "type": "object",
                 "required": ["id"],
                 "properties": { "id": { "$ref": "#/$defs/stable_id_view" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "add_angular_dimension"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "type",
+              "sheet_id",
+              "dimension"
+            ],
+            "properties": {
+              "sheet_id": {
+                "type": "string",
+                "pattern": "^sheet:"
+              },
+              "dimension": {
+                "$ref": "#/$defs/angular_dimension"
               }
             }
           }

@@ -23,10 +23,20 @@ pub struct DrawingDimensionResult {
     pub reference_provenance: Option<ReferenceProvenance>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DrawingAngularDimensionResult {
+    pub sheet_id: String,
+    pub view_id: String,
+    pub dimension_id: String,
+    pub measured_angle_rad: f64,
+    pub reference_provenance: Vec<ReferenceProvenance>,
+}
+
 pub struct RegeneratedDrawing {
     /// Transient point-resolved sheets for renderers, never written to .ocad.
     pub sheets: Vec<(Sheet, Vec<ViewMesh>)>,
     pub dimensions: Vec<DrawingDimensionResult>,
+    pub angular_dimensions: Vec<DrawingAngularDimensionResult>,
 }
 
 /// Validate every sheet/view/dimension, even when exporting only the first sheet.
@@ -44,6 +54,7 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
     let mut result = RegeneratedDrawing {
         sheets: Vec::new(),
         dimensions: Vec::new(),
+        angular_dimensions: Vec::new(),
     };
     for mut sheet in drawing.clone().sorted_deterministic().sheets {
         let mut meshes = Vec::new();
@@ -57,7 +68,13 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
                     view.id, view.model.source_doc, referenced.metadata.id
                 )));
             }
-            let semantic_dimensions = sheet.dimensions.iter().any(|dimension| {
+            let semantic_dimensions = sheet.angular_dimensions.iter().any(|d| {
+                d.view_id == view.id
+                    && matches!(
+                        d.measurement,
+                        opencad_drawing::AngularMeasurement::Edges { .. }
+                    )
+            }) || sheet.dimensions.iter().any(|dimension| {
                 dimension.view_id == view.id
                     && matches!(dimension.measurement, LinearMeasurement::Edge { .. })
             });
@@ -118,6 +135,30 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
                         });
                         *dimension = resolved;
                     }
+                    for dimension in sheet
+                        .angular_dimensions
+                        .iter_mut()
+                        .filter(|d| d.view_id == view.id)
+                    {
+                        let (resolved, provenance) = opencad_drawing::resolve_angular_dimension(
+                            dimension,
+                            &referenced.semantic_refs,
+                            &discoveries,
+                            &kernel,
+                            body,
+                        )?;
+                        opencad_drawing::layout_angular_dimension(&resolved, view)?;
+                        result
+                            .angular_dimensions
+                            .push(DrawingAngularDimensionResult {
+                                sheet_id: sheet.id.as_str().into(),
+                                view_id: view.id.as_str().into(),
+                                dimension_id: dimension.id.as_str().into(),
+                                measured_angle_rad: resolved.measured_angle_rad()?,
+                                reference_provenance: provenance,
+                            });
+                        *dimension = resolved;
+                    }
                     kernel.tessellate(body, &TessellationSettings::default())?
                 }
                 DocumentKind::Assembly => {
@@ -133,6 +174,22 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
                             measured_length_m: dimension.measured_length_m()?,
                             reference_provenance: None,
                         });
+                    }
+                    for dimension in sheet
+                        .angular_dimensions
+                        .iter()
+                        .filter(|d| d.view_id == view.id)
+                    {
+                        opencad_drawing::layout_angular_dimension(dimension, view)?;
+                        result
+                            .angular_dimensions
+                            .push(DrawingAngularDimensionResult {
+                                sheet_id: sheet.id.as_str().into(),
+                                view_id: view.id.as_str().into(),
+                                dimension_id: dimension.id.as_str().into(),
+                                measured_angle_rad: dimension.measured_angle_rad()?,
+                                reference_provenance: vec![],
+                            });
                     }
                     crate::export::document_mesh(
                         reference_path.to_str().ok_or_else(|| {

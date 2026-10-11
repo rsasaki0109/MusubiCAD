@@ -130,3 +130,16 @@ contract. Input and output handles remain kernel-neutral. The body feature
 records both operand feature IDs; dependency/cycle/type validation and verified
 DesignPatch persistence own document changes. Exact derivation history is kept
 for the target, with existing geometry provenance for source-derived references.
+
+### Read-only straight-edge queries for angular dimensions
+
+MCAD-P12-001 adds `straight_edge_endpoints` to the kernel-neutral boundary.
+Mock supplies its box-edge witnesses; counting kernels forward the query. OCCT
+serializes the current body to an in-memory BREP and uses the existing private
+bridge to classify a uniquely endpoint-matched edge as `GeomAbs_Line` (1e-8 m
+matching tolerance). Curves and missing/ambiguous matches are refused. The query
+does not modify a body, invent history, expose OCCT types or fit sampled lines.
+Drawing resolution derives the supporting-line intersection and explicit rays;
+labels and orthographic layouts are transient. Semantic discovery retains its
+existing top-Z perimeter scope. See ADR-040 for units, degeneracy, canonical
+endpoint choices, view restrictions and additive file compatibility.

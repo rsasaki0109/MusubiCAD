@@ -8,6 +8,8 @@
 #include <NCollection_Array1.hxx>
 #include <gp_Pnt2d.hxx>
 #include <TopExp.hxx>
+#include <NCollection_IndexedMap.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <Standard_Failure.hxx>
@@ -15,6 +17,31 @@
 #include <stdexcept>
 
 namespace musubicad {
+bool is_straight_edge(rust::Slice<const std::uint8_t> brep, rust::Slice<const double> endpoints) {
+    try {
+        if (endpoints.size() != 6) throw std::runtime_error("invalid edge endpoints");
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()), brep.size()));
+        TopoDS_Shape shape; BRep_Builder builder; BRepTools::Read(shape, stream, builder);
+        if (shape.IsNull()) throw std::runtime_error("edge query BREP read failed");
+        gp_Pnt first(endpoints[0], endpoints[1], endpoints[2]);
+        gp_Pnt last(endpoints[3], endpoints[4], endpoints[5]);
+        NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> edges; TopExp::MapShapes(shape, TopAbs_EDGE, edges);
+        int matches = 0; bool straight = false;
+        for (int i = 1; i <= edges.Extent(); ++i) {
+            auto edge = TopoDS::Edge(edges(i));
+            auto v1 = TopExp::FirstVertex(edge, true), v2 = TopExp::LastVertex(edge, true);
+            if (v1.IsNull() || v2.IsNull()) continue;
+            auto p1 = BRep_Tool::Pnt(v1), p2 = BRep_Tool::Pnt(v2);
+            if ((p1.Distance(first) <= 1e-8 && p2.Distance(last) <= 1e-8) ||
+                (p1.Distance(last) <= 1e-8 && p2.Distance(first) <= 1e-8)) {
+                ++matches; straight = BRepAdaptor_Curve(edge).GetType() == GeomAbs_Line;
+            }
+        }
+        if (matches != 1) throw std::runtime_error("straight edge query is missing or ambiguous");
+        return straight;
+    } catch (const Standard_Failure& failure) { throw std::runtime_error(failure.what()); }
+}
+
 rust::Vec<std::uint8_t> variable_fillet(rust::Slice<const std::uint8_t> brep,
                                       rust::Slice<const double> endpoints,
                                       double start_radius, double end_radius) {

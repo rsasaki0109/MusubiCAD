@@ -539,6 +539,7 @@ mod tests {
             ),
             DrawingModel {
                 sheets: vec![Sheet {
+                    angular_dimensions: Vec::new(),
                     id: SheetId::new("sheet:a4").expect("id"),
                     name: "Sheet 1".into(),
                     width_m: 0.210,
