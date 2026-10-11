@@ -1,0 +1,44 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "datum_plane",
+        "feature_id": "feature:datum"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:plate",
+          "construction": false,
+          "origin": [
+            0.0,
+            0.0
+          ],
+          "size": [
+            0.02,
+            0.01
+          ],
+          "corner_ids": [
+            "ent:c0",
+            "ent:c1",
+            "ent:c2",
+            "ent:c3"
+          ],
+          "edge_ids": [
+            "ent:e0",
+            "ent:e1",
+            "ent:e2",
+            "ent:e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    }
+  ]
+}

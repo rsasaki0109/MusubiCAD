@@ -310,3 +310,13 @@ document is restored, while viewport camera and selection remain outside the
 history value. The focused round-trip and failure coverage lives in
 `modules/file/src/history.rs`, `modules/desktop/src/parameters.rs`, and the
 desktop/Agent command parity tests.
+
+### Parametric datum plate
+
+`datum_plate.ocad.d` is a 20 × 10 × 4 mm plate on a datum plane at z = 5 mm.
+Its `offset` parameter moves the plane and plate together. A named +Y axis has
+its x origin driven by `axis_x`; downstream revolves can use it through
+`axis_feature`. Construction datums add no solid or mass. The complete example
+is authored with `agent/create_datum_plate_patch.json`; refresh it using
+`cargo test -p opencad-cli --test datum_example write_datum_example -- --ignored`.
+See [the datum API](../docs/api/datums.md) for units and supported consumers.

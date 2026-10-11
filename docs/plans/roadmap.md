@@ -600,6 +600,40 @@ export plus `reach` against the finished document.
 Booleans), sampling resolution missing a narrow collision window, and
 intentional contact between connected links being counted as interference.
 
+## Phase 11 — Modeling expansion
+
+**Objective:** improve general mechanical CAD modeling through parametric
+construction geometry and manufacturing features (fixed rubric target: about
+six weighted maturity points across this phase, awarded only after merges).
+
+**Dependencies:** Phase 10 complete; the existing Feature Graph, parameter
+expressions, semantic provenance, verified DesignPatch and Mock/OCCT kernels.
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P11-001 | Datum planes and axes | Parametric construction features; datum-plane sketch placement and datum-axis revolve input; fail-closed dependencies; Mock/OCCT analytic tests, round trips, example, authoring guide/skill and eval | Complete |
+| MCAD-P11-002 | Draft | Unit-explicit draft angle and neutral plane with semantic face selection; both kernels and analytic geometry evidence | Planned |
+| MCAD-P11-003 | Ribs | Parametric rib thickness from a sketch with controlled extent and body joining; both kernels and analytic geometry evidence | Planned |
+| MCAD-P11-004 | Threads and standard holes | Explicit hole standards/thread metadata and geometry with documented representation and tolerances | Planned |
+| MCAD-P11-005 | Variable and face fillets | Semantic face/edge selection and explicit variable-radius law, with OCCT evidence and Mock contract | Planned |
+| MCAD-P11-006 | Inter-body Booleans | Explicit source/target body references for union, subtraction and intersection through DesignPatch | Planned |
+
+**Definition of done:** each task ships one reviewed PR with both kernel paths,
+analytic volume/dimension tests, a committed example, MCP authoring guide and
+skill updates, and an eval task where feasible. Schema changes include schemas,
+migration policy and deterministic round-trip tests. Scores change only after
+main merges and cite the merged capability.
+
+**Tests:** dependency/cycle/suppression refusal; parameter edits and cache
+invalidation; Mock geometry contracts and OCCT analytic dimensions/volumes;
+legacy/current file round trips; transactional DesignPatch dry-run/apply and
+rollback; all mandatory workspace/plugin checks before push.
+
+**Risks:** OCCT operation tolerances and unsupported face configurations;
+ambiguous topology must fail closed. Datums must remain non-solid construction
+outputs and never inflate body counts, mass or export meshes. Later variable
+fillets and threads need bounded complexity and documented representation.
+
 ## Cross-phase verification matrix
 
 Every implementation PR must select the applicable rows and record the command

@@ -171,6 +171,16 @@
         "max_gap_mm": 0.01,
         "min_joint_count": 3
       }
+    },
+    {
+      "id": "datum_axis_bushing",
+      "source": "examples/revolve_bushing.ocad.d",
+      "document": "bushing.ocad.d",
+      "prompt": "Add a named parametric datum axis to {document}. Its direction is global +Y and its origin is [axis_x, 0, 0] metres, where the new length parameter axis_x = 5 mm. Set the existing revolve to use that datum axis through axis_feature. Keep the original sketch, radius, height and angle parameters unchanged. Verify regeneration; the moved axis must reduce the original 15/25 mm radii to 10/20 mm over the 20 mm height.",
+      "expected_volume_mm3": 18849.556,
+      "required_parameters": [
+        "axis_x"
+      ]
     }
   ]
 }

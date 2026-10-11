@@ -59,7 +59,10 @@ impl Feature for ChamferFeatureExecutor {
             def.edge_selector.clone()
         };
         let result = ctx.kernel().chamfer_edges(body, distance_m, selector)?;
-        Ok(FeatureOutput { body: Some(result) })
+        Ok(FeatureOutput {
+            body: Some(result),
+            datum: None,
+        })
     }
 }
 

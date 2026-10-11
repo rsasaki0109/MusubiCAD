@@ -14,6 +14,8 @@ use crate::sketch_bridge::profile_to_solved;
 pub struct RevolveFeature {
     pub sketch_feature: String,
     pub profile_ref: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub axis_feature: Option<String>,
     pub axis_origin_m: [f64; 3],
     pub axis_direction_m: [f64; 3],
     pub angle_rad: f64,
@@ -45,6 +47,20 @@ impl Feature for RevolveFeatureExecutor {
         let sketch = ctx.sketch_for_feature(def.sketch_feature.as_str())?;
         let solved = profile_to_solved(sketch, &def.profile_ref)?;
         let profile_plane = profile_plane_for_workplane(&sketch.workplane)?;
+        let (axis_origin_m, axis_direction_m) = match &def.axis_feature {
+            Some(id) => match ctx.datum_for_feature(id)? {
+                crate::datum::DatumGeometry::Axis {
+                    origin_m,
+                    direction,
+                } => (origin_m, direction),
+                _ => {
+                    return Err(OpenCadError::validation(format!(
+                        "feature '{id}' is not a datum axis"
+                    )))
+                }
+            },
+            None => (def.axis_origin_m, def.axis_direction_m),
+        };
         let kernel = ctx.kernel();
 
         let target_body = def
@@ -57,8 +73,8 @@ impl Feature for RevolveFeatureExecutor {
             RevolveOperation::NewBody => kernel.revolve(&RevolveInput {
                 sketch: solved,
                 profile_plane,
-                axis_origin_m: def.axis_origin_m,
-                axis_direction_m: def.axis_direction_m,
+                axis_origin_m,
+                axis_direction_m,
                 angle_rad: def.angle_rad,
                 operation: RevolveOperation::NewBody,
                 target: None,
@@ -72,8 +88,8 @@ impl Feature for RevolveFeatureExecutor {
                 kernel.revolve(&RevolveInput {
                     sketch: solved,
                     profile_plane,
-                    axis_origin_m: def.axis_origin_m,
-                    axis_direction_m: def.axis_direction_m,
+                    axis_origin_m,
+                    axis_direction_m,
                     angle_rad: def.angle_rad,
                     operation: RevolveOperation::Cut,
                     target: Some(target),
@@ -83,8 +99,8 @@ impl Feature for RevolveFeatureExecutor {
                 let new_body = kernel.revolve(&RevolveInput {
                     sketch: solved.clone(),
                     profile_plane,
-                    axis_origin_m: def.axis_origin_m,
-                    axis_direction_m: def.axis_direction_m,
+                    axis_origin_m,
+                    axis_direction_m,
                     angle_rad: def.angle_rad,
                     operation: RevolveOperation::NewBody,
                     target: None,
@@ -98,7 +114,10 @@ impl Feature for RevolveFeatureExecutor {
             }
         };
 
-        Ok(FeatureOutput { body: Some(body) })
+        Ok(FeatureOutput {
+            body: Some(body),
+            datum: None,
+        })
     }
 }
 
@@ -109,7 +128,7 @@ fn profile_plane_for_workplane(workplane: &Workplane) -> Result<ProfilePlane> {
             GlobalPlane::YZ => ProfilePlane::Yz,
             GlobalPlane::XZ => ProfilePlane::Xz,
         }),
-        Workplane::FaceRef { .. } => Err(OpenCadError::validation(
+        Workplane::FaceRef { .. } | Workplane::DatumPlane { .. } => Err(OpenCadError::validation(
             "revolve does not support face_ref workplanes yet",
         )),
         Workplane::Custom { .. } => Err(OpenCadError::validation(
@@ -146,6 +165,7 @@ impl RevolveFeature {
         Self {
             sketch_feature: sketch_feature.into(),
             profile_ref: profile_ref.into(),
+            axis_feature: None,
             axis_origin_m,
             axis_direction_m,
             angle_rad,

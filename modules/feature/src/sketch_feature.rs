@@ -22,13 +22,23 @@ impl Feature for SketchFeature {
         "sketch"
     }
 
-    fn execute(&self, node: &FeatureNode, _ctx: &dyn RegenContext) -> Result<FeatureOutput> {
+    fn execute(&self, node: &FeatureNode, ctx: &dyn RegenContext) -> Result<FeatureOutput> {
         let FeatureDefinition::Sketch(_) = &node.definition else {
             return Err(OpenCadError::validation(format!(
                 "expected sketch feature, got {}",
                 node.definition.feature_type()
             )));
         };
+        // A datum sketch consumes construction geometry even without a solid
+        // feature downstream. Keep the legacy data-free executor contract.
+        if let Ok(sketch) = ctx.sketch_for_feature(&node.id) {
+            if matches!(
+                sketch.workplane,
+                opencad_sketch::Workplane::DatumPlane { .. }
+            ) {
+                crate::sketch_bridge::resolve_workplane(&sketch.workplane, ctx)?;
+            }
+        }
         Ok(FeatureOutput::default())
     }
 }

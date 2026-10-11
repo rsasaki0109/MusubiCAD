@@ -92,7 +92,10 @@ impl Feature for HelixSweepFeatureExecutor {
             }
             (_, None) => unreachable!("validated above"),
         };
-        Ok(FeatureOutput { body: Some(body) })
+        Ok(FeatureOutput {
+            body: Some(body),
+            datum: None,
+        })
     }
 }
 

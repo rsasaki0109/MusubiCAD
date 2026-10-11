@@ -484,7 +484,17 @@ impl GeometryKernel for OcctGeometryKernel {
                 axis_direction_m[2] / axis_len,
             );
 
-            let edges = sketch_to_edges_on_plane(sketch, profile_plane)?;
+            if !input.axis_origin_m.iter().all(|value| value.is_finite()) {
+                return Err(OpenCadError::validation(
+                    "revolve axis origin must be finite (m)",
+                ));
+            }
+            // Sweep about an origin-centred spine, then restore world coordinates.
+            let edges = sketch_to_edges_on_plane(
+                sketch,
+                profile_plane,
+                input.axis_origin_m.map(|value| -value),
+            )?;
             let spine = revolve_spine_edge(axis, angle_rad)?;
             let solid = Solid::sweep(
                 &edges,
@@ -492,6 +502,7 @@ impl GeometryKernel for OcctGeometryKernel {
                 ProfileOrient::Up(axis),
             )
             .map_err(map_occt_error)?;
+            let solid = solid.translate(DVec3::from_array(input.axis_origin_m));
 
             match operation {
                 RevolveOperation::NewBody => {}

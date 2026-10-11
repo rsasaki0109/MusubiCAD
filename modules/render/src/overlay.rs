@@ -239,6 +239,11 @@ pub fn build_sketch_overlay(
 ) -> Result<SketchOverlay> {
     let mut overlay = SketchOverlay::default();
     for sketch in sketches {
+        if matches!(sketch.workplane, Workplane::DatumPlane { .. }) {
+            return Err(opencad_core::OpenCadError::validation(
+                "resolve datum plane before building overlay",
+            ));
+        }
         append_sketch_lines(sketch, values, &mut overlay.lines)?;
         append_constraint_labels(sketch, values, &mut overlay)?;
     }
@@ -899,10 +904,12 @@ fn workplane_basis(workplane: &Workplane) -> ([f32; 3], [f32; 3]) {
             GlobalPlane::YZ => ([0.0, 1.0, 0.0], [0.0, 0.0, 1.0]),
             GlobalPlane::XZ => ([1.0, 0.0, 0.0], [0.0, 0.0, 1.0]),
         },
-        Workplane::FaceRef { .. } => ([1.0, 0.0, 0.0], [0.0, 1.0, 0.0]),
-        Workplane::Custom { x_axis, .. } => {
+        Workplane::FaceRef { .. } | Workplane::DatumPlane { .. } => {
+            ([1.0, 0.0, 0.0], [0.0, 1.0, 0.0])
+        }
+        Workplane::Custom { normal, x_axis, .. } => {
             let right = normalize3_f64(x_axis);
-            let up = normalize_cross(x_axis, &[0.0, 1.0, 0.0]);
+            let up = normalize_cross(normal, x_axis);
             (to_f32(right), to_f32(up))
         }
     }
@@ -981,13 +988,13 @@ fn plane_to_world(workplane: &Workplane, point: &[f64; 2]) -> [f32; 3] {
             GlobalPlane::YZ => [0.0, u, v],
             GlobalPlane::XZ => [u, 0.0, v],
         },
-        Workplane::FaceRef { .. } => [u, v, 0.0],
+        Workplane::FaceRef { .. } | Workplane::DatumPlane { .. } => [u, v, 0.0],
         Workplane::Custom {
             origin,
-            normal: _,
+            normal,
             x_axis,
         } => {
-            let y_axis = normalize_cross(x_axis, &[0.0, 1.0, 0.0]);
+            let y_axis = normalize_cross(normal, x_axis);
             [
                 origin[0] + x_axis[0] * u + y_axis[0] * v,
                 origin[1] + x_axis[1] * u + y_axis[1] * v,

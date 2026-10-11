@@ -217,3 +217,17 @@ musubicad reach arm.ocad.d --tool gripper --point 0,40,7mm --target 0,330,63mm  
 `musubicad patch` refuses a patch that does not regenerate or misses its
 expected effects and prints the reason; `--no-verify` exists only for staged
 authoring steps that cannot regenerate yet.
+
+## Parametric construction datums
+
+Use `add_feature` / `replace_feature_definition` to author `datum_plane` and
+`datum_axis` nodes before their consumers. Planes store `base`, signed
+`offset.value_si` in metres and optional `offset_expr`; bind a new sketch with
+`{"type":"datum_plane","feature_id":"feature:plane"}`. Axes store
+`origin_m`, normalized nonzero `direction` and optional `origin_expr` (three
+length expressions/nulls). Set a revolve's `axis_feature` to the axis ID; retain
+its legacy numeric axis fields. Verify parameter edits and use the generated
+geometry as evidence. Missing/suppressed/wrong-kind datums refuse regeneration.
+Datums are construction outputs, so they do not add bodies or meshes. Revolve
+profiles still require global planes; use datum planes with extrusions.
+See `docs/api/datums.md` and `examples/agent/create_datum_plate_patch.json`.

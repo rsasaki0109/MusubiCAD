@@ -23,6 +23,8 @@ use crate::sweep::SweepFeature;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum FeatureDefinition {
+    DatumPlane(crate::datum::DatumPlaneFeature),
+    DatumAxis(crate::datum::DatumAxisFeature),
     Sketch(SketchFeatureDef),
     Extrude(ExtrudeFeature),
     Revolve(RevolveFeature),
@@ -42,6 +44,8 @@ pub enum FeatureDefinition {
 impl FeatureDefinition {
     pub fn feature_type(&self) -> &'static str {
         match self {
+            Self::DatumPlane(_) => "datum_plane",
+            Self::DatumAxis(_) => "datum_axis",
             Self::Sketch(_) => "sketch",
             Self::Extrude(_) => "extrude",
             Self::Revolve(_) => "revolve",
@@ -90,6 +94,8 @@ impl FeatureNode {
 pub struct FeatureOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body: Option<KernelBody>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub datum: Option<crate::datum::DatumGeometry>,
 }
 
 /// Read-only regeneration context for feature executors.
@@ -99,6 +105,12 @@ pub trait RegenContext {
     fn sketch_for_feature(&self, sketch_feature_id: &str) -> Result<&Sketch>;
 
     fn body_for_feature(&self, feature_id: &str) -> Result<KernelBody>;
+
+    fn datum_for_feature(&self, feature_id: &str) -> Result<crate::datum::DatumGeometry> {
+        Err(opencad_core::OpenCadError::not_found(format!(
+            "datum for feature '{feature_id}'"
+        )))
+    }
 
     fn semantic_refs(&self) -> &[TopoRef] {
         &[]

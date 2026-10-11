@@ -1,0 +1,62 @@
+{
+  "intent": "Move the bushing revolve axis with a length parameter",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:axis_x",
+      "name": "axis_x",
+      "expr": "5 mm"
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "before": "feature:revolve_bushing"
+      },
+      "node": {
+        "id": "feature:axis",
+        "name": "Parametric bushing axis",
+        "definition": {
+          "type": "datum_axis",
+          "origin_m": [
+            0,
+            0,
+            0
+          ],
+          "direction": [
+            0,
+            1,
+            0
+          ],
+          "origin_expr": [
+            "axis_x",
+            null,
+            null
+          ]
+        }
+      }
+    },
+    {
+      "type": "replace_feature_definition",
+      "id": "feature:revolve_bushing",
+      "definition": {
+        "type": "revolve",
+        "sketch_feature": "feature:sketch_profile",
+        "profile_ref": "sketch:profile/profile:outer",
+        "axis_origin_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "axis_direction_m": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "angle_rad": 6.283185307179586,
+        "angle_expr": "revolve_angle_rad",
+        "operation": "new_body",
+        "axis_feature": "feature:axis"
+      }
+    }
+  ]
+}

@@ -191,3 +191,17 @@ from the same Design Graph. `bash docs/assets/generate-six-axis.sh` refreshes
 the example's URDF/STL, GIF, HTML viewer and screenshot. ADR-033 samples one
 joint at a time with others at rest; combined poses and continuous motion
 require additional checks.
+
+### Parametric datum planes and axes
+
+Add `datum_plane`/`datum_axis` through the existing feature patch operations;
+place construction features before consumers. A datum plane uses `base`,
+signed `offset.value_si` metres and optional `offset_expr`; a sketch binds it
+with `{"type":"datum_plane","feature_id":"feature:plane"}`. A datum axis
+uses `origin_m`, a nonzero `direction` and optional three-entry `origin_expr`
+(length expressions or null); a revolve consumes it via `axis_feature`.
+Verify every edit: missing/suppressed/wrong-kind datums fail closed, and changing
+an upstream datum invalidates dependent cached geometry. See [datums.md](datums.md),
+[ADR-035](../adr/ADR-035-parametric-datums.md), and
+`examples/agent/create_datum_plate_patch.json`. Revolve profiles currently require
+global workplanes; datum-plane sketches are supported by extrusions.

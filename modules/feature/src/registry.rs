@@ -28,6 +28,8 @@ impl FeatureRegistry {
 
     pub fn with_defaults() -> Self {
         let mut registry = Self::new();
+        registry.register(Box::new(crate::datum::DatumPlaneExecutor));
+        registry.register(Box::new(crate::datum::DatumAxisExecutor));
         registry.register(Box::new(SketchFeature));
         registry.register(Box::new(ExtrudeFeatureExecutor));
         registry.register(Box::new(RevolveFeatureExecutor));

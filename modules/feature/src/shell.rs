@@ -137,7 +137,10 @@ impl Feature for ShellFeatureExecutor {
         let result = ctx
             .kernel()
             .shell_body(body, def.thickness.meters(), &open_faces)?;
-        Ok(FeatureOutput { body: Some(result) })
+        Ok(FeatureOutput {
+            body: Some(result),
+            datum: None,
+        })
     }
 }
 

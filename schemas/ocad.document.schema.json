@@ -46,7 +46,18 @@
     },
     "features": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "properties": {
+          "definition": {
+            "type": "object",
+            "allOf": [
+              { "if": { "properties": { "type": { "const": "datum_plane" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/datum_plane" } },
+              { "if": { "properties": { "type": { "const": "datum_axis" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/datum_axis" } }
+            ]
+          }
+        }
+      }
     },
     "materials": {
       "type": "array",
@@ -68,9 +79,108 @@
     }
   },
   "$defs": {
+      "datum_workplane": {
+        "type": "object",
+        "required": [
+          "type",
+          "feature_id"
+        ],
+        "properties": {
+          "type": {
+            "const": "datum_plane"
+          },
+          "feature_id": {
+            "type": "string",
+            "pattern": "^feature:"
+          }
+        },
+        "additionalProperties": false
+      },
+      "datum_plane": {
+        "type": "object",
+        "required": [
+          "type",
+          "base",
+          "offset"
+        ],
+        "properties": {
+          "type": {
+            "const": "datum_plane"
+          },
+          "base": {
+            "type": "object"
+          },
+          "offset": {
+            "type": "object",
+            "required": [
+              "value_si"
+            ],
+            "properties": {
+              "value_si": {
+                "type": "number"
+              }
+            }
+          },
+          "offset_expr": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "datum_axis": {
+        "type": "object",
+        "required": [
+          "type",
+          "origin_m",
+          "direction"
+        ],
+        "properties": {
+          "type": {
+            "const": "datum_axis"
+          },
+          "origin_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number"
+            }
+          },
+          "direction": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number"
+            }
+          },
+          "origin_expr": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
     "sketch": {
       "type": "object",
       "properties": {
+        "workplane": {
+          "type": "object",
+          "allOf": [{ "if": { "properties": { "type": { "const": "datum_plane" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/datum_workplane" } }]
+        },
         "constraints": {
           "type": "array",
           "items": { "$ref": "#/$defs/sketch_constraint" }
