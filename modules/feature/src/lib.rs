@@ -61,3 +61,5 @@ pub use sketch_feature::{SketchFeature, SketchFeatureDef};
 pub use sweep::{SweepFeature, SweepFeatureExecutor};
 
 pub mod datum;
+pub mod draft;
+pub use draft::{DraftFeature, DraftFeatureExecutor};

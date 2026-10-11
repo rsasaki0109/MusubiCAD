@@ -119,6 +119,11 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.edge_endpoints(body, kernel_edge_id)
     }
 
+    fn draft_body(&self, body: KernelBody, input: &crate::DraftInput) -> Result<KernelBody> {
+        self.record();
+        self.inner.draft_body(body, input)
+    }
+
     fn fillet_edges(
         &self,
         body: KernelBody,

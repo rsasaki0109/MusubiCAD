@@ -195,6 +195,14 @@ impl FeatureDefinition {
                 }
                 Ok(())
             }
+            Self::Draft(def) => {
+                def.validate()?;
+                let angle = match &def.angle_expr {
+                    Some(expr) => eval_angle_expr(expr, scope)?,
+                    None => def.angle.radians(),
+                };
+                crate::draft::validate_angle(angle)
+            }
             Self::Shell(def) => {
                 def.validate()?;
                 let thickness = match &def.thickness_expr {

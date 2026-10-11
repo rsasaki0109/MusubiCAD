@@ -231,3 +231,17 @@ geometry as evidence. Missing/suppressed/wrong-kind datums refuse regeneration.
 Datums are construction outputs, so they do not add bodies or meshes. Revolve
 profiles still require global planes; use datum planes with extrusions.
 See `docs/api/datums.md` and `examples/agent/create_datum_plate_patch.json`.
+
+### Neutral-plane draft
+
+For planar convex parts, add a `draft` feature through DesignPatch with
+`target_feature`, unit-explicit `angle: {value_si: radians}`, optional
+`angle_expr`, `neutral_plane` Workplane, and mandatory unique semantic
+`face_refs`. A datum neutral plane is supported. Positive angle narrows along
+its normal; negative angle widens. Preserve its neutral intersection. Use
+`examples/agent/create_draft_plate_patch.json` and `docs/api/draft.md` as the
+contract. Reject ambiguous/missing faces, curved or non-convex solids,
+holes/cavities, nonperpendicular side faces and collapsed extents; report the
+backend error. Always verify through dry-run/apply/regeneration and compare
+analytic volume/dimensions. Mock checks the contract; physical evidence comes
+from OCCT (ADR-036).

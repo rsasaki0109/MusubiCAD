@@ -5,6 +5,8 @@
 
 pub mod backend;
 pub mod convert;
+#[cfg(feature = "occt")]
+mod draft;
 pub mod ffi;
 pub mod step;
 pub mod store;

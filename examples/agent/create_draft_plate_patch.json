@@ -1,0 +1,148 @@
+{
+  "intent": "Create a plate with five-degree inward draft on its semantic +x face about its datum plane",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:draft_angle",
+      "name": "draft_angle",
+      "expr": "5 deg"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:offset",
+      "name": "offset",
+      "expr": "5 mm"
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:datum",
+        "name": "datum",
+        "definition": {
+          "type": "datum_plane",
+          "base": {
+            "type": "global",
+            "plane": "XY"
+          },
+          "offset": {
+            "value_si": 0.005
+          },
+          "offset_expr": "offset"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "datum_plane",
+        "feature_id": "feature:datum"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:plate",
+      "entity": {
+        "type": "rectangle",
+        "id": "ent:plate",
+        "construction": false,
+        "origin": [
+          0,
+          0
+        ],
+        "size": [
+          0.02,
+          0.01
+        ],
+        "corner_ids": [
+          "ent:c0",
+          "ent:c1",
+          "ent:c2",
+          "ent:c3"
+        ],
+        "edge_ids": [
+          "ent:e0",
+          "ent:e1",
+          "ent:e2",
+          "ent:e3"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch",
+        "name": "sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:plate"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:extrude",
+        "name": "extrude",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch",
+          "profile_ref": "sketch:plate/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.004
+            }
+          },
+          "operation": "new_body"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_semantic_ref",
+      "topo_ref": {
+        "ref_id": "ref:face:plate_right",
+        "kind": "face",
+        "semantic": {
+          "created_by": "feature:extrude",
+          "role": "+x"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:draft",
+        "name": "Side draft",
+        "definition": {
+          "type": "draft",
+          "target_feature": "feature:extrude",
+          "angle": {
+            "value_si": 0.08726646259971647
+          },
+          "angle_expr": "draft_angle",
+          "neutral_plane": {
+            "type": "datum_plane",
+            "feature_id": "feature:datum"
+          },
+          "face_refs": [
+            "ref:face:plate_right"
+          ]
+        }
+      }
+    }
+  ]
+}
