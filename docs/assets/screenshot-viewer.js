@@ -1,17 +1,19 @@
 // Screenshot an exported MusubiCAD HTML joint viewer with a joint moved.
 // Usage: node screenshot-viewer.js viewer.html out.png [joint=radians ...]
-// Needs the `playwright` package and a Chromium build (software WebGL is fine).
+// Needs Playwright and Chromium; PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH can select a system browser.
 const { chromium } = require("playwright");
 
 (async () => {
   const [html, output, ...joints] = process.argv.slice(2);
   const browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
     args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
   });
   const page = await browser.newPage({ viewport: { width: 960, height: 560 } });
   const errors = [];
   page.on("pageerror", (error) => errors.push(String(error)));
-  await page.goto("file://" + require("path").resolve(html));
+  // Exported viewers are self-contained; load directly without a file URL.
+  await page.setContent(require("fs").readFileSync(html, "utf8"));
   for (const assignment of joints) {
     const [name, value] = assignment.split("=");
     await page.$eval(`input[aria-label="${name}"]`, (input, radians) => {

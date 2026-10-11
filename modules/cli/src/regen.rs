@@ -686,8 +686,8 @@ mod tests {
         assert!(message.contains("body count 2 == 3"), "{message}");
     }
 
-    /// MCAD-P10-002 on the six-axis arm: its declared limits let the elbow
-    /// fold the hand into the base, so a required motion assertion alone is
+    /// MCAD-P10-002/P10-005: the committed arm clears the sampled sweep.
+    /// Restoring its historical limits folds the hand into the base, so an assertion alone is
     /// refused; the checked-in patch that also narrows the limits lands, and
     /// `regen` reports the sweep.
     #[test]
@@ -697,6 +697,35 @@ mod tests {
         let document = dir.path().join("six_axis_arm.ocad.d");
         copy_dir(&Path::new(examples).join("six_axis_arm.ocad.d"), &document);
         let document = document.to_str().expect("utf-8").to_string();
+        let checked = regen_document(&document, false).expect("checked-in arm clears");
+        assert_eq!(checked.assertions.len(), 1);
+        assert!(checked.assertions[0].passed);
+
+        // Recreate the historical unsafe fixture; the committed example now
+        // carries narrowed limits and the required assertion (MCAD-P10-005).
+        let mut original = read_ocad(&document).expect("read");
+        original.assertions.clear();
+        let assembly = original.assembly.as_mut().expect("assembly");
+        for joint in &mut assembly.joints {
+            if let opencad_assembly::JointMotion::Revolute {
+                lower_rad,
+                upper_rad,
+                ..
+            } = &mut joint.motion
+            {
+                match joint.id.as_str() {
+                    "joint:shoulder" => *lower_rad = (-80.0_f64).to_radians(),
+                    "joint:elbow" => *upper_rad = 100.0_f64.to_radians(),
+                    "joint:wrist_pitch" => *upper_rad = 110.0_f64.to_radians(),
+                    _ => {}
+                }
+            }
+        }
+        // Empty assertions are omitted by the writer; remove the copied
+        // assertion file when constructing this historical test fixture.
+        std::fs::remove_file(Path::new(&document).join("graph/assertions.json"))
+            .expect("remove fixture assertion file");
+        write_expanded_dir(&document, &original).expect("write unsafe fixture");
         let clearance = format!("{examples}/agent/six_axis_arm_motion_clearance_patch.json");
         let patch = |patch_path: &str| {
             crate::patch::patch_document_with_options(&crate::patch::PatchArgs {

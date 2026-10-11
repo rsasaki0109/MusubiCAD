@@ -1,0 +1,12 @@
+{
+  "assertions": [
+    {
+      "id": "assertion:motion_clearance",
+      "name": "Arm clears itself through every joint range",
+      "severity": "required",
+      "type": "motion_interference_at_most",
+      "max_count": 0,
+      "samples_per_joint": 13
+    }
+  ]
+}

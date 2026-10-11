@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use opencad_assembly::{six_axis_arm, six_axis_arm_model};
-use opencad_core::{DocumentId, DocumentMetadata};
+use opencad_core::{Assertion, AssertionKind, AssertionSeverity, DocumentId, DocumentMetadata};
 use opencad_feature::{
     robot_arm_base, robot_arm_forearm, robot_arm_gripper, robot_arm_upper_arm, six_axis_hand,
     six_axis_turntable, six_axis_wrist, PartModel,
@@ -108,7 +108,15 @@ fn write_six_axis_arm_example() {
         feature_graph: opencad_graph::FeatureGraph::new(),
         feature_nodes: Vec::new(),
         semantic_refs: Vec::new(),
-        assertions: Vec::new(),
+        assertions: vec![Assertion::new(
+            "assertion:motion_clearance",
+            "Arm clears itself through every joint range",
+            AssertionSeverity::Required,
+            AssertionKind::MotionInterferenceAtMost {
+                max_count: 0,
+                samples_per_joint: 13,
+            },
+        )],
         assembly: Some(six_axis_arm_model().expect("assembly model")),
         drawing: None,
         attachments: Default::default(),

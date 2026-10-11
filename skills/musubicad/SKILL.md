@@ -122,7 +122,11 @@ reports the count. To check every joint position rather than only the current
 pose, add a required `motion_interference_at_most` assertion
 (`{"max_count": 0, "samples_per_joint": 13}`). A refusal names the joint's
 instance, its angle, and the colliding pairs; fix the design (narrow a limit,
-shorten a link) and verify again.
+shorten a link) and verify again. Sampling moves one joint at a time with
+others at rest; it does not certify continuous motion or combined poses.
+`examples/six_axis_arm.ocad.d` includes narrowed limits and a required
+78-pose clearance check; regenerate its URDF, GIF and viewer together with
+`bash docs/assets/generate-six-axis.sh`.
 
 ## 5. Look, review, and export
 

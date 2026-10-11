@@ -180,3 +180,14 @@ converts the current `musubicad new <path> drawing` template using a new dimensi
 ID (removed IDs cannot be reused in the same patch).
 [`semantic_bracket_drawing.ocad.d`](../../examples/semantic_bracket_drawing.ocad.d)
 is the complete example; its width follows changes to the nested bracket.
+
+### Six-axis arm clearance example
+
+`examples/six_axis_arm.ocad.d` includes a required motion-clearance assertion
+at 13 samples for each of its six joints. The shoulder range is −60° to +80°,
+the elbow −130° to +30°, and wrist pitch −110° to +70° (serialized in radians).
+After changing joint limits, verify the patch and regenerate exported evidence
+from the same Design Graph. `bash docs/assets/generate-six-axis.sh` refreshes
+the example's URDF/STL, GIF, HTML viewer and screenshot. ADR-033 samples one
+joint at a time with others at rest; combined poses and continuous motion
+require additional checks.

@@ -160,28 +160,32 @@ cargo run -p opencad-cli -- reach examples/six_axis_arm.ocad.d \
 cargo run -p opencad-cli -- export examples/six_axis_arm.ocad.d urdf/six_axis_arm.urdf
 ```
 
-At rest the arm is clear, but its declared limits are not
-(MCAD-P10-002, [ADR-033](../docs/adr/ADR-033-motion-interference.md)).
-A required `motion_interference_at_most` assertion sweeps each joint through
-its limits. Added on its own, it is refused, and the refusal names the worst
-sampled pose: `worst instance:forearm at 61.7 deg: instance:base ×
-instance:gripper, …` (the elbow folds the hand into the base). Collisions
-also occur with the shoulder at −80° and wrist pitch above +80°.
+The checked-in example includes the clearance patch
 [`examples/agent/six_axis_arm_motion_clearance_patch.json`](agent/six_axis_arm_motion_clearance_patch.json)
-narrows those three limits (shoulder ≥ −60°, elbow ≤ +30°, wrist pitch
-≤ +70°) and adds the assertion at 13 samples per joint, and it lands:
+(MCAD-P10-005): shoulder −60° to +80°, elbow −130° to +30°, and wrist
+pitch −110° to +70°. Its required `motion_interference_at_most` assertion
+checks 13 positions per joint and passes with zero interference across 78 poses.
+The generator preserves these limits and the assertion. Regression tests
+restore the historical unsafe limits in a temporary fixture and prove that
+verified patches refuse the resulting collision without changing the file.
+
+[ADR-033](../docs/adr/ADR-033-motion-interference.md) checks one joint at a time
+with the others at rest. These samples do not certify continuous motion or
+combined multi-joint poses. The GIF demonstrates joint motion within the limits;
+its combined poses are not covered by the per-joint clearance assertion.
+
+Regenerate the committed URDF (with its seven STL meshes), GIF, HTML viewer,
+and viewer screenshot together:
 
 ```bash
-cp -r examples/six_axis_arm.ocad.d /tmp/arm.ocad.d
-cargo run -p opencad-cli -- patch /tmp/arm.ocad.d \
-  examples/agent/six_axis_arm_motion_clearance_patch.json
-cargo run -p opencad-cli -- regen /tmp/arm.ocad.d
-# assertion assertion:motion_clearance: PASS (max interference count 0 <= 0
-#   over 78 poses (6 joints × 13 samples))
+bash docs/assets/generate-six-axis.sh
 ```
 
-The checked-in example keeps its original limits so its URDF, GIF, and viewer
-evidence stay unchanged.
+The screenshot requires Node, Playwright and Chromium; set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to use a system browser. The generated
+[`six-axis-arm.urdf`](../docs/assets/six-axis-arm.urdf) and
+[`six-axis-viewer.html`](../docs/assets/six-axis-viewer.html) use the same
+Design Graph as the GIF.
 
 ### Robot arm flagship assembly
 
