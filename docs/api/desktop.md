@@ -24,7 +24,7 @@ render/viewport layer and are not written to the document.
 | `undo_document_with_history(path, history)` | Validate and persist the previous full-document snapshot; return updated history state |
 | `redo_document_with_history(path, history)` | Validate and persist the next full-document snapshot; return updated history state |
 | `pick_document(path, options)` | Headless offscreen selection query with semantic/topological context |
-| `load_assembly_evidence_from_document(path, doc)` | Regenerate an assembly once and return `AssemblyEvidence { scene, report, interference_count }`: the viewport scene, the `AssemblyRegenReport` (DOF, mass, bounds, per-instance status), and the exact interference count under the default tolerances; `load_assembly_scene_from_document` returns only the scene and count (MCAD-P10-001) |
+| `load_assembly_evidence_from_document(path, doc)` | Regenerate an assembly once and return `AssemblyEvidence { scene, report, interference_count }`: the viewport scene, the `AssemblyRegenReport` (DOF, mass, bounds, per-instance status), and the exact interference count under the default tolerances; `load_assembly_scene_from_document` returns only the scene and count (MCAD-P10-001); `load_assembly_evidence_with_assertions(path, doc, assertions)` also sweeps joint motion for the motion assertions in `assertions` (MCAD-P10-002) |
 | `export_stl_document(path, output)` | Regenerate a part and write a disposable binary STL |
 | `run_desktop_smoke(source, work_dir)` | Copy a part fixture into a new work directory and return serializable open/preview/edit/regenerate/pick/export evidence |
 

@@ -9,6 +9,7 @@ pub mod kinematics;
 pub mod mate;
 pub mod model;
 pub mod models;
+pub mod motion;
 pub mod pattern;
 pub mod pose;
 pub mod reach;
@@ -25,6 +26,10 @@ pub use kinematics::{kinematic_tree, JointKind, KinematicJoint, KinematicLink, K
 pub use mate::{validate_mates, Mate, MateEntity, MateKind};
 pub use model::AssemblyModel;
 pub use models::{robot_arm, robot_arm_assembly_model, six_axis_arm, six_axis_arm_model};
+pub use motion::{
+    joint_sample_positions, sample_motion_interference, MotionInterferencePose,
+    MotionInterferenceReport, MotionPose,
+};
 pub use pattern::{expand_patterns, validate_patterns, AssemblyPattern};
 pub use reach::{
     reach_joints, solve_reach, tool_point_at, workspace, ReachJoint, ReachSolution, ToolPoint,

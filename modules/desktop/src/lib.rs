@@ -35,9 +35,9 @@ pub use pick::{
     PickOptions, PickSummary, PickTarget, ScreenSegment,
 };
 pub use preview::{
-    load_assembly_evidence_from_document, load_assembly_scene_from_document, load_view_data,
-    preview_document, render_preview_png, AssemblyEvidence, CameraState, DocumentPreview, ViewData,
-    PREVIEW_HEIGHT, PREVIEW_WIDTH,
+    load_assembly_evidence_from_document, load_assembly_evidence_with_assertions,
+    load_assembly_scene_from_document, load_view_data, preview_document, render_preview_png,
+    AssemblyEvidence, CameraState, DocumentPreview, ViewData, PREVIEW_HEIGHT, PREVIEW_WIDTH,
 };
 pub use regen::{tessellate_active_body, tessellate_active_body_detailed, TessellatedBody};
 pub use regenerate::{regenerate_document, DocumentRegeneration};

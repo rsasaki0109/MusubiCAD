@@ -568,7 +568,7 @@ position" that it already gets for a part's mass or bounds.
 | ID | Scope | Deliverables | Status |
 |---|---|---|---|
 | MCAD-P10-001 | Assembly assertions | Assembly documents evaluate their assertions (`assembly_dof_at_most`, `interference_at_most`, mass, bounds, body count, parameter range) in `musubicad regen`, `verify_patch` / `patch_dry_run`, `patch_apply`, and `musubicad review`; a violated required assertion refuses the change, names the assertion and its evidence, and leaves the file unchanged | Complete |
-| MCAD-P10-002 | Interference across joint motion | A typed assertion that samples every joint within its limits and counts interfering instance pairs at each pose with the existing explicit tolerances; deterministic pose order; the failing pose is named with unit-bearing joint values | Planned |
+| MCAD-P10-002 | Interference across joint motion | A typed assertion that samples every joint within its limits and counts interfering instance pairs at each pose with the existing explicit tolerances; deterministic pose order; the failing pose is named with unit-bearing joint values; [ADR-033](../adr/ADR-033-motion-interference.md) per-joint sampling with straddling-pair checks, brute-force cross-check, six-axis arm clearance patch | Complete |
 | MCAD-P10-003 | Semantic drawing dimensions | Drawing dimensions bound to semantic references and checked on every regeneration; ambiguous or missing references fail closed instead of measuring a different edge | Planned |
 | MCAD-P10-004 | Robot eval task | MCP eval task that adds a joint, exports URDF, and reaches a target, graded by the kinematic tree and the reach residual | Planned |
 

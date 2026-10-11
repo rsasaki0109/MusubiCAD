@@ -9,7 +9,7 @@ use opencad_ai::{
 };
 use opencad_core::{OpenCadError, Result};
 use opencad_desktop::{
-    inspect_ocad_regeneration, load_assembly_evidence_from_document, load_view_data,
+    inspect_ocad_regeneration, load_assembly_evidence_with_assertions, load_view_data,
 };
 use opencad_feature::{FeatureRegistry, RegenerationFailure};
 use opencad_file::{apply_patch_to_document, dry_run_patch_document, read_ocad, OcadDocument};
@@ -274,7 +274,7 @@ fn verify_patch_with_scenes(
     // A document that is already broken may be repaired by the patch, so a
     // failing "before" is evidence to report, not a reason to reject.
     let (before_scene, before_interference_count, before_regen_error) =
-        match document_scene(document_path, before) {
+        match document_scene(document_path, before, false) {
             Ok(evidence) => (evidence.scene, evidence.interference_count, None),
             Err(error) => (RenderScene::empty()?, None, Some(error.to_string())),
         };
@@ -282,7 +282,7 @@ fn verify_patch_with_scenes(
         scene: after_scene,
         interference_count: after_interference_count,
         assembly_assertions,
-    } = document_scene(document_path, &after)
+    } = document_scene(document_path, &after, true)
         .map_err(|error| error.with_context("patched document does not regenerate"))?;
 
     let reference_provenance = document_reference_provenance(&after);
@@ -472,7 +472,11 @@ impl DocumentScene {
     }
 }
 
-fn document_scene(path: &str, doc: &OcadDocument) -> Result<DocumentScene> {
+/// Regenerate `doc` for review.  With `with_assertions`, an assembly also
+/// sweeps joint motion for its motion assertions (MCAD-P10-002); the
+/// "before" side of a review skips that cost because its assertions are not
+/// evaluated.
+fn document_scene(path: &str, doc: &OcadDocument, with_assertions: bool) -> Result<DocumentScene> {
     // Documents that hold nothing to show yet (a new assembly without
     // instances, a drawing without views) are reviewed against an empty scene.
     if let Some(assembly) = &doc.assembly {
@@ -492,12 +496,18 @@ fn document_scene(path: &str, doc: &OcadDocument) -> Result<DocumentScene> {
                 }),
             });
         }
-        let evidence = load_assembly_evidence_from_document(path, doc)?;
-        let context = assembly_assertion_context(
+        let assertions: &[opencad_core::Assertion] = if with_assertions {
+            &doc.assertions
+        } else {
+            &[]
+        };
+        let evidence = load_assembly_evidence_with_assertions(path, doc, assertions)?;
+        let mut context = assembly_assertion_context(
             &doc.parameters,
             &evidence.report,
             evidence.interference_count,
         );
+        context.motion_interference = evidence.motion_interference;
         return Ok(DocumentScene {
             scene: evidence.scene,
             interference_count: Some(evidence.interference_count),
@@ -611,6 +621,7 @@ fn document_assertion_results(
         reference_provenance: report.reference_provenance.clone(),
         assembly_dof: None,
         interference_count: None,
+        motion_interference: Default::default(),
     };
     evaluate_assertions(&doc.assertions, &context)
 }

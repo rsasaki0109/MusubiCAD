@@ -92,7 +92,8 @@ pub fn inspect_parameter(params: &QueryParams, id: &str) -> Result<ParameterInte
             | AssertionKind::BodyCount { .. } => !predicted_dirty_features.is_empty(),
             AssertionKind::RequiredReference { .. }
             | AssertionKind::AssemblyDofAtMost { .. }
-            | AssertionKind::InterferenceAtMost { .. } => false,
+            | AssertionKind::InterferenceAtMost { .. }
+            | AssertionKind::MotionInterferenceAtMost { .. } => false,
         })
         .map(|assertion| assertion.id.clone())
         .collect::<BTreeSet<_>>()

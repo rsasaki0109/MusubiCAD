@@ -140,6 +140,29 @@ cargo run -p opencad-cli -- reach examples/six_axis_arm.ocad.d \
 cargo run -p opencad-cli -- export examples/six_axis_arm.ocad.d urdf/six_axis_arm.urdf
 ```
 
+At rest the arm is clear, but its declared limits are not
+(MCAD-P10-002, [ADR-033](../docs/adr/ADR-033-motion-interference.md)).
+A required `motion_interference_at_most` assertion sweeps each joint through
+its limits. Added on its own, it is refused, and the refusal names the worst
+sampled pose: `worst instance:forearm at 61.7 deg: instance:base ×
+instance:gripper, …` (the elbow folds the hand into the base). Collisions
+also occur with the shoulder at −80° and wrist pitch above +80°.
+[`examples/agent/six_axis_arm_motion_clearance_patch.json`](agent/six_axis_arm_motion_clearance_patch.json)
+narrows those three limits (shoulder ≥ −60°, elbow ≤ +30°, wrist pitch
+≤ +70°) and adds the assertion at 13 samples per joint, and it lands:
+
+```bash
+cp -r examples/six_axis_arm.ocad.d /tmp/arm.ocad.d
+cargo run -p opencad-cli -- patch /tmp/arm.ocad.d \
+  examples/agent/six_axis_arm_motion_clearance_patch.json
+cargo run -p opencad-cli -- regen /tmp/arm.ocad.d
+# assertion assertion:motion_clearance: PASS (max interference count 0 <= 0
+#   over 78 poses (6 joints × 13 samples))
+```
+
+The checked-in example keeps its original limits so its URDF, GIF, and viewer
+evidence stay unchanged.
+
 ### Robot arm flagship assembly
 
 `robot_arm_assembly.ocad.d` is a four-part articulated arm: a bolted base

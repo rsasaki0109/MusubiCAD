@@ -2,9 +2,12 @@
 
 use std::collections::BTreeMap;
 
-use opencad_assembly::{AssemblyRegenReport, InstanceRegenStatus};
+use opencad_assembly::{
+    sample_motion_interference, AssemblyInterferenceTolerance, AssemblyModel, AssemblyRegenReport,
+    AssemblyScene, InstanceRegenStatus, MotionInterferenceReport,
+};
 use opencad_core::{Assertion, AssertionKind, AssertionSeverity};
-use opencad_geometry::ReferenceProvenance;
+use opencad_geometry::{GeometryKernel, ReferenceProvenance};
 use opencad_graph::{evaluate_param_graph, ParamGraph};
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +28,45 @@ pub struct AssertionContext {
     pub assembly_dof: Option<i32>,
     /// Detected assembly interference count.
     pub interference_count: Option<usize>,
+    /// Interference across joint motion keyed by samples per joint
+    /// (MCAD-P10-002); an `Err` says why the sweep could not run.
+    pub motion_interference: BTreeMap<u32, std::result::Result<MotionInterferenceReport, String>>,
+}
+
+/// Sweep the joints of a regenerated assembly once per distinct sample count
+/// that the document's valid `motion_interference_at_most` assertions ask
+/// for (MCAD-P10-002).  Returns an empty map when none do, so documents
+/// without motion assertions pay nothing.  `scene` must come from
+/// regenerating `model` with `kernel`.
+pub fn motion_interference_evidence<K: GeometryKernel>(
+    kernel: &K,
+    model: &AssemblyModel,
+    scene: &AssemblyScene,
+    assertions: &[Assertion],
+) -> BTreeMap<u32, std::result::Result<MotionInterferenceReport, String>> {
+    assertions
+        .iter()
+        .filter(|assertion| assertion.validate().is_ok())
+        .filter_map(|assertion| match assertion.kind {
+            AssertionKind::MotionInterferenceAtMost {
+                samples_per_joint, ..
+            } => Some(samples_per_joint),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .map(|samples| {
+            let report = sample_motion_interference(
+                kernel,
+                model,
+                scene,
+                samples,
+                AssemblyInterferenceTolerance::default(),
+            )
+            .map_err(|error| error.to_string());
+            (samples, report)
+        })
+        .collect()
 }
 
 /// Assertion evidence for a regenerated assembly (MCAD-P10-001).
@@ -64,6 +106,7 @@ pub fn assembly_assertion_context(
         reference_provenance: Vec::new(),
         assembly_dof: Some(report.dof),
         interference_count: Some(interference_count),
+        motion_interference: BTreeMap::new(),
     }
 }
 
@@ -182,6 +225,23 @@ pub fn evaluate_assertion(assertion: &Assertion, context: &AssertionContext) -> 
             ),
             None => (false, "assembly interference metric is unavailable".into()),
         },
+        AssertionKind::MotionInterferenceAtMost {
+            max_count,
+            samples_per_joint,
+        } => match context.motion_interference.get(samples_per_joint) {
+            Some(Ok(report)) => (
+                report.max_count <= *max_count as usize,
+                motion_message(report, *max_count),
+            ),
+            Some(Err(error)) => (
+                false,
+                format!("interference across joint motion could not be checked: {error}"),
+            ),
+            None => (
+                false,
+                "interference across joint motion is unavailable".into(),
+            ),
+        },
     };
     AssertionResult {
         id: assertion.id.clone(),
@@ -190,6 +250,27 @@ pub fn evaluate_assertion(assertion: &Assertion, context: &AssertionContext) -> 
         passed,
         message,
     }
+}
+
+/// "max interference count 3 <= 0 over 54 poses (6 joints × 9 samples);
+/// worst instance:forearm at 71.3 deg: instance:base × instance:gripper, …"
+fn motion_message(report: &MotionInterferenceReport, max_count: u32) -> String {
+    let mut message = format!(
+        "max interference count {} <= {max_count} over {} poses ({} joints × {} samples)",
+        report.max_count, report.poses_checked, report.joints, report.samples_per_joint
+    );
+    if let Some(worst) = &report.worst {
+        let pairs = worst
+            .pairs
+            .iter()
+            .map(|[first, second]| format!("{first} × {second}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        message.push_str(&format!("; worst {}: {pairs}", worst.pose.describe()));
+    } else if report.rest_count > 0 {
+        message.push_str(" (all in the authored pose)");
+    }
+    message
 }
 
 #[cfg(test)]
@@ -220,6 +301,7 @@ mod tests {
             }],
             assembly_dof: Some(9),
             interference_count: Some(0),
+            motion_interference: BTreeMap::new(),
         }
     }
 
@@ -415,6 +497,86 @@ mod tests {
         let loose = assembly_assertion_context(&ParamGraph::new(), &assembly_report(7), 0);
         let results = evaluate_assertions(&assertions, &loose);
         assert!(!results[1].passed, "{}", results[1].message);
+    }
+
+    fn motion_assertion(samples_per_joint: u32) -> Assertion {
+        Assertion::new(
+            "assertion:motion",
+            "Clear through every joint range",
+            AssertionSeverity::Required,
+            AssertionKind::MotionInterferenceAtMost {
+                max_count: 0,
+                samples_per_joint,
+            },
+        )
+    }
+
+    #[test]
+    fn motion_interference_names_the_worst_pose() {
+        use opencad_assembly::{MotionInterferencePose, MotionPose};
+
+        let mut ctx = context();
+        let clear = MotionInterferenceReport {
+            samples_per_joint: 9,
+            joints: 3,
+            poses_checked: 27,
+            rest_count: 0,
+            max_count: 0,
+            worst: None,
+        };
+        ctx.motion_interference.insert(9, Ok(clear.clone()));
+        let results = evaluate_assertions(&[motion_assertion(9)], &ctx);
+        assert!(results[0].passed);
+        assert_eq!(
+            results[0].message,
+            "max interference count 0 <= 0 over 27 poses (3 joints × 9 samples)"
+        );
+
+        let folding = MotionInterferenceReport {
+            max_count: 2,
+            worst: Some(MotionInterferencePose {
+                pose: MotionPose {
+                    joint_instance: "instance:forearm".into(),
+                    position: 0.5 * std::f64::consts::FRAC_PI_2,
+                    prismatic: false,
+                },
+                pairs: vec![
+                    ["instance:base".into(), "instance:gripper".into()],
+                    ["instance:gripper".into(), "instance:turntable".into()],
+                ],
+            }),
+            ..clear
+        };
+        ctx.motion_interference.insert(9, Ok(folding));
+        let results = evaluate_assertions(&[motion_assertion(9)], &ctx);
+        assert!(!results[0].passed);
+        assert!(!required_assertions_pass(&results));
+        assert!(
+            results[0].message.ends_with(
+                "; worst instance:forearm at 45.0 deg: instance:base × instance:gripper, \
+                 instance:gripper × instance:turntable"
+            ),
+            "{}",
+            results[0].message
+        );
+    }
+
+    #[test]
+    fn motion_interference_fails_closed_without_evidence() {
+        let mut ctx = context();
+        let results = evaluate_assertions(&[motion_assertion(9)], &ctx);
+        assert!(!results[0].passed);
+        assert!(results[0].message.contains("unavailable"));
+
+        ctx.motion_interference
+            .insert(9, Err("assembly has no grounded instance".into()));
+        let results = evaluate_assertions(&[motion_assertion(9)], &ctx);
+        assert!(!results[0].passed);
+        assert!(results[0].message.contains("no grounded instance"));
+
+        // Evidence for another sample count does not satisfy this assertion.
+        let results = evaluate_assertions(&[motion_assertion(5)], &ctx);
+        assert!(!results[0].passed);
     }
 
     #[test]

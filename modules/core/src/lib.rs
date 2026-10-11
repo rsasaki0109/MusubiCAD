@@ -11,7 +11,10 @@ pub mod transaction;
 pub mod units;
 pub mod validation;
 
-pub use assertions::{Assertion, AssertionKind, AssertionSeverity};
+pub use assertions::{
+    Assertion, AssertionKind, AssertionSeverity, MAX_MOTION_SAMPLES_PER_JOINT,
+    MIN_MOTION_SAMPLES_PER_JOINT,
+};
 pub use document::{DocumentKind, DocumentMetadata};
 pub use error::{OpenCadError, Result};
 pub use id::{

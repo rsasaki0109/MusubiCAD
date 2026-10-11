@@ -196,21 +196,38 @@ pub fn load_assembly_scene_from_document(
 }
 
 /// A regenerated assembly: its viewport scene, the regeneration report (DOF,
-/// mass, bounds, per-instance status), and the exact interference count.
+/// mass, bounds, per-instance status), the exact interference count, and
+/// interference across joint motion for the requested assertions.
 #[cfg(feature = "occt")]
 #[derive(Debug, Clone)]
 pub struct AssemblyEvidence {
     pub scene: RenderScene,
     pub report: opencad_assembly::AssemblyRegenReport,
     pub interference_count: usize,
+    /// Keyed by samples per joint; empty unless the assertions passed to
+    /// [`load_assembly_evidence_with_assertions`] sweep joint motion.
+    pub motion_interference:
+        BTreeMap<u32, std::result::Result<opencad_assembly::MotionInterferenceReport, String>>,
 }
 
 /// Regenerate an assembly document once and return everything its review
-/// and assertions need (MCAD-P10-001).
+/// and assertions need (MCAD-P10-001), without sweeping joint motion.
 #[cfg(feature = "occt")]
 pub fn load_assembly_evidence_from_document(
     input: &str,
     doc: &OcadDocument,
+) -> Result<AssemblyEvidence> {
+    load_assembly_evidence_with_assertions(input, doc, &[])
+}
+
+/// [`load_assembly_evidence_from_document`] that also sweeps joint motion for
+/// every `motion_interference_at_most` assertion in `assertions`
+/// (MCAD-P10-002), with the same kernel and regenerated bodies.
+#[cfg(feature = "occt")]
+pub fn load_assembly_evidence_with_assertions(
+    input: &str,
+    doc: &OcadDocument,
+    assertions: &[opencad_core::Assertion],
 ) -> Result<AssemblyEvidence> {
     use opencad_kernel_occt::OcctGeometryKernel;
 
@@ -242,10 +259,13 @@ pub fn load_assembly_evidence_from_document(
         .collect();
     let render_scene = RenderScene::from_mesh_sets_with_colors(&mesh_sets, Some(&colors))?;
     let interference_count = detect_interferences(&kernel, &report.scene, 1e-12)?.len();
+    let motion_interference =
+        opencad_ai::motion_interference_evidence(&kernel, assembly, &report.scene, assertions);
     Ok(AssemblyEvidence {
         scene: render_scene,
         report,
         interference_count,
+        motion_interference,
     })
 }
 

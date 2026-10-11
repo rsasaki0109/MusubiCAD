@@ -48,6 +48,20 @@ of freedom. `dof` is the mate solver's estimate, or six per movable instance
 when there are no mates. Assembly design assertions read it for
 `assembly_dof_at_most` ([assertions](assertions.md#assembly-documents-mcad-p10-001)).
 
+## Interference across joint motion
+
+`sample_motion_interference(kernel, model, scene, samples_per_joint,
+tolerance)` sweeps every movable joint of the kinematic tree through its range
+and returns a `MotionInterferenceReport`: joints swept, poses checked, the
+authored-pose count, the largest pair count, and the first worst
+`MotionInterferencePose` (joint instance, position, and sorted pairs)
+([ADR-033](../adr/ADR-033-motion-interference.md)). One joint moves at a time
+while the others stay at zero. `joint_sample_positions` gives the positions:
+both limits for a limited joint, one turn from −180° for a continuous joint.
+Only pairs that straddle the moving subtree get an exact Boolean; the rest
+keep their authored-pose result. `scene` must come from regenerating `model`,
+and an instance without a body fails the sweep.
+
 ## Kinematic tree and URDF export
 
 `opencad_assembly::kinematic_tree(&AssemblyModel)` derives a robot kinematic

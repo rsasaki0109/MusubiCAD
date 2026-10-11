@@ -3,8 +3,8 @@
 use std::path::Path;
 
 use opencad_ai::{
-    assembly_assertion_context, evaluate_assertions, required_assertions_pass, AssertionContext,
-    AssertionResult,
+    assembly_assertion_context, evaluate_assertions, motion_interference_evidence,
+    required_assertions_pass, AssertionContext, AssertionResult,
 };
 use opencad_assembly::{
     detect_interferences_with_tolerance, regenerate_assembly, ChildPart, InstanceRegenStatus,
@@ -181,6 +181,7 @@ fn evaluate_part_assertions(
         reference_provenance: report.reference_provenance.clone(),
         assembly_dof: None,
         interference_count: None,
+        motion_interference: Default::default(),
     };
     evaluate_assertions(assertions, &context)
 }
@@ -244,7 +245,9 @@ fn regen_assembly_with_kernel(
     } else {
         let interference_count =
             detect_interferences_with_tolerance(kernel, &report.scene, Default::default())?.len();
-        let context = assembly_assertion_context(&doc.parameters, &report, interference_count);
+        let mut context = assembly_assertion_context(&doc.parameters, &report, interference_count);
+        context.motion_interference =
+            motion_interference_evidence(kernel, assembly, &report.scene, &doc.assertions);
         let results = evaluate_assertions(&doc.assertions, &context);
         if !required_assertions_pass(&results) {
             return Err(assertion_violation(
@@ -632,6 +635,58 @@ mod tests {
         let message = error.to_string();
         assert!(message.contains("assertion:bodies"), "{message}");
         assert!(message.contains("body count 2 == 3"), "{message}");
+    }
+
+    /// MCAD-P10-002 on the six-axis arm: its declared limits let the elbow
+    /// fold the hand into the base, so a required motion assertion alone is
+    /// refused; the checked-in patch that also narrows the limits lands, and
+    /// `regen` reports the sweep.
+    #[test]
+    fn six_axis_arm_motion_clearance_is_enforced() {
+        let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples");
+        let dir = tempdir().expect("tempdir");
+        let document = dir.path().join("six_axis_arm.ocad.d");
+        copy_dir(&Path::new(examples).join("six_axis_arm.ocad.d"), &document);
+        let document = document.to_str().expect("utf-8").to_string();
+        let clearance = format!("{examples}/agent/six_axis_arm_motion_clearance_patch.json");
+        let patch = |patch_path: &str| {
+            crate::patch::patch_document_with_options(&crate::patch::PatchArgs {
+                doc_path: document.clone(),
+                patch_path: patch_path.to_string(),
+                options: Default::default(),
+            })
+        };
+
+        let mut assertion_only: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&clearance).expect("read patch"))
+                .expect("patch json");
+        let operations = assertion_only["operations"]
+            .as_array_mut()
+            .expect("operations");
+        operations.retain(|operation| operation["type"] == "add_assertion");
+        assert_eq!(operations.len(), 1);
+        let assertion_only_path = dir.path().join("assertion_only.json");
+        std::fs::write(&assertion_only_path, assertion_only.to_string()).expect("write");
+        let error = patch(assertion_only_path.to_str().expect("utf-8"))
+            .expect_err("the arm folds into itself");
+        let message = error.to_string();
+        assert!(message.contains("document was not changed"), "{message}");
+        assert!(message.contains("assertion:motion_clearance"), "{message}");
+        assert!(
+            message.contains("worst instance:forearm at"),
+            "the elbow pose is named: {message}"
+        );
+        assert!(read_ocad(&document).expect("read").assertions.is_empty());
+
+        patch(&clearance).expect("narrowed limits clear every sampled pose");
+        let summary = regen_document(&document, false).expect("regen");
+        assert_eq!(summary.assertions.len(), 1);
+        let result = &summary.assertions[0];
+        assert!(result.passed, "{}", result.message);
+        assert_eq!(
+            result.message,
+            "max interference count 0 <= 0 over 78 poses (6 joints × 13 samples)"
+        );
     }
 
     fn copy_dir(from: &Path, to: &Path) {

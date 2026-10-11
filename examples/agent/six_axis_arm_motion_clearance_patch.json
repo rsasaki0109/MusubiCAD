@@ -1,0 +1,53 @@
+{
+  "intent": "Keep the six-axis arm clear of itself through every joint range",
+  "rationale": "Sweeping each joint through its declared limits folds the hand into the base (elbow from about +45 deg), the upper arm into the turntable (shoulder at -80 deg), and the gripper into the wrist (wrist pitch from +80 deg). Narrow those three limits and require zero interference at every sampled joint pose.",
+  "operations": [
+    {
+      "type": "set_joint",
+      "joint": {
+        "id": "joint:shoulder",
+        "mate": "mate:shoulder",
+        "type": "revolute",
+        "lower_rad": -1.0471975511965976,
+        "upper_rad": 1.3962634015954636,
+        "effort_n_m": 6.0,
+        "velocity_rad_s": 2.0
+      }
+    },
+    {
+      "type": "set_joint",
+      "joint": {
+        "id": "joint:elbow",
+        "mate": "mate:elbow",
+        "type": "revolute",
+        "lower_rad": -2.2689280275926285,
+        "upper_rad": 0.5235987755982988,
+        "effort_n_m": 3.0,
+        "velocity_rad_s": 2.5
+      }
+    },
+    {
+      "type": "set_joint",
+      "joint": {
+        "id": "joint:wrist_pitch",
+        "mate": "mate:wrist_pitch",
+        "type": "revolute",
+        "lower_rad": -1.9198621771937625,
+        "upper_rad": 1.2217304763960306,
+        "effort_n_m": 0.8,
+        "velocity_rad_s": 3.0
+      }
+    },
+    {
+      "type": "add_assertion",
+      "assertion": {
+        "id": "assertion:motion_clearance",
+        "name": "Arm clears itself through every joint range",
+        "severity": "required",
+        "type": "motion_interference_at_most",
+        "max_count": 0,
+        "samples_per_joint": 13
+      }
+    }
+  ]
+}
