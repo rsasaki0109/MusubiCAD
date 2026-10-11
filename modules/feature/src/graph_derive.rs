@@ -39,6 +39,12 @@ impl FeatureDefinition {
             }
             return inputs;
         }
+        if let Self::Rib(def) = self {
+            return vec![
+                ("sketch_feature", def.sketch_feature.as_str()),
+                ("target_feature", def.target_feature.as_str()),
+            ];
+        }
         if let Self::Revolve(def) = self {
             return [
                 ("sketch_feature", Some(def.sketch_feature.as_str())),
@@ -89,6 +95,7 @@ impl FeatureDefinition {
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Draft(_) => [("", None), ("", None)],
+            Self::Rib(_) => [("", None), ("", None)],
             Self::Loft(_) => [("", None), ("", None)],
             Self::Sweep(_) => [("", None), ("", None)],
             Self::HelixSweep(def) => [
@@ -163,6 +170,7 @@ impl FeatureDefinition {
             | Self::ImportedSolid(_)
             | Self::Shell(_)
             | Self::Draft(_)
+            | Self::Rib(_)
             | Self::Loft(_)
             | Self::Sweep(_)
             | Self::HelixSweep(_) => [("", None), ("", None)],
@@ -237,6 +245,12 @@ impl FeatureDefinition {
                 ("height_expr", def.height_expr.as_ref()),
             ]);
         }
+        if let Self::Rib(def) = self {
+            return present([
+                ("thickness_expr", def.thickness_expr.as_ref()),
+                ("length_expr", def.length_expr.as_ref()),
+            ]);
+        }
         let (field, expr) = match self {
             Self::Extrude(def) => ("length_expr", def.length_expr.as_ref()),
             Self::Revolve(def) => ("angle_expr", def.angle_expr.as_ref()),
@@ -252,6 +266,7 @@ impl FeatureDefinition {
             | Self::CircularPattern(_)
             | Self::MirrorPattern(_)
             | Self::ImportedSolid(_)
+            | Self::Rib(_)
             | Self::Loft(_)
             | Self::Sweep(_)
             | Self::HelixSweep(_) => return Vec::new(),
@@ -537,6 +552,17 @@ mod tests {
             None,
             vec!["ref:face:plate_top".into()],
         )));
+        samples.push(FeatureDefinition::Rib(crate::RibFeature {
+            sketch_feature: "feature:sketch_rib".into(),
+            centerline_ref: "ent:rib_line".into(),
+            target_feature: "feature:plate".into(),
+            thickness: opencad_core::Length::from_meters(0.002),
+            thickness_expr: Some("rib_thickness".into()),
+            extent: opencad_geometry::ExtrudeExtent::Distance {
+                length: opencad_core::Length::from_meters(0.012),
+            },
+            length_expr: Some("rib_height".into()),
+        }));
         for extra in [
             crate::bracket_edge_fillet(),
             crate::bracket_with_top_chamfer(),
@@ -566,7 +592,12 @@ mod tests {
             for (key, value) in object {
                 let is_input = key.ends_with("_feature") || key.ends_with("_ref");
                 let is_input_list = key.ends_with("_refs") && value.is_array();
-                if (is_input && value.is_string() && key != "profile_ref") || is_input_list {
+                if (is_input
+                    && value.is_string()
+                    && key != "profile_ref"
+                    && key != "centerline_ref")
+                    || is_input_list
+                {
                     assert!(
                         registered.contains(key.as_str()),
                         "{} field '{key}' is not registered as a graph input",
@@ -590,6 +621,7 @@ mod tests {
             "loft",
             "sweep",
             "helix_sweep",
+            "rib",
         ] {
             assert!(
                 covered_types.contains(feature_type),

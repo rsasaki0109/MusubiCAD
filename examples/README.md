@@ -328,3 +328,10 @@ structural DesignPatch. A 20×10×4 mm plate at z=5 mm uses a datum neutral
 plane and a 5 degree inward draft on its semantic +x face. The volume is
 793.0009069179 mm³. Change `draft_angle` to a negative angle for outward draft.
 Only convex planar solids are supported; see `docs/api/draft.md` and ADR-036.
+
+### Rib plate
+
+`rib_plate.ocad.d` demonstrates a straight centreline rib on a rectangular
+plate. The `rib_thickness` and `rib_height` parameters drive a `rib` feature
+that expands `ent:rib_line`, extrudes along the sketch normal, and joins the
+web to the base plate.

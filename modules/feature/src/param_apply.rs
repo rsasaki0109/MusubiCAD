@@ -19,6 +19,7 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
                 FeatureDefinition::DatumPlane(_)
                     | FeatureDefinition::DatumAxis(_)
                     | FeatureDefinition::Draft(_)
+                    | FeatureDefinition::Rib(_)
             ) {
                 resolve_feature_node(node, &IndexMap::new())?;
             }
@@ -109,6 +110,18 @@ fn resolve_feature_node(
         FeatureDefinition::Draft(def) => {
             if let Some(expr) = &def.angle_expr {
                 def.angle = opencad_core::Angle::from_radians(eval_angle_expr(expr, values)?);
+            }
+        }
+        FeatureDefinition::Rib(rib) => {
+            if let Some(expr) = &rib.thickness_expr {
+                let meters = eval_length_expr(expr, values)?;
+                rib.thickness = Length::from_meters(meters);
+            }
+            if let Some(expr) = &rib.length_expr {
+                let meters = eval_length_expr(expr, values)?;
+                rib.extent = ExtrudeExtent::Distance {
+                    length: Length::from_meters(meters),
+                };
             }
         }
         FeatureDefinition::Shell(shell) => {

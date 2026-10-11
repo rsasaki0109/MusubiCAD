@@ -1,0 +1,116 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_plate",
+      "feature:plate",
+      "feature:sketch_rib",
+      "feature:rib"
+    ],
+    "features": {
+      "feature:sketch_plate": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:plate": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_rib": {
+        "id": "feature:sketch_rib",
+        "name": "Rib sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:rib": {
+        "id": "feature:rib",
+        "name": "Centerline rib",
+        "feature_type": "rib",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_plate",
+        "target": "feature:plate",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_rib",
+        "target": "feature:rib",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:plate",
+        "target": "feature:rib",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:plate",
+      "name": "Plate",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_plate",
+        "profile_ref": "sketch:plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.004
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:rib",
+      "name": "Centerline rib",
+      "definition": {
+        "type": "rib",
+        "sketch_feature": "feature:sketch_rib",
+        "centerline_ref": "ent:rib_line",
+        "target_feature": "feature:plate",
+        "thickness": {
+          "value_si": 0.004
+        },
+        "thickness_expr": "rib_thickness",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.012
+          }
+        },
+        "length_expr": "rib_height"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_plate",
+      "name": "Plate sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:plate"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_rib",
+      "name": "Rib sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:rib"
+      },
+      "suppressed": false
+    }
+  ]
+}

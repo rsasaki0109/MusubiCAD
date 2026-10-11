@@ -170,6 +170,50 @@
       },
       "additionalProperties": false
     },
+    "rib": {
+      "type": "object",
+      "required": [
+        "type",
+        "sketch_feature",
+        "centerline_ref",
+        "target_feature",
+        "thickness",
+        "extent"
+      ],
+      "properties": {
+        "type": { "const": "rib" },
+        "sketch_feature": { "type": "string", "pattern": "^feature:" },
+        "centerline_ref": { "type": "string", "pattern": "^ent:" },
+        "target_feature": { "type": "string", "pattern": "^feature:" },
+        "thickness": {
+          "type": "object",
+          "required": ["value_si"],
+          "properties": {
+            "value_si": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "thickness_expr": { "type": ["string", "null"] },
+        "extent": {
+          "type": "object",
+          "required": ["type", "length"],
+          "properties": {
+            "type": { "const": "distance" },
+            "length": {
+              "type": "object",
+              "required": ["value_si"],
+              "properties": {
+                "value_si": { "type": "number", "exclusiveMinimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "length_expr": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
       "datum_workplane": {
         "type": "object",
         "required": [
@@ -763,6 +807,7 @@
     "feature_definition": {
       "allOf": [
         { "if": { "properties": { "type": { "const": "draft" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/draft" } },
+        { "if": { "properties": { "type": { "const": "rib" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/rib" } },
         {
           "if": {
             "properties": {
@@ -809,7 +854,8 @@
             "helix_sweep",
             "datum_plane",
             "datum_axis",
-            "draft"
+            "draft",
+            "rib"
           ]
         }
       }
