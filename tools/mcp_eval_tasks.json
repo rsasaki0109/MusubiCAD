@@ -136,6 +136,41 @@
       "expected_dimension_edge_refs": [
         "ref:edge:bracket_top_front"
       ]
+    },
+    {
+      "id": "robot_add_wrist_joint",
+      "source": "examples/robot_arm_assembly.ocad.d",
+      "document": "arm.ocad.d",
+      "setup": [
+        [
+          "patch",
+          "{document}",
+          "{root}/examples/agent/remove_robot_wrist_joint_patch.json"
+        ]
+      ],
+      "prompt": "The robot assembly at {document} is missing its wrist joint, but the wrist mate is still present. Add a revolute joint named joint:wrist on mate:wrist with limits -90 deg to +90 deg, effort 0.4 N m, and velocity 4 rad/s. Verify and apply the patch, export {workdir}/arm.urdf, then run reach for tool gripper at point 0,40,7mm to target 120,170,63mm and report whether it reaches.",
+      "required_parameters": [],
+      "expected_instances": 4,
+      "expected_mates": 4,
+      "expected_joint_ids": [
+        "joint:elbow",
+        "joint:shoulder",
+        "joint:wrist"
+      ],
+      "expected_urdf_joints": [
+        "elbow",
+        "shoulder",
+        "wrist"
+      ],
+      "expected_reach": {
+        "tool": "gripper",
+        "point": "0,40,7mm",
+        "target": "120,170,63mm",
+        "tolerance": "0.5mm",
+        "reachable": true,
+        "max_gap_mm": 0.01,
+        "min_joint_count": 3
+      }
     }
   ]
 }

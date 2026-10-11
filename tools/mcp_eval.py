@@ -10,6 +10,8 @@ checked independently by regenerating the document with ``musubicad regen``:
   must be satisfied;
 - for drawing tasks, the view projections and dimension lengths must match,
   and the drawing must export to SVG.
+- for robot tasks, declared joints must match, URDF export must contain the
+  expected joints, and a fresh reach query must meet the target residual.
 
 The harness records turns, cost, and duration for each task.  It calls a
 paid model, so it is never run in CI.  Run it by hand after changes to the
@@ -31,6 +33,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +85,15 @@ def assembly_counts(document: Path) -> tuple[int, int]:
     return len(assembly.get("instances", [])), len(mates)
 
 
+def assembly_joint_ids(document: Path) -> list[str]:
+    """Sorted joint IDs declared by an assembly document."""
+    path = document / "graph" / "assemblies.json"
+    if not path.exists():
+        return []
+    assembly = json.loads(path.read_text(encoding="utf-8")).get("assembly") or {}
+    return sorted(joint.get("id", "") for joint in assembly.get("joints", []))
+
+
 def drawing_contents(document: Path, regen_output: str = "") -> tuple[list[str], list[float]]:
     """(sorted view projections, sorted dimension lengths in metres)."""
     path = document / "graph" / "drawings.json"
@@ -104,7 +116,99 @@ def drawing_contents(document: Path, regen_output: str = "") -> tuple[list[str],
     return sorted(projections), sorted(lengths)
 
 
-def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str]]:
+def check_reach_summary(task: dict, reach_output: str) -> list[str]:
+    """Verify a `musubicad reach` JSON summary against task expectations."""
+    problems = []
+    try:
+        summary = json.loads(reach_output)
+    except json.JSONDecodeError as err:
+        return [f"reach output was not JSON: {err}"]
+    expected = task.get("expected_reach") or {}
+    target = summary.get("target")
+    if not isinstance(target, dict):
+        return ["reach reported no target"]
+    if target.get("reachable") is not expected.get("reachable", True):
+        problems.append(
+            f"reach reachable={target.get('reachable')}, "
+            f"expected {expected.get('reachable', True)}"
+        )
+    if "max_gap_mm" in expected:
+        gap = target.get("gap_mm")
+        if not isinstance(gap, (int, float)):
+            problems.append("reach reported no numeric gap_mm")
+        elif gap > expected["max_gap_mm"]:
+            problems.append(f"reach gap {gap} mm, expected <= {expected['max_gap_mm']} mm")
+    if "min_joint_count" in expected:
+        joints = target.get("joints", [])
+        if len(joints) < expected["min_joint_count"]:
+            problems.append(
+                f"reach returned {len(joints)} joints, "
+                f"expected at least {expected['min_joint_count']}"
+            )
+    return problems
+
+
+def check_robot_artifacts(
+    task: dict, document: Path, musubicad: Path, workdir: Path
+) -> list[str]:
+    """Re-export robot artifacts and run reach independently of the agent."""
+    problems = []
+    if "expected_urdf_joints" in task:
+        output = workdir / "check.urdf"
+        export = subprocess.run(
+            [str(musubicad), "export", str(document), str(output)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        if export.returncode != 0:
+            problems.append(f"URDF export failed: {export.stderr.strip()[-300:]}")
+        elif not output.exists():
+            problems.append("URDF export did not write check.urdf")
+        else:
+            try:
+                root = ET.parse(output).getroot()
+            except ET.ParseError as err:
+                problems.append(f"URDF was not XML: {err}")
+            else:
+                names = sorted(joint.attrib.get("name", "") for joint in root.findall("joint"))
+                expected = sorted(task["expected_urdf_joints"])
+                if names != expected:
+                    problems.append(f"URDF joints {names}, expected {expected}")
+    if "expected_reach" in task:
+        expected = task["expected_reach"]
+        flags = [
+            "reach",
+            str(document),
+            "--tool",
+            expected["tool"],
+            "--target",
+            expected["target"],
+        ]
+        if "point" in expected:
+            flags.extend(["--point", expected["point"]])
+        if "tolerance" in expected:
+            flags.extend(["--tolerance", expected["tolerance"]])
+        reach = subprocess.run(
+            [str(musubicad), *flags],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        if reach.returncode != 0:
+            problems.append(f"reach failed: {reach.stderr.strip()[-300:]}")
+        else:
+            problems.extend(check_reach_summary(task, reach.stdout))
+    return problems
+
+
+def check(
+    task: dict,
+    document: Path,
+    regen_output: str,
+    musubicad: Path | None = None,
+    workdir: Path | None = None,
+) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
     if "expected_volume_mm3" in task:
@@ -128,6 +232,11 @@ def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str
             problems.append("regeneration reported no mate error")
         elif float(match.group(1)) > MATE_TOLERANCE_M:
             problems.append(f"mates unsatisfied: max error {match.group(1)} m")
+    if "expected_joint_ids" in task:
+        joints = assembly_joint_ids(document)
+        expected = sorted(task["expected_joint_ids"])
+        if joints != expected:
+            problems.append(f"joints {joints}, expected {expected}")
     if "expected_views" in task:
         projections, lengths = drawing_contents(document, regen_output)
         if projections != sorted(task["expected_views"]):
@@ -142,6 +251,12 @@ def check(task: dict, document: Path, regen_output: str) -> tuple[bool, list[str
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if (
+        ("expected_urdf_joints" in task or "expected_reach" in task)
+        and musubicad is not None
+        and workdir is not None
+    ):
+        problems.extend(check_robot_artifacts(task, document, musubicad, workdir))
     return not problems, problems
 
 
@@ -203,7 +318,7 @@ def run_task(task: dict, musubicad: Path, claude: str, timeout_s: int) -> dict:
         text=True,
         encoding="utf-8",
     )
-    passed, problems = check(task, document, regen.stdout)
+    passed, problems = check(task, document, regen.stdout, musubicad, workdir)
     if "expected_views" in task:
         # The views must resolve their model and project to an SVG sheet.
         export = subprocess.run(
@@ -268,6 +383,30 @@ def self_test() -> None:
     assert not check(semantic, semantic_sheet, "")[0]
     assert not check(semantic, semantic_sheet, evidence.replace("0.08", "0.1"))[0]
     assert not check({**semantic, "expected_dimension_edge_refs": ["ref:edge:wrong"]}, semantic_sheet, evidence)[0]
+    robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
+    assert check(
+        {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},
+        robot,
+        "",
+    ) == (True, [])
+    assert not check({"expected_joint_ids": ["joint:shoulder"]}, robot, "")[0]
+    reach_task = {
+        "expected_reach": {
+            "tool": "gripper",
+            "target": "120,170,63mm",
+            "reachable": True,
+            "max_gap_mm": 0.01,
+            "min_joint_count": 3,
+        }
+    }
+    assert check_reach_summary(
+        reach_task,
+        '{"target":{"reachable":true,"gap_mm":0.0,"joints":[{}, {}, {}]}}',
+    ) == []
+    assert check_reach_summary(
+        reach_task,
+        '{"target":{"reachable":false,"gap_mm":20.0,"joints":[{}]}}',
+    )
     tasks = json.loads(TASKS.read_text(encoding="utf-8"))["tasks"]
     assert len({task["id"] for task in tasks}) == len(tasks)
     placeholders = {"document": "d", "workdir": "w", "root": "r"}
