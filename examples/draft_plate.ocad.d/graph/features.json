@@ -1,0 +1,126 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:datum",
+      "feature:sketch",
+      "feature:extrude",
+      "feature:draft"
+    ],
+    "features": {
+      "feature:datum": {
+        "id": "feature:datum",
+        "name": "datum",
+        "feature_type": "datum_plane",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch": {
+        "id": "feature:sketch",
+        "name": "sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude": {
+        "id": "feature:extrude",
+        "name": "extrude",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:draft": {
+        "id": "feature:draft",
+        "name": "Side draft",
+        "feature_type": "draft",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:datum",
+        "target": "feature:sketch",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch",
+        "target": "feature:extrude",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:extrude",
+        "target": "feature:draft",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:datum",
+        "target": "feature:draft",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:datum",
+      "name": "datum",
+      "definition": {
+        "type": "datum_plane",
+        "base": {
+          "type": "global",
+          "plane": "XY"
+        },
+        "offset": {
+          "value_si": 0.005
+        },
+        "offset_expr": "offset"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:draft",
+      "name": "Side draft",
+      "definition": {
+        "type": "draft",
+        "target_feature": "feature:extrude",
+        "angle": {
+          "value_si": 0.08726646259971647
+        },
+        "angle_expr": "draft_angle",
+        "neutral_plane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "face_refs": [
+          "ref:face:plate_right"
+        ]
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:extrude",
+      "name": "extrude",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch",
+        "profile_ref": "sketch:plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.004
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch",
+      "name": "sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:plate"
+      },
+      "suppressed": false
+    }
+  ]
+}

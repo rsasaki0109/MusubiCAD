@@ -80,7 +80,7 @@ const FACE_PICK_SAMPLE_DEFLECTION_M: f64 = 1e-5;
 /// equally near faces are ambiguous and fail.  (`Face::project` is avoided:
 /// cadrum panics when OCCT cannot project onto a face.)
 #[cfg(feature = "occt")]
-fn pick_face<'a>(solid: &'a Solid, pick: &FacePick) -> Result<&'a cadrum::Face> {
+pub(crate) fn pick_face<'a>(solid: &'a Solid, pick: &FacePick) -> Result<&'a cadrum::Face> {
     let point = DVec3::from_array(pick.point_m);
     let normal = DVec3::from_array(pick.normal).normalize_or_zero();
     if normal == DVec3::ZERO {
@@ -547,6 +547,33 @@ impl GeometryKernel for OcctGeometryKernel {
         #[cfg(not(feature = "occt"))]
         {
             let _ = input;
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
+    fn draft_body(
+        &self,
+        body: KernelBody,
+        input: &opencad_geometry::DraftInput,
+    ) -> Result<KernelBody> {
+        input.validate()?;
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let source = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::validation("draft requires one solid body"))?;
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                crate::draft::draft_solid(source, input)
+            }))
+            .map_err(|_| OpenCadError::validation("OCCT could not evaluate draft faces"))??;
+            drop(store);
+            let id = self.store.borrow_mut().insert_body(result);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = body;
             Err(OpenCadError::Other("OCCT backend disabled".into()))
         }
     }

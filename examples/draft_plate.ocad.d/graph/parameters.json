@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:draft_angle": {
+      "id": "param:draft_angle",
+      "name": "draft_angle",
+      "expr": "5 deg",
+      "dirty": false
+    },
+    "param:offset": {
+      "id": "param:offset",
+      "name": "offset",
+      "expr": "5 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

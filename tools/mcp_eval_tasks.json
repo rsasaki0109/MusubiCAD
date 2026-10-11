@@ -181,6 +181,16 @@
       "required_parameters": [
         "axis_x"
       ]
+    },
+    {
+      "id": "draft_plate",
+      "source": "examples/draft_plate.ocad.d",
+      "document": "draft.ocad.d",
+      "prompt": "Change draft_angle in {document} from 5 deg to 10 deg. Preserve the datum neutral plane, semantic +x face and all plate dimensions. Verify regeneration and the inward-drafted volume.",
+      "expected_volume_mm3": 785.8938415433228,
+      "required_parameters": [
+        "draft_angle"
+      ]
     }
   ]
 }

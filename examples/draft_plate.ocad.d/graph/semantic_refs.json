@@ -1,0 +1,12 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:face:plate_right",
+      "kind": "face",
+      "semantic": {
+        "created_by": "feature:extrude",
+        "role": "+x"
+      }
+    }
+  ]
+}

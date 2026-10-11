@@ -52,6 +52,7 @@
           "definition": {
             "type": "object",
             "allOf": [
+              { "if": { "properties": { "type": { "const": "draft" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/draft" } },
               { "if": { "properties": { "type": { "const": "datum_plane" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/datum_plane" } },
               { "if": { "properties": { "type": { "const": "datum_axis" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/datum_axis" } }
             ]
@@ -79,6 +80,152 @@
     }
   },
   "$defs": {
+    "draft": {
+      "type": "object",
+      "required": [
+        "type",
+        "target_feature",
+        "angle",
+        "neutral_plane",
+        "face_refs"
+      ],
+      "properties": {
+        "type": {
+          "const": "draft"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "angle": {
+          "type": "object",
+          "required": [
+            "value_si"
+          ],
+          "properties": {
+            "value_si": {
+              "type": "number",
+              "minimum": -0.7853981633974483,
+              "maximum": 0.7853981633974483
+            }
+          },
+          "additionalProperties": false
+        },
+        "angle_expr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "neutral_plane": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "plane"
+              ],
+              "properties": {
+                "type": {
+                  "const": "global"
+                },
+                "plane": {
+                  "enum": [
+                    "XY",
+                    "XZ",
+                    "YZ"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "feature_id"
+              ],
+              "properties": {
+                "type": {
+                  "const": "datum_plane"
+                },
+                "feature_id": {
+                  "type": "string",
+                  "pattern": "^feature:"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "face_ref"
+              ],
+              "properties": {
+                "type": {
+                  "const": "face_ref"
+                },
+                "face_ref": {
+                  "type": "string",
+                  "pattern": "^ref:face:"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "origin",
+                "normal",
+                "x_axis"
+              ],
+              "properties": {
+                "type": {
+                  "const": "custom"
+                },
+                "origin": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "normal": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "x_axis": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "face_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^ref:face:"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
       "datum_workplane": {
         "type": "object",
         "required": [

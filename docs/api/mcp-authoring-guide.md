@@ -205,3 +205,16 @@ an upstream datum invalidates dependent cached geometry. See [datums.md](datums.
 [ADR-035](../adr/ADR-035-parametric-datums.md), and
 `examples/agent/create_datum_plate_patch.json`. Revolve profiles currently require
 global workplanes; datum-plane sketches are supported by extrusions.
+
+### Neutral-plane draft (MCAD-P11-002)
+
+Use `type: "draft"` with a signed SI `angle` (or `angle_expr`, e.g. `5 deg`),
+`target_feature`, `neutral_plane` and unique `face_refs`. Positive angles narrow
+in the neutral normal direction; negative angles widen. Create semantic face
+refs before the draft, and use a datum workplane for a parametric neutral
+plane. The OCCT path accepts only convex planar solids and initially
+perpendicular side faces; holes, cavities, curved faces and collapsed results
+fail closed. Never substitute a different face when resolution fails.
+See [draft API](draft.md), ADR-036 and
+`examples/agent/create_draft_plate_patch.json`; dry-run/apply through the
+backend, regenerate, then check volume and dimensions.

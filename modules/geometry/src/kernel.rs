@@ -333,6 +333,14 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// Tilt selected planar side faces about their neutral-plane intersections.
+    /// Implementations must reject unsupported/non-convex geometry (ADR-036).
+    fn draft_body(&self, _body: KernelBody, _input: &crate::DraftInput) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this geometry kernel does not support draft",
+        ))
+    }
+
     /// Hollow `body` to a uniform inward wall of `thickness_m` metres,
     /// removing the picked faces to form openings (ADR-017).  Every pick must
     /// match exactly one face of `body`, or the call fails.
@@ -456,6 +464,23 @@ impl GeometryKernel for MockGeometryKernel {
                 .wrapping_add(section.points.len() as u64)
         });
         Ok(KernelBody::new(seed.max(1)))
+    }
+
+    fn draft_body(&self, body: KernelBody, input: &crate::DraftInput) -> Result<KernelBody> {
+        input.validate()?;
+        let hash = input
+            .neutral_origin_m
+            .iter()
+            .chain(&input.neutral_normal)
+            .chain(std::iter::once(&input.angle_rad))
+            .chain(
+                input
+                    .faces
+                    .iter()
+                    .flat_map(|f| f.point_m.iter().chain(&f.normal)),
+            )
+            .fold(body.0, |h, v| h.wrapping_mul(31).wrapping_add(v.to_bits()));
+        Ok(KernelBody::new(hash % 1_000_000 + 1))
     }
 
     /// A deterministic stand-in body derived from the inputs, so shell

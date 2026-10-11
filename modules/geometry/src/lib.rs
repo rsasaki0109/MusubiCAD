@@ -3,6 +3,8 @@
 //! OCCT types must not leak outside `opencad-kernel-occt`.
 
 pub mod brep;
+pub mod draft;
+pub use draft::DraftInput;
 pub mod instrument;
 pub mod kernel;
 pub mod mass;

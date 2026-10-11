@@ -6,6 +6,10 @@ use crate::document::OcadDocument;
 
 /// Normalize current models after deserialization.
 ///
+/// ADR-036 adds an explicit draft tag (SI Angle and neutral Workplane). This is
+/// additive: legacy features deserialize unchanged and no draft is inferred.
+/// Round-trip/authoring tests cover both old datums and current draft files.
+///
 /// ADR-035 adds explicit datum feature/workplane tags. Legacy revolve axes
 /// deserialize with `axis_feature = None`; no datum association is inferred.
 /// The additive wire forms need no version branch: numeric axes and workplanes

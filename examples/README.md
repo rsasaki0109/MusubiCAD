@@ -320,3 +320,11 @@ its x origin driven by `axis_x`; downstream revolves can use it through
 is authored with `agent/create_datum_plate_patch.json`; refresh it using
 `cargo test -p opencad-cli --test datum_example write_datum_example -- --ignored`.
 See [the datum API](../docs/api/datums.md) for units and supported consumers.
+
+### Draft plate
+
+`draft_plate.ocad.d` is created by `agent/create_draft_plate_patch.json` via
+structural DesignPatch. A 20×10×4 mm plate at z=5 mm uses a datum neutral
+plane and a 5 degree inward draft on its semantic +x face. The volume is
+793.0009069179 mm³. Change `draft_angle` to a negative angle for outward draft.
+Only convex planar solids are supported; see `docs/api/draft.md` and ADR-036.
