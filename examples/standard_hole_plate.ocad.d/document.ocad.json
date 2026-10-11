@@ -1,0 +1,11 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:standard_hole_plate",
+    "name": "Standard Hole Plate",
+    "units": "mm",
+    "kind": "part",
+    "created_with": "OpenCAD 0.2.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

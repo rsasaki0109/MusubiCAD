@@ -1,0 +1,286 @@
+{
+  "intent": "Create a plate with ISO 273 M6 normal clearance and a simplified M6 coarse tapped hole",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:clearance_diameter",
+      "name": "clearance_diameter",
+      "expr": "6.6 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:tap_drill_diameter",
+      "name": "tap_drill_diameter",
+      "expr": "5 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:tap_depth",
+      "name": "tap_depth",
+      "expr": "8 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:plate",
+      "entity": {
+        "type": "rectangle",
+        "id": "ent:plate",
+        "construction": false,
+        "origin": [
+          0,
+          0
+        ],
+        "size": [
+          0.08,
+          0.06
+        ],
+        "corner_ids": [
+          "ent:plate_c0",
+          "ent:plate_c1",
+          "ent:plate_c2",
+          "ent:plate_c3"
+        ],
+        "edge_ids": [
+          "ent:plate_e0",
+          "ent:plate_e1",
+          "ent:plate_e2",
+          "ent:plate_e3"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:plate"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_plate",
+          "profile_ref": "sketch:plate/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.012
+            }
+          },
+          "operation": "new_body"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:clearance",
+      "name": "Clearance hole",
+      "workplane": {
+        "type": "custom",
+        "origin": [
+          0,
+          0,
+          0.012
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "x_axis": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:clearance",
+      "entity": {
+        "type": "point",
+        "id": "ent:clearance_center",
+        "x": 0.02,
+        "y": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:clearance",
+      "entity": {
+        "type": "circle",
+        "id": "ent:clearance_circle",
+        "center": "ent:clearance_center",
+        "radius": 0.0033
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:clearance",
+      "constraint": {
+        "type": "diameter",
+        "id": "con:clearance_diameter",
+        "target": "ent:clearance_circle",
+        "expr": "clearance_diameter"
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:sketch_clearance",
+        "name": "Clearance sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:clearance"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:clearance",
+        "name": "Clearance M6 hole",
+        "definition": {
+          "type": "standard_hole",
+          "sketch_feature": "feature:sketch_clearance",
+          "profile_ref": "sketch:clearance/profile:outer",
+          "target_feature": "feature:plate",
+          "depth": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.012
+            }
+          },
+          "standard": {
+            "type": "iso273",
+            "size": "M6",
+            "fit": "normal"
+          }
+        }
+      }
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:tapped",
+      "name": "Tapped hole",
+      "workplane": {
+        "type": "custom",
+        "origin": [
+          0,
+          0,
+          0.012
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "x_axis": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:tapped",
+      "entity": {
+        "type": "point",
+        "id": "ent:tapped_center",
+        "x": 0.05,
+        "y": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:tapped",
+      "entity": {
+        "type": "circle",
+        "id": "ent:tapped_circle",
+        "center": "ent:tapped_center",
+        "radius": 0.0025
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:tapped",
+      "constraint": {
+        "type": "diameter",
+        "id": "con:tapped_diameter",
+        "target": "ent:tapped_circle",
+        "expr": "tap_drill_diameter"
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:sketch_tapped",
+        "name": "Tapped sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:tapped"
+        }
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:tapped",
+        "name": "Tapped M6 hole",
+        "definition": {
+          "type": "standard_hole",
+          "sketch_feature": "feature:sketch_tapped",
+          "profile_ref": "sketch:tapped/profile:outer",
+          "target_feature": "feature:clearance",
+          "depth": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.008
+            }
+          },
+          "standard": {
+            "type": "iso_metric_coarse",
+            "size": "M6",
+            "representation": "tap_drill"
+          },
+          "depth_expr": "tap_depth"
+        }
+      }
+    }
+  ]
+}

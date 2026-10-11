@@ -170,6 +170,155 @@
       },
       "additionalProperties": false
     },
+    "standard_hole": {
+      "type": "object",
+      "required": [
+        "type",
+        "sketch_feature",
+        "profile_ref",
+        "target_feature",
+        "depth",
+        "standard"
+      ],
+      "properties": {
+        "type": {
+          "const": "standard_hole"
+        },
+        "sketch_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "profile_ref": {
+          "type": "string"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "depth": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "length"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "distance",
+                    "symmetric"
+                  ]
+                },
+                "length": {
+                  "type": "object",
+                  "required": [
+                    "value_si"
+                  ],
+                  "properties": {
+                    "value_si": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "const": "through_all"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "depth_expr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "face_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "standard": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "size",
+                "fit"
+              ],
+              "properties": {
+                "type": {
+                  "const": "iso273"
+                },
+                "size": {
+                  "enum": [
+                    "M3",
+                    "M4",
+                    "M5",
+                    "M6",
+                    "M8",
+                    "M10",
+                    "M12"
+                  ]
+                },
+                "fit": {
+                  "enum": [
+                    "close",
+                    "normal",
+                    "loose"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "size",
+                "representation"
+              ],
+              "properties": {
+                "type": {
+                  "const": "iso_metric_coarse"
+                },
+                "size": {
+                  "enum": [
+                    "M3",
+                    "M4",
+                    "M5",
+                    "M6",
+                    "M8",
+                    "M10",
+                    "M12"
+                  ]
+                },
+                "representation": {
+                  "const": "tap_drill"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "rib": {
       "type": "object",
       "required": [
@@ -808,6 +957,7 @@
       "allOf": [
         { "if": { "properties": { "type": { "const": "draft" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/draft" } },
         { "if": { "properties": { "type": { "const": "rib" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/rib" } },
+        { "if": { "properties": { "type": { "const": "standard_hole" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/standard_hole" } },
         {
           "if": {
             "properties": {
@@ -842,6 +992,7 @@
             "extrude",
             "revolve",
             "hole",
+            "standard_hole",
             "fillet",
             "chamfer",
             "linear_pattern",

@@ -1,0 +1,23 @@
+{
+  "parameters": {
+    "param:clearance_diameter": {
+      "id": "param:clearance_diameter",
+      "name": "clearance_diameter",
+      "expr": "6.6 mm",
+      "dirty": false
+    },
+    "param:tap_drill_diameter": {
+      "id": "param:tap_drill_diameter",
+      "name": "tap_drill_diameter",
+      "expr": "5 mm",
+      "dirty": false
+    },
+    "param:tap_depth": {
+      "id": "param:tap_depth",
+      "name": "tap_depth",
+      "expr": "8 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

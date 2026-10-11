@@ -6,6 +6,11 @@ use crate::document::OcadDocument;
 
 /// Normalize current models after deserialization.
 ///
+/// ADR-037 adds the standard_hole tag with required standards and explicit
+/// tap-drill representation. Legacy hole variants remain unchanged; no thread
+/// or manufacturing standard is inferred. The additive form requires no schema
+/// version branch; legacy/current round trips cover this migration policy.
+///
 /// ADR-036 adds an explicit draft tag (SI Angle and neutral Workplane). This is
 /// additive: legacy features deserialize unchanged and no draft is inferred.
 /// Round-trip/authoring tests cover both old datums and current draft files.

@@ -87,6 +87,10 @@ impl FeatureDefinition {
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", def.target_feature.as_ref()),
             ],
+            Self::StandardHole(def) => [
+                ("sketch_feature", Some(&def.hole.sketch_feature)),
+                ("target_feature", Some(&def.hole.target_feature)),
+            ],
             Self::Hole(def) => [
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", Some(&def.target_feature)),
@@ -148,6 +152,7 @@ impl FeatureDefinition {
                 .collect();
         }
         let candidates: [(&'static str, Option<&String>); 2] = match self {
+            Self::StandardHole(def) => [("face_ref", def.hole.face_ref.as_ref()), ("", None)],
             Self::Hole(def) => [("face_ref", def.face_ref.as_ref()), ("", None)],
             Self::Fillet(def) => [
                 ("face_ref", def.face_ref.as_ref()),
@@ -184,6 +189,10 @@ impl FeatureDefinition {
     pub fn profile_inputs(&self) -> Vec<(&str, &str)> {
         match self {
             Self::Extrude(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
+            Self::StandardHole(def) => vec![(
+                def.hole.sketch_feature.as_str(),
+                def.hole.profile_ref.as_str(),
+            )],
             Self::Hole(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Revolve(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Sweep(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
@@ -254,6 +263,7 @@ impl FeatureDefinition {
         let (field, expr) = match self {
             Self::Extrude(def) => ("length_expr", def.length_expr.as_ref()),
             Self::Revolve(def) => ("angle_expr", def.angle_expr.as_ref()),
+            Self::StandardHole(def) => ("depth_expr", def.hole.depth_expr.as_ref()),
             Self::Hole(def) => ("depth_expr", def.depth_expr.as_ref()),
             Self::Fillet(def) => ("radius_expr", def.radius_expr.as_ref()),
             Self::Chamfer(def) => ("distance_expr", def.distance_expr.as_ref()),
@@ -504,6 +514,21 @@ mod tests {
             .values()
             .map(|node| node.definition.clone())
             .collect();
+        samples.push(FeatureDefinition::StandardHole(
+            crate::StandardHoleFeature {
+                hole: crate::HoleFeature::on_face_ref(
+                    "feature:sketch_hole",
+                    "sketch:hole/profile:outer",
+                    opencad_geometry::ExtrudeExtent::ThroughAll,
+                    "feature:base",
+                    "ref:face:top",
+                ),
+                standard: crate::HoleStandard::Iso273 {
+                    size: crate::MetricSize::M6,
+                    fit: crate::ClearanceFit::Normal,
+                },
+            },
+        ));
         samples.push(FeatureDefinition::ImportedSolid(
             crate::ImportedSolidFeature {
                 source: "imports/motor.step".into(),

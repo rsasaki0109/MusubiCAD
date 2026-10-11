@@ -87,6 +87,13 @@ fn resolve_feature_node(
                 };
             }
         }
+        FeatureDefinition::StandardHole(def) => {
+            if let Some(expr) = &def.hole.depth_expr {
+                def.hole.depth = ExtrudeExtent::Distance {
+                    length: Length::from_meters(eval_length_expr(expr, values)?),
+                };
+            }
+        }
         FeatureDefinition::Hole(hole) => {
             if let Some(expr) = &hole.depth_expr {
                 let meters = eval_length_expr(expr, values)?;

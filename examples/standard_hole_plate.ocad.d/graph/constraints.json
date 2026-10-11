@@ -1,0 +1,22 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:clearance",
+      "constraint": {
+        "type": "diameter",
+        "id": "con:clearance_diameter",
+        "target": "ent:clearance_circle",
+        "expr": "clearance_diameter"
+      }
+    },
+    {
+      "sketch_id": "sketch:tapped",
+      "constraint": {
+        "type": "diameter",
+        "id": "con:tapped_diameter",
+        "target": "ent:tapped_circle",
+        "expr": "tap_drill_diameter"
+      }
+    }
+  ]
+}

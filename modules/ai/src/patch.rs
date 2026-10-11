@@ -1287,6 +1287,10 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
             pattern.plane_face_ref = Some(ref_id.to_string());
             Ok(())
         }
+        (FeatureDefinition::StandardHole(def), FeatureRefField::FaceRef) => {
+            def.hole.face_ref = Some(ref_id.to_string());
+            Ok(())
+        }
         (FeatureDefinition::Hole(hole), FeatureRefField::FaceRef) => {
             hole.face_ref = Some(ref_id.to_string());
             Ok(())
@@ -1304,6 +1308,10 @@ fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &st
     match (&mut node.definition, field) {
         (FeatureDefinition::Extrude(extrude), FeatureExprField::LengthExpr) => {
             extrude.length_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::StandardHole(def), FeatureExprField::DepthExpr) => {
+            def.hole.depth_expr = Some(expr.to_string());
             Ok(())
         }
         (FeatureDefinition::Hole(hole), FeatureExprField::DepthExpr) => {

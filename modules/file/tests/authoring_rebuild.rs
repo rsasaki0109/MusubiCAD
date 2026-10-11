@@ -107,7 +107,7 @@ fn part_examples() -> Vec<(String, OcadDocument)> {
 fn every_part_example_is_rebuilt_from_structural_patches() {
     let parts = part_examples();
     // 16 feature-bearing parts (including datum, draft and rib plates) plus the sketch-only fixture.
-    assert_eq!(parts.len(), 17);
+    assert_eq!(parts.len(), 18);
     for (name, source) in parts {
         let rebuilt = rebuild(&source);
         assert_eq!(rebuilt.parameters, source.parameters, "{name}: parameters");

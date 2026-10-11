@@ -139,6 +139,7 @@ fn sketch_feature_id_for(node: &FeatureNode) -> Option<&str> {
         | FeatureDefinition::Revolve(RevolveFeature { sketch_feature, .. }) => {
             Some(sketch_feature.as_str())
         }
+        FeatureDefinition::StandardHole(def) => Some(&def.hole.sketch_feature),
         _ => None,
     }
 }
@@ -164,6 +165,9 @@ fn exprs_from_feature(node: &FeatureNode) -> Vec<String> {
     match &node.definition {
         FeatureDefinition::Extrude(ExtrudeFeature { length_expr, .. }) => {
             push_expr_option(&mut exprs, length_expr);
+        }
+        FeatureDefinition::StandardHole(def) => {
+            push_expr_option(&mut exprs, &def.hole.depth_expr);
         }
         FeatureDefinition::Hole(HoleFeature { depth_expr, .. }) => {
             push_expr_option(&mut exprs, depth_expr);
