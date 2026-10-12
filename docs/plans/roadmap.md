@@ -696,6 +696,7 @@ references, assembly joints, verified patches/history, Mock and OCCT.
 | MCAD-P13-006 | Exploded assembly views | Persisted presentation offsets separate from mechanical placements; backend-created configuration and deterministic rendering/export, analytic placement tests | Planned |
 | MCAD-P13-007 | Coupled joints | Explicit gear/rack relationships with dimensionless/SI coupling, deterministic evaluation, cycle/conflict refusal and motion/interference evidence | Planned |
 | MCAD-P13-008 | Sketch splines (gate first) | Accepted scoped ADR satisfying every ADR-012 gate, named tests and API/schema sketches before code; then explicit stable-ID editing, Mock/OCCT analytic evidence, migration/round trips, example/guide/skill/eval; no opportunistic NURBS editing | Planned |
+| MCAD-P13-009 | Generated Python cache hygiene | Remove tracked bytecode, ignore reproducible interpreter caches and verify source-tree hygiene; corrective maintenance only, with no maturity credit | Complete |
 
 **Definition of done:** one reviewed main-target PR per task with complete
 backend/DesignPatch semantics, both kernels where geometry is executed, analytic
