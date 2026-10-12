@@ -384,3 +384,10 @@ top-right corner. The parent scale is 0.5; the detail scale is 1.0, centered at
 cropped edges are 20 mm long on the sheet. Creation patches:
 `agent/create_detail_plate_patch.json` and `agent/create_detail_drawing_patch.json`.
 `detail_plate_drawing.svg` includes a source rectangle and derived 2.00× label.
+
+`title_plate_drawing.ocad.d` shows the same 80 × 60 × 6 mm plate with an explicitly
+patch-authored title block. Its frame is 180 × 48 mm at 5 mm margins; metadata
+includes drawing number MUSUBI-P12-005, revision A, authored date 2026-10-12 and
+material Steel. The view starts above the block. Creation patch:
+`agent/create_title_drawing_patch.json`, using the existing detail plate creation
+patch for the embedded part. `title_plate_drawing.svg` is deterministic.

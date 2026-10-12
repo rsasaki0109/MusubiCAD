@@ -48,3 +48,9 @@ pub use export_svg::render_sheet_svg_with_layouts;
 
 pub mod detail;
 pub use detail::{clip_detail_segment, layout_detail_segments, validate_detail_parent, DetailView};
+
+pub mod title_block;
+pub use title_block::{
+    layout_title_block, TitleBlock, TitleBlockCell, TITLE_BLOCK_HEIGHT_M, TITLE_BLOCK_MARGIN_M,
+    TITLE_BLOCK_WIDTH_M,
+};

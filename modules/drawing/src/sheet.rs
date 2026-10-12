@@ -24,6 +24,8 @@ pub struct Sheet {
     pub angular_dimensions: Vec<crate::AngularDimension>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub radial_dimensions: Vec<crate::RadialDimension>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title_block: Option<crate::TitleBlock>,
 }
 
 impl Sheet {
@@ -37,6 +39,7 @@ impl Sheet {
             dimensions: Vec::new(),
             angular_dimensions: Vec::new(),
             radial_dimensions: Vec::new(),
+            title_block: None,
         }
     }
 
@@ -46,6 +49,9 @@ impl Sheet {
                 "sheet '{}' must have positive width and height",
                 self.id
             )));
+        }
+        if let Some(block) = &self.title_block {
+            crate::layout_title_block(self, block)?;
         }
         let mut view_ids = std::collections::BTreeSet::new();
         for view in &self.views {

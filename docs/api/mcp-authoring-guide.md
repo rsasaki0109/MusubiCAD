@@ -470,3 +470,34 @@ See `examples/agent/create_detail_plate_patch.json`,
 `examples/agent/create_detail_drawing_patch.json` and self-contained
 `examples/detail_plate_drawing.ocad.d`. Eval `drawing_bounded_detail` verifies
 fresh clipping evidence and authored bounds/parent/scale.
+
+### Explicit title blocks (MCAD-P12-005)
+
+Create or update a sheet's title block through DesignPatch:
+
+```json
+{"type":"set_title_block","sheet_id":"sheet:a4","title_block":{
+ "title":"Inspection plate","drawing_number":"MUSUBI-001","revision":"A",
+ "date":"2026-10-12","author":"MusubiCAD example","material":"Steel",
+ "scale_note":"FRONT 1:2"
+}}
+```
+
+Required fields are title (1–50 characters), drawing number (1–24) and revision
+(1–8). Optional date (≤16), author/material (≤24) and scale note (≤50) are authored
+single-line text. No automatic date, author, material or scale inference occurs.
+Scale note is metadata rather than a measured model value. SVG escapes XML markup.
+Control characters and XML-forbidden BMP noncharacters are refused.
+
+The initial frame is 180 × 48 mm at 5 mm bottom/right margins, with 12 mm rows and
+explicit 2/3 mm label/value font sizes. A sheet too small for the frame fails
+before persistence. Existing views/dimensions/geometry remain unchanged. Remove
+with explicit `"title_block":null`; omitting the update field fails rather than
+implicitly deleting metadata. Creation through `add_sheet` may also include
+`sheet.title_block`. Clear metadata before deleting nothing else; removing a sheet
+removes its owned title block. Export SVG to verify the fields and layout.
+
+See `examples/agent/create_title_drawing_patch.json` and self-contained
+`examples/title_plate_drawing.ocad.d`; eval `drawing_title_block_revision`.
+The fixed template has no automatic wrapping, overlap avoidance or template
+library; place drawing views above the block and use bounded field text.

@@ -258,6 +258,11 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_title_blocks" in task:
+        drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
+        blocks = {sheet["id"]: sheet["title_block"] for sheet in drawing.get("sheets", []) if sheet.get("title_block") is not None}
+        if blocks != task["expected_title_blocks"]:
+            problems.append("authored title-block metadata differs")
     if "expected_details" in task:
         drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
         views = {v["id"]: v for sheet in drawing.get("sheets", []) for v in sheet.get("views", []) if v.get("detail")}
@@ -490,6 +495,13 @@ def self_test() -> None:
     wrong_details = json.loads(json.dumps(details))
     wrong_details["expected_details"][0]["region_min_m"] = [0.05,0.04]
     assert not check(wrong_details, detail_sheet, detail_evidence)[0]
+    title_sheet = ROOT / "examples" / "title_plate_drawing.ocad.d"
+    titles = {"expected_title_blocks": {"sheet:a4": {"title": "Inspection plate", "drawing_number": "MUSUBI-P12-005", "revision": "A", "date": "2026-10-12", "author": "MusubiCAD example", "material": "Steel", "scale_note": "FRONT 1:2"}}}
+    assert check(titles, title_sheet, "") == (True, [])
+    wrong_title = json.loads(json.dumps(titles))
+    wrong_title["expected_title_blocks"]["sheet:a4"]["revision"] = "B"
+    assert not check(wrong_title, title_sheet, "")[0]
+    assert not check({"expected_title_blocks": {}}, title_sheet, "")[0]
     robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
     assert check(
         {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},

@@ -199,6 +199,7 @@ fn assembly_and_drawing_examples_are_rebuilt_byte_for_byte() {
             "section_plate_drawing.ocad.d",
             "semantic_bracket_drawing.ocad.d",
             "six_axis_arm.ocad.d",
+            "title_plate_drawing.ocad.d",
         ]
     );
 }

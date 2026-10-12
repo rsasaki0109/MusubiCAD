@@ -1,0 +1,44 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:plate",
+          "construction": false,
+          "origin": [
+            0.0,
+            0.0
+          ],
+          "size": [
+            0.08,
+            0.06
+          ],
+          "corner_ids": [
+            "ent:plate_c0",
+            "ent:plate_c1",
+            "ent:plate_c2",
+            "ent:plate_c3"
+          ],
+          "edge_ids": [
+            "ent:plate_e0",
+            "ent:plate_e1",
+            "ent:plate_e2",
+            "ent:plate_e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    }
+  ]
+}
