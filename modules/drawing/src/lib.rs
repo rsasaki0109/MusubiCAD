@@ -57,3 +57,6 @@ pub use title_block::{
 
 pub mod export_pdf;
 pub use export_pdf::{render_drawing_pdf, PdfPageInput, PDF_POINTS_PER_M};
+
+pub mod export_dxf;
+pub use export_dxf::render_sheet_dxf;

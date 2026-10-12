@@ -86,3 +86,15 @@ The SVG is also one leg of the cross-module MCAD-P5-005
 [deterministic evidence contract](golden-evidence.md), which associates it
 with the regenerated part, assembly result, Agent patch, and CLI review
 artifacts.
+
+## Deterministic drawing DXF (MCAD-P12-007)
+
+`export_dxf::render_sheet_dxf` consumes a regenerated single sheet, meshes and
+transient radial/section layouts. A bounded kernel-neutral writer emits UTF-8
+AC1027 primitives with sequential handles, explicit millimetre paper coordinates,
+named layers and no generated time/GUID metadata. Semantic measurements remain
+model-derived; annotation entities are rendered primitives, not DXF DIMENSION
+records. Exact polygon/line clipping implements even-odd section hatching with
+SVG-equivalent phase. CLI/Agent/MCP regenerate before building/writing the whole
+buffer; model mutation/schema are unchanged. See ADR-046 for bounds, text-control
+refusal, analytic/independent-parser tests and intentional single-sheet scope.
