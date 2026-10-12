@@ -197,6 +197,7 @@ pub fn handle_agent_request_with_plugins(
         "opencad.inspect_regeneration_document" => handle_inspect_regeneration_document(request),
         "opencad.regen" => handle_regen(request),
         "opencad.export" => handle_export(request),
+        "opencad.bom_document" => handle_bom(request),
         "opencad.preview_document" => handle_preview_document(request),
         "opencad.diff_document" => handle_diff_document(request),
         "opencad.query_document" => handle_query_document(request),
@@ -638,6 +639,34 @@ fn handle_regen(request: &JsonRpcRequest) -> JsonRpcResponse {
                 JsonRpcError::application_error(err.to_string()),
             ),
         },
+        Err(err) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(err.to_string()),
+        ),
+    }
+}
+
+fn handle_bom(request: &JsonRpcRequest) -> JsonRpcResponse {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Params {
+        path: String,
+        #[serde(default)]
+        output: Option<String>,
+    }
+    let params = match serde_json::from_value::<Params>(request.params.clone()) {
+        Ok(params) => params,
+        Err(err) => {
+            return JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::invalid_params(err.to_string()),
+            )
+        }
+    };
+    match crate::bom::query_bom(&params.path, params.output.as_deref())
+        .and_then(|r| serde_json::to_value(r).map_err(Into::into))
+    {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
         Err(err) => JsonRpcResponse::error(
             request.id.clone(),
             JsonRpcError::application_error(err.to_string()),

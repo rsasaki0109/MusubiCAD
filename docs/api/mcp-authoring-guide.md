@@ -563,3 +563,41 @@ from the existing patch-authored drawing examples. Independent verification:
 `python -m pip install ezdxf==1.4.4`, then `python tools/test_drawing_dxf.py`.
 Eval `drawing_dxf_revision` checks authored revision plus required mm DXF output.
 See ADR-046.
+
+### Verified assembly bill of materials (MCAD-P12-008)
+
+Call MCP `bom_document` with `{ "path": "assembly.ocad.d" }`, Agent
+`opencad.bom_document`, or `musubicad bom assembly.ocad.d`. Optional `output`
+(`--output` in CLI) writes `.json` or `.csv` outside every source document.
+The same structured BOM is returned whether or not a table is written.
+
+`declared_component_count` counts root declarations; `top_level_instance_count`
+includes expanded root patterns. `leaf_part_count` counts verified leaf source
+files and `leaf_instance_count` counts all placed leaf occurrences. Each row has
+`source_doc`, `name`, canonical root-relative `source_path`, dimensionless
+`quantity`, and structured root-to-leaf `instance_paths`. Fixed and movable
+instances both count; unused declarations add no quantity. Repeated subassemblies
+multiply their internal leaf occurrences, not their declaration counts.
+
+Rows combine repeated references to the same verified file/document. Copies at
+different resolved paths remain separate even when their UUIDs match. No guessed
+part number, material, cost or exclusion rule is introduced. CSV uses quoted
+strings and a `quantity_count` column; JSON preserves full instance provenance.
+Counts and ordering are deterministic; names come from authored metadata.
+
+Missing/wrong-kind/identity references, cycles, excessive expansion or failed
+regeneration at **any** assembly level refuse the BOM. Root compounds alone can
+hide localized child failures, so the backend verifies each snapshotted assembly.
+OCCT now transforms compound members exactly and keeps them as separate solids;
+it does not Boolean-union repeated parts. Queries do not modify input graphs.
+Outputs are written by same-directory atomic replacement after verification;
+model paths are refused and external hardlinks cannot corrupt source files.
+Bounds: 64 instance levels, 10,000 sources, 100,000 occurrence visits.
+
+Use DesignPatch to author/edit components, instances and patterns, then verify
+and query again. `examples/bom_nested_assembly.ocad.d` contains two copies of a
+three-plate patterned subassembly plus one direct plate: seven leaf plates in
+one row, three top-level instances and two declared components. Its JSON/CSV
+artifacts and root/subassembly authoring patches are included. Eval
+`assembly_bom_add_subassembly` adds another subassembly and checks ten plates.
+See ADR-047.

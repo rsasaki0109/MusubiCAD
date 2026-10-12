@@ -1,0 +1,116 @@
+{
+  "assembly": {
+    "components": [
+      {
+        "id": "component:sub",
+        "source_path": "parts/sub.ocad",
+        "source_doc": "doc:bom_sub",
+        "source_kind": "assembly"
+      },
+      {
+        "id": "component:plate",
+        "source_path": "parts/plate.ocad.d",
+        "source_doc": "doc:title_plate",
+        "source_kind": "part"
+      }
+    ],
+    "instances": [
+      {
+        "id": "instance:left",
+        "component": "component:sub",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:left"
+      },
+      {
+        "id": "instance:right",
+        "component": "component:sub",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.4,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:right"
+      },
+      {
+        "id": "instance:direct",
+        "component": "component:plate",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.8,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:direct"
+      }
+    ]
+  }
+}

@@ -1,5 +1,11 @@
 //! Assembly document model (Phase 3).
 
+pub mod bom;
+pub use bom::{
+    bom_expanded_model, build_bill_of_materials, BillOfMaterials, BomRow, BomSource, BOM_MAX_DEPTH,
+    BOM_MAX_OCCURRENCES, BOM_MAX_SOURCES,
+};
+
 pub mod component;
 pub mod connector;
 pub mod dof;

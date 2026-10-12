@@ -1,5 +1,6 @@
 mod agent;
 mod animate;
+mod bom;
 mod commands;
 mod diff;
 mod drawing;

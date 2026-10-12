@@ -1,0 +1,89 @@
+{
+  "operations": [
+    {
+      "type": "add_component",
+      "component": {
+        "id": "component:plate",
+        "source_path": "plate.ocad.d",
+        "source_doc": "doc:title_plate",
+        "source_kind": "part"
+      }
+    },
+    {
+      "type": "add_instance",
+      "instance": {
+        "id": "instance:fixed",
+        "component": "component:plate",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:fixed"
+      }
+    },
+    {
+      "type": "add_assembly_pattern",
+      "pattern": {
+        "id": "pattern:row",
+        "component": "component:plate",
+        "count": 2,
+        "spacing_m": 0.1,
+        "direction_m": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "base_placement": {
+          "transform": {
+            "translation_m": [
+              0.1,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "name_prefix": "copy"
+      }
+    }
+  ]
+}

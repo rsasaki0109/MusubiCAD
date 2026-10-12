@@ -49,6 +49,7 @@ the same way. Supported protocol versions: `2025-11-25`, `2025-06-18`,
 | `inspect_document` | `path` | no | `opencad.inspect` |
 | `validate_document` | `path` | no | `opencad.validate` |
 | `explain_document` | `path` | no | `opencad.explain_document` |
+| `bom_document` | `path`, optional `output` (`.json`/`.csv`, outside source models) | optional output only | `opencad.bom_document` |
 | `query_document` | `path`, `query` | no | `opencad.query_document` |
 | `authoring_patch` | `path` | no | `opencad_ai::authoring_patch` |
 | `patch_dry_run` | `path`, `patch`, `verify` | no | `opencad.patch_dry_run_document` |

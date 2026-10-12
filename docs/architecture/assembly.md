@@ -106,3 +106,15 @@ replace the assembly Design Graph or persisted document.
 - [Assembly API](../api/assembly.md)
 - [Geometry kernel](geometry-kernel.md)
 - [Feature modeling](feature-modeling.md)
+
+## Snapshot-backed bill of materials (MCAD-P12-008)
+
+The assembly BOM module walks a caller-verified immutable catalog, expands patterns
+within budgets, counts leaf part occurrences and returns stable source rows with
+structured instance provenance. It performs no filesystem or kernel I/O. The CLI
+boundary loads contained references, verifies identity/kind/cycles and regenerates
+every unique assembly snapshot. A root compound alone can mask a localized nested
+failure, so each level must succeed before table output. JSON/CSV are optional
+same-directory atomic replacements outside source models. Native compound member
+transforms and flattening preserve exact separate solids for this verification;
+no OCCT types or new sampling enter the BOM contract. See ADR-047.

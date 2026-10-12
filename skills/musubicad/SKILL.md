@@ -405,3 +405,19 @@ percent signs remain supported; fonts depend on the reader. This adds output,
 not DXF input or associative DXF dimensions. Example artifacts: title/section
 plate DXFs; independent checker `tools/test_drawing_dxf.py` requires ezdxf 1.4.4.
 Eval `drawing_dxf_revision`; see ADR-046 and the MCP authoring guide.
+
+### Verified assembly bill of materials
+
+Use `bom_document` / Agent `opencad.bom_document` / `musubicad bom <assembly>`.
+Optional `output` (`--output` in CLI) writes JSON or CSV outside all source
+models; the query also returns the structured report. Leaf quantities include
+patterns and repeated nested assemblies, with root-to-leaf instance-ID paths.
+Fixed/movable instances count equally; unused declarations have zero quantity.
+Verified source paths distinguish changed copies sharing a document UUID.
+Check declared root components, expanded top-level instances and leaf totals
+separately. Counts are dimensionless; geometry and metadata remain authored.
+Missing/kind/identity/cycle/expansion or any nested regeneration failure refuses
+output, preserving source and previous output. Correct sources with DesignPatch,
+verify and query again. No inferred material/cost or exclusion rule is supported.
+Example: `bom_nested_assembly` totals seven plates (2×3+1); eval
+`assembly_bom_add_subassembly` checks ten. See ADR-047 and the authoring guide.
