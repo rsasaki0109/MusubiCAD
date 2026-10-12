@@ -64,6 +64,7 @@ pub fn run() -> Result<()> {
         Some("import-step") => crate::import::cmd_import_step(args.collect()),
         Some("import-dxf") => crate::dxf_import::cmd_import_dxf(args.collect()),
         Some("import-stl") => crate::stl_import::cmd_import_stl(args.collect()),
+        Some("plan-curve-edit") => crate::curve_edit::command(args.collect()),
         Some("inspect-dxf") => {
             let path = args.next().ok_or_else(|| {
                 opencad_core::OpenCadError::validation("usage: musubicad inspect-dxf <file.dxf>")
@@ -749,6 +750,7 @@ COMMANDS:
     inspect-dxf Inspect DXF units and layer/entity counts
     import-dxf  Import selected planar DXF layers as a verified sketch
     import-stl  Import an explicit-unit connected closed STL solid
+    plan-curve-edit  Plan a stable-ID analytic sketch trim or extension
     export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF or an HTML joint viewer
     mesh        Tessellate and summarize viewport scene data
     pick        Query viewport selection at a pixel coordinate

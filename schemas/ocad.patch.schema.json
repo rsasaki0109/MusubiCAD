@@ -1009,6 +1009,7 @@
             "add_sketch_entity",
             "remove_sketch_entity",
             "set_sketch_construction",
+            "replace_sketch_entity",
             "add_sketch_constraint",
             "remove_sketch_constraint",
             "add_feature",
@@ -1044,6 +1045,184 @@
         }
       },
       "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "replace_sketch_entity"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "type",
+              "sketch_id",
+              "entity"
+            ],
+            "properties": {
+              "type": {
+                "const": "replace_sketch_entity"
+              },
+              "sketch_id": {
+                "$ref": "#/$defs/stable_id_sketch"
+              },
+              "entity": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "point",
+                      "line",
+                      "circle",
+                      "arc"
+                    ]
+                  },
+                  "id": {
+                    "$ref": "#/$defs/stable_id_entity"
+                  },
+                  "construction": {
+                    "type": "boolean"
+                  },
+                  "x": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "y": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "start": {
+                    "$ref": "#/$defs/stable_id_entity"
+                  },
+                  "end": {
+                    "$ref": "#/$defs/stable_id_entity"
+                  },
+                  "center": {
+                    "$ref": "#/$defs/stable_id_entity"
+                  },
+                  "radius": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "start_angle": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "end_angle": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "start_point": {
+                    "$ref": "#/$defs/stable_id_entity"
+                  },
+                  "end_point": {
+                    "$ref": "#/$defs/stable_id_entity"
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "point"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "x",
+                        "y"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "line"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "start",
+                        "end"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "circle"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "center",
+                        "radius"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "arc"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "center",
+                        "radius",
+                        "start_angle",
+                        "end_angle"
+                      ]
+                    }
+                  }
+                ],
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         {
           "if": { "properties": { "type": { "const": "set_sketch_construction" } } },
           "then": {
@@ -1787,22 +1966,79 @@
     },
     "expected_effect": {
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
         "type": {
           "enum": [
             "parameter_expr_equals",
             "mass_delta_kg",
             "drawing_changed",
-            "no_assembly_interference"
+            "no_assembly_interference",
+            "sketch_point_position"
           ]
         },
-        "id": { "type": "string" },
-        "expr": { "type": "string" },
-        "min": { "type": "number" },
-        "max": { "type": "number" },
-        "expected": { "type": "boolean" }
-      }
+        "id": {
+          "type": "string"
+        },
+        "expr": {
+          "type": "string"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "expected": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "sketch_point_position"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "type",
+              "sketch_id",
+              "point_id",
+              "position_m",
+              "tolerance_m"
+            ],
+            "properties": {
+              "type": {
+                "const": "sketch_point_position"
+              },
+              "sketch_id": {
+                "$ref": "#/$defs/stable_id_sketch"
+              },
+              "point_id": {
+                "$ref": "#/$defs/stable_id_entity"
+              },
+              "position_m": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "number"
+                }
+              },
+              "tolerance_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ]
     }
   }
 }

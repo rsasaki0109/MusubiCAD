@@ -2,6 +2,7 @@ mod agent;
 mod animate;
 mod bom;
 mod commands;
+mod curve_edit;
 mod diff;
 mod drawing;
 mod dxf_import;

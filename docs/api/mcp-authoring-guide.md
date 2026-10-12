@@ -696,3 +696,34 @@ never silently substitute another loop for `profile:outer`. Semantic diff report
 No-op flags have an empty semantic diff. Source defaults for old files remain
 false. Example: `construction_plate.ocad.d` and its authoring patch; eval
 `construction_geometry_edit` checks stable entity types/flags and plate volume.
+
+### Analytic trim/extend plans (MCAD-P13-002)
+
+`plan_curve_edit` reads a part and returns a DesignPatch; it does not write.
+Pass `path` and nested `edit` with `sketch_id`, stored `target_id` (line/arc),
+`cutter_id` (finite line, circle or arc), `mode` (`trim`/`extend`), `end`
+(`start`/`end`) and a fresh `new_point_id`. Multiple eligible intersections
+require `intersection_index`, sorted by target parameter. Tangent, coincident,
+degenerate or out-of-extent cuts refuse. Coordinates/radii use metres, angles
+radians; 1 nm contact tolerance and bounded positive sub-full-turn arc sweeps.
+
+```json
+{"path":"part.ocad.d","edit":{"sketch_id":"sketch:base","target_id":"ent:guide_line","cutter_id":"ent:cutter","mode":"trim","end":"end","new_point_id":"ent:edited_end","remove_constraints":["con:guide_length"]}}
+```
+
+Review and dry-run the returned patch before `patch_apply`. Shared old endpoint
+IDs are preserved; only the target endpoint reference/angle changes. Constraints
+are removed only by an explicit `remove_constraints` list. A retained constraint
+can move the endpoint away from the intersection; the included
+`sketch_point_position` expected effect checks a solved copy after parameter and
+constraint evaluation, refusing wrong results even with `verify:false` or CLI
+`--no-verify`. Keep the revision guard and expected effect. Closed consumers
+may need explicit closing/rebinding operations in that same patch.
+
+The patch uses `replace_sketch_entity`, retaining the stored primitive ID/type;
+rectangle helpers require explicit conversion before derived edges are edited.
+Arc centre/radius expressions and the unaffected angle/endpoint remain source;
+the edited angle is explicit fixed geometry, with no inferred cutter association.
+Examples: `trim_extend_plate.ocad.d` and its authoring patch. Eval
+`sketch_extend_guide` checks source SI endpoints, old point preservation and
+unchanged plate volume; production verification checks the solved endpoint.

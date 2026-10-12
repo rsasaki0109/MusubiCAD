@@ -201,6 +201,7 @@ pub fn handle_agent_request_with_plugins(
         "opencad.inspect_dxf" => handle_inspect_dxf(request),
         "opencad.import_dxf" => handle_import_dxf(request),
         "opencad.import_stl" => handle_import_stl(request),
+        "opencad.plan_curve_edit" => handle_plan_curve_edit(request),
         "opencad.preview_document" => handle_preview_document(request),
         "opencad.diff_document" => handle_diff_document(request),
         "opencad.query_document" => handle_query_document(request),
@@ -388,7 +389,13 @@ fn handle_patch_dry_run_document(request: &JsonRpcRequest) -> JsonRpcResponse {
     };
     let report = dry_run_patch_document(&doc, &params.patch);
     // Geometry is only worth checking once the patch itself is valid.
-    let verification = (params.verify && !report.validation.has_errors())
+    let point_effect = params.patch.expected_effects.iter().any(|effect| {
+        matches!(
+            effect,
+            opencad_ai::ExpectedEffect::SketchPointPosition { .. }
+        )
+    });
+    let verification = ((params.verify || point_effect) && !report.validation.has_errors())
         .then(|| verification_report(&params.path, &doc, &params.patch));
     match serde_json::to_value(report) {
         Ok(mut value) => {
@@ -433,7 +440,13 @@ fn handle_patch_apply_document(request: &JsonRpcRequest) -> JsonRpcResponse {
             );
         }
     };
-    let verification = if params.verify {
+    let point_effect = params.patch.expected_effects.iter().any(|effect| {
+        matches!(
+            effect,
+            opencad_ai::ExpectedEffect::SketchPointPosition { .. }
+        )
+    });
+    let verification = if params.verify || point_effect {
         let verification = verification_report(&params.path, &doc, &params.patch);
         if !verification.passed {
             return JsonRpcResponse::error(
@@ -711,6 +724,28 @@ fn handle_import_stl(request: &JsonRpcRequest) -> JsonRpcResponse {
         };
     match crate::stl_import::import_stl(&params)
         .and_then(|r| serde_json::to_value(r).map_err(Into::into))
+    {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(e) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(e.to_string()),
+        ),
+    }
+}
+
+fn handle_plan_curve_edit(request: &JsonRpcRequest) -> JsonRpcResponse {
+    let params = match serde_json::from_value::<crate::curve_edit::PlanCurveEditRequest>(
+        request.params.clone(),
+    ) {
+        Ok(p) => p,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::invalid_params(e.to_string()),
+            )
+        }
+    };
+    match crate::curve_edit::plan(&params).and_then(|p| serde_json::to_value(p).map_err(Into::into))
     {
         Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
         Err(e) => JsonRpcResponse::error(

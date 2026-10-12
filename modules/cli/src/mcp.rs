@@ -138,6 +138,12 @@ fn tools() -> Vec<Tool> {
             schema: || json!({"type":"object","properties":{"path":{"type":"string"},"stl_path":{"type":"string"},"feature_id":{"type":"string"},"source_unit":{"enum":["m","mm","cm","in"]},"name":{"type":"string"},"transform":{"type":"object"},"dry_run":{"type":"boolean"},"history":{"type":"object"}},"required":["path","stl_path","feature_id","source_unit"],"additionalProperties":false}),
         },
         Tool {
+            name: "plan_curve_edit",
+            description: "Plan an analytic trim/extension of a stored line or arc against a finite line/circle/arc cutter in the same sketch. Preserve shared old endpoints by supplying a new point ID. Constraint removal and ambiguous intersection selection are explicit. Returns a revision-guarded DesignPatch with a solved-endpoint expected effect; review and apply through existing verified patch tools. Does not write.",
+            handler: Handler::Agent("opencad.plan_curve_edit"),
+            schema: || json!({"type":"object","required":["path","edit"],"properties":{"path":{"type":"string"},"edit":{"type":"object","required":["sketch_id","target_id","cutter_id","mode","end","new_point_id"],"properties":{"sketch_id":{"type":"string"},"target_id":{"type":"string"},"cutter_id":{"type":"string"},"mode":{"enum":["trim","extend"]},"end":{"enum":["start","end"]},"new_point_id":{"type":"string"},"intersection_index":{"type":"integer","minimum":0},"remove_constraints":{"type":"array","items":{"type":"string"},"uniqueItems":true}},"additionalProperties":false}},"additionalProperties":false}),
+        },
+        Tool {
             name: "import_dxf",
             description: "Import explicitly selected planar LINE/CIRCLE/ARC/straight LWPOLYLINE layers into an authored sketch through verified DesignPatch/history. Units must be declared or supplied and agree. Unsupported selected geometry refuses changes. dry_run verifies without writing; returned history supports undo/redo.",
             handler: Handler::Agent("opencad.import_dxf"),
@@ -638,7 +644,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 22);
+        assert_eq!(tools.len(), 23);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

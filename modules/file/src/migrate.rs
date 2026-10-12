@@ -3,6 +3,9 @@
 // MCAD-P12-003: absent view.section stays None; never infer persisted contours.
 // MCAD-P12-002: absent radial_dimensions defaults empty; never infer circle witnesses.
 //! Schema version migrations (Task-116+).
+// MCAD-P13-002: primitive entity IDs/type/fields retain their wire meanings.
+// replace_sketch_entity and solved-point expected effects are additive patch
+// tags; legacy documents/arc defaults remain unchanged. No association inferred.
 // MCAD-P13-001: construction remains the existing default-false entity field;
 // the additive patch operation does not infer flags or alter old source IDs.
 // MCAD-P12-010: imported_mesh is additive and requires an explicit source_unit.

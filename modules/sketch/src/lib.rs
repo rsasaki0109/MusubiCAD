@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use opencad_core::{ConstraintId, EntityId, Expression, OpenCadError, Result, SketchId};
 
 pub mod constraint;
+pub mod curve_edit;
 pub mod dimension;
 pub mod entity;
 pub mod profile;

@@ -1,0 +1,351 @@
+{
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:width",
+      "name": "width",
+      "expr": "80 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:height",
+      "name": "height",
+      "expr": "60 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:thickness",
+      "name": "thickness",
+      "expr": "6 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:hole_diameter",
+      "name": "hole_diameter",
+      "expr": "10 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:fillet_radius",
+      "name": "fillet_radius",
+      "expr": "1 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:chamfer_distance",
+      "name": "chamfer_distance",
+      "expr": "0.5 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:hole_pitch",
+      "name": "hole_pitch",
+      "expr": "20 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:boss_height",
+      "name": "boss_height",
+      "expr": "12 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:guide_length",
+      "name": "guide_length",
+      "expr": "40 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:base",
+      "name": "Base Sketch",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:c0",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:c1",
+        "construction": false,
+        "x": 0.08,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:c2",
+        "construction": false,
+        "x": 0.08,
+        "y": 0.06
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:c3",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.06
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:e0",
+        "construction": false,
+        "start": "ent:c0",
+        "end": "ent:c1"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:e1",
+        "construction": false,
+        "start": "ent:c1",
+        "end": "ent:c2"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:e2",
+        "construction": false,
+        "start": "ent:c2",
+        "end": "ent:c3"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:e3",
+        "construction": false,
+        "start": "ent:c3",
+        "end": "ent:c0"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:guide_a",
+        "construction": true,
+        "x": 0.02,
+        "y": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:guide_b",
+        "construction": true,
+        "x": 0.06,
+        "y": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:guide_line",
+        "construction": true,
+        "start": "ent:guide_a",
+        "end": "ent:edited_end"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "circle",
+        "id": "ent:guide_circle",
+        "construction": true,
+        "center": "ent:guide_a",
+        "radius": 0.01
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:cut_a",
+        "construction": true,
+        "x": 0.04,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:cut_b",
+        "construction": true,
+        "x": 0.04,
+        "y": 0.06
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "line",
+        "id": "ent:cutter",
+        "construction": true,
+        "start": "ent:cut_a",
+        "end": "ent:cut_b"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:base",
+      "entity": {
+        "type": "point",
+        "id": "ent:edited_end",
+        "construction": true,
+        "x": 0.04,
+        "y": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:width",
+        "target": {
+          "line": "ent:e0"
+        },
+        "expr": "width"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "distance",
+        "id": "con:height",
+        "target": {
+          "line": "ent:e1"
+        },
+        "expr": "height"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:e0_horizontal",
+        "line": "ent:e0"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:e2_horizontal",
+        "line": "ent:e2"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:e1_vertical",
+        "line": "ent:e1"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "vertical",
+        "id": "con:e3_vertical",
+        "line": "ent:e3"
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:base",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:guide_horizontal",
+        "line": "ent:guide_line"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_base",
+        "name": "Base Sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:base"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:extrude_base",
+        "name": "Extrude Base",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_base",
+          "profile_ref": "sketch:base/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body",
+          "length_expr": "thickness"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    }
+  ]
+}

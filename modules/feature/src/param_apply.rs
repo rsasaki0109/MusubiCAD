@@ -50,6 +50,21 @@ pub fn sketch_solve_state(
     Ok(copy.solve_state)
 }
 
+/// Resolve a copy to current sketch-local SI geometry without changing source.
+pub fn solved_sketch_copy(sketch: &Sketch, values: &IndexMap<String, f64>) -> Result<Sketch> {
+    let mut copy = sketch.clone();
+    crate::prepare_sketch(&mut copy)?;
+    resolve_sketch_constraints(&mut copy, values)?;
+    solve_sketch(&mut copy, &SolverOptions::default())?;
+    match copy.solve_state {
+        opencad_sketch::SolveState::FullyConstrained
+        | opencad_sketch::SolveState::UnderConstrained { .. } => Ok(copy),
+        _ => Err(opencad_core::OpenCadError::validation(
+            "sketch edit requires a successfully solved sketch",
+        )),
+    }
+}
+
 pub fn apply_feature_parameters(
     model: &mut PartModel,
     values: &indexmap::IndexMap<String, f64>,
