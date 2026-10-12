@@ -187,6 +187,9 @@ pub fn handle_agent_request_with_plugins(
         return response;
     }
     match request.method.as_str() {
+        "opencad.list_features" | "opencad.plan_feature_edit" | "opencad.apply_feature_edit" => {
+            handle_feature_editor(request)
+        }
         "opencad.inspect" => handle_inspect(request),
         "opencad.validate" => handle_validate(request),
         "opencad.patch_dry_run_document" => handle_patch_dry_run_document(request),
@@ -567,6 +570,24 @@ fn handle_history_document(
             );
         }
     };
+    if doc.metadata.kind == opencad_core::DocumentKind::Part {
+        let result = match direction {
+            HistoryDirection::Undo => {
+                opencad_desktop::undo_document_with_history(&params.path, params.history)
+            }
+            HistoryDirection::Redo => {
+                opencad_desktop::redo_document_with_history(&params.path, params.history)
+            }
+        }
+        .and_then(|state| serde_json::to_value(state).map_err(Into::into));
+        return match result {
+            Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+            Err(err) => JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::application_error(err.to_string()),
+            ),
+        };
+    }
     let mut history = params.history;
     let result = match direction {
         HistoryDirection::Undo => history.undo(&mut doc),
@@ -1127,6 +1148,48 @@ fn handle_explain_document(request: &JsonRpcRequest) -> JsonRpcResponse {
         Err(err) => JsonRpcResponse::error(
             request.id.clone(),
             JsonRpcError::application_error(err.to_string()),
+        ),
+    }
+}
+
+/// Thin transport adapter; Tauri invokes these same desktop backend helpers.
+fn handle_feature_editor(request: &JsonRpcRequest) -> JsonRpcResponse {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Params {
+        path: String,
+        revision: Option<String>,
+        edit: Option<opencad_desktop::FeatureEdit>,
+        history: Option<opencad_file::DocumentHistory>,
+    }
+    let result = (|| -> opencad_core::Result<serde_json::Value> {
+        let p: Params = serde_json::from_value(request.params.clone())?;
+        if request.method == "opencad.list_features" {
+            return Ok(serde_json::to_value(
+                opencad_desktop::list_document_features(&p.path)?,
+            )?);
+        }
+        let revision = p
+            .revision
+            .ok_or_else(|| opencad_core::OpenCadError::validation("revision is required"))?;
+        let edit = p
+            .edit
+            .ok_or_else(|| opencad_core::OpenCadError::validation("edit is required"))?;
+        if request.method == "opencad.plan_feature_edit" {
+            Ok(serde_json::to_value(
+                opencad_desktop::plan_document_feature_edit(&p.path, &revision, edit)?,
+            )?)
+        } else {
+            Ok(serde_json::to_value(
+                opencad_desktop::apply_document_feature_edit(&p.path, &revision, edit, p.history)?,
+            )?)
+        }
+    })();
+    match result {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(error) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(error.to_string()),
         ),
     }
 }

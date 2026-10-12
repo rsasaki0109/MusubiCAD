@@ -302,3 +302,11 @@ button:disabled:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Source feature controls remain separate from viewport state. */
+.feature-row { border: 1px solid #596574; padding: 10px; margin-bottom: 10px; }
+.feature-row strong, .feature-row small, #feature-create label, .feature-row label { display: block; margin-bottom: 6px; }
+.feature-row input, #feature-create input, #feature-create select { width: 100%; box-sizing: border-box; }
+.feature-row button { margin: 3px; }
+#feature-create, #feature-review { border: 1px solid #596574; padding: 10px; margin-bottom: 14px; }
+#feature-limit { font-size: 12px; }

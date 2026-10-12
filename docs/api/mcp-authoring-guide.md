@@ -995,3 +995,7 @@ hints cannot bind mutations. UI sketch overlays are drafts until a backend
 source/constraint patch is validated and committed. Backend history remains
 opaque to the frontend. Static handler audits and headless tests do not alone
 prove an interactive editor, and local MCP is separate from real host evidence.
+
+## Part feature-tree editing (MCAD-P14-002)
+
+Query `list_features` for stable row IDs, admitted fields/profiles and revision. Submit `plan_feature_edit` with `{path, revision, edit}`, review the concrete patch and SI volume/bounds, then submit the same edit to `apply_feature_edit`. Use the new revision for each operation and pass returned `history.history` unchanged. Creation is NewBody distance extrusion from an authored closed sketch; dimension forms expose the six supported length fields. Moves/suppression enforce dependencies; stale/invalid edits do not change source/history. Parameter and history desktop commands now regenerate and verify native mesh before publication. BodyCount assertions on nonempty candidates fail closed because physical solid count is unavailable. See [feature-editor.md](feature-editor.md) and `examples/agent/feature_tree_edit.json`; the `feature_tree_edit` eval checks volume 2400 mm³, source order, identity and suppression.

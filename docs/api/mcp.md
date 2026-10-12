@@ -168,3 +168,7 @@ passed 3 of 3 tasks. It cost
 $1.54 in total, and each task took 9–16 turns and 26–144 s. In
 `edit_bracket`, the agent added horizontal and vertical constraints to the
 bracket's under-constrained sketch before editing it.
+
+## Feature editor tools
+
+`list_features`, `plan_feature_edit`, and `apply_feature_edit` provide the [shared part editor contract](feature-editor.md). The local stdio parity test compares the Tauri helpers and MCP source/history at every step; it does not establish an external host run.

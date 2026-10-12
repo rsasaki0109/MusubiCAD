@@ -72,6 +72,77 @@ impl Drop for Session {
 }
 
 #[test]
+fn feature_tree_ui_and_agent_commands_produce_same_source_and_history() {
+    use opencad_desktop::{
+        apply_document_feature_edit, list_document_features, plan_document_feature_edit,
+        FeatureEdit,
+    };
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let doc = opencad_file::read_ocad(root.join("examples/cubic_plate.ocad.d")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let gui = dir.path().join("gui.ocad.d");
+    let agent = dir.path().join("agent.ocad.d");
+    opencad_file::write_ocad(&gui, &doc).unwrap();
+    opencad_file::write_ocad(&agent, &doc).unwrap();
+    let scenario: Value = serde_json::from_slice(
+        &std::fs::read(root.join("examples/agent/feature_tree_edit.json")).unwrap(),
+    )
+    .unwrap();
+    let mut session = Session::start();
+    session.request("initialize", json!({"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"editor-parity","version":"0"}}));
+    session.send(&json!({"jsonrpc":"2.0","method":"notifications/initialized"}));
+    let mut history = None;
+    for edit in scenario["edits"].as_array().unwrap() {
+        let tree = session.tool("list_features", json!({"path":agent}));
+        assert_eq!(
+            tree,
+            serde_json::to_value(list_document_features(gui.to_str().unwrap()).unwrap()).unwrap()
+        );
+        let before = opencad_file::read_ocad(&agent).unwrap();
+        let plan = session.tool(
+            "plan_feature_edit",
+            json!({"path":agent,"revision":tree["revision"],"edit":edit}),
+        );
+        let typed: FeatureEdit = serde_json::from_value(edit.clone()).unwrap();
+        let gui_plan = plan_document_feature_edit(
+            gui.to_str().unwrap(),
+            tree["revision"].as_str().unwrap(),
+            typed.clone(),
+        )
+        .unwrap();
+        assert_eq!(plan, serde_json::to_value(gui_plan).unwrap());
+        assert_eq!(opencad_file::read_ocad(&agent).unwrap(), before);
+        let gui_result = apply_document_feature_edit(
+            gui.to_str().unwrap(),
+            tree["revision"].as_str().unwrap(),
+            typed,
+            history.clone(),
+        )
+        .unwrap();
+        let mut args = json!({"path":agent,"revision":tree["revision"],"edit":edit});
+        if let Some(h) = &history {
+            args["history"] = serde_json::to_value(h).unwrap();
+        }
+        let agent_result = session.tool("apply_feature_edit", args);
+        assert_eq!(agent_result, serde_json::to_value(&gui_result).unwrap());
+        assert_eq!(
+            opencad_file::read_ocad(&agent).unwrap(),
+            opencad_file::read_ocad(&gui).unwrap()
+        );
+        history = Some(gui_result.history.history);
+    }
+    let result = opencad_desktop::editor::verify_editor_document_native(
+        &opencad_file::read_ocad(&agent).unwrap(),
+    )
+    .unwrap();
+    assert!((result.volume_m3.unwrap() - 2.4e-6).abs() < 1e-12);
+    let source = opencad_file::read_ocad(&agent).unwrap();
+    let stale = session.request("tools/call",json!({"name":"apply_feature_edit","arguments":{"path":agent,"revision":"stale","edit":scenario["edits"][0]}}));
+    assert_eq!(stale["result"]["isError"], true);
+    assert_eq!(opencad_file::read_ocad(&agent).unwrap(), source);
+}
+
+#[test]
 fn actual_mcp_cubic_control_edit_matches_independent_analytic_grader() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let original =

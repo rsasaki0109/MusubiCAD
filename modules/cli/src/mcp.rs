@@ -200,6 +200,24 @@ fn tools() -> Vec<Tool> {
             schema: patch_schema,
         },
         Tool {
+            name: "list_features",
+            description: "Read backend feature rows, admitted length fields, authored closed profiles and current source revision for the part editor. Does not write.",
+            handler: Handler::Agent("opencad.list_features"),
+            schema: path_schema,
+        },
+        Tool {
+            name: "plan_feature_edit",
+            description: "Verify an explicit-unit part feature form on a disposable candidate. create_extrude, set_expression, move, suppress. Returns the concrete revision-guarded DesignPatch and SI analytic evidence without writing.",
+            handler: Handler::Agent("opencad.plan_feature_edit"),
+            schema: feature_edit_schema,
+        },
+        Tool {
+            name: "apply_feature_edit",
+            description: "Reverify and publish a reviewed feature edit through the same backend as Tauri. Stale revision, dependency, units, geometry and required assertion failures retain source/history. Returns tree, opaque history and SI evidence.",
+            handler: Handler::Agent("opencad.apply_feature_edit"),
+            schema: feature_edit_schema,
+        },
+        Tool {
             name: "regen_document",
             description: "Regenerate geometry and report mass, bounds, references, and assertions.",
             handler: Handler::Agent("opencad.regen_document"),
@@ -349,6 +367,10 @@ fn tools() -> Vec<Tool> {
 }
 
 /// Agent API method behind each delegating tool (for parity checks).
+fn feature_edit_schema() -> Value {
+    json!({"type":"object","properties":{"path":{"type":"string"},"revision":{"type":"string"},"edit":{"type":"object","description":"FeatureEdit: operation create_extrude with id/name/sketch_feature/profile_ref/length_expr; set_expression with id/field/expr; move with id/position; suppress with id/suppressed."},"history":{"type":"object"}},"required":["path","revision","edit"],"additionalProperties":false})
+}
+
 #[cfg(test)]
 pub fn delegated_agent_methods() -> Vec<(&'static str, &'static str)> {
     tools()
@@ -663,7 +685,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 26);
+        assert_eq!(tools.len(), 29);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
