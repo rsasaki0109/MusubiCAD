@@ -1,3 +1,7 @@
+// MCAD-P13-008 / ADR-057: cubic_bezier is an additive strict entity tag.
+// Existing files are not inferred/mutated. Fixed non-rational convention,
+// explicit closed endpoint/control IDs; unknown fields or tags refuse.
+// Neutral resolved cubic metadata is optional/absent on legacy profile wire.
 // Coupled followers use mandatory guarded joint wire records; current decoding
 // validates the exact association, old motion enums reject the new tag.
 // MCAD-P13-007 / ADR-056: absent couplings default empty and serialize absent.

@@ -198,6 +198,25 @@ fn feature_output_key(
             }
         }
     }
+    let mut cubic_inputs = Vec::new();
+    if let Some(sketch) = source_sketch {
+        for entity in &sketch.entities {
+            if let opencad_sketch::SketchEntity::CubicBezier(curve) = entity {
+                cubic_inputs.push((
+                    curve.base.id.as_str(),
+                    opencad_sketch::solve::cubic_control_points(sketch, curve)?,
+                ));
+            }
+        }
+    }
+    if !cubic_inputs.is_empty() {
+        return Ok(sha256_hex(&serde_json::to_vec(&(
+            identity,
+            "opencad.resolved-cubic-input.v1",
+            cubic_inputs,
+            ellipse_inputs,
+        ))?));
+    }
     if ellipse_inputs.is_empty() {
         Ok(sha256_hex(&serde_json::to_vec(&identity)?))
     } else {

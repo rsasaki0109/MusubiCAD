@@ -72,6 +72,38 @@ impl Drop for Session {
 }
 
 #[test]
+fn actual_mcp_cubic_control_edit_matches_independent_analytic_grader() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let original =
+        opencad_file::read_ocad(root.join("examples/cubic_plate.ocad.d")).expect("cubic example");
+    let dir = tempfile::tempdir().expect("temp");
+    let part = dir.path().join("cubic.ocad.d");
+    opencad_file::write_expanded_dir(&part, &original).expect("write");
+    let mut session = Session::start();
+    session.request("initialize",json!({"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"cubic-e2e","version":"0"}}));
+    session.send(&json!({"jsonrpc":"2.0","method":"notifications/initialized"}));
+    let patch = json!({"operations":[{"type":"set_parameter","id":"param:a","expr":"60 mm"}]});
+    session.tool("patch_dry_run", json!({"path":part,"patch":patch}));
+    assert_eq!(opencad_file::read_ocad(&part).expect("dry"), original);
+    let applied = session.tool("patch_apply", json!({"path":part,"patch":patch}));
+    let after = opencad_file::read_ocad(&part).expect("after");
+    assert_eq!(after.sketches, original.sketches);
+    let regen = session.tool("regen_document", json!({"path":part}));
+    let volume = regen["volume_m3"].as_f64().expect("volume");
+    assert!((volume - 3. * 0.06 * 0.04 * 0.006 / 20.).abs() < 1e-14);
+    let mut history: opencad_file::DocumentHistory =
+        serde_json::from_value(applied["history"].clone()).expect("history source wire");
+    let mut snapshot = after.clone();
+    history.undo(&mut snapshot).expect("undo");
+    assert_eq!(snapshot, original);
+    history.redo(&mut snapshot).expect("redo");
+    assert_eq!(snapshot, after);
+    let bad = session.request("tools/call",json!({"name":"patch_apply","arguments":{"path":part,"patch":{"operations":[{"type":"set_parameter","id":"param:b","expr":"-40 mm"}]}}}));
+    assert_eq!(bad["result"]["isError"], true);
+    assert_eq!(opencad_file::read_ocad(&part).expect("refusal"), after);
+}
+
+#[test]
 fn an_agent_authors_reviews_and_applies_a_part_over_mcp() {
     let dir = tempfile::tempdir().expect("tempdir");
     let part = dir.path().join("plate.ocad.d");

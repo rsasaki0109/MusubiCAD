@@ -83,3 +83,16 @@ cycle/plane/degeneracy refusal, pure inspection via CLI/Agent/MCP, both-kernel
 analytic ellipse volume and source/history/schema examples. Body-edge and
 Datum/FaceRef/arc/spline projection and editable generated sketches remain
 deferred; legacy Mock line/parallel-circle measures remain synthetic.
+
+P13-008 / ADR-057: scoped closed single-span non-rational cubic sketch curves
+with stable control-point IDs and constraints, strict units/unknown-field
+refusal, exact normal distance/centred symmetric NewBody extrusion in Mock and
+OCCT, analytic volume/centroid/extrema, capped GL8 perimeter, native AddOptimal
+bounds without triangulation, source expressions and resolved-input cache
+identity, atomic patch/history and source/file round trips. Example/guide/skill/
+eval and real MCP stdio control editing are included. General NURBS, open/mixed/
+multispan/rational curves, knot/weight editing, trim/offset/projection, loft/sweep/
+revolve/through-all and cubic cut/join remain deferred. Native closed-curve edge
+roles are left unbound; Mock shape/topology/inertia/rendering refuse rather than
+inventing geometry. Sketch overlay picking and external-host validation remain
+unverified.

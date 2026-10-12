@@ -293,7 +293,8 @@ fn append_sketch_lines(
             SketchEntity::Point(_)
             | SketchEntity::Arc(_)
             | SketchEntity::Ellipse(_)
-            | SketchEntity::Rectangle(_) => {}
+            | SketchEntity::Rectangle(_)
+            | SketchEntity::CubicBezier(_) => {}
         }
     }
     Ok(())

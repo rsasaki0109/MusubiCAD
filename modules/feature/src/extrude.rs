@@ -44,6 +44,13 @@ impl Feature for ExtrudeFeatureExecutor {
 
         let sketch = ctx.sketch_for_feature(def.sketch_feature.as_str())?;
         let solved = profile_to_solved_with_context(sketch, &def.profile_ref, ctx)?;
+        if solved.cubic_bezier.is_some()
+            && (!matches!(def.operation, ExtrudeOperation::NewBody) || def.target_feature.is_some())
+        {
+            return Err(OpenCadError::validation(
+                "closed cubic supports NewBody extrusion only",
+            ));
+        }
         let direction = extrude_direction_for_operation(sketch, ctx, def.operation)?;
         let kernel = ctx.kernel();
         let wire = kernel.make_wire_from_sketch(&solved)?;

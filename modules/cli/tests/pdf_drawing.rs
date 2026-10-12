@@ -230,6 +230,7 @@ fn native_pdf_render_preserves_analytic_solid_volume_and_sheet_units() {
             points: vec![[0., 0.], [0.08, 0.], [0.08, 0.06], [0., 0.06]],
             closed: true,
             ellipse: None,
+            cubic_bezier: None,
             circle: None,
             segments: vec![],
             placement: None,

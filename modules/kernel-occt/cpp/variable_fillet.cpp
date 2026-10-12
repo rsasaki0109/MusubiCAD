@@ -10,6 +10,8 @@
 #include <TopoDS_Shell.hxx>
 #include <TopoDS_Solid.hxx>
 #include <BRepTools.hxx>
+#include <BRepBndLib.hxx>
+#include <Bnd_Box.hxx>
 #include <BRep_Tool.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepAdaptor_Curve.hxx>
@@ -30,12 +32,55 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <gp_Elips.hxx>
+#include <Geom_BezierCurve.hxx>
 #include <gp_Ax2.hxx>
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 namespace musubicad {
+rust::Vec<double> tight_bounds(rust::Slice<const std::uint8_t> brep) {
+    try {
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));
+        TopoDS_Shape shape; BRep_Builder builder; BRepTools::Read(shape,stream,builder);
+        if (shape.IsNull()) throw std::runtime_error("cubic bounds BREP read failed");
+        Bnd_Box box; BRepBndLib::AddOptimal(shape,box,false,true);
+        if (box.IsVoid() || box.IsOpen()) throw std::runtime_error("unbounded cubic body");
+        double xmin,ymin,zmin,xmax,ymax,zmax; box.Get(xmin,ymin,zmin,xmax,ymax,zmax);
+        rust::Vec<double> result;
+        for (auto value:{xmin,ymin,zmin,xmax,ymax,zmax}) {
+            if (!std::isfinite(value)) throw std::runtime_error("non-finite cubic bounds");
+            result.push_back(value);
+        }
+        return result;
+    } catch (const Standard_Failure& failure) { throw std::runtime_error(failure.what()); }
+}
+rust::Vec<std::uint8_t> cubic_prism(rust::Slice<const double> controls, rust::Slice<const double> delta) {
+    try {
+        if (controls.size()!=12 || delta.size()!=3) throw std::runtime_error("invalid cubic prism input");
+        for (auto v:controls) if (!std::isfinite(v)) throw std::runtime_error("non-finite cubic control");
+        for (auto v:delta) if (!std::isfinite(v)) throw std::runtime_error("non-finite cubic extrusion");
+        NCollection_Array1<gp_Pnt> poles(1,4);
+        for (int i=0;i<4;++i) poles.SetValue(i+1,gp_Pnt(controls[3*i],controls[3*i+1],controls[3*i+2]));
+        if (poles.Value(1).Distance(poles.Value(4))>1e-12) throw std::runtime_error("cubic span must be explicitly closed");
+        gp_Vec a(poles.Value(1),poles.Value(2)), b(poles.Value(1),poles.Value(3)), direction(delta[0],delta[1],delta[2]);
+        auto cross=a.Crossed(b); auto area=0.15*cross.Magnitude();
+        if (area<=1e-18 || direction.Magnitude()<=1e-9) throw std::runtime_error("degenerate cubic prism");
+        auto height=std::abs(direction.Dot(cross.Normalized()));
+        if (std::abs(height-direction.Magnitude())>1e-9*direction.Magnitude()) throw std::runtime_error("cubic extrusion must be normal");
+        Handle(Geom_BezierCurve) curve=new Geom_BezierCurve(poles);
+        BRepBuilderAPI_MakeEdge edge(curve); if (!edge.IsDone()) throw std::runtime_error("cubic edge failed");
+        BRepBuilderAPI_MakeWire wire(edge.Edge()); if (!wire.IsDone()) throw std::runtime_error("cubic wire failed");
+        BRepBuilderAPI_MakeFace face(wire.Wire()); if (!face.IsDone()) throw std::runtime_error("cubic face failed");
+        BRepPrimAPI_MakePrism prism(face.Face(),direction); if (!prism.IsDone()) throw std::runtime_error("cubic prism failed");
+        auto solid=prism.Shape(); if (!BRepCheck_Analyzer(solid,true).IsValid()) throw std::runtime_error("invalid cubic prism");
+        GProp_GProps mass; BRepGProp::VolumeProperties(solid,mass); auto expected=area*height;
+        if (!std::isfinite(mass.Mass()) || mass.Mass()<=0 || std::abs(mass.Mass()-expected)>std::max(1e-18,expected*1e-8)) throw std::runtime_error("cubic prism volume mismatch");
+        std::ostringstream stream; BRepTools::Write(solid,stream); auto bytes=stream.str(); rust::Vec<std::uint8_t> result;
+        for (auto byte:bytes) result.push_back(static_cast<std::uint8_t>(byte));
+        return result;
+    } catch (const Standard_Failure& failure) { throw std::runtime_error(failure.what()); }
+}
 rust::Vec<std::uint8_t> ellipse_prism(rust::Slice<const double> frame, rust::Slice<const double> delta) {
     try {
         if (frame.size()!=9 || delta.size()!=3) throw std::runtime_error("invalid ellipse prism input");

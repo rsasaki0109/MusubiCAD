@@ -962,3 +962,21 @@ that tag instead of silently losing the relationship. Current decoding validates
 one-to-one guards and returns normal physical joints plus source couplings.
 Absent collections remain empty; legacy joint bytes retain their meaning. Do not
 strip the wire guard or add a relationship by editing JSON directly.
+
+## Closed cubic sketch spline (P13-008)
+
+See [the exact source and admission contract](cubic-spline.md). Author three
+stable point IDs with length coordinates/expressions, then `cubic_bezier` with
+four ordered references whose final ID equals the first. Degree-three clamped
+knots and unit weights are fixed; unsupported fields refuse. The distinct
+controls must form a well-conditioned CCW triangle. Use existing control-point
+constraints and `profile:bezier:<curve_id>` for normal distance/centred symmetric
+NewBody extrusion. Construction curves do not supply profiles. Other spline
+operations and general NURBS editing remain deferred; do not approximate them
+with polygons. Preserve point expressions on edits; dry-run then apply a
+DesignPatch, inspect returned history, and call `regen_document`.
+
+`cubic_plate.ocad.d` uses `a=b=40 mm`, height 6 mm, volume 1440 mm³. Changing
+`param:a` to `60 mm` yields 2160 mm³, bounds X `[0,26.666667]` mm and Y
+`[0,17.777778]` mm, without replacing `ent:p1.x="a"` or `ent:p2.y="b"`.
+Eval `cubic_edit_control` grades source IDs/expressions and analytic volume.

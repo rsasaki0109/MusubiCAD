@@ -66,6 +66,62 @@ pub struct EllipseEntity {
     pub resolved_parameters: Option<[f64; 3]>,
 }
 
+/// ADR-057: one closed degree-three non-rational span with stable point IDs.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "CubicBezierWire", into = "CubicBezierWire")]
+pub struct CubicBezierEntity {
+    pub base: EntityBase,
+    pub control_points: [EntityId; 4],
+    /// Resolved/solved controls, omitted by the explicit source wire codec.
+    pub resolved_controls_m: Option<[[f64; 2]; 3]>,
+}
+
+// Explicit fields instead of flatten let serde refuse unsupported knot/weight input.
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CubicBezierWire {
+    id: EntityId,
+    #[serde(default)]
+    construction: bool,
+    control_points: [EntityId; 4],
+}
+
+impl CubicBezierEntity {
+    pub fn validate_references(&self) -> Result<()> {
+        let [p, a, b, end] = &self.control_points;
+        if p != end || p == a || p == b || a == b {
+            return Err(OpenCadError::validation(
+                "closed cubic requires the same endpoint ID and three distinct control IDs",
+            ));
+        }
+        Ok(())
+    }
+}
+impl TryFrom<CubicBezierWire> for CubicBezierEntity {
+    type Error = OpenCadError;
+    fn try_from(wire: CubicBezierWire) -> Result<Self> {
+        let entity = Self {
+            base: EntityBase {
+                id: wire.id,
+                construction: wire.construction,
+            },
+            control_points: wire.control_points,
+            resolved_controls_m: None,
+        };
+        entity.validate_references()?;
+        Ok(entity)
+    }
+}
+impl From<CubicBezierEntity> for CubicBezierWire {
+    fn from(entity: CubicBezierEntity) -> Self {
+        Self {
+            id: entity.base.id,
+            construction: entity.base.construction,
+            control_points: entity.control_points,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ArcEntity {
     #[serde(flatten)]
@@ -112,6 +168,7 @@ pub enum SketchEntity {
     Line(LineEntity),
     Circle(CircleEntity),
     Ellipse(EllipseEntity),
+    CubicBezier(CubicBezierEntity),
     Arc(ArcEntity),
     Rectangle(RectangleEntity),
 }
@@ -123,6 +180,7 @@ impl SketchEntity {
             Self::Line(e) => &e.base.id,
             Self::Circle(e) => &e.base.id,
             Self::Ellipse(e) => &e.base.id,
+            Self::CubicBezier(e) => &e.base.id,
             Self::Arc(e) => &e.base.id,
             Self::Rectangle(e) => &e.base.id,
         }
@@ -134,6 +192,7 @@ impl SketchEntity {
             Self::Line(line) => vec![&line.start, &line.end],
             Self::Circle(circle) => vec![&circle.center],
             Self::Ellipse(ellipse) => vec![&ellipse.center],
+            Self::CubicBezier(e) => e.control_points[..3].iter().collect(),
             Self::Arc(arc) => std::iter::once(&arc.center)
                 .chain(arc.start_point.as_ref())
                 .chain(arc.end_point.as_ref())
@@ -157,7 +216,7 @@ impl SketchEntity {
     pub fn expressions(&self) -> Vec<&Expression> {
         let coords: Vec<&Coord> = match self {
             Self::Point(point) => vec![&point.x, &point.y],
-            Self::Line(_) => Vec::new(),
+            Self::Line(_) | Self::CubicBezier(_) => Vec::new(),
             Self::Circle(circle) => vec![&circle.radius],
             Self::Ellipse(e) => vec![&e.major_radius, &e.minor_radius, &e.axis_angle],
             Self::Arc(arc) => vec![&arc.radius, &arc.start_angle, &arc.end_angle],
@@ -178,6 +237,7 @@ impl SketchEntity {
             Self::Line(e) => e.base.construction,
             Self::Circle(e) => e.base.construction,
             Self::Ellipse(e) => e.base.construction,
+            Self::CubicBezier(e) => e.base.construction,
             Self::Arc(e) => e.base.construction,
             Self::Rectangle(e) => e.base.construction,
         }
@@ -190,6 +250,7 @@ impl SketchEntity {
             Self::Line(e) => e.base.construction = construction,
             Self::Circle(e) => e.base.construction = construction,
             Self::Ellipse(e) => e.base.construction = construction,
+            Self::CubicBezier(e) => e.base.construction = construction,
             Self::Arc(e) => e.base.construction = construction,
             Self::Rectangle(e) => e.base.construction = construction,
         }

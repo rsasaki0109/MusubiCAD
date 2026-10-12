@@ -267,7 +267,27 @@ pub(crate) fn validate_sketch_candidate(
     after: &DesignState,
     failures: &mut BTreeSet<String>,
 ) {
-    let targeted: BTreeSet<&str> = operations.iter().filter_map(operation_sketch_id).collect();
+    let mut targeted: BTreeSet<&str> = operations.iter().filter_map(operation_sketch_id).collect();
+    if operations.iter().any(|op| {
+        matches!(
+            op,
+            PatchOperation::SetParameter { .. }
+                | PatchOperation::AddParameter { .. }
+                | PatchOperation::RemoveParameter { .. }
+        )
+    }) {
+        targeted.extend(
+            after
+                .sketches
+                .iter()
+                .filter(|s| {
+                    s.entities
+                        .iter()
+                        .any(|e| matches!(e, SketchEntity::CubicBezier(_)))
+                })
+                .map(|s| s.id.as_str()),
+        );
+    }
     if targeted.is_empty() {
         return;
     }
@@ -465,6 +485,30 @@ pub(crate) fn validate_sketch_references(
     failures: &mut BTreeSet<String>,
 ) {
     let sketch_id = sketch.id.as_str();
+    if sketch
+        .entities
+        .iter()
+        .any(|e| matches!(e, SketchEntity::CubicBezier(_)))
+    {
+        let admission = (|| -> Result<()> {
+            let values = opencad_graph::evaluate_param_graph_strict(&after.parameters)?;
+            let solved = opencad_feature::param_apply::solved_sketch_copy(sketch, &values)?;
+            for entity in &solved.entities {
+                if let SketchEntity::CubicBezier(curve) = entity {
+                    opencad_geometry::SolvedCubicBezier {
+                        controls_m: opencad_sketch::solve::cubic_control_points(&solved, curve)?,
+                    }
+                    .validate()?;
+                }
+            }
+            Ok(())
+        })();
+        if let Err(error) = admission {
+            failures.insert(format!(
+                "sketch '{sketch_id}': cubic admission failed: {error}"
+            ));
+        }
+    }
     let defined: BTreeSet<&str> = sketch
         .entities
         .iter()

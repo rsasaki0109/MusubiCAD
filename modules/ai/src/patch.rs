@@ -1071,6 +1071,15 @@ impl DesignPatch {
         after: &DesignState,
     ) -> Result<()> {
         if !self.is_structural() {
+            // A parameter-only edit can degenerate a graph-owned cubic curve.
+            // Admit its resolved source before committing the candidate/history.
+            let mut failures = BTreeSet::new();
+            validate_sketch_candidate(&self.operations, after, &mut failures);
+            if !failures.is_empty() {
+                return Err(OpenCadError::validation(
+                    failures.into_iter().collect::<Vec<_>>().join("; "),
+                ));
+            }
             return Ok(());
         }
         let mut failures = BTreeSet::new();

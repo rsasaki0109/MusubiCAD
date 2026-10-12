@@ -228,6 +228,7 @@ fn body_boolean_occt_refuses_empty_outputs_and_preserves_inputs() {
             points: vec![[0., 0.], [0.02, 0.], [0.02, 0.02], [0., 0.02]],
             closed: true,
             ellipse: None,
+            cubic_bezier: None,
             circle: None,
             segments: vec![],
             placement: None,

@@ -78,6 +78,19 @@ pub fn detect_profiles(entities: &[SketchEntity]) -> Result<Vec<Profile>> {
         }
     }
 
+    for entity in entities {
+        if let SketchEntity::CubicBezier(e) = entity {
+            e.validate_references()?;
+            if !e.base.construction {
+                let id = format!("profile:bezier:{}", e.base.id);
+                profiles.push(
+                    Profile::new(id.clone(), vec![e.base.id.clone()], ProfileKind::Closed)
+                        .with_ref(id),
+                );
+            }
+        }
+    }
+
     // Lines and arcs with both endpoint points form loop segments
     // (ADR-021); both are traced through shared point IDs.
     let segments: Vec<ChainEdge> = entities

@@ -371,6 +371,32 @@ def check(
                     problems.append(f"projection {desired['id']} lacks graph-owned source bindings or saves derived coordinates")
         except (OSError, ValueError, KeyError, TypeError, AttributeError):
             problems.append("projection source is absent or malformed")
+    if "expected_cubic_sources" in task:
+        try:
+            sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
+            by_id = {sketch["id"]: sketch for sketch in sketches}
+            for desired in task["expected_cubic_sources"]:
+                entities = {entity["id"]: entity for entity in by_id.get(desired["sketch_id"], {}).get("entities", [])}
+                curve = entities.get(desired["entity_id"], {})
+                if curve.get("type") != "cubic_bezier" or curve.get("control_points") != desired["control_points"] or curve.get("construction", False):
+                    problems.append(f"cubic {desired['entity_id']} lacks expected stable closed control identity")
+                if set(curve) - {"type", "id", "construction", "control_points"}:
+                    problems.append("cubic source contains unsupported or derived fields")
+                params = json.loads((document / "graph" / "parameters.json").read_text(encoding="utf-8"))["parameters"]
+                expressions = {p["name"]: p["expr"] for p in params.values()}
+                if any(expressions.get(name) != expr for name, expr in desired.get("parameter_expressions", {}).items()):
+                    problems.append("cubic parameters differ from the requested control dimensions")
+                if "extrude_id" in desired:
+                    nodes = json.loads((document / "graph" / "features.json").read_text(encoding="utf-8"))["feature_nodes"]
+                    node = next((n for n in nodes if n["id"] == desired["extrude_id"]), {})
+                    if node.get("suppressed", False) or node.get("definition") != desired["extrude_definition"]:
+                        problems.append("cubic exact profile/normal extrusion contract was replaced")
+                for point_id, coordinates in desired["point_coordinates"].items():
+                    point = entities.get(point_id, {})
+                    if point.get("type") != "point" or [point.get("x"), point.get("y")] != coordinates:
+                        problems.append(f"cubic control {point_id} lost its authored coordinates/expressions")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            problems.append("cubic source is absent or malformed")
     if "expected_ellipse_sources" in task:
         try:
             sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
@@ -786,6 +812,16 @@ def self_test() -> None:
         wrong_projection = json.loads(json.dumps(projection_task))
         wrong_projection["expected_projected_sketches"][0][field] = value
         assert not check(wrong_projection, projection_doc, "")[0]
+    cubic_doc = ROOT / "examples" / "cubic_plate.ocad.d"
+    cubic_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "cubic_edit_control")
+    source_task = {"expected_cubic_sources": json.loads(json.dumps(cubic_task["expected_cubic_sources"]))}
+    source_task["expected_cubic_sources"][0]["parameter_expressions"]["a"] = "40 mm"
+    assert check(source_task, cubic_doc, "") == (True, [])
+    for field, value in [("entity_id", "ent:missing"), ("control_points", ["ent:p0"]), ("point_coordinates", {"ent:p1": [0.04, 0.]})]:
+        wrong = json.loads(json.dumps(source_task))
+        wrong["expected_cubic_sources"][0][field] = value
+        assert not check(wrong, cubic_doc, "")[0]
+    assert not check(cubic_task, cubic_doc, "volume_m3: 0.00000144\n")[0]
     ellipse_doc = ROOT / "examples" / "ellipse_plate.ocad.d"
     ellipse_task = {"expected_ellipse_sources": [{"sketch_id": "sketch:ellipse", "entity_id": "ent:ellipse", "center": "ent:center", "major_radius": "major_radius", "minor_radius": "minor_radius", "axis_angle": "axis_angle_rad"}]}
     assert check(ellipse_task, ellipse_doc, "") == (True, [])

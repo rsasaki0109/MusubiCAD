@@ -994,6 +994,60 @@
           }
         ]
       }
+    },
+    {
+      "id": "cubic_edit_control",
+      "source": "examples/cubic_plate.ocad.d",
+      "document": "cubic_edit.ocad.d",
+      "prompt": "In {document}, change named control-coordinate parameter a from 40 mm to 60 mm. Preserve b=40 mm and the 6 mm normal extrusion. Keep ent:cubic a closed non-rational cubic_bezier with ordered control_points [ent:p0, ent:p1, ent:p2, ent:p0] in sketch:cubic. Preserve ent:p1.x expression a and ent:p2.y expression b, point IDs and source constraints. Dry-run and apply a verified DesignPatch with history, then regenerate. Analytic volume 3*60*40*6/20 = 2160 mm3; do not replace the curve with a polygon, edit knots/weights or serialize solved controls.",
+      "expected_volume_mm3": 2160.0,
+      "required_parameters": [
+        "a",
+        "b"
+      ],
+      "expected_cubic_sources": [
+        {
+          "sketch_id": "sketch:cubic",
+          "entity_id": "ent:cubic",
+          "control_points": [
+            "ent:p0",
+            "ent:p1",
+            "ent:p2",
+            "ent:p0"
+          ],
+          "point_coordinates": {
+            "ent:p0": [
+              0.0,
+              0.0
+            ],
+            "ent:p1": [
+              "a",
+              0.0
+            ],
+            "ent:p2": [
+              0.0,
+              "b"
+            ]
+          },
+          "parameter_expressions": {
+            "a": "60 mm",
+            "b": "40 mm"
+          },
+          "extrude_id": "feature:cubic_body",
+          "extrude_definition": {
+            "type": "extrude",
+            "sketch_feature": "feature:cubic_sketch",
+            "profile_ref": "profile:bezier:ent:cubic",
+            "extent": {
+              "type": "distance",
+              "length": {
+                "value_si": 0.006
+              }
+            },
+            "operation": "new_body"
+          }
+        }
+      ]
     }
   ]
 }

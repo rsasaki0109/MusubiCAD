@@ -335,6 +335,36 @@
       },
       "additionalProperties": false
     },
+    "cubic_bezier": {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "control_points"
+      ],
+      "properties": {
+        "type": {
+          "const": "cubic_bezier"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^ent:"
+        },
+        "construction": {
+          "type": "boolean"
+        },
+        "control_points": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "pattern": "^ent:"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "ellipse": {
       "type": "object",
       "required": [
@@ -1094,6 +1124,21 @@
                 },
                 "then": {
                   "$ref": "#/$defs/ellipse"
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "cubic_bezier"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                "then": {
+                  "$ref": "#/$defs/cubic_bezier"
                 }
               }
             ]

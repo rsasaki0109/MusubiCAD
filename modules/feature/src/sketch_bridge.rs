@@ -165,20 +165,40 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
     }
 
     if let [id] = profile.entity_ids.as_slice() {
+        if let Some(SketchEntity::CubicBezier(e)) = sketch.find_entity(id.as_str()) {
+            let cubic = opencad_geometry::SolvedCubicBezier {
+                controls_m: opencad_sketch::solve::cubic_control_points(sketch, e)?,
+            };
+            cubic.validate()?;
+            return Ok(SolvedSketch {
+                profile_ref: profile_ref.into(),
+                points: Vec::new(),
+                closed: true,
+                circle: None,
+                ellipse: None,
+                cubic_bezier: Some(cubic),
+                segments: Vec::new(),
+                placement: None,
+            });
+        }
         if let Some(SketchEntity::Ellipse(e)) = sketch.find_entity(id.as_str()) {
             let [major, minor, angle] = opencad_sketch::solve::ellipse_parameters(e)?;
-            let centre = match sketch.find_entity(e.center.as_str()) {
-                Some(SketchEntity::Point(p)) => [
-                    opencad_sketch::solve::coord_value(&p.x)?,
-                    opencad_sketch::solve::coord_value(&p.y)?,
-                ],
-                _ => return Err(OpenCadError::validation("ellipse centre must be a point")),
+            let centre = match point_coord(sketch, &e.center) {
+                Ok(centre) => centre,
+                Err(_) => match sketch.find_entity(e.center.as_str()) {
+                    Some(SketchEntity::Point(p)) => [
+                        opencad_sketch::solve::coord_value(&p.x)?,
+                        opencad_sketch::solve::coord_value(&p.y)?,
+                    ],
+                    _ => return Err(OpenCadError::validation("ellipse centre must be a point")),
+                },
             };
             return Ok(SolvedSketch {
                 profile_ref: profile_ref.into(),
                 points: Vec::new(),
                 closed: true,
                 circle: None,
+                cubic_bezier: None,
                 ellipse: Some(opencad_geometry::SolvedEllipse {
                     center_m: centre,
                     major_radius_m: major,
@@ -211,6 +231,7 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
         closed: true,
         circle,
         ellipse: None,
+        cubic_bezier: None,
         segments,
         placement: None,
     })
@@ -243,6 +264,19 @@ fn point_coord(sketch: &Sketch, point_id: &EntityId) -> Result<[f64; 2]> {
             point_id.as_str()
         )));
     };
+    // Cubic controls retain authored expressions after solving. Shared helper
+    // lines must still use the same solved point, rather than its source seed.
+    for entity in &sketch.entities {
+        if let SketchEntity::CubicBezier(curve) = entity {
+            if let Some(controls) = curve.resolved_controls_m {
+                for (id, point) in curve.control_points[..3].iter().zip(controls) {
+                    if id == point_id {
+                        return Ok(point);
+                    }
+                }
+            }
+        }
+    }
     match (&point.x, &point.y) {
         (Coord::Literal(x), Coord::Literal(y)) => Ok([*x, *y]),
         _ => Err(OpenCadError::validation(format!(
@@ -542,6 +576,7 @@ pub fn path_to_solved_with_context(
         points,
         closed,
         ellipse: None,
+        cubic_bezier: None,
         circle: None,
         segments,
         placement: Some(placement),
