@@ -96,3 +96,14 @@ revolve/through-all and cubic cut/join remain deferred. Native closed-curve edge
 roles are left unbound; Mock shape/topology/inertia/rendering refuse rather than
 inventing geometry. Sketch overlay picking and external-host validation remain
 unverified.
+
+P14-001 / ADR-058: accepted backend-only desktop editing architecture and Phase
+14 task/acceptance plan. Frontend drafts/presentation, typed Tauri adapters,
+shared source/semantic/unit/revision queries and DesignPatch commands, verified
+candidate regeneration/history/persistence and failure checkpoint behavior are
+defined. The existing source-only parameter/history publication gap is scheduled
+for the editor gateway. Feature-tree, semantic selection patch and interactive
+sketcher implementations remain planned (P14-002/003/004). This architecture-only
+change adds no runtime editor, schema field or maturity credit. Static handler,
+headless/backend, IPC harness, actual Tauri and actual external-host evidence
+must be reported separately.

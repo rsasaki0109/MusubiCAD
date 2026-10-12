@@ -715,6 +715,52 @@ constraints; offset topology can change; projected sources can be ambiguous.
 Coupled motion must never mutate derived joint state outside a transaction.
 New sampling, spline or kernel decisions require accepted scoped ADRs.
 
+## Phase 14 — Backend-owned desktop editing
+
+**Objective:** provide a usable Tauri feature editor, semantic selection-to-patch
+workflow and interactive sketcher, advancing the fixed GUI rubric from 10 toward
+45 (about five weighted points after implementation merges). Start with an
+accepted backend-only command architecture ADR; source graph and CAD execution
+remain owned by the backend.
+
+**Dependencies:** Phase 13 complete, verified DesignPatch/history, semantic refs,
+sketch solver/profiles, shared desktop/CLI/Agent command helpers and the current
+Tauri shell. Use the SolidCraft shared-command/rollback reference without
+changing MusubiCAD's invariants or claiming its benchmark parity.
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P14-001 | Backend-only GUI architecture | Accepted ADR-058 covering ownership, typed shared commands/queries, explicit units, semantic/revision admission, verified candidate regeneration/history/persistence, parity and named acceptance evidence; no feature implementation or maturity credit | Complete |
+| MCAD-P14-002 | Feature-tree editing | Backend-derived stable feature rows and product forms for admitted create/edit operations, reorder and suppression, verified DesignPatch gateway, explicit dependency/refusal/rollback, CLI or Agent parity, Mock/OCCT analytic evidence, Tauri interaction evidence, example/guide/skill/eval | Planned |
+| MCAD-P14-003 | Selection to reviewed patch | Backend semantic bindings and source/scene revision checks; concrete patch/effect preview and verified apply; ambiguous/missing/stale selections refuse; no mutation binding from feature-name heuristics; parity, both-kernel evidence and interaction example/eval | Planned |
+| MCAD-P14-004 | Interactive sketcher | View-only cursor/draft overlays, stable source point/entity/constraint commands through backend DesignPatch, explicit workplanes/units, solve/profile diagnostics and atomic commit/undo/redo; supported primitive editing with Mock/OCCT analytic and actual UI interaction evidence, example/guide/skill/eval; new spline/NURBS/sampling scope stays separately gated | Planned |
+
+**Definition of done:** architecture accepted before implementation; one task per
+main-target PR, with the previous PR merged before the next branch. Every GUI
+model mutation uses shared backend DesignPatch/transaction verification before
+publishing source/history/scene. Supported create/edit/reorder/suppress, semantic
+selection preview/apply and interactive sketch operations have working Tauri
+controls and CLI or Agent parity, independently checked dimensions/volume,
+meaningful rollback/refusal and UI interaction evidence, examples, API/guide/skill
+updates and feasible eval. A raw JSON editor, static handler audit or headless
+backend smoke alone does not complete interactive CAD editing. Maturity credit
+requires a main merge and records the implemented behavior; this ADR alone adds
+no points.
+
+**Tests:** backend/CLI-or-Agent/Tauri source/history parity, analytic Mock/OCCT
+fixtures, stale source/scene revisions, ambiguous/missing semantic selections,
+invalid units, dependency-invalid reorder/suppression, failure after staged
+success, previous output/history preservation, undo/redo and real editor
+interactions. Run the four mandatory pre-push checks and all GitHub CI. Keep
+Linux cloud/headless/browser evidence separate from actual Windows/Codex/Cursor/
+Gemini host sessions tracked by the ecosystem phase.
+
+**Risks:** source/scene drift, frontend heuristic rebinding, writes before CAD
+regeneration succeeds, dependency changes during reorder/suppression, unit-kind
+errors, stale history, unsupported geometry presented as editable, and static
+tests overstating interactive coverage. Avoid frontend graph/solver/persistence
+logic; gate new numeric or spline/NURBS decisions with their own accepted ADR.
+
 ## Cross-phase verification matrix
 
 Every implementation PR must select the applicable rows and record the command

@@ -9,6 +9,16 @@ render/viewport layer and are not written to the document.
 
 ## Shared backend API
 
+Phase 14 follows [ADR-058](../adr/ADR-058-backend-only-desktop-editing.md) and
+[desktop editing ownership](../architecture/desktop-editing.md). P14-001 is
+architecture-only; feature-tree/selection/sketch editors remain planned.
+New editor commands must use an authoritative verified DesignPatch gateway,
+admit explicit units and source/scene revisions, regenerate a candidate and
+publish source/history/scene atomically, with CLI or Agent parity. Existing
+parameter/history file helpers validate/persist source; their geometry-before-
+publication gap is an explicit P14-002 implementation requirement. No new
+runtime command or `.ocad` field is introduced by this ADR.
+
 | Function | Contract |
 |---|---|
 | `inspect_document(path)` | Open and summarize document metadata, graph counts, and semantic references |
