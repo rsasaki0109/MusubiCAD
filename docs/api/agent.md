@@ -337,6 +337,7 @@ The output extension selects the format:
 | `.stl` | Binary STL mesh | Part or assembly |
 | `.step` / `.stp` | STEP (ISO 10303-21, AP214) B-rep in millimetres | Part (active body) or assembly (every placed instance, with mates solved) |
 | `.svg` | Drawing sheet | Drawing |
+| `.dxf` | Single-sheet UTF-8 mm drawing primitives, view scale applied; bytes summary | Drawing |
 | `.pdf` | Multi-page vector drawing, fixed embedded font; summary includes pages/bytes | Drawing |
 
 STEP output is deterministic: the header time stamp is fixed at

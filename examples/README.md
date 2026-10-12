@@ -398,3 +398,13 @@ created by the existing detail-plate patch; `agent/create_printable_drawing_patc
 rebuilds the drawing. `printable_plate_drawing.pdf` contains two vector pages with
 embedded font subsets, explicit metadata and preserved paper sizes. Export uses
 no timestamp/system font lookup; unsupported glyphs fail rather than being replaced.
+
+### Single-sheet drawing DXF
+
+`title_plate_drawing.dxf` and `section_plate_drawing.dxf` export the corresponding
+patch-authored documents as UTF-8 millimetre drawing primitives (MCAD-P12-007).
+Coordinates represent paper space with view scale applied; labels retain model
+measurements. The section hatch leaves the square hole clear. Regenerate using
+`musubicad export examples/title_plate_drawing.ocad.d examples/title_plate_drawing.dxf`
+(and equivalently for the section). Independent audit:
+`python -m pip install ezdxf==1.4.4 && python tools/test_drawing_dxf.py`.

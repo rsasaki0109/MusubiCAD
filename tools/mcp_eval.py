@@ -209,6 +209,70 @@ def check_robot_artifacts(
     return problems
 
 
+def drawing_dxf_problems(path: Path, task: dict) -> list[str]:
+    """Check required primitive DXF evidence without adding a runtime dependency.
+
+    Independent full-format/consumer validation is tools/test_drawing_dxf.py.
+    """
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if len(lines) % 2:
+            raise ValueError("unpaired tags")
+        pairs = [(int(lines[i]), lines[i+1]) for i in range(0, len(lines), 2)]
+        if not pairs or pairs[0] != (0, "SECTION") or pairs[-1] != (0, "EOF"):
+            raise ValueError("missing section/end")
+        header = {value: pairs[i+1] for i, (code, value) in enumerate(pairs[:-1]) if code == 9}
+        if header.get("$ACADVER") != (1, "AC1027"):
+            raise ValueError("unexpected format")
+        entries, current = [], []
+        for tag in pairs:
+            if tag[0] == 0 and current:
+                entries.append(current)
+                current = []
+            current.append(tag)
+        if current:
+            entries.append(current)
+        entities = []
+        in_entities = False
+        for entry in entries:
+            if entry[:2] == [(0, "SECTION"), (2, "ENTITIES")]:
+                in_entities = True
+            elif entry[0] == (0, "ENDSEC"):
+                in_entities = False
+            elif in_entities:
+                entities.append(entry)
+        paper = [e for e in entities if e[0] == (0, "LWPOLYLINE") and (8, "PAPER") in e]
+        if len(paper) != 1 or (70, "1") not in paper[0] or (90, "4") not in paper[0]:
+            raise ValueError("missing closed paper frame")
+        width, height = task["expected_dxf_paper_mm"]
+        actual = [[float(v) for c, v in paper[0] if c == code] for code in (10, 20)]
+        wanted = [[0, width, width, 0], [0, 0, height, height]]
+        problems = []
+        if header.get("$INSUNITS") != (70, str(task.get("expected_dxf_units", 4))):
+            problems.append("DXF units differ")
+        if any(len(a) != 4 or any(not math.isfinite(v) or abs(v-w) > 1e-6 for v, w in zip(a, b)) for a, b in zip(actual, wanted)):
+            problems.append("DXF paper dimensions differ")
+        texts = [v for e in entities if e[0] == (0, "TEXT") for c, v in e if c == 1]
+        if any(text not in texts for text in task.get("expected_dxf_text", [])):
+            problems.append("required DXF labels are absent")
+        if "expected_dxf_model_bounds_mm" in task:
+            coordinates = [[], []]
+            for e in entities:
+                if e[0] == (0, "LINE") and any((8, layer) in e for layer in ("VISIBLE", "HIDDEN")):
+                    for c, v in e:
+                        if c in (10, 11):
+                            coordinates[0].append(float(v))
+                        elif c in (20, 21):
+                            coordinates[1].append(float(v))
+            desired = task["expected_dxf_model_bounds_mm"]
+            for axis, coords in enumerate(coordinates):
+                if not coords or not all(math.isfinite(v) for v in coords) or any(abs(v-w) > 1e-6 for v, w in zip([min(coords), max(coords)], [desired[0][axis], desired[1][axis]])):
+                    problems.append("DXF projected model bounds differ")
+        return problems
+    except (OSError, UnicodeError, ValueError, IndexError):
+        return ["required DXF artifact is absent or malformed"]
+
+
 def check(
     task: dict,
     document: Path,
@@ -258,6 +322,8 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_dxf_name" in task:
+        problems.extend(drawing_dxf_problems(document.parent / task["expected_dxf_name"], task))
     if "expected_pdf_name" in task:
         pdf_path = document.parent / task["expected_pdf_name"]
         try:
@@ -521,6 +587,10 @@ def self_test() -> None:
     wrong_title["expected_title_blocks"]["sheet:a4"]["revision"] = "B"
     assert not check(wrong_title, title_sheet, "")[0]
     assert not check({"expected_title_blocks": {}}, title_sheet, "")[0]
+    dxf_task = {"expected_dxf_name": "title_plate_drawing.dxf", "expected_dxf_units": 4, "expected_dxf_paper_mm": [210,297], "expected_dxf_text": ["Inspection plate", "A", "FRONT 1:2"], "expected_dxf_model_bounds_mm": [[50,100],[90,130]]}
+    assert check(dxf_task, title_sheet, "") == (True, [])
+    for key, bad in [("expected_dxf_name", "missing.dxf"), ("expected_dxf_units", 1), ("expected_dxf_paper_mm", [297,210]), ("expected_dxf_text", ["missing label"]), ("expected_dxf_model_bounds_mm", [[50,100],[91,130]])]:
+        assert not check({**dxf_task, key: bad}, title_sheet, "")[0]
     printable_sheet = ROOT / "examples" / "printable_plate_drawing.ocad.d"
     pdf_task = {"expected_pdf_name": "printable_plate_drawing.pdf", "expected_pdf_pages": 2, "expected_pdf_paper_mm": [[210,297],[297,210]]}
     assert check(pdf_task, printable_sheet, "") == (True, [])

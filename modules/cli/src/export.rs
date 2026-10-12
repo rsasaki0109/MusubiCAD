@@ -40,13 +40,14 @@ pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
         Some("stl") => export_stl(input, output),
         Some("svg") => export_svg(input, output),
         Some("pdf") => export_pdf(input, output),
+        Some("dxf") => export_dxf(input, output),
         Some("step" | "stp") => export_step(input, output),
         Some("urdf") => crate::urdf::export_urdf(input, output),
         Some("3mf") => export_mesh_package(input, output, "3mf"),
         Some("glb") => export_mesh_package(input, output, "glb"),
         Some("html") => crate::web_viewer::export_web_viewer(input, output),
         _ => Err(OpenCadError::validation(
-            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, .pdf, .urdf, or .html extension",
+            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, .pdf, .dxf, .urdf, or .html extension",
         )),
     }
 }
@@ -212,6 +213,41 @@ pub fn export_pdf(input: &str, output: &str) -> Result<ExportSummary> {
         format: "pdf".into(),
         triangles: 0,
         bytes: Some(bytes.len()),
+        output: output.into(),
+    })
+}
+
+/// Export exactly one regenerated drawing sheet in millimetre paper coordinates.
+pub fn export_dxf(input: &str, output: &str) -> Result<ExportSummary> {
+    if !Path::new(output)
+        .extension()
+        .and_then(|s| s.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("dxf"))
+    {
+        return Err(OpenCadError::validation(
+            "DXF output must use .dxf extension",
+        ));
+    }
+    let doc = read_ocad(input)?;
+    let regenerated = crate::drawing::regenerate_drawing(input, &doc)?;
+    if regenerated.sheets.len() != 1 {
+        return Err(OpenCadError::validation(
+            "DXF output requires exactly one sheet; multi-sheet DXF layouts are not supported",
+        ));
+    }
+    let (sheet, meshes) = &regenerated.sheets[0];
+    let data = opencad_drawing::render_sheet_dxf(
+        sheet,
+        meshes,
+        &regenerated.radial_layouts[0],
+        &regenerated.section_layouts[0],
+    )?;
+    fs::write(output, &data).map_err(|e| OpenCadError::Other(e.to_string()))?;
+    Ok(ExportSummary {
+        pages: None,
+        format: "dxf".into(),
+        triangles: 0,
+        bytes: Some(data.len()),
         output: output.into(),
     })
 }

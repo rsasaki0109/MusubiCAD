@@ -530,3 +530,36 @@ sheets, created with `examples/agent/create_printable_drawing_patch.json`; the
 embedded part uses the existing detail-plate creation patch.
 `examples/printable_plate_drawing.pdf` is a deterministic printable artifact.
 Eval `drawing_pdf_revision` checks authored metadata and required PDF evidence.
+
+### Millimetre drawing DXF (MCAD-P12-007)
+
+Use `musubicad export drawing.ocad.d drawing.dxf`, Agent `opencad.export` or MCP
+`export_document` with a `.dxf` output. The document must have exactly one sheet;
+multiple sheets fail rather than losing pages. All views and semantic dimensions
+regenerate before output. Results include `format:"dxf"` and `bytes`.
+
+The AC1027 DXF contains UTF-8 text and right-handed **paper coordinates in mm**,
+with `$INSUNITS=4`, `$MEASUREMENT=1` and an explicit paper frame. Authored view scale
+is already applied: an 80 mm model edge at 1:2 spans 40 mm in this drawing file,
+while its dimension label still reports 80 mm. Use STEP for exact model geometry;
+this drawing output does not imply DXF input support or a 1:1 machining profile.
+
+Visible/hidden edges, dimensions, section contours/hatching, detail markers and
+title blocks use named layers and LINE/LWPOLYLINE/ARC/TEXT primitives. Section
+hatches are analytically clipped at 45 degrees using even-odd material membership,
+so holes stay clear. Dimensions are rendered labels/geometry, not associative
+DXF DIMENSION records. Wireframe approximation and existing drawing limitations
+remain; consumer fonts determine text appearance.
+
+Invalid references/layouts, nonfinite coordinates, budgets or interpreted text
+control syntax (`%%`, backslashes and caret codes) fail before replacing output.
+Normal Unicode and single `%` characters are preserved. Correct authored values
+through DesignPatch, verify dry-run/apply, regenerate and export again. Limits:
+±1e9 mm coordinates, 200,000 entities, 100,000 hatch lines, 10 million edge/line
+checks. No clock/GUID metadata is generated and source documents are unchanged.
+
+Examples: `examples/title_plate_drawing.dxf` and `section_plate_drawing.dxf`,
+from the existing patch-authored drawing examples. Independent verification:
+`python -m pip install ezdxf==1.4.4`, then `python tools/test_drawing_dxf.py`.
+Eval `drawing_dxf_revision` checks authored revision plus required mm DXF output.
+See ADR-046.

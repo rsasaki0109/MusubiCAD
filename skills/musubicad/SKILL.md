@@ -141,7 +141,7 @@ others at rest; it does not certify continuous motion or combined poses.
 - `export_document` with `{path, output}`: the extension picks the format.
   `.step` for other CAD/CAM tools (millimetres), `.3mf` for slicers and 3D
   printing (closed, millimetre meshes), `.stl` for older tools, `.glb` for viewers and the web,
-  `.svg` for drawing sheets, `.urdf` for an assembly as a robot
+  `.svg` / `.dxf` for single drawing sheets, `.pdf` for multi-page vector drawings, `.urdf` for an assembly as a robot
   description (simulators such as MuJoCo): the grounded instance is the root
   link; a concentric mate becomes the joint declared on it (`revolute` or
   `prismatic` with its limits, or `fixed`), or a `continuous` joint when none
@@ -391,3 +391,17 @@ PDF. Do not silently replace glyphs or infer timestamps/fonts. Correct model/tex
 through DesignPatch and retry. No PDF/A certification, images/filters or system
 font lookup is claimed. Example: `examples/printable_plate_drawing.ocad.d` and its
 PDF; eval `drawing_pdf_revision`. See ADR-045 and the MCP authoring guide.
+
+### Millimetre drawing DXF export
+
+Export a verified **single-sheet drawing** to `.dxf` through the existing export
+command/Agent/MCP API. Output is UTF-8 AC1027 with millimetre paper coordinates,
+explicit units, named layers, contour-clipped section hatch and derived labels.
+View scale is applied: an 80 mm model edge at 1:2 spans 40 mm in DXF paper space,
+but its label measures the model. Use STEP for exact 3D/model exchange.
+Multiple sheets, invalid references/numbers, limits and text containing `%%`,
+backslashes or caret codes fail before replacing output. Normal Unicode/single
+percent signs remain supported; fonts depend on the reader. This adds output,
+not DXF input or associative DXF dimensions. Example artifacts: title/section
+plate DXFs; independent checker `tools/test_drawing_dxf.py` requires ezdxf 1.4.4.
+Eval `drawing_dxf_revision`; see ADR-046 and the MCP authoring guide.
