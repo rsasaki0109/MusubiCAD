@@ -22,7 +22,9 @@ spelled variants). Named angle parameters follow the existing `_rad`/`_deg` or
 Initial expressions admit same-kind length/angle parameter references and
 literal factors; cross-kind parameter formulas refuse rather than guess a
 dimensional interpretation. Legacy parts without ellipses retain their previous evaluator. Resolved values are
-separate transient solver input, never document truth. The centre participates
+separate transient solver input, never document truth. Feature cache keys include
+resolved ellipse dimensions/angle separately from source serialization; warm
+cache and angle-only edits must regenerate downstream geometry. The centre participates
 in ordinary point constraints; axis lengths and orientation are defined by
 source parameters, not new free solver DOFs. Radius/diameter/equal-radius
 constraints refuse ellipse targets. Construction ellipses are excluded from

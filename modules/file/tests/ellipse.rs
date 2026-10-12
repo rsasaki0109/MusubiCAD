@@ -463,3 +463,85 @@ fn native_ellipse_cut_and_join_use_existing_feature_boolean_paths() {
             .is_err());
     }
 }
+
+#[test]
+fn warm_cache_tracks_resolved_ellipse_axes_and_angle_without_persisting_them() {
+    fn check<K: GeometryKernel>(kernel: &K) {
+        let mut doc = ellipse(0.03, 0.02, 0., "XY");
+        let mut model = doc.clone().into_part_model();
+        let registry = FeatureRegistry::with_defaults();
+        let mut cache = opencad_feature::RegenerationCache::with_backend("ellipse-regression");
+        model
+            .regenerate_with_cache(kernel, &registry, Some(&doc.parameters), None, &mut cache)
+            .expect("cold");
+        let warm = model
+            .regenerate_with_cache(kernel, &registry, Some(&doc.parameters), None, &mut cache)
+            .expect("warm");
+        assert_eq!(warm.cached_nodes.len(), 2);
+        let edit = patch(
+            json!([{"type":"set_parameter","id":"param:major_radius","expr":"40 mm"},{"type":"set_parameter","id":"param:minor_radius","expr":"10 mm"},{"type":"set_parameter","id":"param:axis_angle_rad","expr":"45 deg"}]),
+        );
+        apply_patch_with_history(
+            &mut doc,
+            &edit,
+            &mut DocumentHistory::default(),
+            "Cached axes edit",
+        )
+        .expect("edit");
+        let changed = model
+            .regenerate_with_cache(kernel, &registry, Some(&doc.parameters), None, &mut cache)
+            .expect("changed");
+        assert!(
+            changed
+                .regenerated
+                .iter()
+                .any(|id| id == "feature:ellipse_body"),
+            "ellipse body was incorrectly reused: {changed:?}"
+        );
+        let body = model.active_body().expect("body");
+        let mass = kernel.mass_properties(body, 1.).expect("mass");
+        assert!((mass.volume_m3 - std::f64::consts::PI * 0.04 * 0.01 * 0.006).abs() < 1e-12);
+        let bbox = kernel.bounding_box(body).expect("bounds");
+        let span = 2.
+            * (0.04_f64 * std::f64::consts::FRAC_1_SQRT_2)
+                .hypot(0.01 * std::f64::consts::FRAC_1_SQRT_2);
+        assert!((bbox.max[0] - bbox.min[0] - span).abs() < 2.1e-7);
+        let unchanged = model
+            .regenerate_with_cache(kernel, &registry, Some(&doc.parameters), None, &mut cache)
+            .expect("unchanged");
+        assert_eq!(unchanged.cached_nodes.len(), 2);
+        let edit =
+            patch(json!([{"type":"set_parameter","id":"param:axis_angle_rad","expr":"0 deg"}]));
+        apply_patch_with_history(
+            &mut doc,
+            &edit,
+            &mut DocumentHistory::default(),
+            "Angle-only cached edit",
+        )
+        .expect("angle edit");
+        let angle_only = model
+            .regenerate_with_cache(kernel, &registry, Some(&doc.parameters), None, &mut cache)
+            .expect("angle-only regen");
+        assert!(angle_only
+            .regenerated
+            .iter()
+            .any(|id| id == "feature:ellipse_body"));
+        let body = model.active_body().expect("angle body");
+        let bbox = kernel.bounding_box(body).expect("angle bounds");
+        assert!((bbox.max[0] - bbox.min[0] - 0.08).abs() < 2.1e-7);
+        let previous = body.clone();
+        let mut bad_params = doc.parameters.clone();
+        bad_params
+            .set_expr("param:minor_radius", "100 mm")
+            .expect("invalid dimensions");
+        assert!(model
+            .regenerate_with_cache(kernel, &registry, Some(&bad_params), None, &mut cache)
+            .is_err());
+        assert_eq!(model.active_body().expect("previous output"), &previous);
+        let wire = serde_json::to_string(&doc).expect("source");
+        assert!(!wire.contains("resolved_parameters"));
+        assert!(wire.contains("major_radius"));
+    }
+    check(&MockGeometryKernel::new());
+    check(&OcctGeometryKernel::new());
+}
