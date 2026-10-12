@@ -56,6 +56,9 @@ impl Sheet {
                 )));
             }
             view.validate(drawing_doc_id)?;
+            if view.detail.is_some() {
+                crate::validate_detail_parent(view, self)?;
+            }
         }
         let mut dimension_ids = std::collections::BTreeSet::new();
         for dimension in &self.dimensions {
@@ -74,9 +77,9 @@ impl Sheet {
             if self
                 .views
                 .iter()
-                .any(|v| v.id == dimension.view_id && v.section.is_some())
+                .any(|v| v.id == dimension.view_id && (v.section.is_some() || v.detail.is_some()))
             {
-                return Err(OpenCadError::validation("dimensions on section contours require separate semantic bindings and are not yet supported"));
+                return Err(OpenCadError::validation("dimensions on section/detail geometry require separate semantic bindings and are not yet supported"));
             }
             dimension.validate()?;
         }
@@ -96,9 +99,9 @@ impl Sheet {
             if self
                 .views
                 .iter()
-                .any(|v| v.id == dimension.view_id && v.section.is_some())
+                .any(|v| v.id == dimension.view_id && (v.section.is_some() || v.detail.is_some()))
             {
-                return Err(OpenCadError::validation("dimensions on section contours require separate semantic bindings and are not yet supported"));
+                return Err(OpenCadError::validation("dimensions on section/detail geometry require separate semantic bindings and are not yet supported"));
             }
             dimension.validate()?;
         }
@@ -118,9 +121,9 @@ impl Sheet {
             if self
                 .views
                 .iter()
-                .any(|v| v.id == dimension.view_id && v.section.is_some())
+                .any(|v| v.id == dimension.view_id && (v.section.is_some() || v.detail.is_some()))
             {
-                return Err(OpenCadError::validation("dimensions on section contours require separate semantic bindings and are not yet supported"));
+                return Err(OpenCadError::validation("dimensions on section/detail geometry require separate semantic bindings and are not yet supported"));
             }
             dimension.validate()?;
         }

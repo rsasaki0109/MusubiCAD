@@ -19,6 +19,8 @@ pub struct DrawingView {
     pub origin_on_sheet_m: [f64; 2],
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub section: Option<crate::SectionView>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detail: Option<crate::DetailView>,
 }
 
 impl DrawingView {
@@ -38,6 +40,7 @@ impl DrawingView {
             origin_on_sheet_m,
             model,
             section: None,
+            detail: None,
         }
     }
 
@@ -50,6 +53,14 @@ impl DrawingView {
                 "view '{}' scale must be finite and > 0, and origin must be finite",
                 self.id
             )));
+        }
+        if let Some(detail) = &self.detail {
+            detail.validate()?;
+            if self.section.is_some() || self.projection == ProjectionKind::Isometric {
+                return Err(OpenCadError::validation(
+                    "detail cannot also be a section or isometric view",
+                ));
+            }
         }
         if let Some(section) = &self.section {
             section.validate(self.projection)?;

@@ -351,3 +351,18 @@ fresh view ID. This initial slice view renders material hatch with clear holes,
 without projected geometry beyond the plane or parent cutting arrows.
 Example: `examples/agent/create_section_drawing_patch.json`; eval:
 `drawing_polygonal_section`. See ADR-042 and the MCP authoring guide.
+
+### Parent-linked rectangular details
+
+Use `add_drawing_view` through DesignPatch with `detail.parent_view_id`,
+`region_min_m`/`region_max_m` in projected model metres and `magnification` >1.
+Match an ordinary same-sheet parent's model/projection; set child scale to parent
+scale × magnification. Child sheet origin centers the crop. Never author segment
+caches. Dry-run/apply must regenerate nonempty clipped edges and expose fresh
+`drawing_details` evidence. Missing parents, mismatched scale/model/projection,
+empty crops, nested/section details and dimensions on detail geometry are refused.
+Update parent and child scales together; remove children before their parent.
+Edit crop/magnification via remove/add with a new view ID, then export SVG and
+verify the source rectangle and derived magnification label. Example:
+`examples/agent/create_detail_drawing_patch.json`; eval `drawing_bounded_detail`.
+See ADR-043 and the MCP authoring guide.

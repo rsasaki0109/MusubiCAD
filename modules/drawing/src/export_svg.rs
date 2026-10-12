@@ -134,6 +134,35 @@ pub fn render_sheet_svg_with_layouts(
         }
         svg.push_str("</svg>\n");
     }
+    if sheet.views.iter().any(|v| v.detail.is_some()) {
+        svg.truncate(svg.len() - "</svg>\n".len());
+        for view in sheet.views.iter().filter(|v| v.detail.is_some()) {
+            let parent = crate::validate_detail_parent(view, sheet)?;
+            let detail = view
+                .detail
+                .as_ref()
+                .ok_or_else(|| OpenCadError::validation("detail missing"))?;
+            let x = (parent.origin_on_sheet_m[0] + detail.region_min_m[0] * parent.scale) * 1000.;
+            let y = flip_y(
+                parent.origin_on_sheet_m[1] + detail.region_max_m[1] * parent.scale,
+                sheet.height_m,
+            ) * 1000.;
+            let w = (detail.region_max_m[0] - detail.region_min_m[0]) * parent.scale * 1000.;
+            let h = (detail.region_max_m[1] - detail.region_min_m[1]) * parent.scale * 1000.;
+            if ![x, y, w, h].iter().all(|v| v.is_finite()) {
+                return Err(OpenCadError::validation(
+                    "detail source marker overflows sheet millimetres",
+                ));
+            }
+            svg.push_str(&format!("<rect class=\"detail-source\" x=\"{x:.6}\" y=\"{y:.6}\" width=\"{w:.6}\" height=\"{h:.6}\" fill=\"none\" stroke=\"#225588\" stroke-width=\"0.18\" stroke-dasharray=\"2,1\"/>\n"));
+            let x = view.origin_on_sheet_m[0] * 1000.;
+            let y = flip_y(view.origin_on_sheet_m[1], sheet.height_m) * 1000.
+                - h * detail.magnification / 2.
+                - 4.;
+            svg.push_str(&format!("<text class=\"detail-label\" x=\"{x:.6}\" y=\"{y:.6}\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"3\" fill=\"#225588\">DETAIL {:.2}×</text>\n",detail.magnification));
+        }
+        svg.push_str("</svg>\n");
+    }
     Ok(svg)
 }
 

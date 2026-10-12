@@ -377,3 +377,10 @@ exact closed contours and material hatching, with the hole clear. Fresh section
 area is 0.0044 m² (4400 mm²); hatch spacing is 3 mm on the sheet at view scale 0.5.
 Creation patches: `agent/create_section_plate_patch.json` and
 `agent/create_section_drawing_patch.json`. Curved sections are deliberately refused.
+
+`detail_plate_drawing.ocad.d` shows an 80 × 60 × 6 mm plate and a 2× detail of its
+top-right corner. The parent scale is 0.5; the detail scale is 1.0, centered at
+[150, 100] mm on the sheet, with a projected-model crop [60,40]–[90,70] mm. Its two
+cropped edges are 20 mm long on the sheet. Creation patches:
+`agent/create_detail_plate_patch.json` and `agent/create_detail_drawing_patch.json`.
+`detail_plate_drawing.svg` includes a source rectangle and derived 2.00× label.

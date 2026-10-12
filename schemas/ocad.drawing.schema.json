@@ -220,6 +220,42 @@
       },
       "additionalProperties": false
     },
+    "detail_view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parent_view_id",
+        "region_min_m",
+        "region_max_m",
+        "magnification"
+      ],
+      "properties": {
+        "parent_view_id": {
+          "type": "string",
+          "pattern": "^view:[a-zA-Z0-9_:/-]+$"
+        },
+        "region_min_m": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number"
+          }
+        },
+        "region_max_m": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number"
+          }
+        },
+        "magnification": {
+          "type": "number",
+          "exclusiveMinimum": 1
+        }
+      }
+    },
     "section_view": {
       "type": "object",
       "additionalProperties": false,
@@ -277,6 +313,7 @@
         },
         "name": { "type": "string", "minLength": 1 },
         "model": { "$ref": "#/$defs/model_reference" },
+        "detail": {"anyOf":[{"$ref":"#/$defs/detail_view"},{"type":"null"}]},
         "section": {"anyOf":[{"$ref":"#/$defs/section_view"},{"type":"null"}]},
         "projection": {
           "type": "string",

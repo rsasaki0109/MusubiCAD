@@ -435,3 +435,38 @@ See `examples/agent/create_section_plate_patch.json`,
 `examples/agent/create_section_drawing_patch.json` and
 `examples/section_plate_drawing.ocad.d`, a self-contained square-hole plate.
 Eval `drawing_polygonal_section` checks the authored plane and fresh area/counts.
+
+### Parent-linked detail views (MCAD-P12-004)
+
+Use `add_drawing_view` with optional `detail`:
+
+```json
+{"type":"add_drawing_view","sheet_id":"sheet:a4","view":{
+ "id":"view:detail","name":"Corner detail",
+ "model":{"source_path":"parts/plate.ocad.d","source_doc":"doc:plate"},
+ "projection":"front","scale":1.0,"origin_on_sheet_m":[0.15,0.10],
+ "detail":{"parent_view_id":"view:front","region_min_m":[0.06,0.04],
+           "region_max_m":[0.09,0.07],"magnification":2.0}
+}}
+```
+
+The parent must be an ordinary view on the same sheet with the same model and
+orthographic projection. Crop bounds are projected model metres (not sheet
+coordinates), each extent >1e-9 m; magnification >1. Keep child `scale` equal to
+parent scale × magnification. In this example parent scale 0.5 yields child scale
+1.0. The child sheet origin centers the crop. SVG marks the region on the parent
+and prints the derived magnification. No segment/viewport caches may be authored.
+
+Verified regeneration provides `drawing_details` with parent/view IDs, fresh
+segment count, scale and magnification. Missing parent, mismatched source or
+projection/scale, empty crop, nested or section parents fail before persistence.
+Parent scale changes require coordinated child scale changes in the same patch;
+existing `set_drawing_view_scale` supports this. Removing a still-referenced parent
+fails; remove children first. For a crop/magnification edit, remove/add the child
+with a fresh stable ID. Dimensions on detail geometry need separate semantic refs
+and are refused in this initial capability.
+
+See `examples/agent/create_detail_plate_patch.json`,
+`examples/agent/create_detail_drawing_patch.json` and self-contained
+`examples/detail_plate_drawing.ocad.d`. Eval `drawing_bounded_detail` verifies
+fresh clipping evidence and authored bounds/parent/scale.
