@@ -1,0 +1,88 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:dxf",
+      "name": "Imported DXF sketch",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:dxf_dxf_p0",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:dxf_dxf_p1",
+          "construction": false,
+          "x": 0.08,
+          "y": 0.0
+        },
+        {
+          "type": "line",
+          "id": "ent:dxf_dxf_e0",
+          "construction": false,
+          "start": "ent:dxf_dxf_p0",
+          "end": "ent:dxf_dxf_p1"
+        },
+        {
+          "type": "point",
+          "id": "ent:dxf_dxf_p2",
+          "construction": false,
+          "x": 0.08,
+          "y": 0.060000000000000005
+        },
+        {
+          "type": "line",
+          "id": "ent:dxf_dxf_e1",
+          "construction": false,
+          "start": "ent:dxf_dxf_p1",
+          "end": "ent:dxf_dxf_p2"
+        },
+        {
+          "type": "point",
+          "id": "ent:dxf_dxf_p3",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.060000000000000005
+        },
+        {
+          "type": "line",
+          "id": "ent:dxf_dxf_e2",
+          "construction": false,
+          "start": "ent:dxf_dxf_p2",
+          "end": "ent:dxf_dxf_p3"
+        },
+        {
+          "type": "line",
+          "id": "ent:dxf_dxf_e3",
+          "construction": false,
+          "start": "ent:dxf_dxf_p3",
+          "end": "ent:dxf_dxf_p0"
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:dxf_dxf_e0",
+            "ent:dxf_dxf_e1",
+            "ent:dxf_dxf_e2",
+            "ent:dxf_dxf_e3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:dxf/profile:outer"
+        }
+      ]
+    }
+  ]
+}

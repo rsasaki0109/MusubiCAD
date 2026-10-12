@@ -1,0 +1,59 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_dxf",
+      "feature:extrude_dxf"
+    ],
+    "features": {
+      "feature:sketch_dxf": {
+        "id": "feature:sketch_dxf",
+        "name": "Imported DXF sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude_dxf": {
+        "id": "feature:extrude_dxf",
+        "name": "DXF extrusion",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_dxf",
+        "target": "feature:extrude_dxf",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:extrude_dxf",
+      "name": "DXF extrusion",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_dxf",
+        "profile_ref": "sketch:dxf/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_dxf",
+      "name": "Imported DXF sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:dxf"
+      },
+      "suppressed": false
+    }
+  ]
+}

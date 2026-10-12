@@ -4,6 +4,7 @@ mod bom;
 mod commands;
 mod diff;
 mod drawing;
+mod dxf_import;
 mod export;
 mod git_driver;
 mod git_workflow;

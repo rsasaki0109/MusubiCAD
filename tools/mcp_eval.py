@@ -350,6 +350,27 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_sketch_geometry" in task:
+        sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
+        by_id = {s["id"]: s for s in sketches}
+        for desired in task["expected_sketch_geometry"]:
+            sketch = by_id.get(desired["id"])
+            if sketch is None:
+                problems.append("required imported sketch is absent")
+                continue
+            entities = sketch["entities"]
+            counts = {kind: sum(e["type"] == kind for e in entities) for kind in ("point", "line", "circle", "arc")}
+            if counts != desired["counts"]:
+                problems.append("imported sketch primitive counts differ")
+            try:
+                points = [[float(e["x"]), float(e["y"])] for e in entities if e["type"] == "point"]
+                if not points or not all(math.isfinite(v) for p in points for v in p):
+                    raise ValueError("invalid point coordinates")
+                bounds = [[min(p[a] for p in points) for a in (0,1)], [max(p[a] for p in points) for a in (0,1)]]
+                if any(abs(a-b) > 1e-9 for actual, expected in zip(bounds, desired["bounds_m"]) for a,b in zip(actual,expected)):
+                    problems.append("imported sketch SI bounds differ")
+            except (ValueError, TypeError, KeyError):
+                problems.append("imported sketch coordinates are not finite SI literals")
     if "expected_bom_name" in task:
         problems.extend(bom_artifact_problems(document.parent / task["expected_bom_name"], task))
     if "expected_dxf_name" in task:
@@ -621,6 +642,14 @@ def self_test() -> None:
     assert check(dxf_task, title_sheet, "") == (True, [])
     for key, bad in [("expected_dxf_name", "missing.dxf"), ("expected_dxf_units", 1), ("expected_dxf_paper_mm", [297,210]), ("expected_dxf_text", ["missing label"]), ("expected_dxf_model_bounds_mm", [[50,100],[91,130]])]:
         assert not check({**dxf_task, key: bad}, title_sheet, "")[0]
+    dxf_imported = ROOT / "examples" / "dxf_import_plate.ocad.d"
+    sketch_task = {"expected_sketch_geometry": [{"id": "sketch:dxf", "counts": {"point":4,"line":4,"circle":0,"arc":0}, "bounds_m": [[0,0],[0.08,0.06]]}]}
+    assert check(sketch_task, dxf_imported, "") == (True, [])
+    wrong_sketch = json.loads(json.dumps(sketch_task))
+    wrong_sketch["expected_sketch_geometry"][0]["bounds_m"][1][0] = 80
+    assert not check(wrong_sketch, dxf_imported, "")[0]
+    wrong_sketch["expected_sketch_geometry"][0]["id"] = "sketch:missing"
+    assert not check(wrong_sketch, dxf_imported, "")[0]
     bom_sheet = ROOT / "examples" / "bom_nested_assembly.ocad.d"
     bom_task = {"expected_bom_name": "bom_nested_assembly.bom.json", "expected_bom_summary": {"assembly_doc": "doc:bom_nested", "declared_component_count": 2, "top_level_instance_count": 3, "leaf_part_count": 1, "leaf_instance_count": 7}, "expected_bom_rows": [{"source_doc": "doc:title_plate", "source_path": "parts/plate.ocad.d", "quantity": 7}]}
     assert check(bom_task, bom_sheet, "") == (True, [])

@@ -62,6 +62,22 @@ pub fn run() -> Result<()> {
         Some("merge") => git_workflow::merge(args.collect()),
         Some("rebase-patch") => git_workflow::rebase(args.collect()),
         Some("import-step") => crate::import::cmd_import_step(args.collect()),
+        Some("import-dxf") => crate::dxf_import::cmd_import_dxf(args.collect()),
+        Some("inspect-dxf") => {
+            let path = args.next().ok_or_else(|| {
+                opencad_core::OpenCadError::validation("usage: musubicad inspect-dxf <file.dxf>")
+            })?;
+            if args.next().is_some() {
+                return Err(opencad_core::OpenCadError::validation(
+                    "usage: musubicad inspect-dxf <file.dxf>",
+                ));
+            }
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&crate::dxf_import::inspect_dxf_file(&path)?)?
+            );
+            Ok(())
+        }
         Some("merge-driver") => git_workflow::merge_driver(args.collect()),
         Some("conflicts") => git_workflow::conflicts(args.collect()),
         Some("check") => policy_check::check(args.collect()),
@@ -729,6 +745,8 @@ COMMANDS:
     params      List document parameters
     regen       Regenerate features through the geometry kernel
     bom         Count verified assembly parts; optionally export JSON or CSV
+    inspect-dxf Inspect DXF units and layer/entity counts
+    import-dxf  Import selected planar DXF layers as a verified sketch
     export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF or an HTML joint viewer
     mesh        Tessellate and summarize viewport scene data
     pick        Query viewport selection at a pixel coordinate

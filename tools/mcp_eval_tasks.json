@@ -478,6 +478,35 @@
           "quantity": 10
         }
       ]
+    },
+    {
+      "id": "dxf_import_copy_sketch",
+      "source": "examples/dxf_import_plate.ocad.d",
+      "document": "dxf_copy.ocad.d",
+      "prompt": "In {document}, inspect {root}/examples/import/plate_outline.dxf, then import only OUTLINE as new sketch:dxf_copy / feature:sketch_dxf_copy through import_dxf. Preserve the existing extrusion, sketch and geometry. Verify dry-run first, apply with returned history and regenerate. The imported outline is 80 by 60 mm in SI coordinates; do not import LABELS text or rescale from destination display units.",
+      "expected_volume_mm3": 28800.0,
+      "required_parameters": [],
+      "expected_sketch_geometry": [
+        {
+          "id": "sketch:dxf_copy",
+          "counts": {
+            "point": 4,
+            "line": 4,
+            "circle": 0,
+            "arc": 0
+          },
+          "bounds_m": [
+            [
+              0,
+              0
+            ],
+            [
+              0.08,
+              0.06
+            ]
+          ]
+        }
+      ]
     }
   ]
 }

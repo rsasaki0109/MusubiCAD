@@ -421,3 +421,19 @@ output, preserving source and previous output. Correct sources with DesignPatch,
 verify and query again. No inferred material/cost or exclusion rule is supported.
 Example: `bom_nested_assembly` totals seven plates (2×3+1); eval
 `assembly_bom_add_subassembly` checks ten. See ADR-047 and the authoring guide.
+
+### Explicit-unit DXF sketch import
+
+Use `inspect_dxf` to inspect `dxf_path` units and layer/entity counts, then
+`import_dxf` with `path`, `dxf_path`, new `sketch_id`/`feature_id` and explicit
+`layers`. Verify with `dry_run:true`, apply with false and retain returned opaque
+history for undo/redo. Missing units require explicit `source_unit` (m/mm/cm/in);
+it must agree with declared units. Destination display units never rescale input.
+Planar LINE/CIRCLE/ARC/straight LWPOLYLINE become authored SI sketch geometry,
+with analytic curves and 1 nm point identity. Selected unsupported geometry,
+nonplanar/non-default OCS, bulges/widths, ambiguous data or units refuse changes.
+Select geometry layers deliberately; text/styles/blocks/splines/ellipses are not
+silently converted. Drawing DXF coordinates already include view scale. Bare
+sketches can be staged, then consumed through ordinary validated features.
+Example: `import/plate_outline.dxf` and `dxf_import_plate.ocad.d`; ADR-048 and eval
+`dxf_import_copy_sketch`. CLI: `inspect-dxf` / `import-dxf`; Agent equivalents exist.
