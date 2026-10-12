@@ -1,3 +1,7 @@
+// Coupled followers use mandatory guarded joint wire records; current decoding
+// validates the exact association, old motion enums reject the new tag.
+// MCAD-P13-007 / ADR-056: absent couplings default empty and serialize absent.
+// No relation, phase, motion or coordinate units inferred; derived poses transient.
 // MCAD-P13-006 / ADR-055: absent exploded_views default to empty, omitted
 // on serialization. No offsets inferred; old/new coordinates stay mechanical.
 // MCAD-P12-005: absent sheet.title_block stays None; no inferred metadata.

@@ -537,3 +537,22 @@ The default view, physical interference, BOM and URDF stay mechanical. No
 exploded drawing/STEP/STL/GLB output or automatic spacing is admitted yet.
 See ADR-055 and `examples/agent/add_arm_exploded_view_patch.json`. An example
 already containing that ID needs `set_exploded_view`, not a duplicate add.
+
+### Semantic gear and rack relationships
+
+Use DesignPatch add/set/remove_joint_coupling. Gear has signed dimensionless
+`ratio`; rack has signed SI `metres_per_radian`. Reference exact declared
+`driver_joint` and `follower_joint` IDs; coordinates are displacements from
+authored zero, with no inferred phase or tooth contact. At most 256, one owner
+per follower, active known joints, compatible types/ranges and no cycles.
+No clamping or implicit rebind. Remove dependent relationships before joints.
+After dry-run/apply call `inspect_joint_pose` with
+`positions:{"joint:shoulder":"90deg"}`. Use unit-bearing strings; read derived
+`position_rad`/`position_m`. -0.5 ratio yields -45deg; never edit follower placement.
+Followers are derived in backend pose/animation/reach/workspace. Collision
+sampling checks complete posed pairs for coupled sources. Gear URDF uses mimic;
+rack URDF and coupled HTML export refuse. Mock exact imported-solid intersections
+are unsupported, so native OCCT supplies true collision evidence.
+Coupled joint wire guards are mandatory for forward-reader refusal; preserve
+`type:coupled`, association ID and underlying motion. Use the backend, not manual
+JSON changes. Example/ADR-056 and the authoring guide define exact scope.

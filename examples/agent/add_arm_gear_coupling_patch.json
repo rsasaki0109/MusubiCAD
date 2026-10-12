@@ -1,0 +1,14 @@
+{
+  "operations": [
+    {
+      "type": "add_joint_coupling",
+      "coupling": {
+        "type": "gear",
+        "id": "coupling:gear",
+        "driver_joint": "joint:shoulder",
+        "follower_joint": "joint:elbow",
+        "ratio": -0.5
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:coupled_arm",
+    "name": "Coupled arm",
+    "units": "mm",
+    "kind": "assembly",
+    "created_with": "OpenCAD 0.1.1",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

@@ -311,6 +311,35 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_joint_couplings" in task:
+        try:
+            assembly = json.loads((document / "graph" / "assemblies.json").read_text(encoding="utf-8"))["assembly"]
+            couplings = assembly.get("couplings", [])
+            if sorted(couplings, key=lambda c: c["id"]) != sorted(task["expected_joint_couplings"], key=lambda c: c["id"]):
+                problems.append("joint coupling identities or coefficients differ from expected source")
+            placements = {i["id"]: i["placement"] for i in assembly.get("instances", [])}
+            if placements != task.get("expected_mechanical_placements", placements):
+                problems.append("coupling edit changed authored mechanical placements")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            problems.append("joint coupling source is absent or malformed")
+    if "expected_joint_pose" in task and musubicad is not None:
+        expected = task["expected_joint_pose"]
+        command = [str(musubicad), "inspect-joint-pose", str(document)]
+        command.extend(f"{joint}={value}" for joint, value in sorted(expected["positions"].items()))
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+            if result.returncode:
+                problems.append("joint pose backend refused expected input")
+            else:
+                positions = {p["joint_id"]: p for p in json.loads(result.stdout)["positions"]}
+                for desired in expected["derived"]:
+                    actual = positions.get(desired["joint_id"], {})
+                    key = "position_m" if "position_m" in desired else "position_rad"
+                    value = actual.get(key)
+                    if actual.get("derived") is not True or type(value) not in (int, float) or not math.isfinite(value) or abs(value - desired[key]) > 1e-9:
+                        problems.append(f"derived joint {desired['joint_id']} differs from analytic SI position")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.TimeoutExpired):
+            problems.append("joint pose response is absent or malformed")
     if "expected_exploded_views" in task:
         try:
             assembly = json.loads((document / "graph" / "assemblies.json").read_text(encoding="utf-8"))["assembly"]
@@ -824,6 +853,12 @@ def self_test() -> None:
     assert check(exploded_task, arm, "") == (True, [])
     assert not check({**exploded_task, "expected_exploded_views": [{"id": "view:exploded", "name": "Wrong", "offsets": []}]}, arm, "")[0]
     assert not check({**exploded_task, "expected_mechanical_placements": {}}, arm, "")[0]
+    coupled = ROOT / "examples" / "coupled_arm.ocad.d"
+    source = json.loads((coupled / "graph" / "assemblies.json").read_text())["assembly"]
+    coupling_task = {"expected_joint_couplings": source["couplings"], "expected_mechanical_placements": {i["id"]: i["placement"] for i in source["instances"]}}
+    assert check(coupling_task, coupled, "") == (True, [])
+    assert not check({**coupling_task, "expected_joint_couplings": []}, coupled, "")[0]
+    assert not check({**coupling_task, "expected_mechanical_placements": {}}, coupled, "")[0]
     print("self-test passed")
 
 

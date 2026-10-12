@@ -905,3 +905,60 @@ an already configured example; edit it with `set_exploded_view` instead.
 Presentation tessellations use existing f32 SI coordinates; tests compare bounds
 within 1 µm and volume within 1e-10 m³. Analytic Mock/OCCT evidence uses a closed
 80×60×6 mm triangle box (2.88e-5 m³), avoiding legacy synthetic Mock extrusions.
+
+## Coupled gear/rack joints (MCAD-P13-007 / ADR-056)
+
+Author `add_joint_coupling`, `set_joint_coupling` or `remove_joint_coupling`
+through DesignPatch, dry-run and verified apply/history. Bind **declared joint
+IDs**, not guessed instance names. Example operation:
+
+```json
+{"type":"add_joint_coupling","coupling":{"type":"gear","id":"coupling:gear",
+ "driver_joint":"joint:shoulder","follower_joint":"joint:elbow","ratio":-0.5}}
+```
+
+Gear displacement is `follower_rad = ratio * driver_rad`; signed ratio is
+explicitly dimensionless. Rack displacement is
+`follower_m = metres_per_radian * driver_rad`, with signed SI m/rad coefficient.
+Both refer to authored zero; there is no inferred phase or tooth contact.
+Drivers must rotate; gear followers rotate, rack followers translate. One owner
+per follower, known active source joints, acyclic dependencies and at most 256
+relations are required. The entire declared finite driver range must map within
+the follower range, and finite ranges must contain zero. Unlimited drivers cannot
+feed finite followers. Continuous/continuous gear pairs use unwrapped radians.
+Absolute ratios must exceed 1e-12, rack coefficients 1e-9 m/rad; both are at most
+1e6 in their respective units. Non-finite values, wrong types, dangling references,
+cycles, duplicate owners and explicit follower conflicts refuse atomically.
+
+MCP `inspect_joint_pose`, Agent `opencad.inspect_joint_pose`, or
+`musubicad inspect-joint-pose <assembly> joint:shoulder=90deg` inspect the same
+read-only backend. Request `positions` is a map from exact `joint:` IDs to strings
+with `deg`, `rad`, `mm` or `m`. Response positions use explicit `position_rad` or
+`position_m`, `derived`, joint/instance IDs and SI world placements. Bare numbers,
+mismatched units, unknown/non-moving joints and out-of-range input refuse.
+A -0.5 gear ratio at shoulder 90deg yields derived elbow -45deg; editing the ratio
+to -0.25 yields -22.5deg. Do not move source placements to fake the result.
+
+Followers are excluded from independent animation/reach/workspace controls;
+shared pose evaluation derives them. Motion interference reuses the existing
+sample grid for independent drivers and checks all posed body pairs for coupled
+assemblies, including collisions within two moving subtrees. It is sampled
+motion evidence, not continuous/all-combinations clearance. The legacy assembly
+DOF field remains a mate-solver estimate; derived-coordinate flags identify which
+joint coordinates are independently controlled.
+
+Gear URDF emits named zero-offset mimic relationships. Rack URDF and coupled
+HTML viewer export refuse before producing artifacts; cross-unit URDF semantics
+and JS coupling controls are deferred. Native OCCT executes exact coupled solid
+intersections. Mock imported-solid placements have true dimensions/volume, but
+exact imported-solid Boolean intersection and multi-solid compounds still refuse.
+No fake Mock collision result is accepted. Example: `coupled_arm.ocad.d` with
+`examples/agent/add_arm_gear_coupling_patch.json`. The example already contains
+that association; use set instead of adding its ID again.
+
+Wire compatibility: coupled followers serialize as `type:"coupled"` with their
+owning `coupling_id` and nested physical `motion`. Historical motion enums reject
+that tag instead of silently losing the relationship. Current decoding validates
+one-to-one guards and returns normal physical joints plus source couplings.
+Absent collections remain empty; legacy joint bytes retain their meaning. Do not
+strip the wire guard or add a relationship by editing JSON directly.

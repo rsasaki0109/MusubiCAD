@@ -9,6 +9,10 @@ pub use bom::{
 pub mod exploded;
 pub use exploded::{exploded_meshes, validate_exploded_views, ExplodedOffset, ExplodedView};
 
+pub mod coupling;
+mod wire;
+pub use coupling::{ordered_couplings, JointCoupling, ResolvedCoupling};
+
 pub mod component;
 pub mod connector;
 pub mod dof;

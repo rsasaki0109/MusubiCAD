@@ -73,7 +73,7 @@ pub struct MotionInterferencePose {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MotionInterferenceReport {
     pub samples_per_joint: u32,
-    /// Movable joints swept.
+    /// Independent movable joints swept; coupled followers are derived.
     pub joints: usize,
     /// Poses checked (joints × samples).
     pub poses_checked: usize,
@@ -181,6 +181,9 @@ pub fn sample_motion_interference<K: GeometryKernel>(
     };
     for link in &tree.links {
         let Some(joint) = &link.joint else { continue };
+        if tree.is_follower(link.instance.as_str()) {
+            continue;
+        }
         let Some(positions) = joint_sample_positions(&joint.kind, samples_per_joint) else {
             continue;
         };
@@ -252,6 +255,37 @@ fn pose_pairs<K: GeometryKernel>(
     rest_pairs: &BTreeSet<[String; 2]>,
     tolerance: AssemblyInterferenceTolerance,
 ) -> Result<Vec<[String; 2]>> {
+    if !tree.couplings.is_empty() {
+        // Coupled subtrees move relative to each other. Re-evaluate all pairs;
+        // retaining internal-union rest results would miss real collisions.
+        let positions = BTreeMap::from([(pose.joint_instance.clone(), pose.position)]);
+        let mut posed = BTreeMap::new();
+        for (instance, world) in tree.pose(&positions)? {
+            let key = instance.as_str();
+            let body = bodies
+                .get(key)
+                .ok_or_else(|| OpenCadError::validation("coupled motion missing body"))?;
+            let inverse = inverse_placements
+                .get(key)
+                .ok_or_else(|| OpenCadError::validation("coupled motion missing placement"))?;
+            posed.insert(
+                key.to_owned(),
+                kernel.transform_body((*body).clone(), world.compose(*inverse))?,
+            );
+        }
+        let mut pairs = Vec::new();
+        let ids: Vec<_> = posed.keys().collect();
+        for (index, first) in ids.iter().enumerate() {
+            for second in &ids[index + 1..] {
+                if interference_volume(kernel, &posed[*first], &posed[*second], tolerance)?
+                    .is_some()
+                {
+                    pairs.push([(*first).clone(), (*second).clone()]);
+                }
+            }
+        }
+        return Ok(pairs);
+    }
     let straddles = |pair: &[String; 2]| moving.contains(&pair[0]) != moving.contains(&pair[1]);
     let mut pairs: BTreeSet<[String; 2]> = rest_pairs
         .iter()

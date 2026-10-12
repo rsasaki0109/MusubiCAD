@@ -133,3 +133,24 @@ A nested assembly is one compound; internal child paths are refused. Generated
 pattern instances, rotations, spacing algorithms and exploded drawing views are
 outside this admission. Rendering coordinates retain existing f32 precision;
 never use presentation mesh bounds as physical interference evidence.
+
+## Coupled coordinates (ADR-056)
+
+The graph owns explicit gear/rack relations between declared joint IDs.
+`ordered_couplings` validates finite typed coefficients, unique follower owners,
+active references, full declared range compatibility and bounded DAG order.
+`kinematic_tree` binds each source joint to exactly one movable child through its
+mate. Shared `resolve_positions`/`pose` derives followers, rejects explicit
+conflicts and never writes source placements. Independent animation and numerical
+reach/workspace coordinates exclude followers. Coupled motion checks every posed
+body pair; the uncoupled single-subtree optimization remains unchanged.
+
+The private assembly wire codec emits a coupled follower tag, association ID and
+nested physical motion. Old enums reject that tag; current decoding validates
+one-to-one ownership before recovering the logical model. Legacy wire order and
+source meanings are unchanged. Gear URDF emits actual exported-name mimic tags;
+rack URDF and coupled HTML refuse before artifacts. The SI pose inspector shares
+CLI/Agent/MCP behavior. Native exact intersection and Mock imported-solid refusal
+are explicit; neither broad-phase overlap nor generic synthetic Mock solids prove
+true coupled collisions. Cost is quadratic per coupled pose; sampling retains
+the existing independent-driver grid and is not continuous clearance evidence.

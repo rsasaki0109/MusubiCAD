@@ -138,6 +138,12 @@ fn tools() -> Vec<Tool> {
             schema: || json!({"type":"object","properties":{"path":{"type":"string"},"stl_path":{"type":"string"},"feature_id":{"type":"string"},"source_unit":{"enum":["m","mm","cm","in"]},"name":{"type":"string"},"transform":{"type":"object"},"dry_run":{"type":"boolean"},"history":{"type":"object"}},"required":["path","stl_path","feature_id","source_unit"],"additionalProperties":false}),
         },
         Tool {
+            name: "inspect_joint_pose",
+            description: "Inspect mechanical assembly poses using exact declared joint IDs and explicit-unit coordinates (90deg, 0.5rad, 20mm, 0.02m). Derive coupled gear/rack followers and refuse conflicts, limits or mismatched units. Returns SI positions and world placements without writing.",
+            handler: Handler::Agent("opencad.inspect_joint_pose"),
+            schema: || json!({"type":"object","properties":{"path":{"type":"string"},"positions":{"type":"object","additionalProperties":{"type":"string"}}},"required":["path"],"additionalProperties":false}),
+        },
+        Tool {
             name: "inspect_projected_sketch",
             description: "Resolve and inspect an associated projected_sketch feature from its semantic source bindings. Returns derived SI coordinates and bindings without writing the document. Generated coordinates are not authored source; edit upstream geometry or replace the projection definition through verified DesignPatch/history.",
             handler: Handler::Agent("opencad.inspect_projected_sketch"),
@@ -657,7 +663,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 25);
+        assert_eq!(tools.len(), 26);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

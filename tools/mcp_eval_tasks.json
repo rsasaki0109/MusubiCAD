@@ -861,6 +861,139 @@
         }
       },
       "source": "examples/robot_arm_assembly.ocad.d"
+    },
+    {
+      "id": "gear_coupled_pose",
+      "source": "examples/coupled_arm.ocad.d",
+      "document": "coupled.ocad.d",
+      "prompt": "Open the supplied coupled arm at {document}. Through verified DesignPatch set coupling:gear ratio to -0.25, preserving driver joint:shoulder and follower joint:elbow. Preserve all authored placements, mates, physical joint motion and other source data. Dry-run and apply. Use inspect_joint_pose with joint:shoulder=90deg; the derived elbow must be -22.5deg. Do not edit follower placement to approximate the result.",
+      "expected_joint_couplings": [
+        {
+          "type": "gear",
+          "id": "coupling:gear",
+          "driver_joint": "joint:shoulder",
+          "follower_joint": "joint:elbow",
+          "ratio": -0.25
+        }
+      ],
+      "expected_mechanical_placements": {
+        "instance:base": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "instance:forearm": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.16,
+              0.044
+            ],
+            "rotation": [
+              [
+                0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                -0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "instance:gripper": {
+          "transform": {
+            "translation_m": [
+              0.07778174593052023,
+              0.23778174593052023,
+              0.055999999999999994
+            ],
+            "rotation": [
+              [
+                0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                -0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "instance:upper_arm": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.03
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        }
+      },
+      "expected_joint_pose": {
+        "positions": {
+          "joint:shoulder": "90deg"
+        },
+        "derived": [
+          {
+            "joint_id": "joint:elbow",
+            "position_rad": -0.39269908169872414,
+            "derived": true
+          }
+        ]
+      }
     }
   ]
 }

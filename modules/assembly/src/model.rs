@@ -14,6 +14,10 @@ use crate::pattern::{validate_patterns, AssemblyPattern};
 
 /// Assembly design graph: child part references and placed instances.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(
+    try_from = "crate::wire::AssemblyWire",
+    into = "crate::wire::AssemblyWire"
+)]
 pub struct AssemblyModel {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub components: Vec<Component>,
@@ -31,6 +35,8 @@ pub struct AssemblyModel {
     /// Explicit presentation configurations; never mechanical placements.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub exploded_views: Vec<crate::ExplodedView>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub couplings: Vec<crate::JointCoupling>,
 }
 
 impl AssemblyModel {
@@ -53,6 +59,8 @@ impl AssemblyModel {
         self.patterns
             .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         self.joints.sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
+        self.couplings
+            .sort_by(|a, b| a.id().as_str().cmp(b.id().as_str()));
         self.exploded_views
             .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         for view in &mut self.exploded_views {
@@ -89,6 +97,7 @@ impl AssemblyModel {
         validate_patterns(self)?;
         validate_joints(&self.joints, &self.mates)?;
         crate::validate_exploded_views(self)?;
+        crate::ordered_couplings(self)?;
         Ok(())
     }
 
@@ -132,6 +141,7 @@ mod tests {
             patterns: Vec::new(),
             joints: Vec::new(),
             exploded_views: Vec::new(),
+            couplings: Vec::new(),
         };
         let json = serde_json::to_string(&model).expect("serialize");
         let restored: AssemblyModel = serde_json::from_str(&json).expect("deserialize");
@@ -154,6 +164,7 @@ mod tests {
             patterns: Vec::new(),
             joints: Vec::new(),
             exploded_views: Vec::new(),
+            couplings: Vec::new(),
         };
         assert!(model.validate_no_self_reference(&assembly_id).is_err());
         Ok(())

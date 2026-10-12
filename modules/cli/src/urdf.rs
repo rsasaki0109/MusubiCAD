@@ -36,7 +36,29 @@ pub fn export_urdf(input: &str, output: &str) -> Result<ExportSummary> {
     let assembly = doc.assembly.as_ref().ok_or_else(|| {
         OpenCadError::validation("URDF export needs an assembly document with mated instances")
     })?;
+    if assembly.couplings.iter().any(|c| c.follower_is_linear()) {
+        return Err(OpenCadError::validation(
+            "rack coupling URDF export is not supported",
+        ));
+    }
     let tree = kinematic_tree(assembly)?;
+    if !tree.couplings.is_empty() {
+        let mut names = std::collections::BTreeSet::new();
+        for link in &tree.links {
+            if let Some(joint) = &link.joint {
+                let name = joint
+                    .mate
+                    .as_ref()
+                    .map(|m| short_name(m.as_str()))
+                    .unwrap_or_else(|| format!("{}_fixed", short_name(link.instance.as_str())));
+                if !names.insert(name) {
+                    return Err(OpenCadError::validation(
+                        "coupled URDF joint names are ambiguous",
+                    ));
+                }
+            }
+        }
+    }
     let robot = short_name(doc.metadata.id.as_str());
     let output_path = Path::new(output);
     let directory = output_path
@@ -103,7 +125,7 @@ pub fn export_urdf(input: &str, output: &str) -> Result<ExportSummary> {
         write_link(&mut xml, link, body);
     }
     for link in &tree.links {
-        write_joint(&mut xml, link);
+        write_joint(&mut xml, link, &tree);
     }
     let _ = writeln!(xml, "</robot>");
     fs::write(output_path, &xml)
@@ -206,7 +228,7 @@ fn write_link(xml: &mut String, link: &KinematicLink, body: &ComponentBody) {
     let _ = writeln!(xml, "  </link>");
 }
 
-fn write_joint(xml: &mut String, link: &KinematicLink) {
+fn write_joint(xml: &mut String, link: &KinematicLink, tree: &opencad_assembly::KinematicTree) {
     let Some(joint) = &link.joint else {
         return;
     };
@@ -268,6 +290,27 @@ fn write_joint(xml: &mut String, link: &KinematicLink) {
             );
         }
         JointKind::Fixed => {}
+    }
+    if let Some(coupling) = tree
+        .couplings
+        .iter()
+        .find(|c| c.follower_instance == link.instance.as_str())
+    {
+        // Tree admission guarantees one active movable driver, with a mate.
+        if let Some(driver) = tree
+            .links
+            .iter()
+            .find(|l| l.instance.as_str() == coupling.driver_instance)
+            .and_then(|l| l.joint.as_ref())
+            .and_then(|j| j.mate.as_ref())
+        {
+            let _ = writeln!(
+                xml,
+                "    <mimic joint=\"{}\" multiplier=\"{}\" offset=\"0\"/>",
+                xml_escape(&short_name(driver.as_str())),
+                number(coupling.multiplier)
+            );
+        }
     }
     let _ = writeln!(xml, "  </joint>");
 }

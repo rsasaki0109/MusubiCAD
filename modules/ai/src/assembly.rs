@@ -257,6 +257,38 @@ pub fn apply_assembly_patch(
     let mut removed_connectors = Vec::new();
     for operation in operations {
         match operation {
+            PatchOperation::AddJointCoupling { coupling } => {
+                check_new_id(
+                    coupling.id().as_str(),
+                    "coupling",
+                    model.couplings.iter().any(|c| c.id() == coupling.id()),
+                    &removed,
+                    "joint coupling",
+                )?;
+                model.couplings.push(coupling.clone());
+            }
+            PatchOperation::SetJointCoupling { coupling } => {
+                let existing = model
+                    .couplings
+                    .iter_mut()
+                    .find(|c| c.id() == coupling.id())
+                    .ok_or_else(|| {
+                        OpenCadError::validation(format!(
+                            "unknown joint coupling '{}'",
+                            coupling.id()
+                        ))
+                    })?;
+                *existing = coupling.clone();
+            }
+            PatchOperation::RemoveJointCoupling { id } => {
+                remove_by_id(
+                    &mut model.couplings,
+                    id,
+                    |c| c.id().as_str(),
+                    "joint coupling",
+                    &mut removed,
+                )?;
+            }
             PatchOperation::AddExplodedView { view } => {
                 check_new_id(
                     view.id.as_str(),
@@ -480,6 +512,10 @@ pub fn apply_assembly_patch(
     validate_patterns(model)?;
     validate_joints(&model.joints, &model.mates)?;
     opencad_assembly::validate_exploded_views(model)?;
+    opencad_assembly::ordered_couplings(model)?;
+    if !model.couplings.is_empty() {
+        opencad_assembly::kinematic_tree(model)?;
+    }
     Ok(())
 }
 
@@ -705,6 +741,7 @@ mod tests {
             patterns: Vec::new(),
             joints: Vec::new(),
             exploded_views: Vec::new(),
+            couplings: Vec::new(),
         })
     }
 

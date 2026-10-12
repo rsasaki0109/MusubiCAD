@@ -255,7 +255,7 @@ pub(crate) fn movable_joints(model: &AssemblyModel, tree: &KinematicTree) -> Vec
         .iter()
         .filter_map(|link| {
             let joint = link.joint.as_ref()?;
-            if !joint.kind.is_movable() {
+            if !joint.kind.is_movable() || tree.is_follower(link.instance.as_str()) {
                 return None;
             }
             let mate = joint.mate.as_ref().map(|mate| mate.as_str().to_string());

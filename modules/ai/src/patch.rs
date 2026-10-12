@@ -260,6 +260,16 @@ pub enum PatchOperation {
     RemoveMate {
         id: String,
     },
+    /// Add a semantic gear/rack joint relationship (ADR-056).
+    AddJointCoupling {
+        coupling: opencad_assembly::JointCoupling,
+    },
+    SetJointCoupling {
+        coupling: opencad_assembly::JointCoupling,
+    },
+    RemoveJointCoupling {
+        id: String,
+    },
     /// Add an explicit assembly presentation (ADR-055).
     AddExplodedView {
         view: opencad_assembly::ExplodedView,
@@ -379,7 +389,10 @@ impl PatchOperation {
     pub fn is_assembly_structural(&self) -> bool {
         matches!(
             self,
-            Self::AddExplodedView { .. }
+            Self::AddJointCoupling { .. }
+                | Self::SetJointCoupling { .. }
+                | Self::RemoveJointCoupling { .. }
+                | Self::AddExplodedView { .. }
                 | Self::SetExplodedView { .. }
                 | Self::RemoveExplodedView { .. }
                 | Self::AddComponent { .. }

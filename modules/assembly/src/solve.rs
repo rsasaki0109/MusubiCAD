@@ -208,6 +208,7 @@ mod tests {
             patterns: Vec::new(),
             joints: Vec::new(),
             exploded_views: Vec::new(),
+            couplings: Vec::new(),
         })
     }
 
