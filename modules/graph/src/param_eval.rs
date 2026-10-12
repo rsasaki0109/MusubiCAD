@@ -53,7 +53,7 @@ pub fn parameter_names_in_expr(expr: &str) -> Vec<String> {
     names
 }
 
-fn is_angle_parameter(name: &str) -> bool {
+pub fn is_angle_parameter(name: &str) -> bool {
     name.ends_with("_rad") || name.ends_with("_deg") || name.contains("angle")
 }
 
@@ -578,6 +578,68 @@ pub fn revolve_parameters(angle_expr: &str) -> ParamGraph {
         ))
         .expect("revolve_angle");
     graph
+}
+
+/// Strict unit-bearing evaluation for new analytic ellipse source definitions.
+/// Existing legacy evaluators retain their wire compatibility.
+pub fn eval_length_expr_strict(expr: &str, scope: &IndexMap<String, f64>) -> Result<f64> {
+    let value = eval_expr(expr, scope, |v, u| {
+        if matches!(u, "" | "m" | "mm" | "cm" | "in") {
+            convert_length(v, u)
+        } else {
+            f64::NAN
+        }
+    })?;
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(OpenCadError::InvalidExpression(format!(
+            "length unit mismatch: {expr}"
+        )))
+    }
+}
+pub fn eval_angle_expr_strict(expr: &str, scope: &IndexMap<String, f64>) -> Result<f64> {
+    let value = eval_expr(expr, scope, |v, u| {
+        if matches!(
+            u,
+            "" | "rad" | "radian" | "radians" | "deg" | "degree" | "degrees"
+        ) {
+            convert_angle(v, u)
+        } else {
+            f64::NAN
+        }
+    })?;
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(OpenCadError::InvalidExpression(format!(
+            "angle unit mismatch: {expr}"
+        )))
+    }
+}
+/// Evaluate a part containing ellipses with strict declared literal units.
+/// Angle parameter naming follows the existing `_rad`/`_deg`/`angle` contract.
+pub fn evaluate_param_graph_strict(graph: &ParamGraph) -> Result<IndexMap<String, f64>> {
+    let mut scope = IndexMap::new();
+    for id in graph.evaluation_order()? {
+        let entry = graph
+            .get(&id)
+            .ok_or_else(|| OpenCadError::not_found(format!("parameter '{id}'")))?;
+        for name in parameter_names_in_expr(&entry.expr) {
+            if let Some(reference) = graph.find_by_name(&name) {
+                if is_angle_parameter(&entry.name) != is_angle_parameter(&reference.name) {
+                    return Err(OpenCadError::InvalidExpression(format!("ellipse part requires same-kind length/angle parameter references: {} -> {name}",entry.name)));
+                }
+            }
+        }
+        let value = if is_angle_parameter(&entry.name) {
+            eval_angle_expr_strict(&entry.expr, &scope)?
+        } else {
+            eval_length_expr_strict(&entry.expr, &scope)?
+        };
+        scope.insert(entry.name.clone(), value);
+    }
+    Ok(scope)
 }
 
 #[cfg(test)]

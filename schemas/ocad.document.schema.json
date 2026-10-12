@@ -85,6 +85,69 @@
     }
   },
   "$defs": {
+    "ellipse": {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "center",
+        "major_radius",
+        "minor_radius",
+        "axis_angle"
+      ],
+      "properties": {
+        "type": {
+          "const": "ellipse"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^ent:"
+        },
+        "construction": {
+          "type": "boolean"
+        },
+        "center": {
+          "type": "string",
+          "pattern": "^ent:"
+        },
+        "major_radius": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 1e-09
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "minor_radius": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 1e-09
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "axis_angle": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "imported_mesh": {
       "type": "object",
       "required": [
@@ -739,11 +802,52 @@
       "properties": {
         "workplane": {
           "type": "object",
-          "allOf": [{ "if": { "properties": { "type": { "const": "datum_plane" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/datum_workplane" } }]
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "datum_plane"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "$ref": "#/$defs/datum_workplane"
+              }
+            }
+          ]
         },
         "constraints": {
           "type": "array",
-          "items": { "$ref": "#/$defs/sketch_constraint" }
+          "items": {
+            "$ref": "#/$defs/sketch_constraint"
+          }
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "ellipse"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                "then": {
+                  "$ref": "#/$defs/ellipse"
+                }
+              }
+            ]
+          }
         }
       }
     },

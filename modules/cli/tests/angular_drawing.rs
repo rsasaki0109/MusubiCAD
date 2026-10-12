@@ -148,6 +148,7 @@ fn occt_analytic_triangle_angles_and_curved_edge_refusal() {
                 profile_ref: "triangle".into(),
                 points: vec![[0., 0.], [0.08, 0.], [x, y]],
                 closed: true,
+                ellipse: None,
                 circle: None,
                 segments: vec![],
                 placement: None,
@@ -231,6 +232,7 @@ fn occt_analytic_triangle_angles_and_curved_edge_refusal() {
             profile_ref: "circle".into(),
             points: vec![],
             closed: true,
+            ellipse: None,
             circle: Some(SolvedCircle {
                 center_m: [0., 0.],
                 radius_m: 0.01,

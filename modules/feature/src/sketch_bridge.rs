@@ -164,6 +164,32 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
         )));
     }
 
+    if let [id] = profile.entity_ids.as_slice() {
+        if let Some(SketchEntity::Ellipse(e)) = sketch.find_entity(id.as_str()) {
+            let [major, minor, angle] = opencad_sketch::solve::ellipse_parameters(e)?;
+            let centre = match sketch.find_entity(e.center.as_str()) {
+                Some(SketchEntity::Point(p)) => [
+                    opencad_sketch::solve::coord_value(&p.x)?,
+                    opencad_sketch::solve::coord_value(&p.y)?,
+                ],
+                _ => return Err(OpenCadError::validation("ellipse centre must be a point")),
+            };
+            return Ok(SolvedSketch {
+                profile_ref: profile_ref.into(),
+                points: Vec::new(),
+                closed: true,
+                circle: None,
+                ellipse: Some(opencad_geometry::SolvedEllipse {
+                    center_m: centre,
+                    major_radius_m: major,
+                    minor_radius_m: minor,
+                    axis_angle_rad: angle,
+                }),
+                segments: Vec::new(),
+                placement: None,
+            });
+        }
+    }
     let (points, circle, segments) = if profile.entity_ids.len() == 1 {
         let circle = circle_profile(sketch, &profile.entity_ids[0])?;
         (inscribed_polygon(circle), Some(circle), Vec::new())
@@ -184,6 +210,7 @@ fn profile_to_solved_local(sketch: &Sketch, profile_ref: &str) -> Result<SolvedS
         points,
         closed: true,
         circle,
+        ellipse: None,
         segments,
         placement: None,
     })
@@ -514,6 +541,7 @@ pub fn path_to_solved_with_context(
         profile_ref: format!("{}/path", sketch.id.as_str()),
         points,
         closed,
+        ellipse: None,
         circle: None,
         segments,
         placement: Some(placement),

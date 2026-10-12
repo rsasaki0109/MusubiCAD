@@ -128,3 +128,13 @@ tangent joins, closure and surviving-edge checks refuse topology changes.
 No sampling or solver constraint invention is involved. The output is an
 independent authored sketch with literal SI coordinates, caller-owned stable
 IDs and no copied constraints. Persistent offset association remains deferred.
+
+ADR-053 ellipses carry source semiaxis lengths/angle expressions and transient
+resolved parameters. Only their centre point joins ordinary solver variables;
+axes/orientation are graph-defined parameters, with no invented free radius or
+axis DOF. Radius/diameter/equal-radius/tangent constraints refuse ellipse targets.
+The neutral solved profile contains one exact ellipse and no sampled polygon.
+New ellipse parts use strict inline unit evaluation with the existing angle
+parameter naming contract. Native opaque wire recipes construct exact OCCT
+elliptical prisms; Mock analytic metadata provides real volume/bounds and AGM
+surface area without claiming a BREP or sampled shape.

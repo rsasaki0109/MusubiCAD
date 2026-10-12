@@ -48,6 +48,11 @@ pub fn sketch_to_edges_placed(
     sketch: &SolvedSketch,
     placement: SketchPlacement,
 ) -> Result<Vec<Edge>> {
+    if sketch.ellipse.is_some() {
+        return Err(OpenCadError::validation(
+            "exact ellipse profiles currently support normal extrusion only",
+        ));
+    }
     if !sketch.closed {
         return Err(OpenCadError::validation(
             "only closed profiles can be extruded in MVP",

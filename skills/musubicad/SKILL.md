@@ -492,3 +492,19 @@ non-tangent joins, collapsed insets and ambiguous topology; never sample or
 repair. Review the returned DesignPatch, explicitly append consumer features if
 needed, dry-run and apply through verified patch/history. Example:
 `offset_plate.ocad.d` and `agent/create_offset_plate_patch.json`.
+
+### Analytic ellipse authoring
+
+Create a centre point then an `ellipse` entity through DesignPatch. Required:
+`id`, `center`, `major_radius`, `minor_radius`, `axis_angle`; radii are semiaxes
+and literal SI metres, angle is literal radians. Expressions/parameters are
+supported; name angle parameters with `_rad`/`_deg`/`angle`, e.g.
+`axis_angle_rad: 30 deg`. Major >= minor > 1 nm; never swap axes or guess units.
+Source expressions stay authoritative; resolved parameters are not persisted.
+Centre point constraints work; ellipse radius/diameter/equal-radius/tangency,
+elliptical arcs/mixed loops and ellipse loft/sweep/helix/revolve/trim/offset
+refuse. Construction excludes the curve from profiles; unchanged consumers may
+not silently rebind their outer loop. Use exact normal extrusion with native
+OCCT; Mock has analytic new-body measures/rigid matrix placement but refuses
+shape/topology edits and rendering. Dry-run/apply with verified patches/history.
+See ADR-053, MCP authoring guide and `ellipse_plate.ocad.d` authoring example.

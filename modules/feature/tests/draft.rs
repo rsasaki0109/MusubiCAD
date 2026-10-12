@@ -127,6 +127,7 @@ fn draft_rejects_invalid_and_unsupported_inputs() {
     use opencad_geometry::{DraftInput, ExtrudeExtent, ExtrudeOperation, FacePick, SolvedSketch};
     let kernel = OcctGeometryKernel::new();
     let circle = SolvedSketch {
+        ellipse: None,
         circle: Some(opencad_geometry::SolvedCircle {
             center_m: [0.0, 0.0],
             radius_m: 0.01,
@@ -182,6 +183,7 @@ fn draft_occt_refuses_nonconvex_planar_solid() {
             [0.0, 0.02],
         ],
         closed: true,
+        ellipse: None,
         circle: None,
         segments: vec![],
         placement: None,

@@ -110,6 +110,7 @@ fn circle_body(kernel: &OcctGeometryKernel, radius: f64) -> KernelBody {
             profile_ref: "circle".into(),
             points: vec![],
             closed: true,
+            ellipse: None,
             circle: Some(SolvedCircle {
                 center_m: [0.02, 0.03],
                 radius_m: radius,
@@ -208,6 +209,7 @@ fn native_circle_radius_diameter_volume_and_fresh_transformed_witnesses() {
             profile_ref: "rectangle".into(),
             points: vec![[0., 0.], [0.02, 0.], [0.02, 0.01], [0., 0.01]],
             closed: true,
+            ellipse: None,
             circle: None,
             segments: vec![],
             placement: None,
@@ -235,6 +237,7 @@ fn native_circle_radius_diameter_volume_and_fresh_transformed_witnesses() {
         profile_ref: "semicircle".into(),
         points: vec![],
         closed: true,
+        ellipse: None,
         circle: None,
         segments: vec![
             opencad_geometry::ProfileSegment::Arc {

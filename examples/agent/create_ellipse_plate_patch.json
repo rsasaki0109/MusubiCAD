@@ -1,0 +1,111 @@
+{
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:major_radius",
+      "name": "major_radius",
+      "expr": "0.03 m"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:minor_radius",
+      "name": "minor_radius",
+      "expr": "0.02 m"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:axis_angle_rad",
+      "name": "axis_angle_rad",
+      "expr": "0.5235987755982989 rad"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:thickness",
+      "name": "thickness",
+      "expr": "6 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:ellipse",
+      "name": "Ellipse",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:ellipse",
+      "entity": {
+        "type": "point",
+        "id": "ent:anchor",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:ellipse",
+      "entity": {
+        "type": "point",
+        "id": "ent:center",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:ellipse",
+      "entity": {
+        "type": "ellipse",
+        "id": "ent:ellipse",
+        "construction": false,
+        "center": "ent:center",
+        "major_radius": "major_radius",
+        "minor_radius": "minor_radius",
+        "axis_angle": "axis_angle_rad"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:ellipse_sketch",
+        "name": "Ellipse sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:ellipse"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:ellipse_body",
+        "name": "Ellipse extrusion",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:ellipse_sketch",
+          "profile_ref": "sketch:ellipse/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body",
+          "length_expr": "thickness"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    }
+  ]
+}

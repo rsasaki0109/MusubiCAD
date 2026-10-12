@@ -766,3 +766,53 @@ append a sketch feature and extrusion with explicit new IDs and profile ref,
 then `patch_dry_run` and verified `patch_apply` with history. Undo/redo uses the
 existing history tools. The 80 x 60 mm +3 mm example is
 `examples/offset_plate.ocad.d`; its new 86 x 66 x 6 mm body is 34056 mm3.
+
+### Analytic closed ellipses (P13-004, ADR-053)
+
+Author an ellipse via `add_sketch_entity` (or edit the same ID/type with
+`replace_sketch_entity`), then use a sketch feature and a normal extrusion:
+
+```json
+{
+  "type": "add_sketch_entity",
+  "sketch_id": "sketch:ellipse",
+  "entity": {
+    "type": "ellipse",
+    "id": "ent:ellipse",
+    "construction": false,
+    "center": "ent:center",
+    "major_radius": "major_radius",
+    "minor_radius": "minor_radius",
+    "axis_angle": "axis_angle_rad"
+  }
+}
+```
+
+Create `ent:center` first. Radii are **semiaxes**, not diameters: literal values
+are metres, and literal angles are radians. For example, parameters
+`major_radius: 30 mm`, `minor_radius: 20 mm`, `axis_angle_rad: 30 deg` and
+`thickness: 6 mm` produce volume `pi*0.03*0.02*0.006 m3` (11309.73355 mm3).
+Named angle parameters must use `_rad`, `_deg` or `angle` in their name, per the
+existing evaluator contract. Ellipse parts use strict inline length/angle units:
+length m/mm/cm/in; angle rad/deg and spelled variants. Incompatible or unknown
+literal units refuse; do not treat `1 mm` as an angle. Initial ellipse-part
+expressions require same-kind length/angle parameter references and literal
+factors; cross-kind formulas require a future dimensional-expression contract. Source expressions remain
+persisted; resolved axes/angles are transient and absent from the document.
+
+Major must be >= minor > 1 nm (equal axes explicitly admit a circle). The centre
+point participates in existing Coincident/Distance/etc. constraints; axes and
+orientation are source parameters, not new free sketch DOFs. Construction
+ellipses stay out of profiles. Radius/diameter/equal-radius/tangent constraints,
+elliptical arcs and mixed ellipse loops are not supported. Adding/removing a
+closed curve cannot implicitly rebind an unchanged feature's profile alias.
+
+Distance and centred symmetric extents are supported; through-all refuses
+until target bounds can be resolved explicitly. Native OCCT supports exact
+normal new-body extrusion and the existing feature
+cut/join paths; ellipse-based loft/sweep/helix/revolve/trim/offset refuse. Mock
+supports analytic normal new-body volume, bounds, COM/surface area and rigid
+matrix placement; Mock topology/shape edits, booleans and tessellation refuse.
+Native BREP rendering works; ellipse sketch-overlay picking remains deferred.
+Always dry-run and use verified `patch_apply` with history. Example:
+`examples/ellipse_plate.ocad.d` and `agent/create_ellipse_plate_patch.json`.

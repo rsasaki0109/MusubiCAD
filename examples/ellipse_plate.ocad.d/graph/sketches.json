@@ -1,0 +1,52 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:ellipse",
+      "name": "Ellipse",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:anchor",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "ellipse",
+          "id": "ent:ellipse",
+          "construction": false,
+          "center": "ent:center",
+          "major_radius": "major_radius",
+          "minor_radius": "minor_radius",
+          "axis_angle": "axis_angle_rad"
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:ellipse:ent:ellipse",
+          "entity_ids": [
+            "ent:ellipse"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:ellipse/profile:outer"
+        }
+      ]
+    }
+  ]
+}

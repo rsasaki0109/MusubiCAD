@@ -187,6 +187,9 @@ pub struct SolvedSketch {
     /// The exact circle when the profile is a single circle.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub circle: Option<SolvedCircle>,
+    /// Exact full ellipse (ADR-053); no sampled-polygon fallback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ellipse: Option<crate::SolvedEllipse>,
     /// Exact loop segments when the loop contains arcs (ADR-021); `points`
     /// then holds a sampled polygon for kernels without curves.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -481,6 +484,9 @@ pub trait GeometryKernel {
 /// In-memory mock kernel for tests and headless pipelines without OCCT.
 #[derive(Debug, Default)]
 pub struct MockGeometryKernel {
+    ellipse_wires: std::cell::RefCell<std::collections::BTreeMap<u64, crate::EllipseFrame>>,
+    ellipse_bodies:
+        std::cell::RefCell<std::collections::BTreeMap<u64, crate::ellipse::EllipsePrism>>,
     imported_meshes: std::cell::RefCell<std::collections::BTreeMap<u64, crate::TriangleSolid>>,
 }
 
@@ -496,7 +502,23 @@ impl MockGeometryKernel {
         KernelBody::new(id)
     }
 
+    fn store_ellipse(&self, prism: crate::ellipse::EllipsePrism) -> KernelBody {
+        let mut store = self.ellipse_bodies.borrow_mut();
+        let id = u64::MAX / 2 - store.len() as u64;
+        store.insert(id, prism);
+        KernelBody::new(id)
+    }
+    fn refuse_ellipse_edit(&self, body: &KernelBody) -> Result<()> {
+        if self.ellipse_bodies.borrow().contains_key(&body.0) {
+            Err(OpenCadError::validation(
+                "Mock ellipse shape/topology operation is unsupported; use OCCT",
+            ))
+        } else {
+            Ok(())
+        }
+    }
     fn refuse_mesh_edit(&self, body: &KernelBody) -> Result<()> {
+        self.refuse_ellipse_edit(body)?;
         if self.imported_meshes.borrow().contains_key(&body.0) {
             Err(OpenCadError::validation(
                 "Mock imported mesh shape edits are unsupported; use OCCT",
@@ -523,6 +545,11 @@ impl GeometryKernel for MockGeometryKernel {
 
     /// A deterministic stand-in body derived from the inputs (ADR-023).
     fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
+        if profile.ellipse.is_some() {
+            return Err(OpenCadError::validation(
+                "ellipse profile supports normal extrusion only",
+            ));
+        }
         if path.segments.is_empty() {
             return Err(OpenCadError::validation("sweep path has no segments"));
         }
@@ -534,6 +561,11 @@ impl GeometryKernel for MockGeometryKernel {
 
     /// A deterministic stand-in body derived from the inputs (ADR-025).
     fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
+        if profile.ellipse.is_some() {
+            return Err(OpenCadError::validation(
+                "ellipse profile supports normal extrusion only",
+            ));
+        }
         helix.validate()?;
         let turns = (helix.height_m / helix.pitch_m).ceil() as u64;
         let seed = (profile.points.len() as u64)
@@ -545,6 +577,9 @@ impl GeometryKernel for MockGeometryKernel {
     /// A deterministic stand-in body derived from the section count and
     /// point counts, so loft pipelines run without OCCT (ADR-022).
     fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
+        if sections.iter().any(|s| s.ellipse.is_some()) {
+            return Err(OpenCadError::validation("ellipse loft is unsupported"));
+        }
         if sections.len() < 2 {
             return Err(OpenCadError::validation("loft needs at least two sections"));
         }
@@ -610,6 +645,23 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire> {
+        if let Some(ellipse) = sketch.ellipse {
+            if !sketch.closed
+                || sketch.circle.is_some()
+                || !sketch.points.is_empty()
+                || !sketch.segments.is_empty()
+            {
+                return Err(OpenCadError::validation(
+                    "ellipse input must be one exact closed curve",
+                ));
+            }
+            let frame = ellipse.frame(sketch.placement.unwrap_or(SketchPlacement::global_xy()))?;
+            let mut store = self.ellipse_wires.borrow_mut();
+            let id = u64::MAX / 2 - store.len() as u64;
+            store.insert(id, frame);
+            return Ok(KernelWire::new(id));
+        }
+
         if sketch.points.len() < 2 {
             return Err(OpenCadError::validation(
                 "sketch profile needs at least two points",
@@ -634,10 +686,36 @@ impl GeometryKernel for MockGeometryKernel {
         if length <= 0.0 {
             return Err(OpenCadError::validation("extrude length must be positive"));
         }
+        let frame = self.ellipse_wires.borrow().get(&profile.0).copied();
+        if let Some(frame) = frame {
+            if !matches!(_operation, ExtrudeOperation::NewBody) || _target.is_some() {
+                return Err(OpenCadError::validation(
+                    "Mock ellipse extrusion supports new_body only",
+                ));
+            }
+            if matches!(extent, ExtrudeExtent::ThroughAll) {
+                return Err(OpenCadError::validation(
+                    "ellipse through-all extent requires a future bounded target contract",
+                ));
+            }
+            let mut prism = frame.prism(_direction_m, length)?;
+            if matches!(extent, ExtrudeExtent::Symmetric { .. }) {
+                for i in 0..3 {
+                    prism.frame.center_m[i] -= prism.delta_m[i] / 2.;
+                }
+            }
+            return Ok(self.store_ellipse(prism));
+        }
+
         Ok(KernelBody::new(profile.0 + (length * 1000.0) as u64))
     }
 
     fn revolve(&self, input: &RevolveInput) -> Result<KernelBody> {
+        if input.sketch.ellipse.is_some() {
+            return Err(OpenCadError::validation(
+                "ellipse profile supports normal extrusion only",
+            ));
+        }
         let sketch = &input.sketch;
         let axis_direction_m = input.axis_direction_m;
         let angle_rad = input.angle_rad;
@@ -688,6 +766,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn boolean(&self, lhs: KernelBody, rhs: KernelBody, op: BooleanOp) -> Result<KernelBody> {
+        self.refuse_ellipse_edit(&lhs)?;
+        self.refuse_ellipse_edit(&rhs)?;
+
         if [lhs.0, rhs.0]
             .iter()
             .any(|id| self.imported_meshes.borrow().contains_key(id))
@@ -715,6 +796,8 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
+        self.refuse_ellipse_edit(body)?;
+
         if let Some(mesh) = self.imported_meshes.borrow().get(&body.0) {
             return Ok(mesh.tessellate());
         }
@@ -729,6 +812,10 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
+        if let Some(prism) = self.ellipse_bodies.borrow().get(&body.0) {
+            return prism.mass_properties(density_kg_per_m3);
+        }
+
         if let Some(mesh) = self.imported_meshes.borrow().get(&body.0) {
             return mesh.mass_properties(density_kg_per_m3);
         }
@@ -748,6 +835,7 @@ impl GeometryKernel for MockGeometryKernel {
         body: &KernelBody,
         density_kg_per_m3: f64,
     ) -> Result<[[f64; 3]; 3]> {
+        self.refuse_ellipse_edit(body)?;
         if self.imported_meshes.borrow().contains_key(&body.0) {
             return Err(OpenCadError::validation(
                 "Mock imported mesh inertia is unsupported",
@@ -760,6 +848,10 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
+        if let Some(prism) = self.ellipse_bodies.borrow().get(&body.0) {
+            return Ok(prism.bounding_box());
+        }
+
         if let Some(mesh) = self.imported_meshes.borrow().get(&body.0) {
             return Ok(mesh.bounding_box());
         }
@@ -786,7 +878,7 @@ impl GeometryKernel for MockGeometryKernel {
         &self,
         body: &KernelBody,
     ) -> Result<Vec<crate::topo_sync::EdgeRefDiscovery>> {
-        if body.0 == 0 {
+        if body.0 == 0 || self.ellipse_bodies.borrow().contains_key(&body.0) {
             return Ok(Vec::new());
         }
         let roles = ["top@-y", "top@+x", "top@+y", "top@-x"];
@@ -813,6 +905,8 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn edge_endpoints(&self, body: &KernelBody, kernel_edge_id: u64) -> Result<[[f64; 3]; 2]> {
+        self.refuse_ellipse_edit(body)?;
+
         let side = body.0 as f64 * 0.001;
         let points = [
             [0.0, 0.0, side],
@@ -833,6 +927,7 @@ impl GeometryKernel for MockGeometryKernel {
         body: &KernelBody,
         plane: &crate::SectionPlane,
     ) -> Result<crate::SectionGeometry> {
+        self.refuse_ellipse_edit(body)?;
         plane.validate_crossing(&self.bounding_box(body)?)?;
         let axis = (0..3)
             .find(|i| plane.normal[*i].abs() > 1. - 1e-9)
@@ -862,6 +957,7 @@ impl GeometryKernel for MockGeometryKernel {
         body: &KernelBody,
         edge_id: u64,
     ) -> Result<CircularEdgeGeometry> {
+        self.refuse_ellipse_edit(body)?;
         // Mock contract: synthetic edge 5 is a complete XY circle, radius half
         // the body's deterministic side length. Box edges 1..4 remain straight.
         if edge_id != 5 || body.0 == 0 {
@@ -930,6 +1026,10 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
+        if self.ellipse_bodies.borrow().contains_key(&body.0) {
+            return self.transform_body(body, RigidTransform::from_translation(translation_m));
+        }
+
         if self.imported_meshes.borrow().contains_key(&body.0) {
             return self.transform_body(body, RigidTransform::from_translation(translation_m));
         }
@@ -942,6 +1042,11 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
+        let prism = self.ellipse_bodies.borrow().get(&body.0).copied();
+        if let Some(prism) = prism {
+            return Ok(self.store_ellipse(prism.transformed(transform)?));
+        }
+
         let mesh = self.imported_meshes.borrow().get(&body.0).cloned();
         if let Some(mesh) = mesh {
             return Ok(self.store_mesh(mesh.transformed(transform)?));
@@ -953,6 +1058,12 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn make_compound(&self, bodies: &[KernelBody]) -> Result<KernelBody> {
+        if bodies.len() > 1 {
+            for body in bodies {
+                self.refuse_ellipse_edit(body)?;
+            }
+        }
+
         if bodies.len() > 1
             && bodies
                 .iter()
@@ -1028,6 +1139,7 @@ mod tests {
             profile_ref: "sketch:base/profile:outer".into(),
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
+            ellipse: None,
             circle: None,
             segments: Vec::new(),
             placement: None,

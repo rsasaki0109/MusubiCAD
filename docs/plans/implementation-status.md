@@ -65,3 +65,11 @@ Caller IDs, explicit SI distance, closure/convexity/inset refusals, both-kernel
 neutral wire dimensions and native analytical volumes, history and file round
 trips are covered. Concave repair and persistent source association remain
 unimplemented. serde_json float_roundtrip preserves source f64/history identity.
+
+P13-004 / ADR-053: analytic parametric closed ellipses with centre constraints,
+source axes/angle expressions and strict units, exact native normal extrusion
+(distance/centred symmetric, native feature cut/join), analytic Mock volume/
+bounds/COM/AGM area, source/patch/schema/expanded/packed/history evidence and
+example/guide/skill/eval. Elliptical arcs, axis/tangent constraints, through-all,
+ellipse loft/sweep/helix/revolve/trim/offset, Mock topology/booleans/rendering and
+ellipse sketch-overlay picking remain unsupported and fail closed.

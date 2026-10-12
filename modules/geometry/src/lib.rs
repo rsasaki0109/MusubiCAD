@@ -56,3 +56,6 @@ pub use transform::{RigidTransform, POSITION_TOLERANCE_M, ROTATION_TOLERANCE};
 
 pub mod section;
 pub use section::{polygonal_section, SectionGeometry, SectionPlane};
+
+pub mod ellipse;
+pub use ellipse::{EllipseFrame, SolvedEllipse};

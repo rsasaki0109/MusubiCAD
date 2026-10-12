@@ -63,6 +63,21 @@ pub fn detect_profiles(entities: &[SketchEntity]) -> Result<Vec<Profile>> {
         }
     }
 
+    for entity in entities {
+        if let SketchEntity::Ellipse(e) = entity {
+            if !e.base.construction {
+                profiles.push(
+                    Profile::new(
+                        format!("profile:ellipse:{}", e.base.id),
+                        vec![e.base.id.clone()],
+                        ProfileKind::Closed,
+                    )
+                    .with_ref(format!("profile:ellipse:{}", e.base.id)),
+                );
+            }
+        }
+    }
+
     // Lines and arcs with both endpoint points form loop segments
     // (ADR-021); both are traced through shared point IDs.
     let segments: Vec<ChainEdge> = entities

@@ -394,6 +394,26 @@ impl GeometryKernel for OcctGeometryKernel {
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire> {
         #[cfg(feature = "occt")]
         {
+            if let Some(ellipse) = sketch.ellipse {
+                if !sketch.closed
+                    || sketch.circle.is_some()
+                    || !sketch.segments.is_empty()
+                    || !sketch.points.is_empty()
+                {
+                    return Err(OpenCadError::validation(
+                        "ellipse input must be one exact closed curve",
+                    ));
+                }
+                let frame = ellipse.frame(
+                    sketch
+                        .placement
+                        .unwrap_or(opencad_geometry::SketchPlacement::global_xy()),
+                )?;
+                let mut store = self.store.borrow_mut();
+                let id = store.alloc_id();
+                store.ellipse_wires.insert(id, frame);
+                return Ok(KernelWire::new(id));
+            }
             let edges = sketch_to_edges(sketch)?;
             let id = self.store.borrow_mut().insert_wire(edges);
             Ok(KernelWire::new(id))
@@ -415,12 +435,21 @@ impl GeometryKernel for OcctGeometryKernel {
     ) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
-            let edges = self
-                .store
-                .borrow()
-                .wire(profile.0)
-                .ok_or_else(|| OpenCadError::not_found(format!("wire {}", profile.0)))?
-                .to_vec();
+            let ellipse = self.store.borrow().ellipse_wires.get(&profile.0).copied();
+            if ellipse.is_some() && matches!(operation, ExtrudeOperation::Join) {
+                return Err(OpenCadError::validation(
+                    "ellipse join uses the feature new-body plus boolean path",
+                ));
+            }
+            let edges = if ellipse.is_some() {
+                Vec::new()
+            } else {
+                self.store
+                    .borrow()
+                    .wire(profile.0)
+                    .ok_or_else(|| OpenCadError::not_found(format!("wire {}", profile.0)))?
+                    .to_vec()
+            };
 
             let length_m = match extent {
                 ExtrudeExtent::Distance { length } => length.meters(),
@@ -444,7 +473,32 @@ impl GeometryKernel for OcctGeometryKernel {
                 direction_m[2] / dir_len * length_m,
             );
 
-            let solid = Solid::extrude(edges.iter(), direction).map_err(map_occt_error)?;
+            let solid = if let Some(frame) = ellipse {
+                if matches!(extent, ExtrudeExtent::ThroughAll) {
+                    return Err(OpenCadError::validation(
+                        "ellipse through-all extent requires a future bounded target contract",
+                    ));
+                }
+                let mut prism = frame.prism(direction_m, length_m)?;
+                if matches!(extent, ExtrudeExtent::Symmetric { .. }) {
+                    for i in 0..3 {
+                        prism.frame.center_m[i] -= prism.delta_m[i] / 2.;
+                    }
+                }
+                let bytes =
+                    crate::ffi::native::ellipse_prism(&prism.frame.native_data(), &prism.delta_m)
+                        .map_err(|e| OpenCadError::validation(e.to_string()))?;
+                let mut reader = std::io::Cursor::new(bytes);
+                let mut solids = Solid::read_brep_text(&mut reader).map_err(map_occt_error)?;
+                if solids.len() != 1 {
+                    return Err(OpenCadError::validation(
+                        "ellipse prism must yield one solid",
+                    ));
+                }
+                solids.remove(0)
+            } else {
+                Solid::extrude(edges.iter(), direction).map_err(map_occt_error)?
+            };
 
             if let ExtrudeOperation::Cut = operation {
                 let Some(target_body) = target else {
@@ -475,6 +529,11 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn revolve(&self, input: &RevolveInput) -> Result<KernelBody> {
+        if input.sketch.ellipse.is_some() {
+            return Err(OpenCadError::validation(
+                "exact ellipse profiles currently support normal extrusion only",
+            ));
+        }
         #[cfg(feature = "occt")]
         {
             let sketch = &input.sketch;
@@ -1356,6 +1415,11 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
+        if profile.ellipse.is_some() {
+            return Err(OpenCadError::validation(
+                "exact ellipse profiles currently support normal extrusion only",
+            ));
+        }
         helix.validate()?;
         #[cfg(feature = "occt")]
         {
@@ -1389,6 +1453,11 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
+        if profile.ellipse.is_some() {
+            return Err(OpenCadError::validation(
+                "exact ellipse profiles currently support normal extrusion only",
+            ));
+        }
         #[cfg(feature = "occt")]
         {
             let profile_edges = sketch_to_edges(profile)?;
@@ -1410,6 +1479,11 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
+        if sections.iter().any(|s| s.ellipse.is_some()) {
+            return Err(OpenCadError::validation(
+                "exact ellipse loft is unsupported",
+            ));
+        }
         #[cfg(feature = "occt")]
         {
             if sections.len() < 2 {
@@ -1591,6 +1665,7 @@ mod tests {
             profile_ref: "sketch:base/profile:outer".into(),
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
+            ellipse: None,
             circle: None,
             segments: Vec::new(),
             placement: None,
@@ -1844,6 +1919,7 @@ mod tests {
                 profile_ref: "sketch:pin/profile:outer".into(),
                 points: vec![[0.0, 0.0], [0.01, 0.0], [0.0, 0.01]],
                 closed: true,
+                ellipse: None,
                 circle: Some(opencad_geometry::SolvedCircle {
                     center_m: [0.02, 0.03],
                     radius_m: radius,

@@ -599,6 +599,7 @@ fn sketch_entity_kind(entity: &SketchEntity) -> &'static str {
         SketchEntity::Point(_) => "point",
         SketchEntity::Line(_) => "line",
         SketchEntity::Circle(_) => "circle",
+        SketchEntity::Ellipse(_) => "ellipse",
         SketchEntity::Arc(_) => "arc",
         SketchEntity::Rectangle(_) => "rectangle",
     }

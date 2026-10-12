@@ -26,7 +26,15 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
         }
         return Ok(());
     }
-    let values = evaluate_param_graph(parameters)?;
+    let values = if model.sketches.values().any(|s| {
+        s.entities
+            .iter()
+            .any(|e| matches!(e, opencad_sketch::SketchEntity::Ellipse(_)))
+    }) {
+        opencad_graph::evaluate_param_graph_strict(parameters)?
+    } else {
+        evaluate_param_graph(parameters)?
+    };
     for sketch in model.sketches.values_mut() {
         let originals = snapshot_dimension_exprs(sketch);
         resolve_sketch_constraints(sketch, &values)?;
@@ -189,6 +197,11 @@ pub(crate) fn resolve_sketch_constraints(
     sketch: &mut Sketch,
     scope: &IndexMap<String, f64>,
 ) -> Result<()> {
+    for entity in &mut sketch.entities {
+        if let opencad_sketch::SketchEntity::Ellipse(e) = entity {
+            e.resolved_parameters = Some(resolve_ellipse_parameters(e, scope)?);
+        }
+    }
     // Arc angles may name parameters (ADR-024).  Their expressions stay on
     // the entity; the resolved radians drive solving and kernel input.
     for entity in &mut sketch.entities {
@@ -259,6 +272,44 @@ fn restore_dimension_exprs(sketch: &mut Sketch, originals: &[(usize, Expression)
             *target = expr.clone();
         }
     }
+}
+
+/// Resolve analytic source dimensions without mutating the authored ellipse.
+pub fn resolve_ellipse_parameters(
+    e: &opencad_sketch::EllipseEntity,
+    scope: &IndexMap<String, f64>,
+) -> Result<[f64; 3]> {
+    for (coord, angle) in [
+        (&e.major_radius, false),
+        (&e.minor_radius, false),
+        (&e.axis_angle, true),
+    ] {
+        if let opencad_sketch::Coord::Expr(expr) = coord {
+            for name in opencad_graph::parameter_names_in_expr(expr.as_str()) {
+                if opencad_graph::param_eval::is_angle_parameter(&name) != angle {
+                    return Err(OpenCadError::InvalidExpression(format!(
+                        "ellipse field parameter kind mismatch: {name}"
+                    )));
+                }
+            }
+        }
+    }
+    let length = |coord: &opencad_sketch::Coord| match coord {
+        opencad_sketch::Coord::Literal(v) => Ok(*v),
+        opencad_sketch::Coord::Expr(expr) => {
+            opencad_graph::eval_length_expr_strict(expr.as_str(), scope)
+        }
+    };
+    let angle = match &e.axis_angle {
+        opencad_sketch::Coord::Literal(v) => *v,
+        opencad_sketch::Coord::Expr(expr) => {
+            opencad_graph::eval_angle_expr_strict(expr.as_str(), scope)?
+        }
+    };
+    let values = [length(&e.major_radius)?, length(&e.minor_radius)?, angle];
+    let mut resolved = e.clone();
+    resolved.resolved_parameters = Some(values);
+    opencad_sketch::solve::ellipse_parameters(&resolved)
 }
 
 #[cfg(test)]

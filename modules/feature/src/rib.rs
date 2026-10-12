@@ -119,6 +119,7 @@ fn rib_profile_from_centerline(
         profile_ref: centerline_ref.to_string(),
         points,
         closed: true,
+        ellipse: None,
         circle: None,
         segments: Vec::new(),
         placement: Some(placement_from_workplane(&workplane)?),
