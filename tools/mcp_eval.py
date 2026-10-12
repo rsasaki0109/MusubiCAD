@@ -48,6 +48,7 @@ VOLUME_LINE = re.compile(r"^volume_m3:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 MATE_ERROR_LINE = re.compile(r"^mate_max_error:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 ANGLE_LINE = re.compile(r"^dimension: (\S+) measured_angle_rad: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 ANGLE_TOLERANCE_RAD = 1e-9
+DETAIL_LINE = re.compile(r"^detail: (\S+) parent: (\S+) magnification: ([-+0-9.eE]+) scale: ([-+0-9.eE]+) segments: (\d+)\s*$", re.MULTILINE)
 SECTION_LINE = re.compile(r"^section: (\S+) area_m2: ([-+0-9.eE]+) loops: (\d+) edges: (\d+)\s*$", re.MULTILINE)
 RADIAL_LINE = re.compile(r"^dimension: (\S+) measured_radial_length_m: ([-+0-9.eE]+) radius_m: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 
@@ -257,6 +258,21 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_details" in task:
+        drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
+        views = {v["id"]: v for sheet in drawing.get("sheets", []) for v in sheet.get("views", []) if v.get("detail")}
+        reported = {id_: (parent, float(mag), float(scale), int(count)) for id_, parent, mag, scale, count in DETAIL_LINE.findall(regen_output)}
+        desired = task["expected_details"]
+        if sorted(views) != sorted(v["view_id"] for v in desired):
+            problems.append("detail view IDs differ")
+        for detail in desired:
+            id_ = detail["view_id"]
+            measured = reported.get(id_)
+            if measured is None or measured[0] != detail["parent_view_id"] or not all(math.isfinite(v) for v in measured[1:3]) or abs(measured[1]-detail["magnification"]) > 1e-9 or abs(measured[2]-detail["scale"]) > 1e-9 or measured[3] != detail["segment_count"]:
+                problems.append(f"detail {id_} lacks matching fresh scale/clipping evidence")
+            authored = views.get(id_, {}).get("detail", {})
+            if any(authored.get(key) != detail[key] for key in ("parent_view_id", "region_min_m", "region_max_m", "magnification")) or abs(views.get(id_,{}).get("scale",-1)-detail["scale"]) > 1e-9:
+                problems.append(f"detail {id_} parent/region/scale authoring differs")
     if "expected_sections" in task:
         drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
         authored = {v["id"]: v["section"] for sheet in drawing.get("sheets", []) for v in sheet.get("views", []) if v.get("section")}
@@ -464,6 +480,16 @@ def self_test() -> None:
     wrong_section = json.loads(json.dumps(sections))
     wrong_section["expected_sections"][0]["plane"]["origin_m"][2] = 0.004
     assert not check(wrong_section, section_sheet, section_evidence)[0]
+    detail_sheet = ROOT / "examples" / "detail_plate_drawing.ocad.d"
+    details = {"expected_details": [{"view_id": "view:detail", "parent_view_id": "view:front", "region_min_m": [0.06,0.04], "region_max_m": [0.09,0.07], "magnification": 2.0, "scale": 1.0, "segment_count": 2}]}
+    detail_evidence = "detail: view:detail parent: view:front magnification: 2 scale: 1 segments: 2\n"
+    assert check(details, detail_sheet, detail_evidence) == (True, [])
+    assert not check(details, detail_sheet, "")[0]
+    assert not check(details, detail_sheet, detail_evidence.replace("segments: 2", "segments: 4"))[0]
+    assert not check(details, detail_sheet, detail_evidence.replace("scale: 1", "scale: 2"))[0]
+    wrong_details = json.loads(json.dumps(details))
+    wrong_details["expected_details"][0]["region_min_m"] = [0.05,0.04]
+    assert not check(wrong_details, detail_sheet, detail_evidence)[0]
     robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
     assert check(
         {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},

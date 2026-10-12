@@ -51,10 +51,21 @@ pub struct DrawingSectionResult {
     pub edge_count: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DrawingDetailResult {
+    pub sheet_id: String,
+    pub view_id: String,
+    pub parent_view_id: String,
+    pub magnification: f64,
+    pub scale: f64,
+    pub segment_count: usize,
+}
+
 pub struct RegeneratedDrawing {
     /// Transient point-resolved sheets for renderers, never written to .ocad.
     pub sheets: Vec<(Sheet, Vec<ViewMesh>)>,
     pub sections: Vec<DrawingSectionResult>,
+    pub details: Vec<DrawingDetailResult>,
     pub section_layouts: Vec<Vec<opencad_drawing::SectionLayout>>,
     pub radial_layouts: Vec<Vec<opencad_drawing::RadialLayout>>,
     pub dimensions: Vec<DrawingDimensionResult>,
@@ -79,6 +90,7 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
         radial_layouts: Vec::new(),
         section_layouts: Vec::new(),
         sections: Vec::new(),
+        details: Vec::new(),
         dimensions: Vec::new(),
         angular_dimensions: Vec::new(),
         radial_dimensions: Vec::new(),
@@ -285,6 +297,27 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
             meshes.push(ViewMesh {
                 view_id: view.id.clone(),
                 mesh_set: mesh,
+            });
+        }
+        for view in sheet.views.iter().filter(|v| v.detail.is_some()) {
+            let detail = view
+                .detail
+                .as_ref()
+                .ok_or_else(|| OpenCadError::validation("detail definition missing"))?;
+            let mesh = meshes
+                .iter()
+                .find(|m| m.view_id == view.id)
+                .ok_or_else(|| OpenCadError::validation("detail mesh missing"))?;
+            let projected =
+                opencad_drawing::project_mesh_wireframe(&mesh.mesh_set, view.projection);
+            let clipped = opencad_drawing::layout_detail_segments(view, &sheet, &projected)?;
+            result.details.push(DrawingDetailResult {
+                sheet_id: sheet.id.as_str().into(),
+                view_id: view.id.as_str().into(),
+                parent_view_id: detail.parent_view_id.as_str().into(),
+                magnification: detail.magnification,
+                scale: view.scale,
+                segment_count: clipped.len(),
             });
         }
         result.sheets.push((sheet, meshes));

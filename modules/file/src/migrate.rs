@@ -1,3 +1,4 @@
+// MCAD-P12-004: absent view.detail stays None; no implicit parent/crop bindings.
 // MCAD-P12-003: absent view.section stays None; never infer persisted contours.
 // MCAD-P12-002: absent radial_dimensions defaults empty; never infer circle witnesses.
 //! Schema version migrations (Task-116+).

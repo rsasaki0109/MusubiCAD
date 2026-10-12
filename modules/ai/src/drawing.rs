@@ -72,6 +72,9 @@ fn check_new_drawing_id(
 }
 
 fn validate_view_values(view: &DrawingView) -> Result<()> {
+    if let Some(detail) = &view.detail {
+        detail.validate()?;
+    }
     if let Some(section) = &view.section {
         section.validate(view.projection)?;
     }
@@ -127,6 +130,13 @@ fn structural_drawing_failures(model: &DrawingModel, operations: &[PatchOperatio
                 "cannot remove '{view_id}': still used by {}",
                 users.into_iter().collect::<Vec<_>>().join(", ")
             ));
+        }
+    }
+    for sheet in &model.sheets {
+        for view in sheet.views.iter().filter(|v| v.detail.is_some()) {
+            if let Err(error) = opencad_drawing::validate_detail_parent(view, sheet) {
+                failures.insert(format!("detail view {}: {error}", view.id));
+            }
         }
     }
     if failures.is_empty() {

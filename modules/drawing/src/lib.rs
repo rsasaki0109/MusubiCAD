@@ -45,3 +45,6 @@ pub mod section;
 pub use section::{layout_section, SectionLayout, SectionView};
 
 pub use export_svg::render_sheet_svg_with_layouts;
+
+pub mod detail;
+pub use detail::{clip_detail_segment, layout_detail_segments, validate_detail_parent, DetailView};

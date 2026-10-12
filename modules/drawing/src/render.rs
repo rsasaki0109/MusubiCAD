@@ -106,7 +106,11 @@ pub fn build_sheet_segments(sheet: &Sheet, meshes: &[ViewMesh]) -> Result<Vec<Sh
             )));
         };
         let wireframe = project_mesh_wireframe(&mesh.mesh_set, view.projection);
-        output.extend(layout_view_on_sheet(view, &wireframe));
+        if view.detail.is_some() {
+            output.extend(crate::layout_detail_segments(view, sheet, &wireframe)?);
+        } else {
+            output.extend(layout_view_on_sheet(view, &wireframe));
+        }
     }
     Ok(output)
 }

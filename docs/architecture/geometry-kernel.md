@@ -166,3 +166,13 @@ touching boundaries, and derives area by even-odd loop nesting. Work is bounded 
 4096 edges with positive areas >1e-16 m². Mock supports analytic axis-aligned box
 slices. No new sampling is introduced. Drawing section metadata stores only the
 plane and hatch spacing; regenerated layouts pass separately to sheet renderers.
+
+### Bounded detail wireframe layout (ADR-043)
+
+Detail views reuse both Mock and OCCT tessellation/projection paths and clip their
+line segments analytically with Liang–Barsky. No new curve sampling or fitting is
+introduced; visibility classifications survive clipping. Parent/model/projection
+and explicit magnification are validated in drawing state, and child scale must
+match parent.scale × magnification. Crop data is authored in projected model
+metres; derived centered sheet segments remain disposable. The existing mesh
+wireframe accuracy applies, including its 1 µm projected endpoint quantization.
