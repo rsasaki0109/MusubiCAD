@@ -420,3 +420,12 @@ Root and child are rebuilt by `create_bom_assembly_patch.json` and
 `create_bom_subassembly_patch.json`. Regenerate tables with
 `musubicad bom examples/bom_nested_assembly.ocad.d --output examples/bom_nested_assembly.bom.json`
 (or `.csv`). Query through Agent/MCP for the same report; ADR-047.
+
+### Explicit-unit DXF input
+
+`import/plate_outline.dxf` is a millimetre 80×60 mm outline on `OUTLINE`, with text
+on `LABELS`. Inspect units/layers before import and select only geometry.
+`dxf_import_plate.ocad.d` stores the verified import and a 6 mm extrusion; its
+volume is 28,800 mm³. `agent/create_dxf_import_plate_patch.json` rebuilds it from
+an empty part. Import through `import-dxf`/Agent/MCP, retain history for undo/redo,
+and add ordinary features through verified DesignPatch. See ADR-048.

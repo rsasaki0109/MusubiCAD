@@ -3,6 +3,7 @@
 pub mod checksums;
 pub mod diff;
 pub mod document;
+pub mod dxf;
 pub mod expanded_dir;
 pub mod history;
 pub mod manifest;

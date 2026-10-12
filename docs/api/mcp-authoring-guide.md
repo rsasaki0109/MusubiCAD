@@ -601,3 +601,40 @@ one row, three top-level instances and two declared components. Its JSON/CSV
 artifacts and root/subassembly authoring patches are included. Eval
 `assembly_bom_add_subassembly` adds another subassembly and checks ten plates.
 See ADR-047.
+
+### Planar DXF sketch input (MCAD-P12-009)
+
+Inspect first with `inspect_dxf` / Agent `opencad.inspect_dxf` using `dxf_path`,
+or `musubicad inspect-dxf source.dxf`. Inspect version, declared units and entity
+counts by layer, then explicitly select geometry layers for `import_dxf`:
+
+```json
+{"path":"part.ocad.d","dxf_path":"source.dxf","sketch_id":"sketch:dxf","feature_id":"feature:sketch_dxf","layers":["OUTLINE"],"dry_run":true}
+```
+
+Verify, then set `dry_run:false` to apply through DesignPatch/history. Return the
+opaque `history` for existing undo/redo methods. CLI equivalent:
+`musubicad import-dxf part.ocad.d source.dxf --sketch-id sketch:dxf --id feature:sketch_dxf --layers OUTLINE`.
+Optional `source_unit` (`--unit`) supports `m`, `mm`, `cm`, `in` when INSUNITS is
+missing/unassigned; it must agree with declared supported units. Never guess units
+from destination metadata. Summary includes source SHA-256, selected layers,
+source unit, primitive/entity counts, verification and history.
+
+Support planar model-space LINE, CIRCLE, ARC and straight LWPOLYLINE. Circles/arcs
+remain analytic; degrees convert to radians and CCW arcs can cross zero degrees.
+Coordinates become authored SI literals on XY, with fixed 1 nm point-grid identity.
+Planarity/thickness/width tolerance is 1 nm; OCS tolerance 1e-12, bulge tolerance
+1e-15 dimensionless. Collapsed geometry, malformed/ambiguous tags, conflicting or
+unsupported units, selected unsupported entities and non-default OCS refuse before
+changes. Binary DXF, INSERT/spline/ellipse expansion, styles and semantic drawing
+annotations are unsupported. Layers not selected are deliberately excluded.
+
+The imported feature is an ordinary sketch. Bare sketches are valid staged parts;
+extrude/hole/revolve consumers enforce existing profile rules. Coordinates are
+editable design inputs, not a linked DXF cache or auto-constrained dimensions.
+Drawing DXF output contains view-scaled paper coordinates: importing it preserves
+those coordinates and cannot recover the original model scale or semantic refs.
+Limits: 16 MiB, 500,000 tag pairs, 50,000 primitives, finite coordinates/radii ≤1e6 m.
+Example input `examples/import/plate_outline.dxf`; verified extruded result
+`examples/dxf_import_plate.ocad.d` is an 80×60×6 mm plate with an authoring patch.
+See ADR-048; eval `dxf_import_copy_sketch` exercises the same existing APIs.

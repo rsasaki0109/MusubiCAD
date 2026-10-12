@@ -652,12 +652,19 @@ DesignPatch, OCCT/Mock geometry and deterministic SVG/export infrastructure.
 | MCAD-P12-006 | PDF output | Canonical multi-page vector PDF via precise SVG layout, bundled font and strict glyph refusal; Mock/OCCT analytic paper/geometry tests, deterministic examples, guide/skill/eval (ADR-045) | Complete |
 | MCAD-P12-007 | DXF output | Single-sheet millimetre paper-space primitives, exact polygon hatch clipping and UTF-8 labels; Mock/OCCT analytic tests, independent parser audit, examples, guide/skill/eval (ADR-046) | Complete |
 | MCAD-P12-008 | Assembly BOM | Verified source catalog, recursive pattern/leaf quantities and structured instance provenance; strict nested regeneration, deterministic JSON/CSV, Mock/OCCT analytic tests, example, guide/skill/eval (ADR-047) | Complete |
+| MCAD-P12-009 | DXF input | Explicit-unit planar primitive parsing into authored sketches through DesignPatch; selected-layer fail-closed admission, Mock/OCCT analytic extrusion, examples, guide/skill/eval (ADR-048) | Complete |
+| MCAD-P12-010 | STL input | Explicit-unit mesh asset import with bounded topology/geometry validation and backend representation; Mock/OCCT analytic dimensions/volume, schemas/migration/round trips, example, guide/skill/eval | Planned |
 
 **Definition of done:** one reviewed PR per task, backend commands/DesignPatch,
 both kernel paths where geometry is queried, analytic measurements, example,
 MCP authoring guide and skill updates, feasible eval task, additive schemas,
 migration policy and deterministic round trips. No unsupported geometry is
 silently approximated or substituted. Scores change only after main merges.
+
+P12-009/010 close the fixed I/O rubric: drawing DXF output alone does not
+implement DXF input or STL loading. Keep one task/PR and complete these exchange
+boundaries before Phase 13; their limits must be explicit and unsupported inputs
+must fail rather than losing geometry.
 
 **Tests:** analytic angles/radii/diameters, model edits and unit conversions,
 ambiguous/missing references, invalid projections/cutting planes, atomic patch

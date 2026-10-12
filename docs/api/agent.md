@@ -919,3 +919,15 @@ Every assembly snapshot must regenerate completely; missing, mismatched, cyclic
 or failed children return an application error before output. Optional tables
 use atomic replacement; input graphs remain unchanged. See ADR-047 and the MCP
 BOM authoring guide for bounds, example and intentional limitations.
+
+## DXF input: `opencad.inspect_dxf` / `opencad.import_dxf`
+
+Inspect parameters: `{ "dxf_path":"source.dxf" }`; returns declared version/unit
+and entity counts grouped by layer. Import parameters: `path`, `dxf_path`, new
+`sketch_id`, `feature_id`, explicit `layers`; optional `source_unit` (m/mm/cm/in),
+`name`, `dry_run` and opaque `history`. Missing units must be supplied; conflicts
+refuse. Import returns counts, selected layers/unit, source digest, verification
+and `DocumentHistoryState`. Verified DesignPatch/history owns all model changes;
+dry-run does not write. Ordinary XY sketch entities store SI coordinates, with
+analytic circles/arcs. See ADR-048 and the authoring guide for bounded primitive
+support, grid/tolerances, explicit layer selection and unsupported-input refusal.

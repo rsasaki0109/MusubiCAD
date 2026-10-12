@@ -74,5 +74,5 @@ fn every_example_feature_graph_is_derivable() {
         }
         checked += 1;
     }
-    assert_eq!(checked, 19, "every part example must be checked");
+    assert_eq!(checked, 20, "every part example must be checked");
 }

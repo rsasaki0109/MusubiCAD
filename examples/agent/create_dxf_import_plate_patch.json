@@ -1,0 +1,139 @@
+{
+  "operations": [
+    {
+      "type": "add_sketch",
+      "id": "sketch:dxf",
+      "name": "Imported DXF sketch",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "point",
+        "id": "ent:dxf_dxf_p0",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "point",
+        "id": "ent:dxf_dxf_p1",
+        "construction": false,
+        "x": 0.08,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "line",
+        "id": "ent:dxf_dxf_e0",
+        "construction": false,
+        "start": "ent:dxf_dxf_p0",
+        "end": "ent:dxf_dxf_p1"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "point",
+        "id": "ent:dxf_dxf_p2",
+        "construction": false,
+        "x": 0.08,
+        "y": 0.060000000000000005
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "line",
+        "id": "ent:dxf_dxf_e1",
+        "construction": false,
+        "start": "ent:dxf_dxf_p1",
+        "end": "ent:dxf_dxf_p2"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "point",
+        "id": "ent:dxf_dxf_p3",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.060000000000000005
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "line",
+        "id": "ent:dxf_dxf_e2",
+        "construction": false,
+        "start": "ent:dxf_dxf_p2",
+        "end": "ent:dxf_dxf_p3"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:dxf",
+      "entity": {
+        "type": "line",
+        "id": "ent:dxf_dxf_e3",
+        "construction": false,
+        "start": "ent:dxf_dxf_p3",
+        "end": "ent:dxf_dxf_p0"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_dxf",
+        "name": "Imported DXF sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:dxf"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:extrude_dxf",
+        "name": "DXF extrusion",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_dxf",
+          "profile_ref": "sketch:dxf/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    }
+  ]
+}

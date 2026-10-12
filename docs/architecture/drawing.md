@@ -98,3 +98,14 @@ records. Exact polygon/line clipping implements even-odd section hatching with
 SVG-equivalent phase. CLI/Agent/MCP regenerate before building/writing the whole
 buffer; model mutation/schema are unchanged. See ADR-046 for bounds, text-control
 refusal, analytic/independent-parser tests and intentional single-sheet scope.
+
+## Planar DXF input boundary (MCAD-P12-009)
+
+`opencad-file::dxf` parses bounded text into ordinary SI sketch entities and
+inspects version/units/layers without kernel or filesystem I/O. Explicit selected
+layers, unit agreement and unsupported-geometry refusal prevent accidental loss.
+The CLI boundary reads input, builds structural DesignPatch, verifies candidate
+regeneration/assertions and applies through document history before persistence.
+Input is authored geometry, not a cached drawing scene; exported paper coordinates
+retain view scale when reimported. Analytic circles/arcs and fixed 1 nm shared-point
+identity are documented in ADR-048. The `.ocad` schema is unchanged.
