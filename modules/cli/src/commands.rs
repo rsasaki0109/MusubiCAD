@@ -36,6 +36,7 @@ pub fn run() -> Result<()> {
         Some("params") => cmd_params(args.next().as_deref(), &args.collect::<Vec<_>>()),
         Some("regen") => cmd_regen(args.next().as_deref(), &args.collect::<Vec<_>>()),
         Some("export") => cmd_export(args.next().as_deref(), args.next().as_deref()),
+        Some("bom") => crate::bom::cmd_bom(args.collect()),
         Some("mesh") => cmd_mesh(args.next().as_deref(), args.collect()),
         Some("pick") => cmd_pick(args.next().as_deref(), args.collect()),
         Some("view") => cmd_view(args.next().as_deref()),
@@ -727,6 +728,7 @@ COMMANDS:
                 or where regeneration fails (`intent <path> regen`)
     params      List document parameters
     regen       Regenerate features through the geometry kernel
+    bom         Count verified assembly parts; optionally export JSON or CSV
     export      Export STL, 3MF, GLB, STEP, drawing SVG, or an assembly as URDF or an HTML joint viewer
     mesh        Tessellate and summarize viewport scene data
     pick        Query viewport selection at a pixel coordinate

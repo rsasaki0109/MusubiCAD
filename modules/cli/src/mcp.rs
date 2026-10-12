@@ -120,6 +120,12 @@ fn tools() -> Vec<Tool> {
             }),
         },
         Tool {
+            name: "bom_document",
+            description: "Regenerate every assembly source and count leaf part occurrences, including patterns and repeated subassemblies, with structured instance provenance. Optionally export a deterministic JSON/CSV table outside the source documents. Missing or failed children refuse output.",
+            handler: Handler::Agent("opencad.bom_document"),
+            schema: || json!({"type":"object","properties":{"path":{"type":"string"},"output":{"type":"string"}},"required":["path"],"additionalProperties":false}),
+        },
+        Tool {
             name: "authoring_patch",
             description: "Express an existing document as one structural DesignPatch that rebuilds it from an empty document. Use it as a worked example of patch syntax.",
             handler: Handler::Authoring,
@@ -614,7 +620,8 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 18);
+        assert_eq!(tools.len(), 19);
+        assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
             assert!(tool["description"]

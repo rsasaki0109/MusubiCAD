@@ -651,7 +651,7 @@ DesignPatch, OCCT/Mock geometry and deterministic SVG/export infrastructure.
 | MCAD-P12-005 | Title blocks | Explicit per-sheet metadata and fixed SI frame layout; DesignPatch set/clear, XML-safe SVG, Mock/OCCT examples/analytic layout tests, schemas/migration, guide/skill/eval (ADR-044) | Complete |
 | MCAD-P12-006 | PDF output | Canonical multi-page vector PDF via precise SVG layout, bundled font and strict glyph refusal; Mock/OCCT analytic paper/geometry tests, deterministic examples, guide/skill/eval (ADR-045) | Complete |
 | MCAD-P12-007 | DXF output | Single-sheet millimetre paper-space primitives, exact polygon hatch clipping and UTF-8 labels; Mock/OCCT analytic tests, independent parser audit, examples, guide/skill/eval (ADR-046) | Complete |
-| MCAD-P12-008 | Assembly BOM | Stable component/instance counts and deterministic parts table/export | Planned |
+| MCAD-P12-008 | Assembly BOM | Verified source catalog, recursive pattern/leaf quantities and structured instance provenance; strict nested regeneration, deterministic JSON/CSV, Mock/OCCT analytic tests, example, guide/skill/eval (ADR-047) | Complete |
 
 **Definition of done:** one reviewed PR per task, backend commands/DesignPatch,
 both kernel paths where geometry is queried, analytic measurements, example,

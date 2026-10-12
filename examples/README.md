@@ -408,3 +408,15 @@ measurements. The section hatch leaves the square hole clear. Regenerate using
 `musubicad export examples/title_plate_drawing.ocad.d examples/title_plate_drawing.dxf`
 (and equivalently for the section). Independent audit:
 `python -m pip install ezdxf==1.4.4 && python tools/test_drawing_dxf.py`.
+
+### Nested assembly bill of materials
+
+`bom_nested_assembly.ocad.d` contains two patterned subassemblies (three 80×60×6 mm
+plates each) and one direct plate. Verified BOM output has two declared root
+components, three top-level instances, one leaf-source row and seven plates.
+`bom_nested_assembly.bom.json` records all structured instance paths; the CSV is
+a parts table. The packed child `parts/sub.ocad` references the shared plate file.
+Root and child are rebuilt by `create_bom_assembly_patch.json` and
+`create_bom_subassembly_patch.json`. Regenerate tables with
+`musubicad bom examples/bom_nested_assembly.ocad.d --output examples/bom_nested_assembly.bom.json`
+(or `.csv`). Query through Agent/MCP for the same report; ADR-047.

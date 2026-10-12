@@ -1,0 +1,44 @@
+{
+  "assembly_doc": "doc:bom_nested",
+  "declared_component_count": 2,
+  "top_level_instance_count": 3,
+  "leaf_part_count": 1,
+  "leaf_instance_count": 7,
+  "rows": [
+    {
+      "source_doc": "doc:title_plate",
+      "name": "Title plate",
+      "source_path": "parts/plate.ocad.d",
+      "quantity": 7,
+      "instance_paths": [
+        [
+          "instance:direct"
+        ],
+        [
+          "instance:left",
+          "instance:copy0"
+        ],
+        [
+          "instance:left",
+          "instance:copy1"
+        ],
+        [
+          "instance:left",
+          "instance:fixed"
+        ],
+        [
+          "instance:right",
+          "instance:copy0"
+        ],
+        [
+          "instance:right",
+          "instance:copy1"
+        ],
+        [
+          "instance:right",
+          "instance:fixed"
+        ]
+      ]
+    }
+  ]
+}

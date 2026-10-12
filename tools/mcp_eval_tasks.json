@@ -453,6 +453,31 @@
           130
         ]
       ]
+    },
+    {
+      "id": "assembly_bom_add_subassembly",
+      "source": "examples/bom_nested_assembly.ocad.d",
+      "document": "bom_assembly.ocad.d",
+      "prompt": "In {document}, add one fixed instance:extra of existing component:sub at translation [1.2,0,0] metres with identity rotation, preserving all existing parts, instances and the patterned child assembly. Use DesignPatch, verified dry-run/apply and regenerate. Query bom_document and write {document}.bom.json. Verify four top-level instances, one leaf-source row with ten plates (3*3+1), and complete nested regeneration. Do not merge copied source files or infer material/cost metadata.",
+      "expected_volume_mm3": 288000.0,
+      "required_parameters": [],
+      "expected_instances": 4,
+      "expected_mates": 0,
+      "expected_bom_name": "bom_assembly.ocad.d.bom.json",
+      "expected_bom_summary": {
+        "assembly_doc": "doc:bom_nested",
+        "declared_component_count": 2,
+        "top_level_instance_count": 4,
+        "leaf_part_count": 1,
+        "leaf_instance_count": 10
+      },
+      "expected_bom_rows": [
+        {
+          "source_doc": "doc:title_plate",
+          "source_path": "parts/plate.ocad.d",
+          "quantity": 10
+        }
+      ]
     }
   ]
 }

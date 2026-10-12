@@ -141,22 +141,45 @@ pub(crate) fn pick_face<'a>(solid: &'a Solid, pick: &FacePick) -> Result<&'a cad
 }
 
 #[cfg(feature = "occt")]
-fn collect_body_solids(store: &KernelStore, body_id: u64) -> Result<Vec<Solid>> {
-    if let Some(members) = store.compound_member_ids(body_id) {
-        members
-            .iter()
-            .map(|member_id| {
-                store
-                    .body(*member_id)
-                    .cloned()
-                    .ok_or_else(|| OpenCadError::not_found(format!("body {member_id}")))
-            })
-            .collect()
-    } else {
-        Ok(vec![store.body(body_id).cloned().ok_or_else(|| {
-            OpenCadError::not_found(format!("body {body_id}"))
-        })?])
+fn collect_body_member_ids(store: &KernelStore, body_id: u64) -> Result<Vec<u64>> {
+    let mut pending = vec![(body_id, 0_usize)];
+    let mut solids = Vec::new();
+    let mut visits = 0_usize;
+    while let Some((id, depth)) = pending.pop() {
+        visits += 1;
+        if depth > 64 || visits > 100_000 {
+            return Err(OpenCadError::validation(
+                "compound depth/member budget exceeded",
+            ));
+        }
+        if let Some(members) = store.compound_member_ids(id) {
+            if pending.len().saturating_add(members.len()) > 100_000 {
+                return Err(OpenCadError::validation("compound member budget exceeded"));
+            }
+            pending.extend(members.iter().rev().map(|member| (*member, depth + 1)));
+        } else if store.body(id).is_some() {
+            solids.push(id);
+        } else {
+            return Err(OpenCadError::not_found(format!("body {id}")));
+        }
     }
+    if solids.is_empty() {
+        return Err(OpenCadError::validation("compound contains no solids"));
+    }
+    Ok(solids)
+}
+
+#[cfg(feature = "occt")]
+fn collect_body_solids(store: &KernelStore, body_id: u64) -> Result<Vec<Solid>> {
+    collect_body_member_ids(store, body_id)?
+        .into_iter()
+        .map(|id| {
+            store
+                .body(id)
+                .cloned()
+                .ok_or_else(|| OpenCadError::not_found(format!("body {id}")))
+        })
+        .collect()
 }
 
 /// Map each face address of a deep copy to its 1-based enumeration index
@@ -1225,30 +1248,27 @@ impl GeometryKernel for OcctGeometryKernel {
     fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
-            let solid = self
-                .store
-                .borrow()
-                .body(body.0)
-                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
-                .clone();
-
-            let mut transformed = solid;
-            if !transform.is_identity_rotation() {
-                let (axis, angle) = rotation_matrix_to_axis_angle(transform.rotation);
-                if angle.abs() > 1e-12 {
-                    transformed = transformed.rotate(DVec3::ZERO, axis, angle);
+            let solids = collect_body_solids(&self.store.borrow(), body.0)?;
+            let mut members = Vec::with_capacity(solids.len());
+            for mut transformed in solids {
+                if !transform.is_identity_rotation() {
+                    let (axis, angle) = rotation_matrix_to_axis_angle(transform.rotation);
+                    if angle.abs() > 1e-12 {
+                        transformed = transformed.rotate(DVec3::ZERO, axis, angle);
+                    }
                 }
-            }
-            if !transform.is_identity_translation() {
-                transformed = transformed.translate(DVec3::new(
-                    transform.translation_m[0],
-                    transform.translation_m[1],
-                    transform.translation_m[2],
+                if !transform.is_identity_translation() {
+                    transformed = transformed.translate(DVec3::new(
+                        transform.translation_m[0],
+                        transform.translation_m[1],
+                        transform.translation_m[2],
+                    ));
+                }
+                members.push(KernelBody::new(
+                    self.store.borrow_mut().insert_body(transformed),
                 ));
             }
-
-            let id = self.store.borrow_mut().insert_body(transformed);
-            Ok(KernelBody::new(id))
+            self.make_compound(&members)
         }
         #[cfg(not(feature = "occt"))]
         {
@@ -1453,7 +1473,16 @@ impl GeometryKernel for OcctGeometryKernel {
 
         #[cfg(feature = "occt")]
         {
-            let member_ids: Vec<u64> = bodies.iter().map(|body| body.0).collect();
+            let store = self.store.borrow();
+            let mut member_ids = Vec::new();
+            for body in bodies {
+                let members = collect_body_member_ids(&store, body.0)?;
+                if member_ids.len().saturating_add(members.len()) > 100_000 {
+                    return Err(OpenCadError::validation("compound member budget exceeded"));
+                }
+                member_ids.extend(members);
+            }
+            drop(store);
             let compound_id = self.store.borrow_mut().insert_compound(member_ids.clone());
             Ok(KernelBody::new(compound_id))
         }
@@ -1630,6 +1659,85 @@ mod tests {
                 [0.0, 0.0, 1.0],
             )
             .expect("extrude")
+    }
+
+    #[test]
+    fn occt_nested_compound_rigid_transform_preserves_analytic_members_and_source() {
+        let kernel = OcctGeometryKernel::new();
+        let a = box_body(&kernel);
+        let b = kernel
+            .translate_body(box_body(&kernel), [0.1, 0., 0.])
+            .expect("translate");
+        let c = kernel
+            .translate_body(box_body(&kernel), [0.2, 0., 0.])
+            .expect("translate");
+        let pair = kernel.make_compound(&[a, b]).expect("pair");
+        let body = kernel.make_compound(&[pair, c]).expect("nested");
+        let expected = 3. * 0.08 * 0.06 * 0.006;
+        let before = kernel.mass_properties(&body, 1.).expect("volume");
+        assert!((before.volume_m3 - expected).abs() < 1e-12);
+        let moved = kernel
+            .transform_body(
+                body.clone(),
+                RigidTransform {
+                    translation_m: [1., 2., 3.],
+                    rotation: [[0., -1., 0.], [1., 0., 0.], [0., 0., 1.]],
+                },
+            )
+            .expect("compound pose");
+        let bbox = kernel.bounding_box(&moved).expect("bbox");
+        for (actual, wanted) in bbox
+            .min
+            .into_iter()
+            .zip([0.94, 2., 3.])
+            .chain(bbox.max.into_iter().zip([1., 2.28, 3.006]))
+        {
+            // OCCT's bounding box includes its 1e-7 m tolerance gap.
+            assert!(
+                (actual - wanted).abs() < 2e-7,
+                "compound bound {actual} vs {wanted}"
+            );
+        }
+        assert!(
+            (kernel
+                .mass_properties(&moved, 1.)
+                .expect("moved volume")
+                .volume_m3
+                - expected)
+                .abs()
+                < 1e-12
+        );
+        assert!(
+            (kernel
+                .mass_properties(&body, 1.)
+                .expect("source unchanged")
+                .volume_m3
+                - before.volume_m3)
+                .abs()
+                < 1e-12
+        );
+        assert_eq!(
+            kernel
+                .tessellate(&moved, &TessellationSettings::default())
+                .expect("all members")
+                .triangle_count(),
+            36
+        );
+    }
+
+    #[test]
+    fn occt_compound_unknown_handles_cycles_and_member_budget_fail_closed() {
+        let kernel = OcctGeometryKernel::new();
+        let body = box_body(&kernel);
+        assert!(kernel
+            .make_compound(&[body.clone(), KernelBody(u64::MAX)])
+            .is_err());
+        let mut store = kernel.store.borrow_mut();
+        let cycle = store.alloc_id();
+        store.compound_members.insert(cycle, vec![cycle]);
+        assert!(collect_body_member_ids(&store, cycle).is_err());
+        let huge = store.insert_compound(vec![body.0; 100_001]);
+        assert!(collect_body_member_ids(&store, huge).is_err());
     }
 
     /// A box's tensor about its centre of mass is `m(b² + c²)/12` per axis,

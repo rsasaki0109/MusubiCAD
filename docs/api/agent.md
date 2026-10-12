@@ -905,3 +905,17 @@ Standard JSON-RPC error codes:
 See `examples/agent/inspect_request.json`, `examples/agent/query_request.json`,
 `examples/agent/plugin_list_request.json`,
 `examples/agent/plugin_invoke_request.json`, and the other checked-in requests.
+
+## Assembly bill of materials: `opencad.bom_document`
+
+Parameters: `{ "path": "assembly.ocad.d", "output": "assembly.bom.json" }`;
+`output` is optional and supports `.json`/`.csv` outside every source document.
+Returns `assembly_doc`, `declared_component_count`, `top_level_instance_count`,
+`leaf_part_count`, `leaf_instance_count` and canonical `rows`. Each row contains
+verified `source_doc`, `name`, `source_path`, dimensionless `quantity` and
+structured root-to-leaf `instance_paths`. Patterns/nested occurrences count;
+unused declarations do not. Different resolved files remain separate rows.
+Every assembly snapshot must regenerate completely; missing, mismatched, cyclic
+or failed children return an application error before output. Optional tables
+use atomic replacement; input graphs remain unchanged. See ADR-047 and the MCP
+BOM authoring guide for bounds, example and intentional limitations.

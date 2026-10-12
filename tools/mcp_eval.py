@@ -273,6 +273,34 @@ def drawing_dxf_problems(path: Path, task: dict) -> list[str]:
         return ["required DXF artifact is absent or malformed"]
 
 
+def bom_artifact_problems(path: Path, task: dict) -> list[str]:
+    try:
+        bom = json.loads(path.read_text(encoding="utf-8"))
+        problems = []
+        for name, desired in task["expected_bom_summary"].items():
+            actual = bom.get(name)
+            if actual != desired or (isinstance(desired, int) and type(actual) is not int):
+                problems.append(f"BOM {name} differs")
+        rows = bom["rows"]
+        actual_rows = sorted((r["source_doc"], r["source_path"], r["quantity"]) for r in rows)
+        expected_rows = sorted((r["source_doc"], r["source_path"], r["quantity"]) for r in task["expected_bom_rows"])
+        if actual_rows != expected_rows:
+            problems.append("BOM leaf quantities/sources differ")
+        for row in rows:
+            quantity, paths = row["quantity"], row["instance_paths"]
+            if type(quantity) is not int or quantity <= 0 or len(paths) != quantity or any(
+                not isinstance(p, list) or not p or any(not isinstance(i, str) or not i.startswith("instance:") for i in p) for p in paths
+            ):
+                problems.append("BOM quantity/provenance differs")
+            elif len(set(tuple(p) for p in paths)) != quantity:
+                problems.append("BOM occurrence paths are duplicated")
+        if bom["leaf_part_count"] != len(rows) or bom["leaf_instance_count"] != sum(r["quantity"] for r in rows):
+            problems.append("BOM totals differ from rows")
+        return problems
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError):
+        return ["required BOM artifact is absent or malformed"]
+
+
 def check(
     task: dict,
     document: Path,
@@ -299,9 +327,9 @@ def check(
         if mates != task["expected_mates"]:
             problems.append(f"{mates} active mates, expected {task['expected_mates']}")
         match = MATE_ERROR_LINE.search(regen_output)
-        if match is None:
+        if match is None and task["expected_mates"] > 0:
             problems.append("regeneration reported no mate error")
-        elif float(match.group(1)) > MATE_TOLERANCE_M:
+        elif match is not None and float(match.group(1)) > MATE_TOLERANCE_M:
             problems.append(f"mates unsatisfied: max error {match.group(1)} m")
     if "expected_joint_ids" in task:
         joints = assembly_joint_ids(document)
@@ -322,6 +350,8 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_bom_name" in task:
+        problems.extend(bom_artifact_problems(document.parent / task["expected_bom_name"], task))
     if "expected_dxf_name" in task:
         problems.extend(drawing_dxf_problems(document.parent / task["expected_dxf_name"], task))
     if "expected_pdf_name" in task:
@@ -591,6 +621,21 @@ def self_test() -> None:
     assert check(dxf_task, title_sheet, "") == (True, [])
     for key, bad in [("expected_dxf_name", "missing.dxf"), ("expected_dxf_units", 1), ("expected_dxf_paper_mm", [297,210]), ("expected_dxf_text", ["missing label"]), ("expected_dxf_model_bounds_mm", [[50,100],[91,130]])]:
         assert not check({**dxf_task, key: bad}, title_sheet, "")[0]
+    bom_sheet = ROOT / "examples" / "bom_nested_assembly.ocad.d"
+    bom_task = {"expected_bom_name": "bom_nested_assembly.bom.json", "expected_bom_summary": {"assembly_doc": "doc:bom_nested", "declared_component_count": 2, "top_level_instance_count": 3, "leaf_part_count": 1, "leaf_instance_count": 7}, "expected_bom_rows": [{"source_doc": "doc:title_plate", "source_path": "parts/plate.ocad.d", "quantity": 7}]}
+    assert check(bom_task, bom_sheet, "") == (True, [])
+    assert check({"expected_instances": 3, "expected_mates": 0}, bom_sheet, "") == (True, [])
+    assert not check({**bom_task, "expected_bom_name": "missing.bom.json"}, bom_sheet, "")[0]
+    assert not check({**bom_task, "expected_bom_summary": {"leaf_instance_count": 8}}, bom_sheet, "")[0]
+    assert not check({**bom_task, "expected_bom_rows": []}, bom_sheet, "")[0]
+    with tempfile.TemporaryDirectory() as directory:
+        artifact = Path(directory) / "bom.json"
+        bad = json.loads((ROOT / "examples" / "bom_nested_assembly.bom.json").read_text(encoding="utf-8"))
+        bad["rows"][0]["instance_paths"] = [["instance:duplicate"]] * 7
+        artifact.write_text(json.dumps(bad), encoding="utf-8")
+        assert bom_artifact_problems(artifact, bom_task)
+        artifact.write_text("{bad JSON", encoding="utf-8")
+        assert bom_artifact_problems(artifact, bom_task)
     printable_sheet = ROOT / "examples" / "printable_plate_drawing.ocad.d"
     pdf_task = {"expected_pdf_name": "printable_plate_drawing.pdf", "expected_pdf_pages": 2, "expected_pdf_paper_mm": [[210,297],[297,210]]}
     assert check(pdf_task, printable_sheet, "") == (True, [])

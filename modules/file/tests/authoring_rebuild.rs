@@ -191,6 +191,7 @@ fn assembly_and_drawing_examples_are_rebuilt_byte_for_byte() {
         vec![
             "angular_plate_drawing.ocad.d",
             "assembly_two_brackets.ocad.d",
+            "bom_nested_assembly.ocad.d",
             "bracket_front_view.ocad.d",
             "detail_plate_drawing.ocad.d",
             "printable_plate_drawing.ocad.d",

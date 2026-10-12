@@ -33,6 +33,7 @@ opencad-render = { workspace = true }
 opencad-sketch = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+tempfile = "3"
 
 [dev-dependencies]
 opencad-ai = { workspace = true }
