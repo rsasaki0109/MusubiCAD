@@ -576,3 +576,22 @@ is only presentation. Perimeter is bounded quadrature, not a certified bound.
 See `docs/api/cubic-spline.md`, `examples/cubic_plate.ocad.d`, the creation patch
 and eval `cubic_edit_control`: a 40×40 mm control triangle extruded 6 mm has
 volume 1440 mm³; editing a to 60 mm gives 2160 mm³ without literalizing sources.
+
+### Phase 14 desktop editing contract
+
+ADR-058 / P14-001 is architecture-only; feature-tree, selection-patch and
+interactive sketch editors remain planned. Use existing backend DesignPatch
+paths while these are implemented. Tauri/JS owns presentation and drafts;
+backend owns source queries/capabilities, explicit units, semantic/source-scene
+revision admission, concrete patch/effect preview, candidate regeneration,
+transactions/history and persistence. Every GUI model command needs CLI or
+Agent parity. Publish source/history/scene only after verified regeneration;
+retain previous source/history/output on failure. Frontend name heuristics or
+renderer IDs cannot bind mutations; ambiguous/missing/stale references and
+unsupported geometry refuse. Sketch overlays remain drafts until backend
+entity/constraint commits. Transported history stays opaque. The current
+source-only parameter/history publication gap must be closed in the editor
+gateway. Do not claim GUI editing, actual Tauri interactions or external-host
+verification from an ADR, static handler audit or headless backend smoke alone.
+See `docs/architecture/desktop-editing.md` and the Phase 14 roadmap acceptance
+plan; new sampling/spline/NURBS editing stays separately gated.

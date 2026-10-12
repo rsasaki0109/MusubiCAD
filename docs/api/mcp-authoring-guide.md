@@ -980,3 +980,18 @@ DesignPatch, inspect returned history, and call `regen_document`.
 `param:a` to `60 mm` yields 2160 mm³, bounds X `[0,26.666667]` mm and Y
 `[0,17.777778]` mm, without replacing `ent:p1.x="a"` or `ent:p2.y="b"`.
 Eval `cubic_edit_control` grades source IDs/expressions and analytic volume.
+
+## Phase 14 desktop command admission
+
+[ADR-058](../adr/ADR-058-backend-only-desktop-editing.md) defines the backend-only
+GUI contract. P14-001 adds architecture and acceptance evidence requirements;
+feature-tree, selection patch and interactive sketch editors are planned.
+Continue using existing CLI/Agent/MCP DesignPatch paths. Future GUI model actions
+must use those same verified backend semantics: explicit units, stable graph/
+semantic IDs, source/scene revision admission, concrete patch/effect preview,
+candidate regeneration and atomic source/history/scene publication. Ambiguous,
+missing, stale or unsupported selection bindings refuse; frontend feature-name
+hints cannot bind mutations. UI sketch overlays are drafts until a backend
+source/constraint patch is validated and committed. Backend history remains
+opaque to the frontend. Static handler audits and headless tests do not alone
+prove an interactive editor, and local MCP is separate from real host evidence.

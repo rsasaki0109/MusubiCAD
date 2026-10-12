@@ -26,6 +26,13 @@ recipes/measurements are described as local and uncommitted. The README explicit
 says these checks do not establish complete geometric or workflow equivalence;
 do not describe the project as fully equivalent to Fusion on that basis.
 
+P14-001 / ADR-058 now pins the backend-only desktop editing contract: shared
+typed commands/queries, explicit units, source/scene revision and semantic
+admission, concrete DesignPatch preview, verified candidate regeneration and
+checkpoint/history publication. The current source-only parameter/history
+publication gap is scheduled for the editor gateway in P14-002. This is an
+accepted architecture plan, with no new editor capability or maturity credit.
+
 Primary references at the snapshot:
 
 - [README and architecture](https://github.com/bherbruck/solidcraft/blob/07e263d7e95cac9a6851e48bffcb79f302aabfb8/README.md)
