@@ -24,6 +24,129 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "projected_sketch": {
+      "type": "object",
+      "required": [
+        "type",
+        "sketch_id",
+        "workplane",
+        "projections"
+      ],
+      "properties": {
+        "type": {
+          "const": "projected_sketch"
+        },
+        "sketch_id": {
+          "type": "string",
+          "pattern": "^sketch:"
+        },
+        "workplane": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "plane"
+              ],
+              "properties": {
+                "type": {
+                  "const": "global"
+                },
+                "plane": {
+                  "enum": [
+                    "XY",
+                    "YZ",
+                    "XZ"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "origin",
+                "normal",
+                "x_axis"
+              ],
+              "properties": {
+                "type": {
+                  "const": "custom"
+                },
+                "origin": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "normal": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "x_axis": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "projections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source_feature",
+              "source_entity",
+              "curve_id",
+              "point_ids"
+            ],
+            "properties": {
+              "source_feature": {
+                "type": "string",
+                "pattern": "^feature:"
+              },
+              "source_entity": {
+                "type": "string",
+                "pattern": "^ent:"
+              },
+              "curve_id": {
+                "type": "string",
+                "pattern": "^ent:"
+              },
+              "point_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^ent:"
+                },
+                "minItems": 1,
+                "maxItems": 2
+              },
+              "construction": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 256
+        }
+      },
+      "additionalProperties": false
+    },
     "ellipse": {
       "type": "object",
       "required": [
@@ -1889,12 +2012,96 @@
     },
     "feature_definition": {
       "allOf": [
-        { "if": { "properties": { "type": { "const": "imported_mesh" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/imported_mesh" } },
-        { "if": { "properties": { "type": { "const": "draft" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/draft" } },
-        { "if": { "properties": { "type": { "const": "rib" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/rib" } },
-        { "if": { "properties": { "type": { "const": "body_boolean" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/body_boolean" } },
-        { "if": { "properties": { "type": { "const": "fillet" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/fillet" } },
-        { "if": { "properties": { "type": { "const": "standard_hole" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/standard_hole" } },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "imported_mesh"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/imported_mesh"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "draft"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/draft"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "rib"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/rib"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "body_boolean"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/body_boolean"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "fillet"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/fillet"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "standard_hole"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/standard_hole"
+          }
+        },
         {
           "if": {
             "properties": {
@@ -1918,10 +2125,27 @@
           "then": {
             "$ref": "#/$defs/datum_axis"
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "projected_sketch"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/projected_sketch"
+          }
         }
       ],
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
         "type": {
           "enum": [
@@ -1945,7 +2169,8 @@
             "datum_axis",
             "draft",
             "rib",
-            "body_boolean"
+            "body_boolean",
+            "projected_sketch"
           ]
         }
       }

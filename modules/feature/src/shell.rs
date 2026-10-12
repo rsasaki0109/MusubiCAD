@@ -138,6 +138,7 @@ impl Feature for ShellFeatureExecutor {
             .kernel()
             .shell_body(body, def.thickness.meters(), &open_faces)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(result),
             datum: None,
         })

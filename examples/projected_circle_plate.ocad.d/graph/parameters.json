@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:radius": {
+      "id": "param:radius",
+      "name": "radius",
+      "expr": "30 mm",
+      "dirty": false
+    },
+    "param:thickness": {
+      "id": "param:thickness",
+      "name": "thickness",
+      "expr": "6 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

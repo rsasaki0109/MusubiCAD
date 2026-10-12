@@ -1,0 +1,140 @@
+{
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:radius",
+      "name": "radius",
+      "expr": "30 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:thickness",
+      "name": "thickness",
+      "expr": "6 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:source",
+      "name": "Source circle",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:source",
+      "entity": {
+        "type": "point",
+        "id": "ent:source_center",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:source",
+      "entity": {
+        "type": "circle",
+        "id": "ent:source_circle",
+        "construction": false,
+        "center": "ent:source_center",
+        "radius": 0.03
+      }
+    },
+    {
+      "type": "add_sketch_constraint",
+      "sketch_id": "sketch:source",
+      "constraint": {
+        "type": "radius",
+        "id": "con:source_radius",
+        "target": "ent:source_circle",
+        "expr": "radius"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:source_sketch",
+        "name": "Source sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:source"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:projection",
+        "name": "Projected sketch",
+        "definition": {
+          "type": "projected_sketch",
+          "sketch_id": "sketch:projection",
+          "workplane": {
+            "type": "custom",
+            "origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "normal": [
+              0.0,
+              0.5,
+              0.8660254037844386
+            ],
+            "x_axis": [
+              1.0,
+              0.0,
+              0.0
+            ]
+          },
+          "projections": [
+            {
+              "source_feature": "feature:source_sketch",
+              "source_entity": "ent:source_circle",
+              "curve_id": "ent:projected_curve",
+              "point_ids": [
+                "ent:projected_center"
+              ],
+              "construction": false
+            }
+          ]
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:projection_body",
+        "name": "Projected extrusion",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:projection",
+          "profile_ref": "sketch:projection/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body",
+          "length_expr": "thickness"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    }
+  ]
+}

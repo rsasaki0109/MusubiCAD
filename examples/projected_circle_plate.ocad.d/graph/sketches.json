@@ -1,0 +1,50 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:source",
+      "name": "Source circle",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:source_center",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "circle",
+          "id": "ent:source_circle",
+          "construction": false,
+          "center": "ent:source_center",
+          "radius": 0.03
+        }
+      ],
+      "constraints": [
+        {
+          "type": "radius",
+          "id": "con:source_radius",
+          "target": "ent:source_circle",
+          "expr": "radius"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:source_circle",
+          "entity_ids": [
+            "ent:source_circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:source/profile:outer"
+        }
+      ]
+    }
+  ]
+}

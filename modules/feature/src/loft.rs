@@ -97,6 +97,7 @@ impl Feature for LoftFeatureExecutor {
             (_, None) => unreachable!("validated above"),
         };
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(body),
             datum: None,
         })

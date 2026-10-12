@@ -155,6 +155,7 @@ impl Feature for FilletFeatureExecutor {
             None => ctx.kernel().fillet_edges(body, radius_m, selector)?,
         };
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(result),
             datum: None,
         })

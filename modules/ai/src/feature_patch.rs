@@ -348,6 +348,16 @@ pub(crate) fn check_feature_inputs(
     state: &DesignState,
     failures: &mut BTreeSet<String>,
 ) {
+    if let FeatureDefinition::ProjectedSketch(_) = &node.definition {
+        if let Err(error) = opencad_feature::projected_sketch::resolve_design_sketch(
+            &state.feature_nodes,
+            &state.sketches,
+            &state.parameters,
+            &node.id,
+        ) {
+            failures.insert(format!("projected sketch '{}' invalid: {error}", node.id));
+        }
+    }
     if let FeatureDefinition::Sketch(def) = &node.definition {
         if !state
             .sketches
@@ -451,6 +461,28 @@ pub(crate) fn diff_feature_order(before: &[String], after: &[String]) -> Vec<Sem
             after: index_of(&common_after, id).to_string(),
         })
         .collect()
+}
+
+/// Validate graph-owned projection bindings after every transaction, including
+/// source entity/parameter edits whose feature definitions did not change.
+pub(crate) fn validate_projection_state(state: &DesignState) -> Result<()> {
+    let mut ids: BTreeSet<&str> = state.sketches.iter().map(|s| s.id.as_str()).collect();
+    for node in &state.feature_nodes {
+        if let FeatureDefinition::ProjectedSketch(def) = &node.definition {
+            if !ids.insert(&def.sketch_id) {
+                return Err(OpenCadError::validation(
+                    "projected sketch ID must be unique and distinct from authored sketches",
+                ));
+            }
+            opencad_feature::projected_sketch::resolve_design_sketch(
+                &state.feature_nodes,
+                &state.sketches,
+                &state.parameters,
+                &node.id,
+            )?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

@@ -92,6 +92,7 @@ impl Feature for DraftFeatureExecutor {
         };
         let result = ctx.kernel().draft_body(body, &input)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(result),
             datum: None,
         })

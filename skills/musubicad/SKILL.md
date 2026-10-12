@@ -508,3 +508,17 @@ not silently rebind their outer loop. Use exact normal extrusion with native
 OCCT; Mock has analytic new-body measures/rigid matrix placement but refuses
 shape/topology edits and rendering. Dry-run/apply with verified patches/history.
 See ADR-053, MCP authoring guide and `ellipse_plate.ocad.d` authoring example.
+
+### Associated geometry projection
+
+Use graph-owned `projected_sketch` via DesignPatch AddFeature or
+ReplaceFeatureDefinition, not an authored coordinate copy. Specify upstream
+sketch feature/entity IDs, a unique destination sketch ID, Global/Custom plane,
+fresh curve/point IDs and construction flags. Lines need two endpoint IDs,
+full circles/ellipses one centre; shared points must retain the same semantic
+source vertex. Missing/ambiguous/suppressed sources, cycles, invalid planes and
+collapsed curves refuse. Curves regenerate after source edits; generated
+coordinates are derived output only. Body-edge/Datum/FaceRef/arc/spline sources
+remain unsupported. Inspect with `inspect_projected_sketch` (Agent and CLI
+counterparts); edit the source or binding, dry-run and apply through verified
+patch/history. See ADR-054 and `projected_circle_plate.ocad.d` authoring example.

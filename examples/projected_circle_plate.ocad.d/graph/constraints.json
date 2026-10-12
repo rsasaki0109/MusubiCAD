@@ -1,0 +1,13 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:source",
+      "constraint": {
+        "type": "radius",
+        "id": "con:source_radius",
+        "target": "ent:source_circle",
+        "expr": "radius"
+      }
+    }
+  ]
+}

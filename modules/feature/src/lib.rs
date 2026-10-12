@@ -75,3 +75,6 @@ pub use draft::{DraftFeature, DraftFeatureExecutor};
 
 pub mod body_boolean;
 pub use body_boolean::BodyBooleanFeature;
+
+pub mod projected_sketch;
+pub use projected_sketch::{CurveProjection, ProjectedSketchFeature};

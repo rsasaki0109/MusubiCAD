@@ -816,3 +816,57 @@ matrix placement; Mock topology/shape edits, booleans and tessellation refuse.
 Native BREP rendering works; ellipse sketch-overlay picking remains deferred.
 Always dry-run and use verified `patch_apply` with history. Example:
 `examples/ellipse_plate.ocad.d` and `agent/create_ellipse_plate_patch.json`.
+
+### Associated cross-sketch projection (P13-005, ADR-054)
+
+Create a `projected_sketch` feature with a new destination sketch ID, explicit
+Global/Custom plane and semantic upstream curve bindings. Do not create a raw
+sketch with the destination ID or copy generated coordinates into the document:
+
+```json
+{
+  "type": "add_feature",
+  "node": {
+    "id": "feature:projection",
+    "name": "Projected sketch",
+    "definition": {
+      "type": "projected_sketch",
+      "sketch_id": "sketch:projection",
+      "workplane": {"type":"global","plane":"XY"},
+      "projections": [{
+        "source_feature": "feature:source_sketch",
+        "source_entity": "ent:source_circle",
+        "curve_id": "ent:projected_curve",
+        "point_ids": ["ent:projected_center"],
+        "construction": false
+      }]
+    }
+  },
+  "position": {"at":"end"}
+}
+```
+
+Sources are upstream sketch features (including projected sketches), addressed
+by stable stored/prepared line/circle/ellipse entity IDs. Rectangle-derived
+edges use their declared IDs. Lines require two destination endpoint IDs;
+full circles/ellipses require one centre ID. Shared destination points must
+refer to the same semantic source vertex; coincident different vertices do not
+merge. Source dependencies are graph-derived; missing/ambiguous/suppressed
+sources, cycles, invalid planes and collapsed projections refuse.
+
+Orthogonal world-to-plane projection uses metres. A circle projected to an
+oblique plane becomes an exact ellipse. Source parameter changes invalidate
+downstream outputs and preserve destination IDs. Construction curves stay out
+of profiles; normal consumer closure rules apply. Append a normal extrusion
+with `sketch_feature: feature:projection` and profile
+`sketch:projection/profile:outer`, then dry-run and verified apply/history.
+
+Use `inspect_projected_sketch` / Agent `opencad.inspect_projected_sketch` / CLI
+`inspect-projected-sketch <part> <feature_id>` to inspect current derived SI
+geometry and bindings without writing. Edit the upstream source or the
+projection's definition; generated entities are not authored sketch objects.
+Initial scope excludes body-edge picks, Datum/FaceRef planes, arcs and splines.
+Example: `projected_circle_plate.ocad.d` and its authoring patch. A 30 mm circle
+projected to a 30-degree tilted plane and extruded 6 mm has volume
+`pi*.03^2*cos(pi/6)*.006 m3` in both native and analytic Mock ellipse paths.
+Legacy Mock line/parallel-circle solids remain synthetic.

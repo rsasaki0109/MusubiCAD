@@ -73,3 +73,11 @@ bounds/COM/AGM area, source/patch/schema/expanded/packed/history evidence and
 example/guide/skill/eval. Elliptical arcs, axis/tangent constraints, through-all,
 ellipse loft/sweep/helix/revolve/trim/offset, Mock topology/booleans/rendering and
 ellipse sketch-overlay picking remain unsupported and fail closed.
+
+P13-005 / ADR-054: graph-owned semantic cross-sketch projection of lines/full
+circles/ellipses into explicit planes, derived sketch outputs excluded from
+authored files, stable destination IDs, dependency/warm-cache updates, reference/
+cycle/plane/degeneracy refusal, pure inspection via CLI/Agent/MCP, both-kernel
+analytic ellipse volume and source/history/schema examples. Body-edge and
+Datum/FaceRef/arc/spline projection and editable generated sketches remain
+deferred; legacy Mock line/parallel-circle measures remain synthetic.

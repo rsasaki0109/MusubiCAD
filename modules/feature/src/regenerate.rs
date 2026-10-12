@@ -219,6 +219,15 @@ impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
             .nodes
             .get(sketch_feature_id)
             .ok_or_else(|| OpenCadError::not_found(format!("feature '{sketch_feature_id}'")))?;
+        if matches!(node.definition, FeatureDefinition::ProjectedSketch(_)) {
+            return self
+                .outputs
+                .get(sketch_feature_id)
+                .and_then(|o| o.sketch.as_ref())
+                .ok_or_else(|| {
+                    OpenCadError::not_found(format!("derived sketch '{sketch_feature_id}'"))
+                });
+        }
         let FeatureDefinition::Sketch(def) = &node.definition else {
             return Err(OpenCadError::validation(format!(
                 "feature '{sketch_feature_id}' is not a sketch"
@@ -433,6 +442,19 @@ impl PartModel {
                     })
                     .collect();
                 upstream_hashes.sort_unstable();
+                if let FeatureDefinition::ProjectedSketch(def) = &node.definition {
+                    for binding in &def.projections {
+                        if self
+                            .nodes
+                            .get(&binding.source_feature)
+                            .map_or(true, |n| n.suppressed)
+                        {
+                            return Err(OpenCadError::validation(
+                                "projection source feature missing or suppressed",
+                            ));
+                        }
+                    }
+                }
                 let source_sketch = match &node.definition {
                     FeatureDefinition::Sketch(definition) => {
                         self.sketches.get(&definition.sketch_id)
@@ -3084,6 +3106,7 @@ impl TestRegenContext {
         ctx.outputs.insert(
             feature_id.into(),
             FeatureOutput {
+                sketch: None,
                 body: Some(body),
                 datum: None,
             },

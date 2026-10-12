@@ -138,3 +138,13 @@ New ellipse parts use strict inline unit evaluation with the existing angle
 parameter naming contract. Native opaque wire recipes construct exact OCCT
 elliptical prisms; Mock analytic metadata provides real volume/bounds and AGM
 surface area without claiming a BREP or sampled shape.
+
+ADR-054 projected sketches are graph-owned bindings to upstream semantic curve
+IDs. Their FeatureOutput.sketch is derived, consumed through the regeneration
+context and excluded from authored OcadDocument.sketches. Exact projection
+maps solved source coordinates into explicit planes and transforms conics via
+an analytic 2x2 covariance eigensystem. Source feature hashes invalidate the
+projection/cache after edits; pure recursive resolution validates bindings
+before transaction commit, with no kernel or file I/O. Cycles, ambiguity,
+missing/suppressed sources, invalid/collapsed geometry and semantic vertex
+identity conflicts refuse. No sampled polygon becomes an ellipse's truth.

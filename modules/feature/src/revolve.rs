@@ -115,6 +115,7 @@ impl Feature for RevolveFeatureExecutor {
         };
 
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(body),
             datum: None,
         })

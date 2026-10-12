@@ -972,3 +972,9 @@ operations. Required centre, semiaxes and axis angle use SI literals or named
 parameter expressions; the MCP guide documents strict units and the initial
 normal-extrusion/centre-constraint scope (ADR-053). Queries identify them as
 `ellipse`; verified application/history remains the only write path.
+
+`opencad.inspect_projected_sketch` accepts `{path, feature_id}` and returns
+`{feature_id, derived: true, sketch, bindings}` from current graph sources
+without writes. `projected_sketch` definitions are authored through existing
+DesignPatch feature operations and generate associated sketch outputs; the
+MCP guide and ADR-054 define semantic IDs, explicit planes and refusal scope.

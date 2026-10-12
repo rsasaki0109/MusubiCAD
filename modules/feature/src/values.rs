@@ -114,6 +114,7 @@ impl FeatureDefinition {
                 direction("datum axis direction", &def.direction)
             }
             Self::Sketch(_) => Ok(()),
+            Self::ProjectedSketch(def) => def.validate(),
             Self::Extrude(def) => extent(
                 "extrude length",
                 &def.extent,
