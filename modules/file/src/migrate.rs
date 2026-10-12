@@ -3,6 +3,10 @@
 // MCAD-P12-003: absent view.section stays None; never infer persisted contours.
 // MCAD-P12-002: absent radial_dimensions defaults empty; never infer circle witnesses.
 //! Schema version migrations (Task-116+).
+// MCAD-P13-004: ellipse is an additive analytic entity tag with required axes
+// and angle; never infer ellipses from old circles/polygons. Resolved ellipse
+// parameters are transient and skipped on the wire. Unknown tags must be
+// refused by older readers; current old/new round trips preserve source IDs.
 // MCAD-P13-002: primitive entity IDs/type/fields retain their wire meanings.
 // replace_sketch_entity and solved-point expected effects are additive patch
 // tags; legacy documents/arc defaults remain unchanged. No association inferred.

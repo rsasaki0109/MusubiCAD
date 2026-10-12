@@ -184,7 +184,29 @@ fn feature_output_key(
         node.suppressed,
         upstream_hashes,
     );
-    Ok(sha256_hex(&serde_json::to_vec(&identity)?))
+    // Authored ellipse expressions remain source truth, while their resolved
+    // values are deliberately skipped by document serialization. Cache keys
+    // must still include the actual geometric input, including angle-only edits.
+    let mut ellipse_inputs = Vec::new();
+    if let Some(sketch) = source_sketch {
+        for entity in &sketch.entities {
+            if let opencad_sketch::SketchEntity::Ellipse(ellipse) = entity {
+                ellipse_inputs.push((
+                    ellipse.base.id.as_str(),
+                    opencad_sketch::solve::ellipse_parameters(ellipse)?,
+                ));
+            }
+        }
+    }
+    if ellipse_inputs.is_empty() {
+        Ok(sha256_hex(&serde_json::to_vec(&identity)?))
+    } else {
+        Ok(sha256_hex(&serde_json::to_vec(&(
+            identity,
+            "opencad.resolved-ellipse-input.v1",
+            ellipse_inputs,
+        ))?))
+    }
 }
 
 impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {

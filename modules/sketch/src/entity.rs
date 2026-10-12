@@ -52,6 +52,20 @@ pub struct CircleEntity {
     pub radius: Coord,
 }
 
+/// Full analytic ellipse; literal lengths are metres, angle radians.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EllipseEntity {
+    #[serde(flatten)]
+    pub base: EntityBase,
+    pub center: EntityId,
+    pub major_radius: Coord,
+    pub minor_radius: Coord,
+    pub axis_angle: Coord,
+    /// Resolved source parameters, never persisted or edited as document truth.
+    #[serde(skip)]
+    pub resolved_parameters: Option<[f64; 3]>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ArcEntity {
     #[serde(flatten)]
@@ -97,6 +111,7 @@ pub enum SketchEntity {
     Point(PointEntity),
     Line(LineEntity),
     Circle(CircleEntity),
+    Ellipse(EllipseEntity),
     Arc(ArcEntity),
     Rectangle(RectangleEntity),
 }
@@ -107,6 +122,7 @@ impl SketchEntity {
             Self::Point(e) => &e.base.id,
             Self::Line(e) => &e.base.id,
             Self::Circle(e) => &e.base.id,
+            Self::Ellipse(e) => &e.base.id,
             Self::Arc(e) => &e.base.id,
             Self::Rectangle(e) => &e.base.id,
         }
@@ -117,6 +133,7 @@ impl SketchEntity {
         match self {
             Self::Line(line) => vec![&line.start, &line.end],
             Self::Circle(circle) => vec![&circle.center],
+            Self::Ellipse(ellipse) => vec![&ellipse.center],
             Self::Arc(arc) => std::iter::once(&arc.center)
                 .chain(arc.start_point.as_ref())
                 .chain(arc.end_point.as_ref())
@@ -142,6 +159,7 @@ impl SketchEntity {
             Self::Point(point) => vec![&point.x, &point.y],
             Self::Line(_) => Vec::new(),
             Self::Circle(circle) => vec![&circle.radius],
+            Self::Ellipse(e) => vec![&e.major_radius, &e.minor_radius, &e.axis_angle],
             Self::Arc(arc) => vec![&arc.radius, &arc.start_angle, &arc.end_angle],
             Self::Rectangle(rectangle) => rectangle.origin.iter().chain(&rectangle.size).collect(),
         };
@@ -159,6 +177,7 @@ impl SketchEntity {
             Self::Point(e) => e.base.construction,
             Self::Line(e) => e.base.construction,
             Self::Circle(e) => e.base.construction,
+            Self::Ellipse(e) => e.base.construction,
             Self::Arc(e) => e.base.construction,
             Self::Rectangle(e) => e.base.construction,
         }
@@ -170,6 +189,7 @@ impl SketchEntity {
             Self::Point(e) => e.base.construction = construction,
             Self::Line(e) => e.base.construction = construction,
             Self::Circle(e) => e.base.construction = construction,
+            Self::Ellipse(e) => e.base.construction = construction,
             Self::Arc(e) => e.base.construction = construction,
             Self::Rectangle(e) => e.base.construction = construction,
         }

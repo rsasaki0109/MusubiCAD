@@ -128,6 +128,10 @@ fn build_problem(sketch: &Sketch) -> Result<SketchProblem> {
                 register_point_ref(&mut registry, &mut point_coords, sketch, &l.start)?;
                 register_point_ref(&mut registry, &mut point_coords, sketch, &l.end)?;
             }
+            SketchEntity::Ellipse(e) => {
+                register_point_ref(&mut registry, &mut point_coords, sketch, &e.center)?;
+                ellipse_parameters(e)?;
+            }
             SketchEntity::Circle(c) => {
                 register_point_ref(&mut registry, &mut point_coords, sketch, &c.center)?;
                 radius_var(&mut registry, c.base.id.as_str());
@@ -753,6 +757,34 @@ fn apply_solution(sketch: &mut Sketch, registry: &VariableRegistry, vars: &VarSe
         }
     }
     Ok(())
+}
+
+/// Resolve explicit axis definitions; axes/orientation are source parameters,
+/// not free solver variables or a single circle radius.
+pub fn ellipse_parameters(e: &crate::EllipseEntity) -> Result<[f64; 3]> {
+    let values = match e.resolved_parameters {
+        Some(values) => values,
+        None => [
+            coord_literal(&e.major_radius)?,
+            coord_literal(&e.minor_radius)?,
+            match &e.axis_angle {
+                Coord::Literal(v) => *v,
+                Coord::Expr(expr) => parse_angle_expr(expr.as_str())?,
+            },
+        ],
+    };
+    let [a, b, angle] = values;
+    if !values.iter().all(|v| v.is_finite()) || b <= 1e-9 || a < b || a > 1e6 || angle.abs() > 1e6 {
+        return Err(OpenCadError::validation(
+            "ellipse requires finite major >= minor > 1 nm, axes <= 1e6 m and a finite angle",
+        ));
+    }
+    Ok(values)
+}
+
+/// Resolve literal/unit-bearing sketch lengths after parameter evaluation.
+pub fn coord_value(coord: &Coord) -> Result<f64> {
+    coord_literal(coord)
 }
 
 #[cfg(test)]

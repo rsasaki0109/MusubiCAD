@@ -17,8 +17,8 @@ pub mod workplane;
 pub use constraint::{Constraint, DistanceTarget, EntityRef, EqualTarget, LineEnd, RectangleEdge};
 pub use dimension::Dimension;
 pub use entity::{
-    expand_rectangle, ArcEntity, CircleEntity, Coord, EntityBase, LineEntity, PointEntity,
-    RectangleEntity, SketchEntity,
+    expand_rectangle, ArcEntity, CircleEntity, Coord, EllipseEntity, EntityBase, LineEntity,
+    PointEntity, RectangleEntity, SketchEntity,
 };
 pub use profile::{assign_profile_refs, detect_profiles, Profile, ProfileKind};
 pub use solve::{parse_angle_expr, parse_length_expr, solve_sketch};

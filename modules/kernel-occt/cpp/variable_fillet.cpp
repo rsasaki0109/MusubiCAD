@@ -26,11 +26,42 @@
 #include <Standard_Failure.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <gp_Pln.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepPrimAPI_MakePrism.hxx>
+#include <gp_Elips.hxx>
+#include <gp_Ax2.hxx>
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 namespace musubicad {
+rust::Vec<std::uint8_t> ellipse_prism(rust::Slice<const double> frame, rust::Slice<const double> delta) {
+    try {
+        if (frame.size()!=9 || delta.size()!=3) throw std::runtime_error("invalid ellipse prism input");
+        for (auto v:frame) if (!std::isfinite(v)) throw std::runtime_error("non-finite ellipse frame");
+        for (auto v:delta) if (!std::isfinite(v)) throw std::runtime_error("non-finite ellipse extrusion");
+        gp_Vec major(frame[3],frame[4],frame[5]),minor(frame[6],frame[7],frame[8]);
+        auto a=major.Magnitude(),b=minor.Magnitude();
+        if (b<=1e-9 || a<b || a>1e6 || std::abs(major.Dot(minor)/(a*b))>1e-9) throw std::runtime_error("invalid ellipse axes");
+        gp_Dir normal(major.Crossed(minor));
+        gp_Elips ellipse(gp_Ax2(gp_Pnt(frame[0],frame[1],frame[2]),normal,gp_Dir(major)),a,b);
+        BRepBuilderAPI_MakeEdge edge(ellipse); if (!edge.IsDone()) throw std::runtime_error("ellipse edge failed");
+        BRepBuilderAPI_MakeWire wire(edge.Edge()); if (!wire.IsDone()) throw std::runtime_error("ellipse wire failed");
+        BRepBuilderAPI_MakeFace face(wire.Wire()); if (!face.IsDone()) throw std::runtime_error("ellipse face failed");
+        gp_Vec direction(delta[0],delta[1],delta[2]);
+        auto height=std::abs(direction.Dot(gp_Vec(normal)));
+        if (height<=1e-9 || std::abs(height-direction.Magnitude())>1e-9*direction.Magnitude()) throw std::runtime_error("ellipse extrusion must be normal");
+        BRepPrimAPI_MakePrism prism(face.Face(),direction); if (!prism.IsDone()) throw std::runtime_error("ellipse prism failed");
+        auto solid=prism.Shape();if (!BRepCheck_Analyzer(solid,true).IsValid()) throw std::runtime_error("invalid ellipse prism");
+        GProp_GProps mass;BRepGProp::VolumeProperties(solid,mass);auto expected=std::acos(-1.)*a*b*height;
+        if (!std::isfinite(mass.Mass()) || mass.Mass()<=0 || std::abs(mass.Mass()-expected)>std::max(1e-18,expected*1e-8)) throw std::runtime_error("ellipse prism volume mismatch");
+        std::ostringstream stream;BRepTools::Write(solid,stream);auto bytes=stream.str();rust::Vec<std::uint8_t> result;
+        for (auto byte:bytes) {result.push_back(static_cast<std::uint8_t>(byte));}
+        return result;
+    } catch (const Standard_Failure& failure) {throw std::runtime_error(failure.what());}
+}
+
 rust::Vec<std::uint8_t> triangle_solid(rust::Slice<const double> vertices, rust::Slice<const std::uint32_t> indices, double expected_volume) {
     try {
         if (vertices.empty() || vertices.size()%3 || indices.size()<12 || indices.size()%3 || indices.size()>30000 || !std::isfinite(expected_volume) || expected_volume<=0)

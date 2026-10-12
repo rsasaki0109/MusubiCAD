@@ -153,6 +153,7 @@ fn native_and_mock_crops_match_analytic_plate_corner_dimensions_and_volume() {
             profile_ref: "plate".into(),
             points: vec![[0., 0.], [0.08, 0.], [0.08, 0.06], [0., 0.06]],
             closed: true,
+            ellipse: None,
             circle: None,
             segments: vec![],
             placement: None,

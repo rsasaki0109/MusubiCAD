@@ -22,3 +22,7 @@ pub use param_eval::{
     six_axis_wrist_parameters,
 };
 pub use param_graph::{ParamGraph, ParameterEntry};
+
+pub use param_eval::{
+    eval_angle_expr_strict, eval_length_expr_strict, evaluate_param_graph_strict,
+};

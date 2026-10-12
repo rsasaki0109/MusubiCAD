@@ -304,6 +304,7 @@ mod tests {
                 profile_ref: "profile:test".into(),
                 points: vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
                 closed: true,
+                ellipse: None,
                 circle: None,
                 segments: Vec::new(),
                 placement: Some(SketchPlacement::global_xy()),

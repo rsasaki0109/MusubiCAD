@@ -311,6 +311,17 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_ellipse_sources" in task:
+        try:
+            sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
+            by_id = {sketch["id"]: sketch for sketch in sketches}
+            for desired in task["expected_ellipse_sources"]:
+                entities = {entity["id"]: entity for entity in by_id.get(desired["sketch_id"], {}).get("entities", [])}
+                entity = entities.get(desired["entity_id"], {})
+                if entity.get("type") != "ellipse" or any(entity.get(field) != desired[field] for field in ("center", "major_radius", "minor_radius", "axis_angle")):
+                    problems.append(f"ellipse {desired['entity_id']} lacks expected parametric source identity")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            problems.append("ellipse source is absent or malformed")
     if "expected_sketch_points" in task:
         try:
             sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
@@ -708,6 +719,13 @@ def self_test() -> None:
     assert not check({**pdf_task, "expected_pdf_name": "missing.pdf"}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_pages": 1}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_paper_mm": [[297,210],[297,210]]}, printable_sheet, "")[0]
+    ellipse_doc = ROOT / "examples" / "ellipse_plate.ocad.d"
+    ellipse_task = {"expected_ellipse_sources": [{"sketch_id": "sketch:ellipse", "entity_id": "ent:ellipse", "center": "ent:center", "major_radius": "major_radius", "minor_radius": "minor_radius", "axis_angle": "axis_angle_rad"}]}
+    assert check(ellipse_task, ellipse_doc, "") == (True, [])
+    for field, value in [("entity_id", "ent:missing"), ("major_radius", 0.03), ("axis_angle", 0.5235987755982988)]:
+        wrong_ellipse = json.loads(json.dumps(ellipse_task))
+        wrong_ellipse["expected_ellipse_sources"][0][field] = value
+        assert not check(wrong_ellipse, ellipse_doc, "")[0]
     edited_doc = ROOT / "examples" / "trim_extend_plate.ocad.d"
     edited_task = {"expected_sketch_points": [{"sketch_id": "sketch:base", "point_id": "ent:edited_end", "position_m": [0.04, 0.03]}]}
     assert check(edited_task, edited_doc, "") == (True, [])

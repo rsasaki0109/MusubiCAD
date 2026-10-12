@@ -966,3 +966,9 @@ are specified in the MCP authoring guide (ADR-052). `association` must be
 `independent_copy`; apply the returned revision-guarded patch via existing
 verified patch/history APIs. It creates an authored sketch, not a persistent
 source-dependent offset feature.
+
+Analytic `ellipse` entities are authored/edited with existing typed DesignPatch
+operations. Required centre, semiaxes and axis angle use SI literals or named
+parameter expressions; the MCP guide documents strict units and the initial
+normal-extrusion/centre-constraint scope (ADR-053). Queries identify them as
+`ellipse`; verified application/history remains the only write path.

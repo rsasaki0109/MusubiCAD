@@ -24,6 +24,69 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "ellipse": {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "center",
+        "major_radius",
+        "minor_radius",
+        "axis_angle"
+      ],
+      "properties": {
+        "type": {
+          "const": "ellipse"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^ent:"
+        },
+        "construction": {
+          "type": "boolean"
+        },
+        "center": {
+          "type": "string",
+          "pattern": "^ent:"
+        },
+        "major_radius": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 1e-09
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "minor_radius": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 1e-09
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "axis_angle": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "imported_mesh": {
       "type": "object",
       "required": [
@@ -1067,158 +1130,209 @@
                 "$ref": "#/$defs/stable_id_sketch"
               },
               "entity": {
-                "type": "object",
-                "required": [
-                  "type",
-                  "id"
-                ],
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "point",
-                      "line",
-                      "circle",
-                      "arc"
-                    ]
-                  },
-                  "id": {
-                    "$ref": "#/$defs/stable_id_entity"
-                  },
-                  "construction": {
-                    "type": "boolean"
-                  },
-                  "x": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "y": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "start": {
-                    "$ref": "#/$defs/stable_id_entity"
-                  },
-                  "end": {
-                    "$ref": "#/$defs/stable_id_entity"
-                  },
-                  "center": {
-                    "$ref": "#/$defs/stable_id_entity"
-                  },
-                  "radius": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "start_angle": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "end_angle": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "start_point": {
-                    "$ref": "#/$defs/stable_id_entity"
-                  },
-                  "end_point": {
-                    "$ref": "#/$defs/stable_id_entity"
-                  }
-                },
-                "allOf": [
-                  {
-                    "if": {
-                      "properties": {
-                        "type": {
-                          "const": "point"
-                        }
-                      }
-                    },
-                    "then": {
-                      "required": [
-                        "x",
-                        "y"
-                      ]
-                    }
-                  },
-                  {
-                    "if": {
-                      "properties": {
-                        "type": {
-                          "const": "line"
-                        }
-                      }
-                    },
-                    "then": {
-                      "required": [
-                        "start",
-                        "end"
-                      ]
-                    }
-                  },
-                  {
-                    "if": {
-                      "properties": {
-                        "type": {
-                          "const": "circle"
-                        }
-                      }
-                    },
-                    "then": {
-                      "required": [
-                        "center",
-                        "radius"
-                      ]
-                    }
-                  },
-                  {
-                    "if": {
-                      "properties": {
-                        "type": {
-                          "const": "arc"
-                        }
-                      }
-                    },
-                    "then": {
-                      "required": [
-                        "center",
-                        "radius",
-                        "start_angle",
-                        "end_angle"
-                      ]
-                    }
-                  }
-                ],
-                "additionalProperties": false
-              }
+  "type": "object",
+  "required": [
+    "type",
+    "id"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "point",
+        "line",
+        "circle",
+        "arc",
+        "ellipse"
+      ]
+    },
+    "id": {
+      "$ref": "#/$defs/stable_id_entity"
+    },
+    "construction": {
+      "type": "boolean"
+    },
+    "x": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "y": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "start": {
+      "$ref": "#/$defs/stable_id_entity"
+    },
+    "end": {
+      "$ref": "#/$defs/stable_id_entity"
+    },
+    "center": {
+      "$ref": "#/$defs/stable_id_entity"
+    },
+    "radius": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "start_angle": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "end_angle": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "start_point": {
+      "$ref": "#/$defs/stable_id_entity"
+    },
+    "end_point": {
+      "$ref": "#/$defs/stable_id_entity"
+    },
+    "major_radius": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 1e-09
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "minor_radius": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 1e-09
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "axis_angle": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "point"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "x",
+          "y"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "line"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "start",
+          "end"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "circle"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "center",
+          "radius"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "arc"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "center",
+          "radius",
+          "start_angle",
+          "end_angle"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "ellipse"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/ellipse"
+      }
+    }
+  ],
+  "additionalProperties": false
+}
             },
             "additionalProperties": false
           }
@@ -1308,15 +1422,52 @@
             "properties": {
               "sketch_id": { "type": "string", "pattern": "^sketch:" },
               "entity": {
-                "type": "object",
-                "required": ["type", "id"],
-                "properties": {
-                  "type": { "enum": ["point", "line", "circle", "arc", "rectangle"] },
-                  "id": { "$ref": "#/$defs/stable_id_entity" },
-                  "start_point": { "type": "string", "pattern": "^ent:" },
-                  "end_point": { "type": "string", "pattern": "^ent:" }
-                }
-              }
+  "type": "object",
+  "required": [
+    "type",
+    "id"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "point",
+        "line",
+        "circle",
+        "arc",
+        "rectangle",
+        "ellipse"
+      ]
+    },
+    "id": {
+      "$ref": "#/$defs/stable_id_entity"
+    },
+    "start_point": {
+      "type": "string",
+      "pattern": "^ent:"
+    },
+    "end_point": {
+      "type": "string",
+      "pattern": "^ent:"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "ellipse"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/ellipse"
+      }
+    }
+  ]
+}
             }
           }
         },

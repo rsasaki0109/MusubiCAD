@@ -388,7 +388,9 @@ pub(crate) fn validate_construction_bindings(
         .iter()
         .filter_map(|op| match op {
             PatchOperation::SetSketchConstruction { sketch_id, .. } => Some(sketch_id.as_str()),
-            PatchOperation::ReplaceSketchEntity { sketch_id, .. } => Some(sketch_id.as_str()),
+            PatchOperation::ReplaceSketchEntity { sketch_id, .. }
+            | PatchOperation::AddSketchEntity { sketch_id, .. }
+            | PatchOperation::RemoveSketchEntity { sketch_id, .. } => Some(sketch_id.as_str()),
             _ => None,
         })
         .collect();
@@ -468,6 +470,31 @@ pub(crate) fn validate_sketch_references(
         })
         .collect();
 
+    if sketch
+        .entities
+        .iter()
+        .any(|e| matches!(e, SketchEntity::Ellipse(_)))
+    {
+        match opencad_graph::evaluate_param_graph_strict(&after.parameters) {
+            Ok(values) => {
+                for entity in &sketch.entities {
+                    if let SketchEntity::Ellipse(e) = entity {
+                        if let Err(error) =
+                            opencad_feature::param_apply::resolve_ellipse_parameters(e, &values)
+                        {
+                            failures.insert(format!(
+                                "sketch '{sketch_id}': ellipse '{}' parameters invalid: {error}",
+                                e.base.id
+                            ));
+                        }
+                    }
+                }
+            }
+            Err(error) => {
+                failures.insert(format!("ellipse parameter scope failed: {error}"));
+            }
+        }
+    }
     let mut check_expression = |owner: String, expr: &str| {
         for name in parameter_names_in_expr(expr) {
             if after.parameters.find_by_name(&name).is_none() {
@@ -495,6 +522,29 @@ pub(crate) fn validate_sketch_references(
                     "sketch '{sketch_id}': entity '{}' references missing point '{point}'",
                     entity.id()
                 ));
+            }
+        }
+    }
+    for constraint in &sketch.constraints {
+        let radius_targets: Vec<_> = match constraint {
+            opencad_sketch::Constraint::Tangent { curve: target, .. }
+            | opencad_sketch::Constraint::Radius { target, .. }
+            | opencad_sketch::Constraint::Diameter { target, .. } => vec![target],
+            opencad_sketch::Constraint::Equal { a, b, .. } => [a, b]
+                .into_iter()
+                .filter_map(|t| match t {
+                    opencad_sketch::EqualTarget::Radius(id) => Some(id),
+                    _ => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
+        for id in radius_targets {
+            if matches!(
+                sketch.find_entity(id.as_str()),
+                Some(SketchEntity::Ellipse(_))
+            ) {
+                failures.insert(format!("ellipse '{id}' has two axes; radius/diameter/equal-radius/tangent constraint is unsupported"));
             }
         }
     }

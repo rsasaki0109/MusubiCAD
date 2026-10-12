@@ -290,7 +290,10 @@ fn append_sketch_lines(
                     lines,
                 );
             }
-            SketchEntity::Point(_) | SketchEntity::Arc(_) | SketchEntity::Rectangle(_) => {}
+            SketchEntity::Point(_)
+            | SketchEntity::Arc(_)
+            | SketchEntity::Ellipse(_)
+            | SketchEntity::Rectangle(_) => {}
         }
     }
     Ok(())

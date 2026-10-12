@@ -1,0 +1,29 @@
+{
+  "parameters": {
+    "param:major_radius": {
+      "id": "param:major_radius",
+      "name": "major_radius",
+      "expr": "0.03 m",
+      "dirty": false
+    },
+    "param:minor_radius": {
+      "id": "param:minor_radius",
+      "name": "minor_radius",
+      "expr": "0.02 m",
+      "dirty": false
+    },
+    "param:axis_angle_rad": {
+      "id": "param:axis_angle_rad",
+      "name": "axis_angle_rad",
+      "expr": "0.5235987755982989 rad",
+      "dirty": false
+    },
+    "param:thickness": {
+      "id": "param:thickness",
+      "name": "thickness",
+      "expr": "6 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

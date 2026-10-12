@@ -656,6 +656,39 @@
           ]
         }
       ]
+    },
+    {
+      "id": "ellipse_edit_axes",
+      "source": "examples/ellipse_plate.ocad.d",
+      "document": "ellipse_edit.ocad.d",
+      "prompt": "In {document}, change named parameter major_radius from 30 mm to 40 mm, preserving minor_radius 20 mm, thickness 6 mm and axis_angle_rad 30 degrees. Keep ent:ellipse in sketch:ellipse an analytic ellipse with source expressions major_radius, minor_radius, axis_angle_rad and centre ent:center; do not replace expressions with cached coordinates or approximate the curve with a polygon. Dry-run then apply a verified DesignPatch with history and regenerate. The exact volume is pi*40*20*6 = 15079.64474 mm3. Preserve the centre point at (0,0) mm.",
+      "expected_volume_mm3": 15079.644737231007,
+      "required_parameters": [
+        "major_radius",
+        "minor_radius",
+        "axis_angle_rad",
+        "thickness"
+      ],
+      "expected_ellipse_sources": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "entity_id": "ent:ellipse",
+          "center": "ent:center",
+          "major_radius": "major_radius",
+          "minor_radius": "minor_radius",
+          "axis_angle": "axis_angle_rad"
+        }
+      ],
+      "expected_sketch_points": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "point_id": "ent:center",
+          "position_m": [
+            0.0,
+            0.0
+          ]
+        }
+      ]
     }
   ]
 }

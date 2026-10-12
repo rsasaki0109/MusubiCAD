@@ -1,0 +1,60 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:ellipse_sketch",
+      "feature:ellipse_body"
+    ],
+    "features": {
+      "feature:ellipse_sketch": {
+        "id": "feature:ellipse_sketch",
+        "name": "Ellipse sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:ellipse_body": {
+        "id": "feature:ellipse_body",
+        "name": "Ellipse extrusion",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:ellipse_sketch",
+        "target": "feature:ellipse_body",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:ellipse_body",
+      "name": "Ellipse extrusion",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:ellipse_sketch",
+        "profile_ref": "sketch:ellipse/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:ellipse_sketch",
+      "name": "Ellipse sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:ellipse"
+      },
+      "suppressed": false
+    }
+  ]
+}

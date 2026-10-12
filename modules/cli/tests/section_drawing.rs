@@ -110,6 +110,7 @@ fn box_body(kernel: &OcctGeometryKernel, origin: [f64; 2], size: [f64; 2]) -> Ke
             profile_ref: "box".into(),
             points: vec![[x, y], [x + w, y], [x + w, y + h], [x, y + h]],
             closed: true,
+            ellipse: None,
             circle: None,
             segments: vec![],
             placement: None,
@@ -206,6 +207,7 @@ fn native_sections_match_analytic_areas_dimensions_and_volume() {
             profile_ref: "circle".into(),
             points: vec![],
             closed: true,
+            ellipse: None,
             circle: Some(SolvedCircle {
                 center_m: [0., 0.],
                 radius_m: 0.01,
