@@ -451,3 +451,15 @@ For undo use the returned `history.history` payload. See
 `examples/stl_import_plate.ocad.d`, `examples/import/closed_plate_mm.stl` and
 `examples/agent/create_stl_import_plate_patch.json`. Mock preserves accurate mesh
 measurements/placement; imported-mesh shape edits/CSG/compounds/inertia refuse.
+
+### Construction geometry editing
+
+Use `{ "type": "set_sketch_construction", "sketch_id": "sketch:base",
+"entity_id": "ent:guide_line", "construction": true }` in a verified DesignPatch.
+Use an explicit boolean, not a context-sensitive toggle. Preserve stored IDs and
+constraints; rectangle helpers target the helper's own ID. Construction curves
+remain in the solver but cannot form manufacturing profiles. A lost consumed
+profile or `profile:outer` switching to another loop refuses; explicitly
+rebind/remove consumers in the same patch. Dry-run, apply with history, then
+regenerate. See `examples/construction_plate.ocad.d` and
+`examples/agent/create_construction_plate_patch.json`.

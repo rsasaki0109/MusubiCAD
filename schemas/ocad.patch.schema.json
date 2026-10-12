@@ -506,6 +506,7 @@
       },
       "additionalProperties": false,
       "allOf": [
+
         {
           "if": {
             "properties": {
@@ -1007,6 +1008,7 @@
             "remove_sketch",
             "add_sketch_entity",
             "remove_sketch_entity",
+            "set_sketch_construction",
             "add_sketch_constraint",
             "remove_sketch_constraint",
             "add_feature",
@@ -1042,6 +1044,19 @@
         }
       },
       "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "set_sketch_construction" } } },
+          "then": {
+            "required": ["type", "sketch_id", "entity_id", "construction"],
+            "properties": {
+              "type": { "const": "set_sketch_construction" },
+              "sketch_id": { "$ref": "#/$defs/stable_id_sketch" },
+              "entity_id": { "$ref": "#/$defs/stable_id_entity" },
+              "construction": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
         {
           "if": { "properties": { "type": { "const": "add_parameter" } } },
           "then": {

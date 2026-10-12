@@ -311,6 +311,17 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_construction_entities" in task:
+        try:
+            sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
+            by_id = {sketch["id"]: sketch for sketch in sketches}
+            for desired in task["expected_construction_entities"]:
+                entities = {entity["id"]: entity for entity in by_id.get(desired["sketch_id"], {}).get("entities", [])}
+                entity = entities.get(desired["entity_id"])
+                if entity is None or entity.get("construction", False) is not desired["construction"] or entity.get("type") != desired["type"]:
+                    problems.append(f"construction entity {desired['entity_id']} lacks expected stable type/flag")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            problems.append("construction sketch source is absent or malformed")
     if "expected_imported_meshes" in task:
         try:
             nodes = json.loads((document / "graph" / "features.json").read_text(encoding="utf-8"))["feature_nodes"]
@@ -685,6 +696,13 @@ def self_test() -> None:
     assert not check({**pdf_task, "expected_pdf_name": "missing.pdf"}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_pages": 1}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_paper_mm": [[297,210],[297,210]]}, printable_sheet, "")[0]
+    construction_doc = ROOT / "examples" / "construction_plate.ocad.d"
+    construction_task = {"expected_construction_entities": [{"sketch_id": "sketch:base", "entity_id": "ent:guide_line", "type": "line", "construction": True}]}
+    assert check(construction_task, construction_doc, "") == (True, [])
+    for field, value in [("entity_id", "ent:missing"), ("construction", False), ("type", "circle")]:
+        wrong_construction = json.loads(json.dumps(construction_task))
+        wrong_construction["expected_construction_entities"][0][field] = value
+        assert not check(wrong_construction, construction_doc, "")[0]
     mesh_doc = ROOT / "examples" / "stl_import_plate.ocad.d"
     mesh_task = {"expected_imported_meshes": [{"id": "feature:stl_plate", "source_unit": "mm", "sha256": "860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0"}]}
     assert check(mesh_task, mesh_doc, "") == (True, [])

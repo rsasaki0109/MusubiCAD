@@ -100,3 +100,13 @@ not prove global inconsistency.
 cargo test -p opencad-solver
 cargo test -p opencad-sketch solve::
 ```
+
+## Construction entities (ADR-050)
+
+Construction is a persisted source flag, edited through explicit DesignPatch.
+Points/curves and their constraints remain in the solver; only profile detection
+excludes construction lines/arcs/circles and expanded rectangle edges. Identity
+is retained through flag edits. Consumer profile bindings are checked before and
+after edits so a generic outer alias cannot silently move to another loop.
+The guide-parameter regression solves a construction line from 40 to 50 mm
+while preserving the analytic plate volume; no kernel operation was added.

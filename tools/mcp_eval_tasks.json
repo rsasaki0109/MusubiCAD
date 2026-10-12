@@ -522,6 +522,54 @@
           "sha256": "860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0"
         }
       ]
+    },
+    {
+      "id": "construction_geometry_edit",
+      "source": "examples/construction_plate.ocad.d",
+      "document": "construction_edit.ocad.d",
+      "prompt": "In {document}, use a dry-run then verified DesignPatch to set ent:guide_line in sketch:base to construction false. Use the explicit set_sketch_construction operation, preserving every entity ID, point, constraint, parameter and consumer. Keep ent:guide_circle construction true. The open guide is not a solid boundary; regenerate and verify the 80 by 60 by 6 mm plate still has volume 28800 mm^3. Do not remove and recreate geometry or rebind profile:outer.",
+      "expected_volume_mm3": 28800.0,
+      "required_parameters": [
+        "width",
+        "height",
+        "thickness",
+        "guide_length"
+      ],
+      "expected_construction_entities": [
+        {
+          "sketch_id": "sketch:base",
+          "entity_id": "ent:guide_line",
+          "type": "line",
+          "construction": false
+        },
+        {
+          "sketch_id": "sketch:base",
+          "entity_id": "ent:guide_circle",
+          "type": "circle",
+          "construction": true
+        }
+      ],
+      "expected_sketch_geometry": [
+        {
+          "id": "sketch:base",
+          "counts": {
+            "point": 6,
+            "line": 5,
+            "circle": 1,
+            "arc": 0
+          },
+          "bounds_m": [
+            [
+              0,
+              0
+            ],
+            [
+              0.08,
+              0.06
+            ]
+          ]
+        }
+      ]
     }
   ]
 }

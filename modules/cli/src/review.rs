@@ -1108,6 +1108,11 @@ fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
             "Present".into(),
             "Removed".into(),
         ),
+        SemanticChange::SketchEntityModified { sketch_id, id } => (
+            format!("Sketch entity {sketch_id}/{id}"),
+            "Present".into(),
+            "Modified".into(),
+        ),
         SemanticChange::SketchConstraintAdded { sketch_id, id } => (
             format!("Sketch constraint {sketch_id}/{id}"),
             "—".into(),

@@ -29,6 +29,7 @@ pub(crate) fn operation_sketch_id(operation: &PatchOperation) -> Option<&str> {
     match operation {
         PatchOperation::AddSketch { id, .. } | PatchOperation::RemoveSketch { id } => Some(id),
         PatchOperation::AddSketchEntity { sketch_id, .. }
+        | PatchOperation::SetSketchConstruction { sketch_id, .. }
         | PatchOperation::RemoveSketchEntity { sketch_id, .. }
         | PatchOperation::AddSketchConstraint { sketch_id, .. }
         | PatchOperation::RemoveSketchConstraint { sketch_id, .. } => Some(sketch_id),
@@ -146,6 +147,26 @@ pub(crate) fn apply_sketch_operations(
                 }
                 sketch.entities.push(entity.clone());
                 touched.insert(sketch_id.clone());
+            }
+            PatchOperation::SetSketchConstruction {
+                sketch_id,
+                entity_id,
+                construction,
+            } => {
+                let sketch = find_sketch_mut(sketches, sketch_id)?;
+                let entity = sketch
+                    .entities
+                    .iter_mut()
+                    .find(|entity| entity.id().as_str() == entity_id)
+                    .ok_or_else(|| {
+                        OpenCadError::validation(format!(
+                            "unknown stored entity '{entity_id}' in sketch '{sketch_id}'"
+                        ))
+                    })?;
+                if entity.is_construction() != *construction {
+                    entity.set_construction(*construction);
+                    touched.insert(sketch_id.clone());
+                }
             }
             PatchOperation::RemoveSketchEntity {
                 sketch_id,
@@ -333,6 +354,72 @@ pub(crate) fn validate_profile_consumers(
     }
 }
 
+/// Construction edits must not silently change an unchanged consumer's loop.
+pub(crate) fn validate_construction_bindings(
+    operations: &[PatchOperation],
+    before: &DesignState,
+    after: &DesignState,
+    failures: &mut BTreeSet<String>,
+) {
+    let touched: BTreeSet<_> = operations
+        .iter()
+        .filter_map(|op| match op {
+            PatchOperation::SetSketchConstruction { sketch_id, .. } => Some(sketch_id.as_str()),
+            _ => None,
+        })
+        .collect();
+    if touched.is_empty() {
+        return;
+    }
+    let sketch_id = |state: &'_ DesignState, feature: &str| -> Option<String> {
+        state
+            .feature_nodes
+            .iter()
+            .find_map(|node| match &node.definition {
+                FeatureDefinition::Sketch(def) if node.id == feature => Some(def.sketch_id.clone()),
+                _ => None,
+            })
+    };
+    let binding = |state: &DesignState, id: &str, reference: &str| -> Option<BTreeSet<String>> {
+        let mut sketch = state.sketches.iter().find(|s| s.id.as_str() == id)?.clone();
+        prepare_sketch(&mut sketch).ok()?;
+        Some(
+            resolve_sketch_profile(&sketch, reference)?
+                .entity_ids
+                .iter()
+                .map(|id| id.as_str().to_string())
+                .collect(),
+        )
+    };
+    for node in &before.feature_nodes {
+        let Some(candidate) = after.feature_nodes.iter().find(|n| n.id == node.id) else {
+            continue;
+        };
+        for (feature, reference) in node.definition.profile_inputs() {
+            if !candidate
+                .definition
+                .profile_inputs()
+                .contains(&(feature, reference))
+            {
+                continue;
+            }
+            let Some(id) = sketch_id(before, feature) else {
+                continue;
+            };
+            if !touched.contains(id.as_str())
+                || sketch_id(after, feature).as_deref() != Some(id.as_str())
+            {
+                continue;
+            }
+            if let Some(original) = binding(before, &id, reference) {
+                if binding(after, &id, reference).as_ref() != Some(&original) {
+                    failures.insert(format!("construction edit changes feature '{}' profile '{reference}'; explicitly rebind or remove the consumer",node.id));
+                }
+            }
+        }
+    }
+}
+
 pub(crate) fn validate_sketch_references(
     sketch: &Sketch,
     after: &DesignState,
@@ -467,6 +554,14 @@ pub(crate) fn diff_sketches(before: &[Sketch], after: &[Sketch]) -> Vec<Semantic
                         sketch_id: id.clone(),
                         id: entity.clone(),
                     });
+                }
+                for id_changed in old_entities.intersection(&new_entities) {
+                    if old.find_entity(id_changed) != new.find_entity(id_changed) {
+                        changes.push(SemanticChange::SketchEntityModified {
+                            sketch_id: id.clone(),
+                            id: id_changed.clone(),
+                        });
+                    }
                 }
                 let (old_constraints, new_constraints) = (constraint_ids(old), constraint_ids(new));
                 for constraint in new_constraints.difference(&old_constraints) {

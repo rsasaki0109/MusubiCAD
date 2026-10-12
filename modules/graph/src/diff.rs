@@ -148,6 +148,10 @@ pub enum SemanticChange {
         sketch_id: String,
         id: String,
     },
+    SketchEntityModified {
+        sketch_id: String,
+        id: String,
+    },
     SketchConstraintAdded {
         sketch_id: String,
         id: String,

@@ -676,6 +676,44 @@ section robustness, export text/font/unit differences, and incorrect BOM counts
 for repeated or nested components. New geometry/sampling decisions require ADRs;
 physical host evidence remains distinct from automated Linux checks.
 
+## Phase 13 — Sketch and assembly workflows
+
+**Objective:** improve editable sketch construction and analytic tools, then
+assembly presentation and coupled motion (fixed rubric: about four weighted
+points after merges). Use SolidCraft's shared command and source-identity
+practices as a reference, preserving MusubiCAD's DesignPatch contract.
+
+**Dependencies:** Phase 12 complete, existing sketch solver/profiles, semantic
+references, assembly joints, verified patches/history, Mock and OCCT.
+
+| ID | Scope | Deliverables | Status |
+|---|---|---|---|
+| MCAD-P13-001 | Construction geometry editing | Explicit boolean construction edit preserving entity/constraint IDs; exclude helpers from solid profiles, refuse implicit consumer rebinding; Mock/OCCT analytic evidence, patch/history/schema tests, example, guide/skill/eval (ADR-050) | Complete |
+| MCAD-P13-002 | Trim and extend | Bounded analytic line/arc edits with explicit intersection selection and retained stable IDs; transactional constraint/profile checks and refusal evidence | Planned |
+| MCAD-P13-003 | Sketch offsets | Explicit-unit planar line/arc offsets with bounded topology and association semantics in a feature ADR before code; no silent repair or sampling | Planned |
+| MCAD-P13-004 | Ellipses | Analytic sketch ellipse representation, solver and exact kernel wire input, schemas/migration, analytic dimensions/area/volume and invalid cases | Planned |
+| MCAD-P13-005 | External projection | Semantic source geometry projected to an explicit sketch plane; dependency/ambiguity/missing-source refusal and regeneration after edits | Planned |
+| MCAD-P13-006 | Exploded assembly views | Persisted presentation offsets separate from mechanical placements; backend-created configuration and deterministic rendering/export, analytic placement tests | Planned |
+| MCAD-P13-007 | Coupled joints | Explicit gear/rack relationships with dimensionless/SI coupling, deterministic evaluation, cycle/conflict refusal and motion/interference evidence | Planned |
+| MCAD-P13-008 | Sketch splines (gate first) | Accepted scoped ADR satisfying every ADR-012 gate, named tests and API/schema sketches before code; then explicit stable-ID editing, Mock/OCCT analytic evidence, migration/round trips, example/guide/skill/eval; no opportunistic NURBS editing | Planned |
+
+**Definition of done:** one reviewed main-target PR per task with complete
+backend/DesignPatch semantics, both kernels where geometry is executed, analytic
+dimensions/volume, example, guide/skill and feasible eval. Schema changes require
+migration policy and old/new round trips. Scores change only after main merges.
+
+**Tests:** closed-profile identity and construction exclusion, solver constraints
+and DOF, geometry edits/intersections/units, source projection invalidation,
+assembly presentation versus mechanical placement, coupled motion/cycles,
+transactional dry-run/history/rollback and deterministic file round trips. All
+four mandatory pre-push checks apply.
+
+**Risks:** profile aliases can silently select a different loop; edits must fail
+closed until consumers are explicitly rebound. Trimming can invalidate attached
+constraints; offset topology can change; projected sources can be ambiguous.
+Coupled motion must never mutate derived joint state outside a transaction.
+New sampling, spline or kernel decisions require accepted scoped ADRs.
+
 ## Cross-phase verification matrix
 
 Every implementation PR must select the applicable rows and record the command

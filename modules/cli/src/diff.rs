@@ -319,6 +319,9 @@ fn print_change(change: &SemanticChange) {
         SemanticChange::SketchEntityRemoved { sketch_id, id } => {
             println!("  sketch entity removed {sketch_id}/{id}");
         }
+        SemanticChange::SketchEntityModified { sketch_id, id } => {
+            println!("  sketch entity modified {sketch_id}/{id}");
+        }
         SemanticChange::SketchConstraintAdded { sketch_id, id } => {
             println!("  sketch constraint added {sketch_id}/{id}");
         }
