@@ -24,6 +24,21 @@ fn every_ui_model_command_has_a_tauri_handler_and_cli_or_agent_route() {
     // load path; regeneration/export stay reusable backend operations for the
     // headless smoke contract and are not Tauri/UI commands.
     let parity = [
+        (
+            "list_document_features_cmd",
+            "list_document_features_cmd",
+            "opencad.list_features",
+        ),
+        (
+            "plan_feature_edit_cmd",
+            "plan_feature_edit_cmd",
+            "opencad.plan_feature_edit",
+        ),
+        (
+            "apply_feature_edit_cmd",
+            "apply_feature_edit_cmd",
+            "opencad.apply_feature_edit",
+        ),
         ("list_templates", "list_templates", "new"),
         ("inspect_document_cmd", "inspect_document_cmd", "inspect"),
         ("preview_document_cmd", "preview_document_cmd", "screenshot"),

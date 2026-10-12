@@ -595,3 +595,7 @@ gateway. Do not claim GUI editing, actual Tauri interactions or external-host
 verification from an ADR, static handler audit or headless backend smoke alone.
 See `docs/architecture/desktop-editing.md` and the Phase 14 roadmap acceptance
 plan; new sampling/spline/NURBS editing stays separately gated.
+
+### Verified part feature editor
+
+Use `list_features` to obtain backend source IDs, admitted length fields, authored closed profiles and current revision. Call `plan_feature_edit`, review the exact change and SI evidence, then call `apply_feature_edit` with the same intent/revision and optional opaque history. Requery before each next edit. Forms admit `create_extrude` (positive NewBody distance), `set_expression`, `move`, and `suppress`; never invent source bindings from names or renderer indices. Explicit units or same-kind parameter names are required. Failed dependency/unit/geometry/assertion admission retains source/history. Empty parts are allowed when assertions permit; nonempty physical BodyCount is unavailable and fails closed. Use `examples/agent/feature_tree_edit.json` and the API contract `docs/api/feature-editor.md`. Tauri and MCP share these helpers; native publication also checks display tessellation. General definition/sketch editing and assembly editor commands remain outside this task.

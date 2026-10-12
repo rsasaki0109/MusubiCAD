@@ -1,0 +1,39 @@
+{
+  "source": "examples/cubic_plate.ocad.d",
+  "instructions": "Copy the source to a disposable part. Query list_features before every operation, plan_feature_edit, review SI evidence, then apply_feature_edit with returned opaque history. Never edit source JSON in the frontend.",
+  "edits": [
+    {
+      "operation": "create_extrude",
+      "id": "feature:second",
+      "name": "Second cubic prism",
+      "sketch_feature": "feature:cubic_sketch",
+      "profile_ref": "profile:bezier:ent:cubic",
+      "length_expr": "12 mm"
+    },
+    {
+      "operation": "set_expression",
+      "id": "feature:second",
+      "field": "length_expr",
+      "expr": "10 mm"
+    },
+    {
+      "operation": "move",
+      "id": "feature:second",
+      "position": {
+        "before": "feature:cubic_body"
+      }
+    },
+    {
+      "operation": "suppress",
+      "id": "feature:cubic_body",
+      "suppressed": true
+    }
+  ],
+  "expected_volume_mm3": 2400,
+  "expected_bounds_size_mm": [
+    17.777777778,
+    17.777777778,
+    10
+  ],
+  "bounds_tolerance_mm": 0.0003
+}

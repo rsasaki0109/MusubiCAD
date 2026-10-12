@@ -10,7 +10,7 @@
     <header class="toolbar">
       <div class="brand">
         <strong>MusubiCAD</strong>
-        <span class="subtitle">Desktop preview</span>
+        <span class="subtitle">Part editor</span>
       </div>
       <div class="actions">
         <button id="open-btn" type="button">Open…</button>
@@ -48,6 +48,21 @@
         <dl id="regeneration-info"></dl>
         <h2>Preview</h2>
         <dl id="preview-info"></dl>
+        <h2>Feature tree</h2>
+        <p id="feature-limit">Create a distance extrusion from an existing closed sketch. Edit supported length fields; dependency checks apply to moves and suppression.</p>
+        <div id="feature-tree"></div>
+        <form id="feature-create">
+          <label>Closed sketch profile <select id="feature-profile" required></select></label>
+          <label>Feature ID <input id="feature-id" value="feature:extrude_new" required /></label>
+          <label>Name <input id="feature-name" value="New extrusion" required /></label>
+          <label>Length (mm, m, or length parameter) <input id="feature-length" value="8 mm" required /></label>
+          <button id="feature-create-review" type="submit">Review creation</button>
+        </form>
+        <div id="feature-review" hidden>
+          <p id="feature-effect"></p>
+          <button id="feature-apply" type="button">Apply reviewed edit</button>
+          <button id="feature-cancel" type="button">Cancel</button>
+        </div>
         <h2>Parameters</h2>
         <div id="parameters" class="parameters"></div>
         <h2>Intent</h2>

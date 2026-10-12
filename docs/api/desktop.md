@@ -132,3 +132,7 @@ musubicad-desktop --smoke-test <source.ocad.d> <new-work-dir.ocad.d>
 
 The Linux workflow downloads its AppImage and runs this mode with
 `APPIMAGE_EXTRACT_AND_RUN=1` under Mesa Vulkan before accepting the artifact.
+
+## Part feature editor (MCAD-P14-002)
+
+See [feature-editor.md](feature-editor.md) for admitted create/edit/reorder/suppress forms, shared Tauri/Agent/MCP commands, explicit-unit review/apply, verified parameter/history publication and intentional part-only limitations.

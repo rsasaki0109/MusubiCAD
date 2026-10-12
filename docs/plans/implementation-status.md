@@ -107,3 +107,24 @@ sketcher implementations remain planned (P14-002/003/004). This architecture-onl
 change adds no runtime editor, schema field or maturity credit. Static handler,
 headless/backend, IPC harness, actual Tauri and actual external-host evidence
 must be reported separately.
+
+P14-002: bounded part feature-tree editing through the shared verified backend.
+Tauri product forms create NewBody distance extrusions from authored closed
+profiles, edit six admitted length fields, reorder and suppress with dependency
+admission; source revisions, explicit units and required assertions fail closed.
+Parameter/history commands verify geometry and native tessellation before file
+publication; no-op keeps history and skips regeneration. Both-kernel analytic
+cubic tests, staged-failure source/history/preview retention, actual MCP stdio
+source/history parity, real Linux Tauri form interactions, examples/guide/skill
+and an independently graded eval are included. Native interaction coverage is
+local Linux only. General feature/assembly/sketch editing and selection-to-patch
+remain next tasks; nonempty physical BodyCount is unavailable and refuses;
+GPU rasterization and cross-process file locking remain separate boundaries.
+No schema, kernel feature or golden change is introduced.
+
+Upon this task's main merge, the implemented feature-tree create/edit/reorder/
+suppress and verified Undo/Redo justify GUI 10 → 20 under the fixed rubric
+(weight 15%, +1.5 total): general weighted 43.95 → 45.45 (about 45%) and
+agent operation 86 → 87. Before the merge, the baseline remains about 44% / 86%.
+This credit does not claim interactive sketching, semantic selection-to-patch
+or external host verification.

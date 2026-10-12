@@ -444,6 +444,19 @@ def check(
                     problems.append(f"imported mesh {desired['id']} lacks expected explicit-unit source")
         except (OSError, ValueError, KeyError, TypeError):
             problems.append("imported mesh source is absent or malformed")
+    if "expected_feature_editor" in task:
+        try:
+            features = json.loads((document / "graph" / "features.json").read_text(encoding="utf-8"))
+            desired = task["expected_feature_editor"]
+            if features["feature_graph"]["order"] != desired["order"]:
+                problems.append("feature editor order differs from the required source order")
+            by_id = {node["id"]: node for node in features["feature_nodes"]}
+            for node_id, expected in desired["nodes"].items():
+                node = by_id.get(node_id, {})
+                if node.get("suppressed") != expected["suppressed"] or any(node.get("definition", {}).get(k) != v for k, v in expected.get("definition", {}).items()):
+                    problems.append(f"feature editor source {node_id} differs from required identity/expression/suppression")
+        except (OSError, ValueError, KeyError, TypeError):
+            problems.append("feature editor source is absent or malformed")
     if "expected_volume_mm3" in task:
         volume = regenerated_volume_mm3(regen_output)
         expected = task["expected_volume_mm3"]
@@ -895,6 +908,29 @@ def self_test() -> None:
     assert check(coupling_task, coupled, "") == (True, [])
     assert not check({**coupling_task, "expected_joint_couplings": []}, coupled, "")[0]
     assert not check({**coupling_task, "expected_mechanical_placements": {}}, coupled, "")[0]
+    editor_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "feature_tree_edit")
+    with tempfile.TemporaryDirectory() as editor_tmp:
+        editor_doc = Path(editor_tmp) / "editor.ocad.d"
+        shutil.copytree(ROOT / "examples/cubic_plate.ocad.d", editor_doc)
+        features_file = editor_doc / "graph" / "features.json"
+        features = json.loads(features_file.read_text(encoding="utf-8"))
+        base = next(n for n in features["feature_nodes"] if n["id"] == "feature:cubic_body")
+        base["suppressed"] = True
+        second = json.loads(json.dumps(base))
+        second.update(id="feature:second", name="Second cubic prism", suppressed=False)
+        second["definition"]["length_expr"] = "10 mm"
+        second["definition"]["extent"]["length"]["value_si"] = 0.012
+        features["feature_nodes"].append(second)
+        features["feature_graph"]["order"] = list(editor_task["expected_feature_editor"]["order"])
+        features_file.write_text(json.dumps(features), encoding="utf-8")
+        assert check(editor_task, editor_doc, "volume_m3: 0.0000024\n")[0], check(editor_task, editor_doc, "volume_m3: 0.0000024\n")[1]
+        second["definition"]["profile_ref"] = "wrong:profile"
+        features_file.write_text(json.dumps(features), encoding="utf-8")
+        assert not check(editor_task, editor_doc, "volume_m3: 0.0000024\n")[0]
+        second["definition"]["profile_ref"] = "profile:bezier:ent:cubic"
+        features["feature_graph"]["order"].reverse()
+        features_file.write_text(json.dumps(features), encoding="utf-8")
+        assert not check(editor_task, editor_doc, "volume_m3: 0.0000024\n")[0]
     print("self-test passed")
 
 

@@ -43,3 +43,10 @@ Primary references at the snapshot:
 The README states MIT OR Apache-2.0 and retains third-party licence requirements.
 These notes adopt no code or assets. Any later reuse must check the specific
 file's licence and attribution, as well as MusubiCAD's module boundaries.
+
+P14-002 implements the referenced shared-command/checkpoint practice in a
+bounded Tauri feature editor: product form intents become reviewed verified
+DesignPatch candidates; backend source/history publish after geometry/assertion/
+mesh admission. Both-kernel analytic evidence, real MCP parity and real Linux
+Tauri interactions are recorded. No upstream code/application execution or
+Fusion benchmark parity is claimed.

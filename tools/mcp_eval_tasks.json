@@ -1048,6 +1048,87 @@
           }
         }
       ]
+    },
+    {
+      "id": "feature_tree_edit",
+      "source": "examples/cubic_plate.ocad.d",
+      "document": "feature_tree_edit.ocad.d",
+      "prompt": "In {document}, use list_features, plan_feature_edit and apply_feature_edit for the four operations in examples/agent/feature_tree_edit.json: create feature:second as a NewBody distance extrusion of feature:cubic_sketch/profile:bezier:ent:cubic with 12 mm, edit its length_expr to 10 mm, move it before feature:cubic_body, then suppress feature:cubic_body. Query the current revision for each operation, preview before applying, and pass returned history unchanged. Preserve the authored cubic/parameter source. Regenerate; analytic volume is 2400 mm3. Do not use polygon replacement or direct source writes.",
+      "expected_volume_mm3": 2400.0,
+      "required_parameters": [
+        "a",
+        "b"
+      ],
+      "expected_feature_editor": {
+        "order": [
+          "feature:cubic_sketch",
+          "feature:second",
+          "feature:cubic_body"
+        ],
+        "nodes": {
+          "feature:second": {
+            "suppressed": false,
+            "definition": {
+              "type": "extrude",
+              "sketch_feature": "feature:cubic_sketch",
+              "profile_ref": "profile:bezier:ent:cubic",
+              "operation": "new_body",
+              "length_expr": "10 mm",
+              "extent": {
+                "type": "distance",
+                "length": {
+                  "value_si": 0.012
+                }
+              }
+            }
+          },
+          "feature:cubic_body": {
+            "suppressed": true,
+            "definition": {
+              "type": "extrude",
+              "sketch_feature": "feature:cubic_sketch",
+              "profile_ref": "profile:bezier:ent:cubic",
+              "extent": {
+                "type": "distance",
+                "length": {
+                  "value_si": 0.006
+                }
+              },
+              "operation": "new_body"
+            }
+          }
+        }
+      },
+      "expected_cubic_sources": [
+        {
+          "sketch_id": "sketch:cubic",
+          "entity_id": "ent:cubic",
+          "control_points": [
+            "ent:p0",
+            "ent:p1",
+            "ent:p2",
+            "ent:p0"
+          ],
+          "point_coordinates": {
+            "ent:p0": [
+              0.0,
+              0.0
+            ],
+            "ent:p1": [
+              "a",
+              0.0
+            ],
+            "ent:p2": [
+              0.0,
+              "b"
+            ]
+          },
+          "parameter_expressions": {
+            "a": "40 mm",
+            "b": "40 mm"
+          }
+        }
+      ]
     }
   ]
 }

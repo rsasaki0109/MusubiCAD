@@ -89,14 +89,29 @@ pub fn set_document_parameter_with_history(
     history: Option<DocumentHistory>,
 ) -> Result<DocumentHistoryState> {
     let mut doc = read_ocad(path)?;
+    let revision = opencad_ai::design_state_revision(&opencad_file::document_design_state(&doc))?;
     let mut next_history = history.unwrap_or_default();
+    crate::editor::validate_editor_parameter_expression(&doc, id, expr)?;
     let patch = DesignPatch::set_parameter(id, expr);
+    let dry_run = opencad_file::dry_run_patch_document(&doc, &patch);
+    opencad_ai::ensure_patch_valid(&dry_run)?;
+    if dry_run.impact.no_op {
+        return Ok(DocumentHistoryState::new(next_history));
+    }
     apply_patch_with_history(
         &mut doc,
         &patch,
         &mut next_history,
         format!("Set parameter '{id}' to '{expr}'"),
     )?;
+    crate::editor::verify_editor_document_native(&doc)?;
+    if opencad_ai::design_state_revision(&opencad_file::document_design_state(&read_ocad(path)?))?
+        != revision
+    {
+        return Err(opencad_core::OpenCadError::validation(
+            "document changed during editor verification",
+        ));
+    }
     write_ocad(path, &doc)?;
     Ok(DocumentHistoryState::new(next_history))
 }
@@ -107,8 +122,17 @@ pub fn undo_document_with_history(
     history: DocumentHistory,
 ) -> Result<DocumentHistoryState> {
     let mut doc = read_ocad(path)?;
+    let revision = opencad_ai::design_state_revision(&opencad_file::document_design_state(&doc))?;
     let mut next_history = history;
     next_history.undo(&mut doc)?;
+    crate::editor::verify_editor_document_native(&doc)?;
+    if opencad_ai::design_state_revision(&opencad_file::document_design_state(&read_ocad(path)?))?
+        != revision
+    {
+        return Err(opencad_core::OpenCadError::validation(
+            "document changed during editor verification",
+        ));
+    }
     write_ocad(path, &doc)?;
     Ok(DocumentHistoryState::new(next_history))
 }
@@ -119,8 +143,17 @@ pub fn redo_document_with_history(
     history: DocumentHistory,
 ) -> Result<DocumentHistoryState> {
     let mut doc = read_ocad(path)?;
+    let revision = opencad_ai::design_state_revision(&opencad_file::document_design_state(&doc))?;
     let mut next_history = history;
     next_history.redo(&mut doc)?;
+    crate::editor::verify_editor_document_native(&doc)?;
+    if opencad_ai::design_state_revision(&opencad_file::document_design_state(&read_ocad(path)?))?
+        != revision
+    {
+        return Err(opencad_core::OpenCadError::validation(
+            "document changed during editor verification",
+        ));
+    }
     write_ocad(path, &doc)?;
     Ok(DocumentHistoryState::new(next_history))
 }

@@ -33,3 +33,33 @@ command are documented in [api/desktop.md](../api/desktop.md).
 The Tauri/UI toolbar passes the returned `history` value back to the backend
 without interpreting snapshot semantics. It uses only `can_undo` and
 `can_redo` to enable controls; no browser-local inverse stack is maintained.
+
+## Actual feature editor interaction test
+
+The part feature editor contract and intentional scope are in
+[feature-editor.md](../api/feature-editor.md). Linux Tauri interaction evidence is
+provided by `tools/test_tauri_feature_editor.mjs`, using Node's built-in WebSocket
+and the **actual** WebKit WebView inspector. It is not a browser/IPC harness.
+
+Build the locked Tauri crate with GTK/WebKit development libraries. Copy
+`examples/cubic_plate.ocad.d` to a disposable working directory under
+`examples/bracket.ocad.d` (the startup sample path). Start Xvfb or a local desktop,
+and launch the app there with `WEBKIT_INSPECTOR_HTTP_SERVER=127.0.0.1:9223`.
+Then run:
+
+```sh
+node tools/test_tauri_feature_editor.mjs http://127.0.0.1:9223 /tmp/editor/examples/bracket.ocad.d
+```
+
+On the managed cloud setup, source `/workspace/.musubicad-setup/gui-env.sh` and
+map the workspace WebKit helper directory to its compiled `/usr/lib` path using
+PRoot; the environment's saved startup instructions provide the exact command.
+No system library or repository source is modified by this runtime override.
+Local X/inspector sockets and PRoot require suitable tool execution permission.
+The test drives product create/edit/reorder/suppress forms, checks the 2400 mm³
+analytic preview, verifies review has no writes, exercises undo/redo, and checks
+byte-identical source after invalid dependency/unit refusal. Undo/redo compares
+canonical JSON content: the existing opaque-history serde transport can reorder
+object members and therefore update checksums without changing source identity.
+Stop the test app and inspector afterward. This is local Linux evidence, not
+Windows or external agent-host verification; no paid evaluation is performed.

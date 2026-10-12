@@ -39,3 +39,7 @@ evidence. Static handler tests and headless smoke remain useful but do not alone
 establish an interactive editor. Record IPC harness, actual Tauri, Linux cloud
 and real external-host evidence separately. New sampling/spline/NURBS scope
 continues to require its own admission ADR.
+
+## P14-002 implementation boundary
+
+`modules/desktop/src/editor.rs` owns authoritative feature rows, bounded typed FeatureEdit intents, revision-guarded DesignPatch planning and disposable candidate/history verification. Tauri and Agent/MCP adapt these same functions. Product forms review exact expression/profile/position/suppression and resulting volume before apply. Native publication checks required assertions and tessellation; parameter/undo/redo now use the same verification boundary. Suppressed graph inputs cannot feed active consumers. The editor stores no alternate graph or persisted UI schema. [API scope and limitations](../api/feature-editor.md) include part-only commands, positive distance NewBody creation, six length fields, unknown physical solid counts and the existing file writer/revision-check concurrency boundary.

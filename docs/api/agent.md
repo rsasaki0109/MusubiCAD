@@ -1070,3 +1070,7 @@ that tag instead of silently losing the relationship. Current decoding validates
 one-to-one guards and returns normal physical joints plus source couplings.
 Absent collections remain empty; legacy joint bytes retain their meaning. Do not
 strip the wire guard or add a relationship by editing JSON directly.
+
+## Feature editor gateway
+
+`opencad.list_features`, `opencad.plan_feature_edit`, and `opencad.apply_feature_edit` delegate to the same verified backend as Tauri. Read the [typed feature edit contract](feature-editor.md); revision and explicit units are mandatory for mutations.

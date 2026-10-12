@@ -1,5 +1,6 @@
 //! Shared helpers for MusubiCAD desktop and CLI shells.
 
+pub mod editor;
 pub mod export;
 pub mod fixture;
 pub mod inspect;
@@ -16,6 +17,10 @@ pub mod smoke;
 pub mod template;
 pub mod viewport;
 
+pub use editor::{
+    apply_document_feature_edit, list_document_features, plan_document_feature_edit, FeatureEdit,
+    FeatureEditPlan, FeatureEditResult, FeatureTree,
+};
 pub use export::{export_stl_document, ExportSummary};
 pub use inspect::{inspect_document, DocumentInspect};
 pub use intent::{

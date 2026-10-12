@@ -22,6 +22,12 @@ const redoBtn = document.getElementById("redo-btn");
 const viewportBtn = document.getElementById("viewport-btn");
 const createBtn = document.getElementById("create-btn");
 
+let documentLoadSequence = 0;
+let featureTree = null;
+let reviewedFeatureEdit = null;
+let featureBusy = false;
+let documentMutationBusy = false;
+let featureReviewSequence = 0;
 let currentPath = null;
 let parameterRows = [];
 // The backend owns complete document snapshots. The UI treats this value as
@@ -467,14 +473,15 @@ function acceptDocumentHistory(state) {
 }
 
 async function applyParameterChange(id, expr) {
-  const state = await invoke("set_document_parameter_cmd", {
-    path: currentPath,
-    id,
-    expr,
-    history: documentHistoryState?.history ?? null,
-  });
-  acceptDocumentHistory(state);
-  await loadDocument(currentPath, { keepParamHistory: true });
+  if (documentMutationBusy) throw new Error("Another document edit is in progress.");
+  documentMutationBusy = true;
+  cancelFeatureReview();
+  const path = currentPath;
+  try {
+    const state = await invoke("set_document_parameter_cmd", { path, id, expr, history: documentHistoryState?.history ?? null });
+    acceptDocumentHistory(state);
+    await loadDocument(path, { keepParamHistory: true });
+  } finally { documentMutationBusy = false; }
 }
 
 async function applyParameter(row, input) {
@@ -495,10 +502,12 @@ async function applyParameter(row, input) {
 }
 
 async function undoParameterChange() {
-  if (!currentPath || !documentHistoryState?.can_undo) {
+  if (documentMutationBusy || !currentPath || !documentHistoryState?.can_undo) {
     return;
   }
 
+  documentMutationBusy = true;
+  cancelFeatureReview();
   setStatus("Undoing…");
   try {
     const state = await invoke("undo_document_cmd", {
@@ -510,14 +519,16 @@ async function undoParameterChange() {
     setStatus("Undid document edit");
   } catch (error) {
     setStatus(`Error: ${error}`);
-  }
+  } finally { documentMutationBusy = false; }
 }
 
 async function redoParameterChange() {
-  if (!currentPath || !documentHistoryState?.can_redo) {
+  if (documentMutationBusy || !currentPath || !documentHistoryState?.can_redo) {
     return;
   }
 
+  documentMutationBusy = true;
+  cancelFeatureReview();
   setStatus("Redoing…");
   try {
     const state = await invoke("redo_document_cmd", {
@@ -529,7 +540,7 @@ async function redoParameterChange() {
     setStatus("Redid document edit");
   } catch (error) {
     setStatus(`Error: ${error}`);
-  }
+  } finally { documentMutationBusy = false; }
 }
 
 function renderParameters(rows) {
@@ -618,11 +629,14 @@ async function loadTemplates() {
 }
 
 async function loadDocument(path, options = {}) {
+  if (documentMutationBusy && !options.keepParamHistory) return;
   if (!path) {
     setStatus("No document selected.");
     return;
   }
 
+  const loadSequence = ++documentLoadSequence;
+  cancelFeatureReview();
   currentPath = path;
   if (!options.keepParamHistory) {
     resetDocumentHistory();
@@ -631,7 +645,7 @@ async function loadDocument(path, options = {}) {
 
   // A document that no longer regenerates has no preview, but its info,
   // parameters, and regeneration inspection still load so it can be repaired.
-  const [inspectResult, previewResult, regenerationResult, parametersResult] =
+  const [inspectResult, previewResult, regenerationResult, parametersResult, featuresResult] =
     await Promise.allSettled([
       invoke("inspect_document_cmd", { path }),
       invoke("preview_document_cmd", { path }),
@@ -639,7 +653,10 @@ async function loadDocument(path, options = {}) {
       options.skipParameters
         ? Promise.resolve(null)
         : invoke("list_document_parameters_cmd", { path }),
+      invoke("list_document_features_cmd", { path }),
     ]);
+  if (loadSequence !== documentLoadSequence || currentPath !== path) return;
+  renderFeatureTree(featuresResult.status === "fulfilled" ? featuresResult.value : null);
   if (inspectResult.status === "rejected") {
     throw inspectResult.reason;
   }
@@ -823,3 +840,101 @@ createBtn.addEventListener("click", () => {
 });
 
 boot();
+
+function cancelFeatureReview() {
+  featureReviewSequence += 1;
+  reviewedFeatureEdit = null;
+  document.getElementById("feature-review").hidden = true;
+}
+
+async function reviewFeatureEdit(edit) {
+  if (featureBusy || documentMutationBusy || !featureTree || !currentPath) return;
+  cancelFeatureReview();
+  featureBusy = true;
+  const path = currentPath;
+  const reviewSequence = featureReviewSequence;
+  const revision = featureTree.revision;
+  const sequence = documentLoadSequence;
+  setStatus("Verifying feature edit…");
+  try {
+    const plan = await invoke("plan_feature_edit_cmd", { path, revision, edit });
+    if (reviewSequence !== featureReviewSequence || sequence !== documentLoadSequence || path !== currentPath || revision !== featureTree?.revision) return;
+    reviewedFeatureEdit = { path, revision, edit: plan.edit };
+    const volume = plan.evidence.volume_m3;
+    const admitted = plan.edit;
+    const detail = admitted.operation === "set_expression" ? `${admitted.field} = ${admitted.expr}`
+      : admitted.operation === "create_extrude" ? `${admitted.sketch_feature} / ${admitted.profile_ref}, length ${admitted.length_expr}, new body`
+      : admitted.operation === "move" ? `position ${Object.entries(admitted.position).map(([key, value]) => `${key} ${value}`).join(" ")}`
+      : admitted.suppressed ? "suppress" : "enable";
+
+    document.getElementById("feature-effect").textContent = `${admitted.id}: ${detail}. Result: ${plan.evidence.no_op ? "no source change" : volume == null ? "no solid body" : `${(volume * 1e9).toFixed(3)} mm³`}. ${plan.evidence.no_op ? "No regeneration needed." : "Geometry, display mesh and required assertions verified."} Source changes only when Apply is pressed.`;
+    document.getElementById("feature-review").hidden = false;
+    setStatus("Edit verified. Review the result and apply.");
+  } catch (error) {
+    if (reviewSequence === featureReviewSequence && sequence === documentLoadSequence && path === currentPath) setStatus(`Edit refused: ${error}`);
+  }
+  finally { featureBusy = false; }
+}
+
+function renderFeatureTree(tree) {
+  featureTree = tree;
+  cancelFeatureReview();
+  const panel = document.getElementById("feature-tree");
+  const profiles = document.getElementById("feature-profile");
+  panel.replaceChildren(); profiles.replaceChildren();
+  document.getElementById("feature-create-review").disabled = !tree;
+  if (!tree) { panel.textContent = "Feature editing requires a part document."; return; }
+  tree.rows.forEach((row, index) => {
+    const wrapper = document.createElement("div"); wrapper.className = "feature-row"; wrapper.dataset.featureId = row.id;
+    const title = document.createElement("strong");
+    title.textContent = `${row.name} (${row.feature_type})${row.suppressed ? " — suppressed" : ""}`;
+    const identity = document.createElement("small"); identity.textContent = row.id;
+    wrapper.append(title, identity);
+    for (const field of row.fields) {
+      const label = document.createElement("label"); label.textContent = `${field.field} — ${field.unit_hint}`;
+      const input = document.createElement("input"); input.value = field.expr; input.dataset.field = field.field;
+      input.addEventListener("input", cancelFeatureReview);
+      const button = document.createElement("button"); button.type = "button"; button.textContent = "Review dimension";
+      button.addEventListener("click", () => reviewFeatureEdit({ operation: "set_expression", id: row.id, field: field.field, expr: input.value.trim() }));
+      label.append(input); wrapper.append(label, button);
+    }
+    const action = (text, edit, disabled = false) => {
+      const button = document.createElement("button"); button.type = "button"; button.textContent = text; button.disabled = disabled;
+      button.addEventListener("click", () => reviewFeatureEdit(edit)); wrapper.append(button);
+    };
+    action(row.suppressed ? "Review enable" : "Review suppress", { operation: "suppress", id: row.id, suppressed: !row.suppressed });
+    action("Review move up", { operation: "move", id: row.id, position: { before: tree.rows[index - 1]?.id } }, index === 0);
+    action("Review move down", { operation: "move", id: row.id, position: { after: tree.rows[index + 1]?.id } }, index === tree.rows.length - 1);
+    panel.append(wrapper);
+    row.closed_profiles.forEach(profile => {
+      const option = document.createElement("option"); option.value = JSON.stringify({ sketch_feature: row.id, profile_ref: profile });
+      option.textContent = `${row.name}: ${profile}`; profiles.append(option);
+    });
+  });
+  document.getElementById("feature-create-review").disabled = profiles.options.length === 0;
+}
+
+document.getElementById("feature-create").addEventListener("input", cancelFeatureReview);
+document.getElementById("feature-create").addEventListener("submit", event => {
+  event.preventDefault();
+  const profile = document.getElementById("feature-profile").value;
+  if (!profile) return;
+  reviewFeatureEdit({ operation: "create_extrude", ...JSON.parse(profile), id: document.getElementById("feature-id").value.trim(), name: document.getElementById("feature-name").value.trim(), length_expr: document.getElementById("feature-length").value.trim() });
+});
+document.getElementById("feature-cancel").addEventListener("click", cancelFeatureReview);
+document.getElementById("feature-apply").addEventListener("click", async () => {
+  if (featureBusy || documentMutationBusy || !reviewedFeatureEdit) return;
+  const reviewed = reviewedFeatureEdit;
+  if (reviewed.path !== currentPath || reviewed.revision !== featureTree?.revision) { cancelFeatureReview(); return; }
+  featureBusy = true;
+  documentMutationBusy = true;
+  try {
+    const result = await invoke("apply_feature_edit_cmd", { ...reviewed, history: documentHistoryState?.history ?? null });
+    if (currentPath === reviewed.path) {
+      acceptDocumentHistory(result.history);
+      await loadDocument(currentPath, { keepParamHistory: true });
+      setStatus("Applied verified feature edit.");
+    }
+  } catch (error) { setStatus(`Edit refused: ${error}`); }
+  finally { featureBusy = false; documentMutationBusy = false; cancelFeatureReview(); }
+});

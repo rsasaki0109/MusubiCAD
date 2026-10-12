@@ -23,6 +23,30 @@ fn map_error(err: opencad_core::OpenCadError) -> String {
 }
 
 #[tauri::command]
+fn list_document_features_cmd(path: String) -> Result<opencad_desktop::FeatureTree, String> {
+    opencad_desktop::list_document_features(&path).map_err(map_error)
+}
+
+#[tauri::command]
+fn plan_feature_edit_cmd(
+    path: String,
+    revision: String,
+    edit: opencad_desktop::FeatureEdit,
+) -> Result<opencad_desktop::FeatureEditPlan, String> {
+    opencad_desktop::plan_document_feature_edit(&path, &revision, edit).map_err(map_error)
+}
+
+#[tauri::command]
+fn apply_feature_edit_cmd(
+    path: String,
+    revision: String,
+    edit: opencad_desktop::FeatureEdit,
+    history: Option<DocumentHistory>,
+) -> Result<opencad_desktop::FeatureEditResult, String> {
+    opencad_desktop::apply_document_feature_edit(&path, &revision, edit, history).map_err(map_error)
+}
+
+#[tauri::command]
 fn list_templates() -> Vec<TemplateInfo> {
     DocumentTemplate::all()
         .iter()
@@ -230,6 +254,9 @@ fn run_gui() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            list_document_features_cmd,
+            plan_feature_edit_cmd,
+            apply_feature_edit_cmd,
             list_templates,
             default_example_path,
             inspect_document_cmd,
