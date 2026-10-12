@@ -17,6 +17,8 @@ pub struct DrawingView {
     pub scale: f64,
     /// View origin on the sheet in meters.
     pub origin_on_sheet_m: [f64; 2],
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub section: Option<crate::SectionView>,
 }
 
 impl DrawingView {
@@ -35,6 +37,7 @@ impl DrawingView {
             scale,
             origin_on_sheet_m,
             model,
+            section: None,
         }
     }
 
@@ -47,6 +50,9 @@ impl DrawingView {
                 "view '{}' scale must be finite and > 0, and origin must be finite",
                 self.id
             )));
+        }
+        if let Some(section) = &self.section {
+            section.validate(self.projection)?;
         }
         self.model.validate(drawing_doc_id)
     }

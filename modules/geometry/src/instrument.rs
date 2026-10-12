@@ -134,6 +134,14 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.draft_body(body, input)
     }
 
+    fn section_body(
+        &self,
+        body: &KernelBody,
+        plane: &crate::SectionPlane,
+    ) -> Result<crate::SectionGeometry> {
+        self.record();
+        self.inner.section_body(body, plane)
+    }
     fn circular_edge_geometry(
         &self,
         body: &KernelBody,

@@ -51,3 +51,6 @@ pub use topo_sync::{
     validate_kernel_face_on_mesh, EdgeRefDiscovery, FaceDerivation, FaceRefDiscovery,
 };
 pub use transform::{RigidTransform, POSITION_TOLERANCE_M, ROTATION_TOLERANCE};
+
+pub mod section;
+pub use section::{polygonal_section, SectionGeometry, SectionPlane};

@@ -5,6 +5,7 @@
 pub(crate) mod native {
     unsafe extern "C++" {
         include!("cpp/variable_fillet.h");
+        fn section_edges(brep: &[u8], plane: &[f64]) -> Result<Vec<f64>>;
         fn circular_edge_geometry(brep: &[u8], endpoints: &[f64]) -> Result<Vec<f64>>;
         fn is_straight_edge(brep: &[u8], endpoints: &[f64]) -> Result<bool>;
         fn variable_fillet(

@@ -1,0 +1,169 @@
+{
+  "intent": "Create an 80 x 60 x 6 mm plate with a 20 x 20 mm square through-hole for a section view",
+  "operations": [
+    {
+      "type": "add_sketch",
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:plate",
+      "entity": {
+        "type": "rectangle",
+        "id": "ent:plate",
+        "construction": false,
+        "origin": [
+          0,
+          0
+        ],
+        "size": [
+          0.08,
+          0.06
+        ],
+        "corner_ids": [
+          "ent:plate_c0",
+          "ent:plate_c1",
+          "ent:plate_c2",
+          "ent:plate_c3"
+        ],
+        "edge_ids": [
+          "ent:plate_e0",
+          "ent:plate_e1",
+          "ent:plate_e2",
+          "ent:plate_e3"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:plate"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_plate",
+          "profile_ref": "sketch:plate/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:hole",
+      "name": "Square hole",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:hole",
+      "entity": {
+        "type": "rectangle",
+        "id": "ent:hole",
+        "construction": false,
+        "origin": [
+          0.03,
+          0.02
+        ],
+        "size": [
+          0.02,
+          0.02
+        ],
+        "corner_ids": [
+          "ent:hole_c0",
+          "ent:hole_c1",
+          "ent:hole_c2",
+          "ent:hole_c3"
+        ],
+        "edge_ids": [
+          "ent:hole_e0",
+          "ent:hole_e1",
+          "ent:hole_e2",
+          "ent:hole_e3"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_hole",
+        "name": "Hole tool",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:hole"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:hole",
+        "name": "Hole tool",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_hole",
+          "profile_ref": "sketch:hole/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "position": {
+        "at": "end"
+      },
+      "node": {
+        "id": "feature:cut",
+        "name": "Subtract square through-hole",
+        "definition": {
+          "type": "body_boolean",
+          "source_feature": "feature:hole",
+          "target_feature": "feature:plate",
+          "operation": "subtract"
+        }
+      }
+    }
+  ]
+}

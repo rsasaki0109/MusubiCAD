@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210.000 297.000" width="210.0mm" height="297.0mm">
+<rect x="0" y="0" width="210.000" height="297.000" fill="white" stroke="#cccccc" stroke-width="0.2"/>
+<defs><pattern id="section-hatch-0" patternUnits="userSpaceOnUse" width="4.242641" height="4.242641"><path d="M 0 4.242641 L 4.242641 0" fill="none" stroke="#777777" stroke-width="0.15"/></pattern></defs>
+<path class="section-contour" d="M 50.000000 247.000000 L 50.000000 217.000000 L 90.000000 217.000000 L 90.000000 247.000000 Z M 65.000000 237.000000 L 65.000000 227.000000 L 75.000000 227.000000 L 75.000000 237.000000 Z " fill="url(#section-hatch-0)" fill-rule="evenodd" stroke="#111111" stroke-width="0.25"/>
+</svg>

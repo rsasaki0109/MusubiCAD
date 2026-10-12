@@ -195,6 +195,7 @@ fn assembly_and_drawing_examples_are_rebuilt_byte_for_byte() {
             "radial_plate_drawing.ocad.d",
             "robot_arm_assembly.ocad.d",
             "robot_arm_assembly_drawing.ocad.d",
+            "section_plate_drawing.ocad.d",
             "semantic_bracket_drawing.ocad.d",
             "six_axis_arm.ocad.d",
         ]

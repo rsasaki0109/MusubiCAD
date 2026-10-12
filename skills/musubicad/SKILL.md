@@ -336,3 +336,18 @@ ellipses, ambiguous/missing refs, assembly bindings and foreshortened/isometric
 views must fail. Remove/add with a new ID to edit; remove dimensions before views.
 Example: `examples/agent/create_radial_drawing_patch.json`; eval:
 `drawing_semantic_radial_layout`. See ADR-041 and the MCP authoring guide.
+
+### Polygonal section slice views
+
+Author `add_drawing_view` through DesignPatch with optional `section`:
+`plane.origin_m` in model metres, unit `plane.normal`, and positive sheet
+`hatch_spacing_m` (>1e-6 m). Choose a plane-parallel orthographic projection
+(front = XY, top = XZ, right = YZ). Use verified dry-run/apply and inspect fresh
+`drawing_sections` SI area/loop/edge counts before SVG export. Only exact line
+contours are accepted; outside/coplanar-face cuts, curved or invalid contours,
+assembly sources and isometric/foreshortened views must fail. Do not author caches
+or attach existing part-edge dimensions to sections. Edit via remove/add with a
+fresh view ID. This initial slice view renders material hatch with clear holes,
+without projected geometry beyond the plane or parent cutting arrows.
+Example: `examples/agent/create_section_drawing_patch.json`; eval:
+`drawing_polygonal_section`. See ADR-042 and the MCP authoring guide.

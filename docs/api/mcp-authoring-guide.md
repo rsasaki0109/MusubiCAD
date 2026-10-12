@@ -402,3 +402,36 @@ See `examples/agent/create_radial_cylinder_patch.json`,
 `examples/agent/create_radial_drawing_patch.json` and the self-contained
 `examples/radial_plate_drawing.ocad.d`. Eval `drawing_semantic_radial_layout`
 requires fresh regenerated measurements alongside semantic bindings.
+
+### Exact polygonal section views (MCAD-P12-003)
+
+Add a view through `add_drawing_view` with an optional section:
+
+```json
+{"type":"add_drawing_view","sheet_id":"sheet:a4","view":{
+ "id":"view:section","name":"Section A-A",
+ "model":{"source_path":"parts/plate.ocad.d","source_doc":"doc:plate"},
+ "projection":"front","scale":0.5,"origin_on_sheet_m":[0.05,0.05],
+ "section":{"plane":{"origin_m":[0,0,0.003],"normal":[0,0,1]},"hatch_spacing_m":0.003}
+}}
+```
+
+The plane is explicit in model metres with a unit normal, and must strictly cross
+the current part. The view must face the plane (`front` = XY, `top` = XZ, `right`
+= YZ). Hatch perpendicular spacing is positive sheet metres (>1e-6 m), independent
+of view scale. Exact line contours only: curves, outside/coplanar-face cuts,
+open/branched/touching boundaries, assemblies and foreshortened/isometric views
+fail closed. The 4096-edge limit bounds validation work.
+
+Dry-run/apply regenerates before persistence. Results expose `drawing_sections`
+with `area_m2`, `loop_count`, `edge_count`, sheet/view IDs; CLI text provides the
+same fresh evidence. Export SVG for slice outlines and even-odd material hatching,
+with holes left clear. Never author area/contour caches. Edit by remove/add view
+with a fresh stable ID. Section dimensions and geometry projected beyond the cut
+are not supported yet; annotations bound to original part edges are refused on
+section views. Parent-view cutting arrows are also a future capability.
+
+See `examples/agent/create_section_plate_patch.json`,
+`examples/agent/create_section_drawing_patch.json` and
+`examples/section_plate_drawing.ocad.d`, a self-contained square-hole plate.
+Eval `drawing_polygonal_section` checks the authored plane and fresh area/counts.

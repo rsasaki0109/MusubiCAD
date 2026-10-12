@@ -646,7 +646,7 @@ DesignPatch, OCCT/Mock geometry and deterministic SVG/export infrastructure.
 |---|---|---|---|
 | MCAD-P12-001 | Angular dimensions | Explicit semantic straight-edge rays; derived SI angle and orthographic SVG arc; exact native line classification, Mock/OCCT analytic angle tests, refusal/rollback, schemas/migration, example, guide/skill/eval (ADR-040) | Complete |
 | MCAD-P12-002 | Radius and diameter dimensions | Semantic complete-circle radius/diameter, exact native queries and Mock witnesses, SI-derived SVG leaders; analytic dimensions/volume, failure/rollback, schemas/migration, example, guide/skill/eval (ADR-041) | Complete |
-| MCAD-P12-003 | Section views | Explicit cutting plane, bounded section geometry and hatching with kernel evidence | Planned |
+| MCAD-P12-003 | Section views | Explicit cutting plane and exact polygonal slice geometry, even-odd material hatching; Mock/OCCT analytic area/volume and refusal/rollback tests, schemas/migration, example, guide/skill/eval (ADR-042) | Complete |
 | MCAD-P12-004 | Detail views | Referenced parent view, bounded region and explicit magnification | Planned |
 | MCAD-P12-005 | Title blocks | Deterministic authored metadata and sheet layout | Planned |
 | MCAD-P12-006 | PDF output | Printable drawing export preserving dimensions, sheet scale and units | Planned |

@@ -48,6 +48,7 @@ VOLUME_LINE = re.compile(r"^volume_m3:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 MATE_ERROR_LINE = re.compile(r"^mate_max_error:\s*([-+0-9.eE]+)\s*$", re.MULTILINE)
 ANGLE_LINE = re.compile(r"^dimension: (\S+) measured_angle_rad: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 ANGLE_TOLERANCE_RAD = 1e-9
+SECTION_LINE = re.compile(r"^section: (\S+) area_m2: ([-+0-9.eE]+) loops: (\d+) edges: (\d+)\s*$", re.MULTILINE)
 RADIAL_LINE = re.compile(r"^dimension: (\S+) measured_radial_length_m: ([-+0-9.eE]+) radius_m: ([-+0-9.eE]+)\s*$", re.MULTILINE)
 
 DIMENSION_LINE = re.compile(r"^dimension: (\S+) measured_length_m: ([-+0-9.eE]+)\s*$", re.MULTILINE)
@@ -256,6 +257,20 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_sections" in task:
+        drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
+        authored = {v["id"]: v["section"] for sheet in drawing.get("sheets", []) for v in sheet.get("views", []) if v.get("section")}
+        reported = {id_: (float(area), int(loops), int(edges)) for id_, area, loops, edges in SECTION_LINE.findall(regen_output)}
+        desired = task["expected_sections"]
+        if sorted(authored) != sorted(s["view_id"] for s in desired):
+            problems.append("section view IDs differ")
+        for section in desired:
+            id_ = section["view_id"]
+            measured = reported.get(id_)
+            if measured is None or not math.isfinite(measured[0]) or abs(measured[0]-section["area_m2"]) > 1e-12 or measured[1:] != (section["loop_count"],section["edge_count"]):
+                problems.append(f"section {id_} lacks matching fresh SI area/counts")
+            if authored.get(id_, {}).get("plane") != section["plane"] or abs(authored.get(id_, {}).get("hatch_spacing_m",-1)-section["hatch_spacing_m"]) > 1e-9:
+                problems.append(f"section {id_} plane/hatch authoring differs")
     if "expected_radial_dimensions" in task:
         drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
         dimensions = {dim["id"]: dim for sheet in drawing.get("sheets", []) for dim in sheet.get("radial_dimensions", [])}
@@ -439,6 +454,16 @@ def self_test() -> None:
     assert not check(radial, radial_sheet, "")[0]
     assert not check(radial, radial_sheet, radial_evidence.replace("0.02", "0.03"))[0]
     assert not check(radial, radial_sheet, radial_evidence.replace("radius_m: 0.01", "radius_m: nan"))[0]
+    section_sheet = ROOT / "examples" / "section_plate_drawing.ocad.d"
+    sections = {"expected_sections": [{"view_id": "view:front", "area_m2": 0.0044, "loop_count": 2, "edge_count": 8, "plane": {"origin_m": [0,0,0.003], "normal": [0,0,1]}, "hatch_spacing_m": 0.003}]}
+    section_evidence = "section: view:front area_m2: 0.004399999999999999 loops: 2 edges: 8\n"
+    assert check(sections, section_sheet, section_evidence) == (True, [])
+    assert not check(sections, section_sheet, "")[0]
+    assert not check(sections, section_sheet, section_evidence.replace("loops: 2", "loops: 1"))[0]
+    assert not check(sections, section_sheet, section_evidence.replace("0.004399999999999999", "0.0048"))[0]
+    wrong_section = json.loads(json.dumps(sections))
+    wrong_section["expected_sections"][0]["plane"]["origin_m"][2] = 0.004
+    assert not check(wrong_section, section_sheet, section_evidence)[0]
     robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
     assert check(
         {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},
