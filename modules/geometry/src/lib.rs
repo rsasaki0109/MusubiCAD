@@ -16,6 +16,8 @@ pub mod tessellation;
 pub mod topo_sync;
 pub mod topology;
 pub mod transform;
+pub mod triangle_solid;
+pub use triangle_solid::{read_stl_solid, TriangleSolid};
 
 pub use instrument::CountingGeometryKernel;
 pub use kernel::{

@@ -638,3 +638,37 @@ Limits: 16 MiB, 500,000 tag pairs, 50,000 primitives, finite coordinates/radii �
 Example input `examples/import/plate_outline.dxf`; verified extruded result
 `examples/dxf_import_plate.ocad.d` is an 80×60×6 mm plate with an authoring patch.
 See ADR-048; eval `dxf_import_copy_sketch` exercises the same existing APIs.
+
+### Explicit-unit STL solid input (MCAD-P12-010)
+
+Use `import_stl` with `path`, `stl_path`, a new `feature_id` and mandatory
+`source_unit` (`m`, `mm`, `cm`, `in`). STL has no trustworthy unit; destination
+metadata and header text never supply it. Optional `transform` is a proper rigid
+placement: `translation_m` and a dimensionless 3×3 `rotation`. Verify with
+`dry_run: true` before applying. The returned `history.history` can be passed to
+history undo/redo; a returned top-level history state is not the history itself.
+
+```json
+{"path":"part.ocad.d","stl_path":"examples/import/closed_plate_mm.stl","feature_id":"feature:stl_plate","source_unit":"mm","dry_run":true}
+```
+
+ASCII/binary input is bounded to 4 MiB and 10,000 triangles. Admission requires
+one connected closed outward-oriented manifold shell with no self-intersection.
+Coordinates convert once to metres and weld on a 1 nm grid. A deterministic
+intersection sweep refuses after 1,000,000 candidate pairs. OCCT sews at 10 nm,
+checks B-rep validity/self-interference and compares mesh/solid volume. Invalid
+or unresolved candidates leave the document unchanged; no automatic repairs.
+
+An `imported_mesh` feature stores an immutable `imports/mesh_<sha256>.stl` asset,
+SHA-256, explicit unit and placement. Identical bytes share the asset; differing
+units still remain explicit per feature. AddAttachment/AddFeature DesignPatch
+and backend transaction/history perform all changes. Open scans, disconnected
+solids, cavities, repair and surface editing are outside initial admission.
+Mock reports genuine mesh bounds/mass/area and placement; imported-mesh CSG,
+shape edits, compounds and inertia refuse rather than invent geometry. OCCT
+is the production solid path. Existing STEP inputs retain their original tag.
+
+The example `stl_import_plate.ocad.d` and its authoring patch reconstruct an
+80×60×6 mm plate, volume 28,800 mm³. Eval `stl_import_explicit_units` independently
+checks volume, the explicit-unit feature and source byte digest. Checker tests
+are run locally; a paid agent-host run is separate evidence.

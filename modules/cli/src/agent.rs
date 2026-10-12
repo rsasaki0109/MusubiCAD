@@ -200,6 +200,7 @@ pub fn handle_agent_request_with_plugins(
         "opencad.bom_document" => handle_bom(request),
         "opencad.inspect_dxf" => handle_inspect_dxf(request),
         "opencad.import_dxf" => handle_import_dxf(request),
+        "opencad.import_stl" => handle_import_stl(request),
         "opencad.preview_document" => handle_preview_document(request),
         "opencad.diff_document" => handle_diff_document(request),
         "opencad.query_document" => handle_query_document(request),
@@ -686,6 +687,29 @@ fn handle_import_dxf(request: &JsonRpcRequest) -> JsonRpcResponse {
             }
         };
     match crate::dxf_import::import_dxf(&params)
+        .and_then(|r| serde_json::to_value(r).map_err(Into::into))
+    {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(e) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(e.to_string()),
+        ),
+    }
+}
+
+fn handle_import_stl(request: &JsonRpcRequest) -> JsonRpcResponse {
+    let params =
+        match serde_json::from_value::<crate::stl_import::ImportStlRequest>(request.params.clone())
+        {
+            Ok(params) => params,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    request.id.clone(),
+                    JsonRpcError::invalid_params(e.to_string()),
+                )
+            }
+        };
+    match crate::stl_import::import_stl(&params)
         .and_then(|r| serde_json::to_value(r).map_err(Into::into))
     {
         Ok(value) => JsonRpcResponse::success(request.id.clone(), value),

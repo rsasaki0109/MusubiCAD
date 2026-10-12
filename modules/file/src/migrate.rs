@@ -3,6 +3,9 @@
 // MCAD-P12-003: absent view.section stays None; never infer persisted contours.
 // MCAD-P12-002: absent radial_dimensions defaults empty; never infer circle witnesses.
 //! Schema version migrations (Task-116+).
+// MCAD-P12-010: imported_mesh is additive and requires an explicit source_unit.
+// Legacy STEP sources retain their meaning; never infer a mesh or unit. Older
+// readers must refuse the unknown feature tag. Round trips cover both variants.
 
 use opencad_core::Result;
 

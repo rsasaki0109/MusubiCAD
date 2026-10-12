@@ -24,6 +24,69 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "imported_mesh": {
+      "type": "object",
+      "required": [
+        "type",
+        "source",
+        "sha256",
+        "source_unit",
+        "transform"
+      ],
+      "properties": {
+        "type": {
+          "const": "imported_mesh"
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^imports/[a-z0-9_]+([.-][a-z0-9_]+)*[.]stl$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_unit": {
+          "enum": [
+            "m",
+            "mm",
+            "cm",
+            "in"
+          ]
+        },
+        "transform": {
+          "type": "object",
+          "required": [
+            "translation_m",
+            "rotation"
+          ],
+          "properties": {
+            "translation_m": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            },
+            "rotation": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "draft": {
       "type": "object",
       "required": [
@@ -1377,7 +1440,7 @@
             "properties": {
               "path": {
                 "type": "string",
-                "pattern": "^imports/[a-z0-9_]+([.-][a-z0-9_]+)*[.](step|stp)$"
+                "pattern": "^imports/[a-z0-9_]+([.-][a-z0-9_]+)*[.](step|stp|stl)$"
               },
               "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
               "content_base64": { "type": "string", "minLength": 1 }
@@ -1481,6 +1544,7 @@
     },
     "feature_definition": {
       "allOf": [
+        { "if": { "properties": { "type": { "const": "imported_mesh" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/imported_mesh" } },
         { "if": { "properties": { "type": { "const": "draft" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/draft" } },
         { "if": { "properties": { "type": { "const": "rib" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/rib" } },
         { "if": { "properties": { "type": { "const": "body_boolean" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/body_boolean" } },
@@ -1527,6 +1591,7 @@
             "circular_pattern",
             "mirror_pattern",
             "imported_solid",
+            "imported_mesh",
             "shell",
             "loft",
             "sweep",

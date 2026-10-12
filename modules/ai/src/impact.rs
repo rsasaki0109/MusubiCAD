@@ -110,10 +110,11 @@ pub fn predict_change_impact(
             | SemanticChange::AttachmentRemoved { path }
             | SemanticChange::AttachmentChanged { path, .. } => {
                 for node in &after.feature_nodes {
-                    if matches!(
-                        &node.definition,
-                        FeatureDefinition::ImportedSolid(def) if def.source == *path
-                    ) {
+                    if node
+                        .definition
+                        .attachment_input()
+                        .is_some_and(|(source, _)| source == path)
+                    {
                         direct.insert(node.id.clone());
                     }
                 }

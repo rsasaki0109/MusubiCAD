@@ -122,7 +122,7 @@ fn contract<K: GeometryKernel>(kernel: &K, analytic: bool) {
 }
 #[test]
 fn mock_linear_fillet_contract_and_rollback() {
-    contract(&MockGeometryKernel, false);
+    contract(&MockGeometryKernel::new(), false);
 }
 #[test]
 fn occt_linear_fillet_matches_straight_corner_volume() {
@@ -142,7 +142,7 @@ fn invalid_variable_law_selection_and_radii_are_refused() {
     def.edge_ref = None;
     assert!(model
         .regenerate(
-            &MockGeometryKernel,
+            &MockGeometryKernel::new(),
             &FeatureRegistry::with_defaults(),
             None,
             Some(&refs)
@@ -201,12 +201,12 @@ fn semantic_face_fillets_resolve_and_refuse_unknown_faces() {
             assert_eq!(before, model.outputs);
         } else {
             model
-                .regenerate(&MockGeometryKernel, &registry, None, Some(&refs))
+                .regenerate(&MockGeometryKernel::new(), &registry, None, Some(&refs))
                 .expect("face fillet");
             let before = model.outputs.clone();
             refs[0].semantic.role = Some("absent".into());
             assert!(model
-                .regenerate(&MockGeometryKernel, &registry, None, Some(&refs))
+                .regenerate(&MockGeometryKernel::new(), &registry, None, Some(&refs))
                 .is_err());
             assert_eq!(before, model.outputs);
         }

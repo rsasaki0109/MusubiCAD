@@ -1,0 +1,51 @@
+{
+  "operations": [
+    {
+      "type": "add_attachment",
+      "path": "imports/mesh_860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0.stl",
+      "sha256": "860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0",
+      "content_base64": "c29saWQgcGxhdGVfbW0KZmFjZXQgbm9ybWFsIDAgMCAwCm91dGVyIGxvb3AKdmVydGV4IDAgMCAwCnZlcnRleCAwIDYwIDAKdmVydGV4IDgwIDYwIDAKZW5kbG9vcAplbmRmYWNldApmYWNldCBub3JtYWwgMCAwIDAKb3V0ZXIgbG9vcAp2ZXJ0ZXggMCAwIDAKdmVydGV4IDgwIDYwIDAKdmVydGV4IDgwIDAgMAplbmRsb29wCmVuZGZhY2V0CmZhY2V0IG5vcm1hbCAwIDAgMApvdXRlciBsb29wCnZlcnRleCAwIDAgNgp2ZXJ0ZXggODAgMCA2CnZlcnRleCA4MCA2MCA2CmVuZGxvb3AKZW5kZmFjZXQKZmFjZXQgbm9ybWFsIDAgMCAwCm91dGVyIGxvb3AKdmVydGV4IDAgMCA2CnZlcnRleCA4MCA2MCA2CnZlcnRleCAwIDYwIDYKZW5kbG9vcAplbmRmYWNldApmYWNldCBub3JtYWwgMCAwIDAKb3V0ZXIgbG9vcAp2ZXJ0ZXggMCAwIDAKdmVydGV4IDgwIDAgMAp2ZXJ0ZXggODAgMCA2CmVuZGxvb3AKZW5kZmFjZXQKZmFjZXQgbm9ybWFsIDAgMCAwCm91dGVyIGxvb3AKdmVydGV4IDAgMCAwCnZlcnRleCA4MCAwIDYKdmVydGV4IDAgMCA2CmVuZGxvb3AKZW5kZmFjZXQKZmFjZXQgbm9ybWFsIDAgMCAwCm91dGVyIGxvb3AKdmVydGV4IDgwIDAgMAp2ZXJ0ZXggODAgNjAgMAp2ZXJ0ZXggODAgNjAgNgplbmRsb29wCmVuZGZhY2V0CmZhY2V0IG5vcm1hbCAwIDAgMApvdXRlciBsb29wCnZlcnRleCA4MCAwIDAKdmVydGV4IDgwIDYwIDYKdmVydGV4IDgwIDAgNgplbmRsb29wCmVuZGZhY2V0CmZhY2V0IG5vcm1hbCAwIDAgMApvdXRlciBsb29wCnZlcnRleCA4MCA2MCAwCnZlcnRleCAwIDYwIDAKdmVydGV4IDAgNjAgNgplbmRsb29wCmVuZGZhY2V0CmZhY2V0IG5vcm1hbCAwIDAgMApvdXRlciBsb29wCnZlcnRleCA4MCA2MCAwCnZlcnRleCAwIDYwIDYKdmVydGV4IDgwIDYwIDYKZW5kbG9vcAplbmRmYWNldApmYWNldCBub3JtYWwgMCAwIDAKb3V0ZXIgbG9vcAp2ZXJ0ZXggMCA2MCAwCnZlcnRleCAwIDAgMAp2ZXJ0ZXggMCAwIDYKZW5kbG9vcAplbmRmYWNldApmYWNldCBub3JtYWwgMCAwIDAKb3V0ZXIgbG9vcAp2ZXJ0ZXggMCA2MCAwCnZlcnRleCAwIDAgNgp2ZXJ0ZXggMCA2MCA2CmVuZGxvb3AKZW5kZmFjZXQKZW5kc29saWQgcGxhdGVfbW0K"
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:stl_plate",
+        "name": "Imported STL solid",
+        "definition": {
+          "type": "imported_mesh",
+          "source": "imports/mesh_860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0.stl",
+          "sha256": "860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0",
+          "source_unit": "mm",
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    }
+  ]
+}

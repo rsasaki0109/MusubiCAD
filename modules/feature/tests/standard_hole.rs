@@ -187,7 +187,7 @@ fn contract<K: GeometryKernel>(kernel: &K, analytic: bool) {
 }
 #[test]
 fn mock_standard_hole_contract_and_rollback() {
-    contract(&MockGeometryKernel, false);
+    contract(&MockGeometryKernel::new(), false);
 }
 #[test]
 fn occt_standard_holes_match_analytic_cylinders() {
@@ -215,7 +215,7 @@ fn noncircular_standard_hole_profile_is_refused() {
     def.hole.profile_ref = "sketch:base/profile:outer".into();
     let err = model
         .regenerate(
-            &MockGeometryKernel,
+            &MockGeometryKernel::new(),
             &FeatureRegistry::with_defaults(),
             None,
             None,

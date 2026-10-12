@@ -653,7 +653,7 @@ DesignPatch, OCCT/Mock geometry and deterministic SVG/export infrastructure.
 | MCAD-P12-007 | DXF output | Single-sheet millimetre paper-space primitives, exact polygon hatch clipping and UTF-8 labels; Mock/OCCT analytic tests, independent parser audit, examples, guide/skill/eval (ADR-046) | Complete |
 | MCAD-P12-008 | Assembly BOM | Verified source catalog, recursive pattern/leaf quantities and structured instance provenance; strict nested regeneration, deterministic JSON/CSV, Mock/OCCT analytic tests, example, guide/skill/eval (ADR-047) | Complete |
 | MCAD-P12-009 | DXF input | Explicit-unit planar primitive parsing into authored sketches through DesignPatch; selected-layer fail-closed admission, Mock/OCCT analytic extrusion, examples, guide/skill/eval (ADR-048) | Complete |
-| MCAD-P12-010 | STL input | Explicit-unit mesh asset import with bounded topology/geometry validation and backend representation; Mock/OCCT analytic dimensions/volume, schemas/migration/round trips, example, guide/skill/eval | Planned |
+| MCAD-P12-010 | STL input | Explicit-unit connected closed mesh asset import with bounded topology/geometry validation; Mock/OCCT faceted solid dimensions/volume, schemas/migration/round trips, example, guide/skill/eval (ADR-049) | Complete |
 
 **Definition of done:** one reviewed PR per task, backend commands/DesignPatch,
 both kernel paths where geometry is queried, analytic measurements, example,

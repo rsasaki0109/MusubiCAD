@@ -384,6 +384,21 @@ impl PartModel {
                 }
                 progress.enter(RegenerationStage::Feature, Some(&feature_id));
 
+                // Immutable assets are source truth even on a cache hit. A
+                // declared digest alone cannot validate changed/missing bytes.
+                if let Some((source, expected)) = node.definition.attachment_input() {
+                    let bytes = self
+                        .attachments
+                        .get(source)
+                        .ok_or_else(|| OpenCadError::not_found(format!("attachment '{source}'")))?;
+                    let actual = sha256_hex(bytes);
+                    if actual != expected {
+                        return Err(OpenCadError::validation(format!(
+                            "attachment '{source}' has sha256 {actual}, but feature '{feature_id}' expects {expected}"
+                        )));
+                    }
+                }
+
                 let mut upstream_hashes: Vec<(&str, &str)> = self
                     .graph
                     .dependency_edges()

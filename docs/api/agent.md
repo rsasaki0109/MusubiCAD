@@ -931,3 +931,12 @@ and `DocumentHistoryState`. Verified DesignPatch/history owns all model changes;
 dry-run does not write. Ordinary XY sketch entities store SI coordinates, with
 analytic circles/arcs. See ADR-048 and the authoring guide for bounded primitive
 support, grid/tolerances, explicit layer selection and unsupported-input refusal.
+
+## STL solid import (MCAD-P12-010)
+
+`opencad.import_stl` takes the same request as MCP `import_stl`: required `path`,
+`stl_path`, `feature_id`, `source_unit`; optional `name`, proper `transform`,
+`dry_run` and `history`. The result includes source SHA-256, retained attachment,
+triangle count, verification and history state. Missing units are invalid params.
+CLI: `musubicad import-stl part.ocad.d plate.stl --id feature:plate --unit mm`.
+See the MCP authoring guide for bounds, topology, units and refusal semantics.

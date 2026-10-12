@@ -390,7 +390,7 @@ mod tests {
     }
     #[test]
     fn mock_semantic_rays_are_canonical_and_fail_closed() {
-        let kernel = opencad_geometry::MockGeometryKernel;
+        let kernel = opencad_geometry::MockGeometryKernel::new();
         let body = KernelBody::new(80);
         let discoveries = vec![
             EdgeRefDiscovery {

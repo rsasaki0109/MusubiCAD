@@ -37,6 +37,7 @@ pub enum FeatureDefinition {
     CircularPattern(CircularPatternFeature),
     MirrorPattern(MirrorPatternFeature),
     ImportedSolid(ImportedSolidFeature),
+    ImportedMesh(crate::ImportedMeshFeature),
     Shell(ShellFeature),
     Draft(crate::draft::DraftFeature),
     Rib(RibFeature),
@@ -47,6 +48,14 @@ pub enum FeatureDefinition {
 }
 
 impl FeatureDefinition {
+    /// Immutable source attachment and expected digest, when applicable.
+    pub fn attachment_input(&self) -> Option<(&str, &str)> {
+        match self {
+            Self::ImportedSolid(def) => Some((&def.source, &def.sha256)),
+            Self::ImportedMesh(def) => Some((&def.source, &def.sha256)),
+            _ => None,
+        }
+    }
     pub fn feature_type(&self) -> &'static str {
         match self {
             Self::DatumPlane(_) => "datum_plane",
@@ -62,6 +71,7 @@ impl FeatureDefinition {
             Self::CircularPattern(_) => "circular_pattern",
             Self::MirrorPattern(_) => "mirror_pattern",
             Self::ImportedSolid(_) => "imported_solid",
+            Self::ImportedMesh(_) => "imported_mesh",
             Self::Shell(_) => "shell",
             Self::Draft(_) => "draft",
             Self::Rib(_) => "rib",

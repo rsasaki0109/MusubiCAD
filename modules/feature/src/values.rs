@@ -196,6 +196,7 @@ impl FeatureDefinition {
                 Ok(())
             }
             Self::ImportedSolid(def) => def.validate(),
+            Self::ImportedMesh(def) => def.validate(),
             Self::Loft(def) => def.validate(),
             Self::Sweep(def) => def.validate(),
             Self::HelixSweep(def) => {
