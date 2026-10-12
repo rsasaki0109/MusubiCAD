@@ -74,3 +74,6 @@ pub use validation::{
     build_patch_candidate, dry_run_patch, dry_run_patch_state, dry_run_patch_state_with_context,
     ensure_patch_valid, validate_design_state, PatchDryRunReport,
 };
+
+mod offset;
+pub use offset::{plan_offset, OffsetAssociation, OffsetJoin, OffsetPlan, OffsetRequest};

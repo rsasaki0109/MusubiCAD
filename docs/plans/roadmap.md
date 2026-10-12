@@ -690,7 +690,7 @@ references, assembly joints, verified patches/history, Mock and OCCT.
 |---|---|---|---|
 | MCAD-P13-001 | Construction geometry editing | Explicit boolean construction edit preserving entity/constraint IDs; exclude helpers from solid profiles, refuse implicit consumer rebinding; Mock/OCCT analytic evidence, patch/history/schema tests, example, guide/skill/eval (ADR-050) | Complete |
 | MCAD-P13-002 | Trim and extend | Bounded analytic line/arc edits with explicit intersection selection and retained stable IDs; transactional constraint/profile checks and refusal evidence (ADR-051) | Complete |
-| MCAD-P13-003 | Sketch offsets | Explicit-unit planar line/arc offsets with bounded topology and association semantics in a feature ADR before code; no silent repair or sampling | Planned |
+| MCAD-P13-003 | Sketch offsets | Explicit-unit convex line/tangent-arc and circle independent copies, caller-owned IDs, mitre/tangent joins and fail-closed inset admission (ADR-052); persistent association/concave repair deferred | Complete |
 | MCAD-P13-004 | Ellipses | Analytic sketch ellipse representation, solver and exact kernel wire input, schemas/migration, analytic dimensions/area/volume and invalid cases | Planned |
 | MCAD-P13-005 | External projection | Semantic source geometry projected to an explicit sketch plane; dependency/ambiguity/missing-source refusal and regeneration after edits | Planned |
 | MCAD-P13-006 | Exploded assembly views | Persisted presentation offsets separate from mechanical placements; backend-created configuration and deterministic rendering/export, analytic placement tests | Planned |

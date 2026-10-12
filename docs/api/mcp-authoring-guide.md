@@ -727,3 +727,42 @@ the edited angle is explicit fixed geometry, with no inferred cutter association
 Examples: `trim_extend_plate.ocad.d` and its authoring patch. Eval
 `sketch_extend_guide` checks source SI endpoints, old point preservation and
 unchanged plate volume; production verification checks the solved endpoint.
+
+### Independent analytic sketch offsets (P13-003, ADR-052)
+
+Use `plan_offset` (CLI `plan-offset`, Agent `opencad.plan_offset`) with
+`{"path":"part.ocad.d","edit":{...}}`. Required edit fields:
+
+```json
+{
+  "source_sketch_id": "sketch:base",
+  "curve_ids": ["ent:e0", "ent:e1", "ent:e2", "ent:e3"],
+  "distance_m": 0.003,
+  "association": "independent_copy",
+  "join": "mitre_tangent",
+  "destination_sketch_id": "sketch:offset",
+  "name": "Offset copy",
+  "destination_curve_ids": ["ent:o0", "ent:o1", "ent:o2", "ent:o3"],
+  "destination_point_ids": ["ent:p0", "ent:p1", "ent:p2", "ent:p3"]
+}
+```
+
+Supply explicit ordered counterclockwise line/arc IDs (rectangle-derived edges
+are supported), or one circle. Consecutive source curves must share endpoint
+IDs; coincident coordinates alone do not repair topology. Arcs require explicit
+endpoint IDs. The closed contour must be convex; arc joins
+must be tangent. Positive distance expands, negative distance insets. Collapse,
+concavity, non-tangent joins and duplicate/found destination IDs refuse. Point
+IDs name each curve's start vertex, followed by arc centres in curve order; a
+circle requires one centre ID. All destination entity IDs must be globally
+fresh. The same source workplane is used. Source entities/constraints remain
+unchanged; source constraints are not copied. **This is an independent copy:
+source coordinate/parameter edits do not update it.** Semantic workplane
+references retain their ordinary plane dependency.
+
+Review the returned revision-guarded DesignPatch. It authors a complete sketch
+using existing operations, without implicitly adding features. If needed,
+append a sketch feature and extrusion with explicit new IDs and profile ref,
+then `patch_dry_run` and verified `patch_apply` with history. Undo/redo uses the
+existing history tools. The 80 x 60 mm +3 mm example is
+`examples/offset_plate.ocad.d`; its new 86 x 66 x 6 mm body is 34056 mm3.

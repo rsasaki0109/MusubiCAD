@@ -201,6 +201,7 @@ pub fn handle_agent_request_with_plugins(
         "opencad.inspect_dxf" => handle_inspect_dxf(request),
         "opencad.import_dxf" => handle_import_dxf(request),
         "opencad.import_stl" => handle_import_stl(request),
+        "opencad.plan_offset" => handle_plan_offset(request),
         "opencad.plan_curve_edit" => handle_plan_curve_edit(request),
         "opencad.preview_document" => handle_preview_document(request),
         "opencad.diff_document" => handle_diff_document(request),
@@ -747,6 +748,26 @@ fn handle_plan_curve_edit(request: &JsonRpcRequest) -> JsonRpcResponse {
     };
     match crate::curve_edit::plan(&params).and_then(|p| serde_json::to_value(p).map_err(Into::into))
     {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(e) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(e.to_string()),
+        ),
+    }
+}
+
+fn handle_plan_offset(request: &JsonRpcRequest) -> JsonRpcResponse {
+    let params =
+        match serde_json::from_value::<crate::offset::PlanOffsetRequest>(request.params.clone()) {
+            Ok(p) => p,
+            Err(e) => {
+                return JsonRpcResponse::error(
+                    request.id.clone(),
+                    JsonRpcError::invalid_params(e.to_string()),
+                )
+            }
+        };
+    match crate::offset::plan(&params).and_then(|p| serde_json::to_value(p).map_err(Into::into)) {
         Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
         Err(e) => JsonRpcResponse::error(
             request.id.clone(),

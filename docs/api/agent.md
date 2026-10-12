@@ -959,3 +959,10 @@ eligible intersections, selected index and a revision-guarded DesignPatch with
 existing verified patch/history APIs apply it. Solved-point effects force their
 geometry check even when verification is disabled for staged authoring. See the
 MCP guide and ADR-051 for supported primitives, units, bounds and failure rules.
+
+`opencad.plan_offset` accepts `{path, edit}` and returns `{patch, curves,
+association}` without writing. Edit fields and bounded convex/tangent admission
+are specified in the MCP authoring guide (ADR-052). `association` must be
+`independent_copy`; apply the returned revision-guarded patch via existing
+verified patch/history APIs. It creates an authored sketch, not a persistent
+source-dependent offset feature.
