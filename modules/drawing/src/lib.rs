@@ -54,3 +54,6 @@ pub use title_block::{
     layout_title_block, TitleBlock, TitleBlockCell, TITLE_BLOCK_HEIGHT_M, TITLE_BLOCK_MARGIN_M,
     TITLE_BLOCK_WIDTH_M,
 };
+
+pub mod export_pdf;
+pub use export_pdf::{render_drawing_pdf, PdfPageInput, PDF_POINTS_PER_M};

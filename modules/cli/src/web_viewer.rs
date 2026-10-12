@@ -196,6 +196,7 @@ pub fn export_web_viewer(input: &str, output: &str) -> Result<ExportSummary> {
     fs::write(output, &html)
         .map_err(|error| OpenCadError::Other(format!("cannot write '{output}': {error}")))?;
     Ok(ExportSummary {
+        pages: None,
         format: "html".into(),
         triangles,
         output: output.to_string(),

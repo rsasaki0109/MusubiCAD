@@ -258,6 +258,25 @@ def check(
             refs = sorted(dim.get("edge_ref", "") for sheet in drawing.get("sheets", []) for dim in sheet.get("dimensions", []))
             if refs != sorted(task["expected_dimension_edge_refs"]):
                 problems.append(f"dimension edge refs {refs}, expected {task['expected_dimension_edge_refs']}")
+    if "expected_pdf_name" in task:
+        pdf_path = document.parent / task["expected_pdf_name"]
+        try:
+            pdf = pdf_path.read_bytes()
+        except OSError:
+            pdf = b""
+        if not pdf.startswith(b"%PDF-1.7") or not pdf.rstrip().endswith(b"%%EOF"):
+            problems.append("required PDF artifact is absent or malformed")
+        boxes = re.findall(rb"/MediaBox\s*\[([^\]]+)\]", pdf)
+        expected_papers = task["expected_pdf_paper_mm"]
+        if len(boxes) != task["expected_pdf_pages"] or len(boxes) != len(expected_papers):
+            problems.append("PDF page count differs")
+        for box, desired in zip(boxes, expected_papers):
+            try:
+                coordinates = [float(v) for v in box.split()]
+            except ValueError:
+                coordinates = []
+            if len(coordinates) != 4 or not all(math.isfinite(v) for v in coordinates) or any(abs(a-b*72.0/25.4) > 1e-3 for a,b in zip(coordinates[2:],desired)):
+                problems.append("PDF paper dimensions differ from requested millimetres")
     if "expected_title_blocks" in task:
         drawing = json.loads((document / "graph" / "drawings.json").read_text(encoding="utf-8")).get("drawing") or {}
         blocks = {sheet["id"]: sheet["title_block"] for sheet in drawing.get("sheets", []) if sheet.get("title_block") is not None}
@@ -502,6 +521,12 @@ def self_test() -> None:
     wrong_title["expected_title_blocks"]["sheet:a4"]["revision"] = "B"
     assert not check(wrong_title, title_sheet, "")[0]
     assert not check({"expected_title_blocks": {}}, title_sheet, "")[0]
+    printable_sheet = ROOT / "examples" / "printable_plate_drawing.ocad.d"
+    pdf_task = {"expected_pdf_name": "printable_plate_drawing.pdf", "expected_pdf_pages": 2, "expected_pdf_paper_mm": [[210,297],[297,210]]}
+    assert check(pdf_task, printable_sheet, "") == (True, [])
+    assert not check({**pdf_task, "expected_pdf_name": "missing.pdf"}, printable_sheet, "")[0]
+    assert not check({**pdf_task, "expected_pdf_pages": 1}, printable_sheet, "")[0]
+    assert not check({**pdf_task, "expected_pdf_paper_mm": [[297,210],[297,210]]}, printable_sheet, "")[0]
     robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
     assert check(
         {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},

@@ -1,0 +1,78 @@
+{
+  "operations": [
+    {
+      "type": "add_sheet",
+      "sheet": {
+        "id": "sheet:a4",
+        "name": "Manufacturing drawing",
+        "width_m": 0.21,
+        "height_m": 0.297,
+        "views": [],
+        "title_block": {
+          "title": "Inspection plate",
+          "drawing_number": "MUSUBI-P12-005",
+          "revision": "A",
+          "date": "2026-10-12",
+          "author": "MusubiCAD example",
+          "material": "Steel",
+          "scale_note": "FRONT 1:2"
+        }
+      }
+    },
+    {
+      "type": "add_drawing_view",
+      "sheet_id": "sheet:a4",
+      "view": {
+        "id": "view:front",
+        "name": "Front",
+        "model": {
+          "source_path": "parts/plate.ocad.d",
+          "source_doc": "doc:title_plate"
+        },
+        "projection": "front",
+        "scale": 0.5,
+        "origin_on_sheet_m": [
+          0.05,
+          0.1
+        ]
+      }
+    },
+    {
+      "type": "add_sheet",
+      "sheet": {
+        "id": "sheet:landscape",
+        "name": "Landscape",
+        "width_m": 0.297,
+        "height_m": 0.21,
+        "views": [],
+        "title_block": {
+          "title": "Inspection plate",
+          "drawing_number": "MUSUBI-P12-005",
+          "revision": "A",
+          "date": "2026-10-12",
+          "author": "MusubiCAD example",
+          "material": "Steel",
+          "scale_note": "FRONT 1:2"
+        }
+      }
+    },
+    {
+      "type": "add_drawing_view",
+      "sheet_id": "sheet:landscape",
+      "view": {
+        "id": "view:landscape",
+        "name": "Front",
+        "model": {
+          "source_path": "parts/plate.ocad.d",
+          "source_doc": "doc:title_plate"
+        },
+        "projection": "front",
+        "scale": 0.5,
+        "origin_on_sheet_m": [
+          0.05,
+          0.1
+        ]
+      }
+    }
+  ]
+}

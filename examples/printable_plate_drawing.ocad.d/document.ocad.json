@@ -1,0 +1,11 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:printable_drawing",
+    "name": "Printable plate",
+    "units": "mm",
+    "kind": "drawing",
+    "created_with": "OpenCAD 0.2.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

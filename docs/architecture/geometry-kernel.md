@@ -185,3 +185,15 @@ missing update fields are refused. Shared SVG export renders the fixed SI frame
 on both Mock and OCCT drawing paths without changing their bodies or projection.
 Layout validates sheet fit and single-line text; SVG escapes markup. No current
 clock, inferred model metadata, new sampling or kernel dependencies are involved.
+
+### Deterministic printable vector output (ADR-045)
+
+PDF conversion shares regenerated Mock/OCCT drawing geometry and SVG primitives;
+no kernel mutation or new sampling occurs. Pinned svg2pdf/text and pdf-writer
+convert in-memory pages with a bundled font, disabled resource resolvers and
+strict missing-glyph failure. Local numeric checks prevent invalid shapes from
+being dropped by the SVG parser. Precise PDF-only SVG root sizing and explicit
+72 DPI preserve paper metres → points; normalized Form XObjects are scaled to
+that page size and reference IDs are deterministically renumbered. All page
+buffers are assembled before file output; no font lookup, timestamp or external
+I/O occurs in the drawing module. Root/Desktop lockfiles include the new deps.

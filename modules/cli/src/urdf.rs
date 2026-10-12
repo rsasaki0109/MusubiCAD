@@ -110,6 +110,7 @@ pub fn export_urdf(input: &str, output: &str) -> Result<ExportSummary> {
         .map_err(|error| OpenCadError::Other(format!("cannot write '{output}': {error}")))?;
 
     Ok(ExportSummary {
+        pages: None,
         format: "urdf".into(),
         triangles,
         output: output.to_string(),

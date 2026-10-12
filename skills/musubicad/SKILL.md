@@ -378,3 +378,16 @@ annotations are preserved. Export SVG and verify escaped fields. Clear only with
 explicit null; a missing update field must fail. Small sheets, invalid text or
 unknown sheet IDs fail atomically. Use `examples/agent/create_title_drawing_patch.json`
 and eval `drawing_title_block_revision`; see ADR-044 and the authoring guide.
+
+### Printable vector PDF export
+
+Use the existing export command/`opencad.export` with `.pdf` output after verified
+regeneration. Drawing sheets become pages in canonical sheet-ID order, preserving
+SI paper dimensions, view scales, annotations/hatches/title blocks. Results expose
+`pages` and `bytes`; no model patch is required for read-only export. A bundled
+DejaVu font makes output deterministic; missing glyphs or unsupported resources,
+invalid semantic refs/layouts and overflow must fail before overwriting an old
+PDF. Do not silently replace glyphs or infer timestamps/fonts. Correct model/text
+through DesignPatch and retry. No PDF/A certification, images/filters or system
+font lookup is claimed. Example: `examples/printable_plate_drawing.ocad.d` and its
+PDF; eval `drawing_pdf_revision`. See ADR-045 and the MCP authoring guide.

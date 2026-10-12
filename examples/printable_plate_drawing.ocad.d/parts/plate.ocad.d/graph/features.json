@@ -1,0 +1,59 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_plate",
+      "feature:plate"
+    ],
+    "features": {
+      "feature:sketch_plate": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:plate": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_plate",
+        "target": "feature:plate",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:plate",
+      "name": "Plate",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_plate",
+        "profile_ref": "sketch:plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_plate",
+      "name": "Plate sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:plate"
+      },
+      "suppressed": false
+    }
+  ]
+}

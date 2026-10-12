@@ -10,6 +10,8 @@ rust-version.workspace = true
 opencad-core = { workspace = true }
 opencad-geometry = { workspace = true }
 serde = { workspace = true }
+svg2pdf = { version = "=0.13.0", default-features = false, features = ["text"] }
+pdf-writer = "=0.12.1"
 
 [dev-dependencies]
 serde_json = { workspace = true }
