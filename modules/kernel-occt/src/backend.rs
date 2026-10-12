@@ -394,6 +394,27 @@ impl GeometryKernel for OcctGeometryKernel {
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire> {
         #[cfg(feature = "occt")]
         {
+            if let Some(cubic) = sketch.cubic_bezier {
+                if !sketch.closed
+                    || sketch.circle.is_some()
+                    || sketch.ellipse.is_some()
+                    || !sketch.points.is_empty()
+                    || !sketch.segments.is_empty()
+                {
+                    return Err(OpenCadError::validation(
+                        "cubic input must be one exact closed curve",
+                    ));
+                }
+                let frame = cubic.frame(
+                    sketch
+                        .placement
+                        .unwrap_or(opencad_geometry::SketchPlacement::global_xy()),
+                )?;
+                let mut store = self.store.borrow_mut();
+                let id = store.alloc_id();
+                store.cubic_wires.insert(id, frame);
+                return Ok(KernelWire::new(id));
+            }
             if let Some(ellipse) = sketch.ellipse {
                 if !sketch.closed
                     || sketch.circle.is_some()
@@ -435,13 +456,23 @@ impl GeometryKernel for OcctGeometryKernel {
     ) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
+            let cubic = self.store.borrow().cubic_wires.get(&profile.0).copied();
+            if cubic.is_some()
+                && (!matches!(operation, ExtrudeOperation::NewBody)
+                    || target.is_some()
+                    || matches!(extent, ExtrudeExtent::ThroughAll))
+            {
+                return Err(OpenCadError::validation(
+                    "closed cubic supports distance/symmetric NewBody extrusion only",
+                ));
+            }
             let ellipse = self.store.borrow().ellipse_wires.get(&profile.0).copied();
             if ellipse.is_some() && matches!(operation, ExtrudeOperation::Join) {
                 return Err(OpenCadError::validation(
                     "ellipse join uses the feature new-body plus boolean path",
                 ));
             }
-            let edges = if ellipse.is_some() {
+            let edges = if ellipse.is_some() || cubic.is_some() {
                 Vec::new()
             } else {
                 self.store
@@ -473,7 +504,25 @@ impl GeometryKernel for OcctGeometryKernel {
                 direction_m[2] / dir_len * length_m,
             );
 
-            let solid = if let Some(frame) = ellipse {
+            let solid = if let Some(frame) = cubic {
+                let mut prism = frame.prism(direction_m, length_m)?;
+                if matches!(extent, ExtrudeExtent::Symmetric { .. }) {
+                    for point in &mut prism.frame.controls_m {
+                        for (coordinate, delta) in point.iter_mut().zip(prism.delta_m) {
+                            *coordinate -= delta / 2.;
+                        }
+                    }
+                }
+                let bytes =
+                    crate::ffi::native::cubic_prism(&prism.frame.native_data(), &prism.delta_m)
+                        .map_err(|e| OpenCadError::validation(e.to_string()))?;
+                let mut solids = Solid::read_brep_text(&mut std::io::Cursor::new(bytes))
+                    .map_err(map_occt_error)?;
+                if solids.len() != 1 {
+                    return Err(OpenCadError::validation("cubic prism must yield one solid"));
+                }
+                solids.remove(0)
+            } else if let Some(frame) = ellipse {
                 if matches!(extent, ExtrudeExtent::ThroughAll) {
                     return Err(OpenCadError::validation(
                         "ellipse through-all extent requires a future bounded target contract",
@@ -519,6 +568,9 @@ impl GeometryKernel for OcctGeometryKernel {
             }
 
             let id = self.store.borrow_mut().insert_body(solid);
+            if cubic.is_some() {
+                self.store.borrow_mut().cubic_bodies.insert(id);
+            }
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -529,9 +581,9 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn revolve(&self, input: &RevolveInput) -> Result<KernelBody> {
-        if input.sketch.ellipse.is_some() {
+        if input.sketch.ellipse.is_some() || input.sketch.cubic_bezier.is_some() {
             return Err(OpenCadError::validation(
-                "exact ellipse profiles currently support normal extrusion only",
+                "exact ellipse/cubic profiles currently support normal extrusion only",
             ));
         }
         #[cfg(feature = "occt")]
@@ -929,10 +981,24 @@ impl GeometryKernel for OcctGeometryKernel {
 
             let mut merged: Option<BoundingBox> = None;
             for solid in solids {
-                let bb = solid.bounding_box();
-                let next = BoundingBox {
-                    min: [bb[0].x, bb[0].y, bb[0].z],
-                    max: [bb[1].x, bb[1].y, bb[1].z],
+                let next = if store.cubic_bodies.contains(&body.0) {
+                    let mut bytes = Vec::new();
+                    Solid::write_brep_text([&solid], &mut bytes).map_err(map_occt_error)?;
+                    let values = crate::ffi::native::tight_bounds(&bytes)
+                        .map_err(|e| OpenCadError::validation(e.to_string()))?;
+                    if values.len() != 6 {
+                        return Err(OpenCadError::validation("invalid cubic bounds witness"));
+                    }
+                    BoundingBox {
+                        min: [values[0], values[1], values[2]],
+                        max: [values[3], values[4], values[5]],
+                    }
+                } else {
+                    let bb = solid.bounding_box();
+                    BoundingBox {
+                        min: [bb[0].x, bb[0].y, bb[0].z],
+                        max: [bb[1].x, bb[1].y, bb[1].z],
+                    }
                 };
                 merged = Some(match merged {
                     None => next,
@@ -977,6 +1043,11 @@ impl GeometryKernel for OcctGeometryKernel {
     fn discover_body_edges(&self, body: &KernelBody) -> Result<Vec<EdgeRefDiscovery>> {
         #[cfg(feature = "occt")]
         {
+            // Endpoint-chord discovery cannot assign honest roles/lengths to
+            // a closed Bezier edge. Required semantic edge refs stay unbound.
+            if self.store.borrow().cubic_bodies.contains(&body.0) {
+                return Ok(Vec::new());
+            }
             let solid = self
                 .store
                 .borrow()
@@ -1283,6 +1354,11 @@ impl GeometryKernel for OcctGeometryKernel {
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
+            if self.store.borrow().cubic_bodies.contains(&body.0) {
+                opencad_geometry::cubic_bezier::validate_rigid_transform(
+                    RigidTransform::from_translation(translation_m),
+                )?;
+            }
             let solid = self
                 .store
                 .borrow()
@@ -1295,6 +1371,9 @@ impl GeometryKernel for OcctGeometryKernel {
                 translation_m[2],
             ));
             let id = self.store.borrow_mut().insert_body(translated);
+            if self.store.borrow().cubic_bodies.contains(&body.0) {
+                self.store.borrow_mut().cubic_bodies.insert(id);
+            }
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -1307,6 +1386,9 @@ impl GeometryKernel for OcctGeometryKernel {
     fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
+            if self.store.borrow().cubic_bodies.contains(&body.0) {
+                opencad_geometry::cubic_bezier::validate_rigid_transform(transform)?;
+            }
             let solids = collect_body_solids(&self.store.borrow(), body.0)?;
             let mut members = Vec::with_capacity(solids.len());
             for mut transformed in solids {
@@ -1323,9 +1405,12 @@ impl GeometryKernel for OcctGeometryKernel {
                         transform.translation_m[2],
                     ));
                 }
-                members.push(KernelBody::new(
-                    self.store.borrow_mut().insert_body(transformed),
-                ));
+                let cubic = self.store.borrow().cubic_bodies.contains(&body.0);
+                let id = self.store.borrow_mut().insert_body(transformed);
+                if cubic {
+                    self.store.borrow_mut().cubic_bodies.insert(id);
+                }
+                members.push(KernelBody::new(id));
             }
             self.make_compound(&members)
         }
@@ -1415,9 +1500,9 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
-        if profile.ellipse.is_some() {
+        if profile.ellipse.is_some() || profile.cubic_bezier.is_some() {
             return Err(OpenCadError::validation(
-                "exact ellipse profiles currently support normal extrusion only",
+                "exact ellipse/cubic profiles currently support normal extrusion only",
             ));
         }
         helix.validate()?;
@@ -1453,9 +1538,15 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
-        if profile.ellipse.is_some() {
+        if path.cubic_bezier.is_some() || path.ellipse.is_some() {
             return Err(OpenCadError::validation(
-                "exact ellipse profiles currently support normal extrusion only",
+                "exact cubic/ellipse sweep paths are unsupported",
+            ));
+        }
+
+        if profile.ellipse.is_some() || profile.cubic_bezier.is_some() {
+            return Err(OpenCadError::validation(
+                "exact ellipse/cubic profiles currently support normal extrusion only",
             ));
         }
         #[cfg(feature = "occt")]
@@ -1479,9 +1570,12 @@ impl GeometryKernel for OcctGeometryKernel {
     }
 
     fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
-        if sections.iter().any(|s| s.ellipse.is_some()) {
+        if sections
+            .iter()
+            .any(|s| s.ellipse.is_some() || s.cubic_bezier.is_some())
+        {
             return Err(OpenCadError::validation(
-                "exact ellipse loft is unsupported",
+                "exact ellipse/cubic loft is unsupported",
             ));
         }
         #[cfg(feature = "occt")]
@@ -1581,8 +1675,12 @@ impl GeometryKernel for OcctGeometryKernel {
                 }
                 member_ids.extend(members);
             }
+            let cubic = member_ids.iter().any(|id| store.cubic_bodies.contains(id));
             drop(store);
             let compound_id = self.store.borrow_mut().insert_compound(member_ids.clone());
+            if cubic {
+                self.store.borrow_mut().cubic_bodies.insert(compound_id);
+            }
             Ok(KernelBody::new(compound_id))
         }
         #[cfg(not(feature = "occt"))]
@@ -1618,6 +1716,9 @@ impl GeometryKernel for OcctGeometryKernel {
             let axis_origin = DVec3::new(axis_origin_m[0], axis_origin_m[1], axis_origin_m[2]);
             let rotated = solid.rotate(axis_origin, axis_direction, angle_rad);
             let id = self.store.borrow_mut().insert_body(rotated);
+            if self.store.borrow().cubic_bodies.contains(&body.0) {
+                self.store.borrow_mut().cubic_bodies.insert(id);
+            }
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -1645,6 +1746,9 @@ impl GeometryKernel for OcctGeometryKernel {
             let plane_normal = DVec3::new(plane_normal_m[0], plane_normal_m[1], plane_normal_m[2]);
             let mirrored = solid.mirror(plane_origin, plane_normal);
             let id = self.store.borrow_mut().insert_body(mirrored);
+            if self.store.borrow().cubic_bodies.contains(&body.0) {
+                self.store.borrow_mut().cubic_bodies.insert(id);
+            }
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -1666,6 +1770,7 @@ mod tests {
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
             ellipse: None,
+            cubic_bezier: None,
             circle: None,
             segments: Vec::new(),
             placement: None,
@@ -1920,6 +2025,7 @@ mod tests {
                 points: vec![[0.0, 0.0], [0.01, 0.0], [0.0, 0.01]],
                 closed: true,
                 ellipse: None,
+                cubic_bezier: None,
                 circle: Some(opencad_geometry::SolvedCircle {
                     center_m: [0.02, 0.03],
                     radius_m: radius,

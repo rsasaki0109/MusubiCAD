@@ -132,6 +132,18 @@ fn build_problem(sketch: &Sketch) -> Result<SketchProblem> {
                 register_point_ref(&mut registry, &mut point_coords, sketch, &e.center)?;
                 ellipse_parameters(e)?;
             }
+            SketchEntity::CubicBezier(e) => {
+                e.validate_references()?;
+                cubic_control_points(sketch, e)?;
+                for point in &e.control_points[..3] {
+                    if find_point(sketch, point.as_str()).is_none() {
+                        return Err(OpenCadError::validation(
+                            "cubic controls must reference existing point entities",
+                        ));
+                    }
+                    register_point_ref(&mut registry, &mut point_coords, sketch, point)?;
+                }
+            }
             SketchEntity::Circle(c) => {
                 register_point_ref(&mut registry, &mut point_coords, sketch, &c.center)?;
                 radius_var(&mut registry, c.base.id.as_str());
@@ -149,6 +161,16 @@ fn build_problem(sketch: &Sketch) -> Result<SketchProblem> {
 
     let mut equations = Vec::new();
     for constraint in &sketch.constraints {
+        if constraint.entity_refs().iter().any(|id| {
+            matches!(
+                sketch.find_entity(id.as_str()),
+                Some(SketchEntity::CubicBezier(_))
+            )
+        }) {
+            return Err(OpenCadError::validation(
+                "cubic constraints must target control point entities, not the curve",
+            ));
+        }
         build_constraint(
             constraint,
             &mut equations,
@@ -785,6 +807,43 @@ pub fn ellipse_parameters(e: &crate::EllipseEntity) -> Result<[f64; 3]> {
 /// Resolve literal/unit-bearing sketch lengths after parameter evaluation.
 pub fn coord_value(coord: &Coord) -> Result<f64> {
     coord_literal(coord)
+}
+
+/// Strict SI controls for the admitted closed subtype, after parameter resolution.
+pub fn cubic_control_points(
+    sketch: &Sketch,
+    curve: &crate::CubicBezierEntity,
+) -> Result<[[f64; 2]; 3]> {
+    curve.validate_references()?;
+    if let Some(controls) = curve.resolved_controls_m {
+        return Ok(controls);
+    }
+    let mut controls = [[0.; 2]; 3];
+    for (id, point) in curve.control_points[..3].iter().zip(&mut controls) {
+        let source = find_point(sketch, id.as_str())
+            .ok_or_else(|| OpenCadError::validation("cubic control reference is not a point"))?;
+        for (coord, value) in [&source.x, &source.y].into_iter().zip(point) {
+            *value = match coord {
+                Coord::Literal(v) => *v,
+                Coord::Expr(expr) => {
+                    let (_, unit) = expr.as_str().trim().split_once(char::is_whitespace)
+                        .ok_or_else(|| OpenCadError::validation("cubic coordinate expression requires an explicit length unit or resolved parameter"))?;
+                    if !matches!(unit.trim(), "m" | "mm" | "cm" | "in") {
+                        return Err(OpenCadError::validation(
+                            "cubic coordinate expression must be a length",
+                        ));
+                    }
+                    parse_length_expr(expr.as_str())?
+                }
+            };
+            if !value.is_finite() || value.abs() > 1e6 {
+                return Err(OpenCadError::validation(
+                    "cubic control must be finite and within 1e6 metres",
+                ));
+            }
+        }
+    }
+    Ok(controls)
 }
 
 #[cfg(test)]

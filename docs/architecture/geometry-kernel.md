@@ -210,3 +210,16 @@ and checks self-interference/volume before private BREP transfer to cadrum.
 Mock state is owned per instance; mesh measurements and rigid transforms are
 accurate. Unsupported mesh edits, compounds and inertia fail explicitly.
 No OCCT types or document ownership cross the geometry interface.
+
+## Closed cubic admission
+
+[ADR-057](../adr/ADR-057-closed-cubic-sketch-spline-admission.md) admits one closed
+non-rational cubic span after the ADR-012 gate. Three neutral SI controls imply
+the fourth is the first; the private OCCT bridge builds exact Bezier BREP and
+checks analytic volume. Mock stores analytic prism metadata, with true volume,
+centroid, polynomial bounds and capped GL8 perimeter; unsupported shape queries
+refuse. OCCT cubic bounds use shape-based AddOptimal without triangulation;
+legacy bounds and cache identities are unchanged. Solved control coordinates
+are transient, source point expressions survive warm regeneration, and actual
+resolved controls enter cubic-only cache identities. No NURBS type escapes the
+kernel or becomes editable by inference. See [the API limits](../api/cubic-spline.md).

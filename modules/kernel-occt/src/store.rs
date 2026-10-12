@@ -17,6 +17,10 @@ pub struct KernelStore {
     #[cfg(feature = "occt")]
     pub ellipse_wires: HashMap<u64, opencad_geometry::EllipseFrame>,
     #[cfg(feature = "occt")]
+    pub cubic_wires: HashMap<u64, opencad_geometry::CubicBezierFrame>,
+    #[cfg(feature = "occt")]
+    pub cubic_bodies: std::collections::HashSet<u64>,
+    #[cfg(feature = "occt")]
     pub bodies: HashMap<u64, Solid>,
     #[cfg(feature = "occt")]
     pub compound_members: HashMap<u64, Vec<u64>>,

@@ -80,3 +80,13 @@ and named tests. Until then, NURBS editing and new kernel features remain
 deferred; the existing `NurbsSurface` type must not be advertised as editable.
 
 See [ADR-012](../adr/ADR-012-future-geometry-admission-gate.md).
+
+## Scoped closed cubic admission
+
+P13-008 uses [ADR-057](../adr/ADR-057-closed-cubic-sketch-spline-admission.md),
+accepted before implementation, for a closed single-span non-rational cubic
+sketch curve and normal NewBody extrusion. It resolves the gate's source IDs,
+fixed knot/weight conventions, units, neutral DTO, Mock/native oracle, budget,
+wire/refusal and named acceptance tests. This admission does not authorize
+surface NURBS, general spline loops or editable knots/weights. See
+[the scoped API](../api/cubic-spline.md).

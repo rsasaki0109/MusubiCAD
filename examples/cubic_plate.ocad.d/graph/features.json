@@ -1,0 +1,59 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:cubic_sketch",
+      "feature:cubic_body"
+    ],
+    "features": {
+      "feature:cubic_sketch": {
+        "id": "feature:cubic_sketch",
+        "name": "Cubic sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:cubic_body": {
+        "id": "feature:cubic_body",
+        "name": "Cubic prism",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:cubic_sketch",
+        "target": "feature:cubic_body",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:cubic_body",
+      "name": "Cubic prism",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:cubic_sketch",
+        "profile_ref": "profile:bezier:ent:cubic",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:cubic_sketch",
+      "name": "Cubic sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:cubic"
+      },
+      "suppressed": false
+    }
+  ]
+}

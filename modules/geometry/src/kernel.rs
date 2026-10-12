@@ -190,6 +190,9 @@ pub struct SolvedSketch {
     /// Exact full ellipse (ADR-053); no sampled-polygon fallback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ellipse: Option<crate::SolvedEllipse>,
+    /// Exact closed cubic span (ADR-057), never a sampled polygon.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cubic_bezier: Option<crate::SolvedCubicBezier>,
     /// Exact loop segments when the loop contains arcs (ADR-021); `points`
     /// then holds a sampled polygon for kernels without curves.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -484,6 +487,8 @@ pub trait GeometryKernel {
 /// In-memory mock kernel for tests and headless pipelines without OCCT.
 #[derive(Debug, Default)]
 pub struct MockGeometryKernel {
+    cubic_wires: std::cell::RefCell<std::collections::BTreeMap<u64, crate::CubicBezierFrame>>,
+    cubic_bodies: std::cell::RefCell<std::collections::BTreeMap<u64, crate::CubicBezierPrism>>,
     ellipse_wires: std::cell::RefCell<std::collections::BTreeMap<u64, crate::EllipseFrame>>,
     ellipse_bodies:
         std::cell::RefCell<std::collections::BTreeMap<u64, crate::ellipse::EllipsePrism>>,
@@ -502,6 +507,12 @@ impl MockGeometryKernel {
         KernelBody::new(id)
     }
 
+    fn store_cubic(&self, prism: crate::CubicBezierPrism) -> KernelBody {
+        let mut store = self.cubic_bodies.borrow_mut();
+        let id = u64::MAX / 3 - store.len() as u64;
+        store.insert(id, prism);
+        KernelBody::new(id)
+    }
     fn store_ellipse(&self, prism: crate::ellipse::EllipsePrism) -> KernelBody {
         let mut store = self.ellipse_bodies.borrow_mut();
         let id = u64::MAX / 2 - store.len() as u64;
@@ -509,6 +520,11 @@ impl MockGeometryKernel {
         KernelBody::new(id)
     }
     fn refuse_ellipse_edit(&self, body: &KernelBody) -> Result<()> {
+        if self.cubic_bodies.borrow().contains_key(&body.0) {
+            return Err(OpenCadError::validation(
+                "Mock cubic shape/topology operation is unsupported; use OCCT",
+            ));
+        }
         if self.ellipse_bodies.borrow().contains_key(&body.0) {
             Err(OpenCadError::validation(
                 "Mock ellipse shape/topology operation is unsupported; use OCCT",
@@ -545,9 +561,15 @@ impl GeometryKernel for MockGeometryKernel {
 
     /// A deterministic stand-in body derived from the inputs (ADR-023).
     fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
-        if profile.ellipse.is_some() {
+        if path.cubic_bezier.is_some() || path.ellipse.is_some() {
             return Err(OpenCadError::validation(
-                "ellipse profile supports normal extrusion only",
+                "exact cubic/ellipse sweep paths are unsupported",
+            ));
+        }
+
+        if profile.ellipse.is_some() || profile.cubic_bezier.is_some() {
+            return Err(OpenCadError::validation(
+                "ellipse/cubic profile supports normal extrusion only",
             ));
         }
         if path.segments.is_empty() {
@@ -561,9 +583,9 @@ impl GeometryKernel for MockGeometryKernel {
 
     /// A deterministic stand-in body derived from the inputs (ADR-025).
     fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
-        if profile.ellipse.is_some() {
+        if profile.ellipse.is_some() || profile.cubic_bezier.is_some() {
             return Err(OpenCadError::validation(
-                "ellipse profile supports normal extrusion only",
+                "ellipse/cubic profile supports normal extrusion only",
             ));
         }
         helix.validate()?;
@@ -577,8 +599,13 @@ impl GeometryKernel for MockGeometryKernel {
     /// A deterministic stand-in body derived from the section count and
     /// point counts, so loft pipelines run without OCCT (ADR-022).
     fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
-        if sections.iter().any(|s| s.ellipse.is_some()) {
-            return Err(OpenCadError::validation("ellipse loft is unsupported"));
+        if sections
+            .iter()
+            .any(|s| s.ellipse.is_some() || s.cubic_bezier.is_some())
+        {
+            return Err(OpenCadError::validation(
+                "ellipse/cubic loft is unsupported",
+            ));
         }
         if sections.len() < 2 {
             return Err(OpenCadError::validation("loft needs at least two sections"));
@@ -645,6 +672,23 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire> {
+        if let Some(cubic) = sketch.cubic_bezier {
+            if !sketch.closed
+                || sketch.circle.is_some()
+                || sketch.ellipse.is_some()
+                || !sketch.points.is_empty()
+                || !sketch.segments.is_empty()
+            {
+                return Err(OpenCadError::validation(
+                    "cubic input must be one exact closed curve",
+                ));
+            }
+            let frame = cubic.frame(sketch.placement.unwrap_or(SketchPlacement::global_xy()))?;
+            let mut store = self.cubic_wires.borrow_mut();
+            let id = u64::MAX / 3 - store.len() as u64;
+            store.insert(id, frame);
+            return Ok(KernelWire::new(id));
+        }
         if let Some(ellipse) = sketch.ellipse {
             if !sketch.closed
                 || sketch.circle.is_some()
@@ -686,6 +730,26 @@ impl GeometryKernel for MockGeometryKernel {
         if length <= 0.0 {
             return Err(OpenCadError::validation("extrude length must be positive"));
         }
+        let cubic = self.cubic_wires.borrow().get(&profile.0).copied();
+        if let Some(frame) = cubic {
+            if !matches!(_operation, ExtrudeOperation::NewBody)
+                || _target.is_some()
+                || matches!(extent, ExtrudeExtent::ThroughAll)
+            {
+                return Err(OpenCadError::validation(
+                    "closed cubic supports distance/symmetric NewBody extrusion only",
+                ));
+            }
+            let mut prism = frame.prism(_direction_m, length)?;
+            if matches!(extent, ExtrudeExtent::Symmetric { .. }) {
+                for point in &mut prism.frame.controls_m {
+                    for (coordinate, delta) in point.iter_mut().zip(prism.delta_m) {
+                        *coordinate -= delta / 2.;
+                    }
+                }
+            }
+            return Ok(self.store_cubic(prism));
+        }
         let frame = self.ellipse_wires.borrow().get(&profile.0).copied();
         if let Some(frame) = frame {
             if !matches!(_operation, ExtrudeOperation::NewBody) || _target.is_some() {
@@ -711,9 +775,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn revolve(&self, input: &RevolveInput) -> Result<KernelBody> {
-        if input.sketch.ellipse.is_some() {
+        if input.sketch.ellipse.is_some() || input.sketch.cubic_bezier.is_some() {
             return Err(OpenCadError::validation(
-                "ellipse profile supports normal extrusion only",
+                "ellipse/cubic profile supports normal extrusion only",
             ));
         }
         let sketch = &input.sketch;
@@ -812,6 +876,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
+        if let Some(prism) = self.cubic_bodies.borrow().get(&body.0) {
+            return prism.mass_properties(density_kg_per_m3);
+        }
         if let Some(prism) = self.ellipse_bodies.borrow().get(&body.0) {
             return prism.mass_properties(density_kg_per_m3);
         }
@@ -848,6 +915,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
+        if let Some(prism) = self.cubic_bodies.borrow().get(&body.0) {
+            return Ok(prism.bounding_box());
+        }
         if let Some(prism) = self.ellipse_bodies.borrow().get(&body.0) {
             return Ok(prism.bounding_box());
         }
@@ -878,6 +948,11 @@ impl GeometryKernel for MockGeometryKernel {
         &self,
         body: &KernelBody,
     ) -> Result<Vec<crate::topo_sync::EdgeRefDiscovery>> {
+        if self.cubic_bodies.borrow().contains_key(&body.0) {
+            return Err(OpenCadError::validation(
+                "Mock cubic edge discovery is unsupported",
+            ));
+        }
         if body.0 == 0 || self.ellipse_bodies.borrow().contains_key(&body.0) {
             return Ok(Vec::new());
         }
@@ -1026,6 +1101,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
+        if self.cubic_bodies.borrow().contains_key(&body.0) {
+            return self.transform_body(body, RigidTransform::from_translation(translation_m));
+        }
         if self.ellipse_bodies.borrow().contains_key(&body.0) {
             return self.transform_body(body, RigidTransform::from_translation(translation_m));
         }
@@ -1042,6 +1120,10 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
+        let cubic = self.cubic_bodies.borrow().get(&body.0).copied();
+        if let Some(prism) = cubic {
+            return Ok(self.store_cubic(prism.transformed(transform)?));
+        }
         let prism = self.ellipse_bodies.borrow().get(&body.0).copied();
         if let Some(prism) = prism {
             return Ok(self.store_ellipse(prism.transformed(transform)?));
@@ -1140,6 +1222,7 @@ mod tests {
             points: vec![[0.0, 0.0], [0.08, 0.0], [0.08, 0.06], [0.0, 0.06]],
             closed: true,
             ellipse: None,
+            cubic_bezier: None,
             circle: None,
             segments: Vec::new(),
             placement: None,

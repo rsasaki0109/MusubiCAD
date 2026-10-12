@@ -1,0 +1,111 @@
+{
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:a",
+      "name": "a",
+      "expr": "40 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:b",
+      "name": "b",
+      "expr": "40 mm"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:cubic",
+      "name": "Closed cubic",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:cubic",
+      "entity": {
+        "type": "point",
+        "id": "ent:p0",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:cubic",
+      "entity": {
+        "type": "point",
+        "id": "ent:p1",
+        "construction": false,
+        "x": "a",
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:cubic",
+      "entity": {
+        "type": "point",
+        "id": "ent:p2",
+        "construction": false,
+        "x": 0.0,
+        "y": "b"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:cubic",
+      "entity": {
+        "type": "cubic_bezier",
+        "id": "ent:cubic",
+        "construction": false,
+        "control_points": [
+          "ent:p0",
+          "ent:p1",
+          "ent:p2",
+          "ent:p0"
+        ]
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:cubic_sketch",
+        "name": "Cubic sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:cubic"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:cubic_body",
+        "name": "Cubic prism",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:cubic_sketch",
+          "profile_ref": "profile:bezier:ent:cubic",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.006
+            }
+          },
+          "operation": "new_body"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    }
+  ]
+}

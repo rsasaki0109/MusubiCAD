@@ -1,0 +1,61 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:cubic",
+      "name": "Closed cubic",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:p0",
+          "construction": false,
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:p1",
+          "construction": false,
+          "x": "a",
+          "y": 0.0
+        },
+        {
+          "type": "point",
+          "id": "ent:p2",
+          "construction": false,
+          "x": 0.0,
+          "y": "b"
+        },
+        {
+          "type": "cubic_bezier",
+          "id": "ent:cubic",
+          "construction": false,
+          "control_points": [
+            "ent:p0",
+            "ent:p1",
+            "ent:p2",
+            "ent:p0"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:bezier:ent:cubic",
+          "entity_ids": [
+            "ent:cubic"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:cubic/profile:outer"
+        }
+      ]
+    }
+  ]
+}

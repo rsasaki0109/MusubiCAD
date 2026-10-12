@@ -59,3 +59,6 @@ pub use section::{polygonal_section, SectionGeometry, SectionPlane};
 
 pub mod ellipse;
 pub use ellipse::{EllipseFrame, SolvedEllipse};
+
+pub mod cubic_bezier;
+pub use cubic_bezier::{CubicBezierFrame, CubicBezierPrism, SolvedCubicBezier};

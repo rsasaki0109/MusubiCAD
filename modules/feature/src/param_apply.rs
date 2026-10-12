@@ -12,7 +12,12 @@ use crate::feature::{FeatureDefinition, FeatureNode};
 use crate::regenerate::PartModel;
 
 pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Result<()> {
-    if parameters.evaluation_order()?.is_empty() {
+    let contains_cubic = model.sketches.values().any(|s| {
+        s.entities
+            .iter()
+            .any(|e| matches!(e, opencad_sketch::SketchEntity::CubicBezier(_)))
+    });
+    if parameters.evaluation_order()?.is_empty() && !contains_cubic {
         for node in model.nodes.values_mut() {
             if matches!(
                 node.definition,
@@ -27,9 +32,13 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
         return Ok(());
     }
     let values = if model.sketches.values().any(|s| {
-        s.entities
-            .iter()
-            .any(|e| matches!(e, opencad_sketch::SketchEntity::Ellipse(_)))
+        s.entities.iter().any(|e| {
+            matches!(
+                e,
+                opencad_sketch::SketchEntity::Ellipse(_)
+                    | opencad_sketch::SketchEntity::CubicBezier(_)
+            )
+        })
     }) {
         opencad_graph::evaluate_param_graph_strict(parameters)?
     } else {
@@ -37,9 +46,14 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
     };
     for sketch in model.sketches.values_mut() {
         let originals = snapshot_dimension_exprs(sketch);
-        resolve_sketch_constraints(sketch, &values)?;
-        solve_sketch(sketch, &SolverOptions::default())?;
+        let cubic_sources = snapshot_cubic_point_sources(sketch);
+        let result = resolve_sketch_constraints(sketch, &values)
+            .and_then(|()| solve_sketch(sketch, &SolverOptions::default()).map(|_| ()))
+            .and_then(|()| retain_cubic_solution(sketch));
+        // A rejected resolved curve must not literalize authored point sources.
+        restore_cubic_point_sources(sketch, &cubic_sources);
         restore_dimension_exprs(sketch, &originals);
+        result?;
         sketch.update_profiles()?;
     }
     apply_feature_parameters(model, &values)?;
@@ -64,6 +78,7 @@ pub fn solved_sketch_copy(sketch: &Sketch, values: &IndexMap<String, f64>) -> Re
     crate::prepare_sketch(&mut copy)?;
     resolve_sketch_constraints(&mut copy, values)?;
     solve_sketch(&mut copy, &SolverOptions::default())?;
+    retain_cubic_solution(&mut copy)?;
     match copy.solve_state {
         opencad_sketch::SolveState::FullyConstrained
         | opencad_sketch::SolveState::UnderConstrained { .. } => Ok(copy),
@@ -193,10 +208,110 @@ fn resolve_feature_node(
     Ok(())
 }
 
+type CubicPointSource = (String, opencad_sketch::Coord, opencad_sketch::Coord);
+fn snapshot_cubic_point_sources(sketch: &Sketch) -> Vec<CubicPointSource> {
+    let ids: std::collections::BTreeSet<_> = sketch
+        .entities
+        .iter()
+        .filter_map(|e| match e {
+            opencad_sketch::SketchEntity::CubicBezier(curve) => {
+                Some(curve.control_points[..3].iter().map(|id| id.as_str()))
+            }
+            _ => None,
+        })
+        .flatten()
+        .collect();
+    sketch
+        .entities
+        .iter()
+        .filter_map(|e| match e {
+            opencad_sketch::SketchEntity::Point(p) if ids.contains(p.base.id.as_str()) => {
+                Some((p.base.id.as_str().into(), p.x.clone(), p.y.clone()))
+            }
+            _ => None,
+        })
+        .collect()
+}
+fn retain_cubic_solution(sketch: &mut Sketch) -> Result<()> {
+    let controls: Vec<_> = sketch
+        .entities
+        .iter()
+        .filter_map(|e| match e {
+            opencad_sketch::SketchEntity::CubicBezier(curve) => Some((
+                curve.base.id.as_str().to_owned(),
+                opencad_sketch::solve::cubic_control_points(sketch, curve),
+            )),
+            _ => None,
+        })
+        .collect();
+    for (id, controls) in controls {
+        let controls = controls?;
+        opencad_geometry::SolvedCubicBezier {
+            controls_m: controls,
+        }
+        .validate()?;
+        if let Some(opencad_sketch::SketchEntity::CubicBezier(curve)) =
+            sketch.entities.iter_mut().find(|e| e.id().as_str() == id)
+        {
+            curve.resolved_controls_m = Some(controls);
+        }
+    }
+    Ok(())
+}
+fn restore_cubic_point_sources(sketch: &mut Sketch, sources: &[CubicPointSource]) {
+    for (id, x, y) in sources {
+        if let Some(opencad_sketch::SketchEntity::Point(p)) =
+            sketch.entities.iter_mut().find(|e| e.id().as_str() == id)
+        {
+            p.x = x.clone();
+            p.y = y.clone();
+        }
+    }
+}
+
 pub(crate) fn resolve_sketch_constraints(
     sketch: &mut Sketch,
     scope: &IndexMap<String, f64>,
 ) -> Result<()> {
+    for entity in &mut sketch.entities {
+        if let opencad_sketch::SketchEntity::CubicBezier(curve) = entity {
+            curve.resolved_controls_m = None;
+        }
+    }
+    let cubic_points: std::collections::BTreeSet<_> = sketch
+        .entities
+        .iter()
+        .filter_map(|entity| match entity {
+            opencad_sketch::SketchEntity::CubicBezier(e) => Some(
+                e.control_points[..3]
+                    .iter()
+                    .map(|id| id.as_str().to_owned()),
+            ),
+            _ => None,
+        })
+        .flatten()
+        .collect();
+    for entity in &mut sketch.entities {
+        if let opencad_sketch::SketchEntity::Point(point) = entity {
+            if cubic_points.contains(point.base.id.as_str()) {
+                for coord in [&mut point.x, &mut point.y] {
+                    if let opencad_sketch::Coord::Expr(expr) = coord {
+                        if opencad_graph::parameter_names_in_expr(expr.as_str())
+                            .iter()
+                            .any(|name| opencad_graph::param_eval::is_angle_parameter(name))
+                        {
+                            return Err(OpenCadError::validation(
+                                "cubic coordinates cannot reference angle parameters",
+                            ));
+                        }
+                        *coord = opencad_sketch::Coord::Literal(
+                            opencad_graph::eval_length_expr_strict(expr.as_str(), scope)?,
+                        );
+                    }
+                }
+            }
+        }
+    }
     for entity in &mut sketch.entities {
         if let opencad_sketch::SketchEntity::Ellipse(e) = entity {
             e.resolved_parameters = Some(resolve_ellipse_parameters(e, scope)?);

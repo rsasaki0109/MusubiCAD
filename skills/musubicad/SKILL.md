@@ -556,3 +556,23 @@ are unsupported, so native OCCT supplies true collision evidence.
 Coupled joint wire guards are mandatory for forward-reader refusal; preserve
 `type:coupled`, association ID and underlying motion. Use the backend, not manual
 JSON changes. Example/ADR-056 and the authoring guide define exact scope.
+
+### Closed cubic spline authoring
+
+P13-008 / ADR-057 admits a closed non-rational cubic Bezier span, not general
+NURBS. Create three ordinary points and `cubic_bezier` through DesignPatch:
+`control_points=[ent:p0,ent:p1,ent:p2,ent:p0]`, with stable IDs and explicit
+length coordinates/expressions. Require a well-conditioned CCW control triangle;
+no inferred endpoint closure. Degree-three knots and unit weights are fixed;
+extra degree/knot/weight/periodic fields refuse. Constrain the control points,
+not the curve. Construction excludes it from solid profiles. Use exact
+`profile:bezier:<curve_id>` with normal distance/centred symmetric NewBody
+extrusion. Open/mixed/multi-span/rational curves, trim/offset/projection,
+loft/sweep/revolve/through-all and cubic cut/join are unsupported. Preserve
+point expressions and source IDs; use `patch_dry_run`, `patch_apply`, then
+`regen_document`, and retain backend history. Mock volume/bounds/centroid are
+analytic; shape/topology/inertia/rendering are unsupported. Native tessellation
+is only presentation. Perimeter is bounded quadrature, not a certified bound.
+See `docs/api/cubic-spline.md`, `examples/cubic_plate.ocad.d`, the creation patch
+and eval `cubic_edit_control`: a 40×40 mm control triangle extruded 6 mm has
+volume 1440 mm³; editing a to 60 mm gives 2160 mm³ without literalizing sources.

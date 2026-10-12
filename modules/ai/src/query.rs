@@ -600,6 +600,7 @@ fn sketch_entity_kind(entity: &SketchEntity) -> &'static str {
         SketchEntity::Line(_) => "line",
         SketchEntity::Circle(_) => "circle",
         SketchEntity::Ellipse(_) => "ellipse",
+        SketchEntity::CubicBezier(_) => "cubic_bezier",
         SketchEntity::Arc(_) => "arc",
         SketchEntity::Rectangle(_) => "rectangle",
     }

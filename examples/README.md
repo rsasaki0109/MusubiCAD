@@ -429,3 +429,15 @@ on `LABELS`. Inspect units/layers before import and select only geometry.
 volume is 28,800 mm³. `agent/create_dxf_import_plate_patch.json` rebuilds it from
 an empty part. Import through `import-dxf`/Agent/MCP, retain history for undo/redo,
 and add ordinary features through verified DesignPatch. See ADR-048.
+
+### Closed cubic spline plate
+
+`cubic_plate.ocad.d` is an exact closed non-rational cubic Bezier with stable
+control references `[ent:p0,ent:p1,ent:p2,ent:p0]` and a 6 mm normal extrusion.
+Parameters `a=b=40 mm` own the two control coordinates. Analytic volume is
+1440 mm³, XY bounds are 17.777778 mm each, and XY centroid is 8.571429 mm.
+`agent/create_cubic_plate_patch.json` reconstructs it through DesignPatch.
+Edit `param:a` to `60 mm` without replacing point expressions; volume becomes
+2160 mm³. General NURBS, knot/weight editing and open/mixed spans are deferred.
+See ADR-057 and `docs/api/cubic-spline.md`; eval `cubic_edit_control` grades the
+source IDs/expressions and independent analytic volume.

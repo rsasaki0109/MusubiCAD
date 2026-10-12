@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:a": {
+      "id": "param:a",
+      "name": "a",
+      "expr": "40 mm",
+      "dirty": false
+    },
+    "param:b": {
+      "id": "param:b",
+      "name": "b",
+      "expr": "40 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

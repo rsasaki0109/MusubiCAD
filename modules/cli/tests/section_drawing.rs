@@ -111,6 +111,7 @@ fn box_body(kernel: &OcctGeometryKernel, origin: [f64; 2], size: [f64; 2]) -> Ke
             points: vec![[x, y], [x + w, y], [x + w, y + h], [x, y + h]],
             closed: true,
             ellipse: None,
+            cubic_bezier: None,
             circle: None,
             segments: vec![],
             placement: None,
@@ -208,6 +209,7 @@ fn native_sections_match_analytic_areas_dimensions_and_volume() {
             points: vec![],
             closed: true,
             ellipse: None,
+            cubic_bezier: None,
             circle: Some(SolvedCircle {
                 center_m: [0., 0.],
                 radius_m: 0.01,
