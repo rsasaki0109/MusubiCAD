@@ -570,6 +570,53 @@
           ]
         }
       ]
+    },
+    {
+      "id": "sketch_extend_guide",
+      "source": "examples/trim_extend_plate.ocad.d",
+      "document": "extended_guide.ocad.d",
+      "prompt": "In {document}, plan_curve_edit to extend the end of ent:guide_line in sketch:base to cutter ent:e1, using new point ent:extended_end. Inspect the returned revision-guarded patch and solved-point expected effect, dry-run, then apply through verified patch_apply with history. Keep construction true, preserve old endpoints ent:guide_b and ent:edited_end and all constraints/parameters. The new guide endpoint is (80,30) mm; regenerate the unchanged 80 by 60 by 6 mm plate, volume 28800 mm^3. Do not move shared old points or remove the expected effect.",
+      "expected_volume_mm3": 28800.0,
+      "required_parameters": [
+        "width",
+        "height",
+        "thickness",
+        "guide_length"
+      ],
+      "expected_sketch_points": [
+        {
+          "sketch_id": "sketch:base",
+          "point_id": "ent:extended_end",
+          "position_m": [
+            0.08,
+            0.03
+          ]
+        },
+        {
+          "sketch_id": "sketch:base",
+          "point_id": "ent:guide_b",
+          "position_m": [
+            0.06,
+            0.03
+          ]
+        },
+        {
+          "sketch_id": "sketch:base",
+          "point_id": "ent:edited_end",
+          "position_m": [
+            0.04,
+            0.03
+          ]
+        }
+      ],
+      "expected_construction_entities": [
+        {
+          "sketch_id": "sketch:base",
+          "entity_id": "ent:guide_line",
+          "type": "line",
+          "construction": true
+        }
+      ]
     }
   ]
 }

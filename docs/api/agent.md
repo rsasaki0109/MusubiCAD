@@ -949,3 +949,13 @@ API or MCP verified patch tools. It preserves IDs/constraints and emits
 `sketch_entity_modified` with sketch/downstream change impact. Missing entities,
 lost consumed profiles and implicit alias rebinding refuse changes. Old entity
 flags still default false; no document format version change is required.
+
+## Curve edit planning (MCAD-P13-002)
+
+`opencad.plan_curve_edit` / MCP `plan_curve_edit` take `path` and nested `edit`.
+CLI: `musubicad plan-curve-edit part.ocad.d edit.json`. The plan includes sorted
+eligible intersections, selected index and a revision-guarded DesignPatch with
+`replace_sketch_entity` and `sketch_point_position` expected effect. It is read-only;
+existing verified patch/history APIs apply it. Solved-point effects force their
+geometry check even when verification is disabled for staged authoring. See the
+MCP guide and ADR-051 for supported primitives, units, bounds and failure rules.

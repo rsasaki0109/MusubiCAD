@@ -30,6 +30,7 @@ pub(crate) fn operation_sketch_id(operation: &PatchOperation) -> Option<&str> {
         PatchOperation::AddSketch { id, .. } | PatchOperation::RemoveSketch { id } => Some(id),
         PatchOperation::AddSketchEntity { sketch_id, .. }
         | PatchOperation::SetSketchConstruction { sketch_id, .. }
+        | PatchOperation::ReplaceSketchEntity { sketch_id, .. }
         | PatchOperation::RemoveSketchEntity { sketch_id, .. }
         | PatchOperation::AddSketchConstraint { sketch_id, .. }
         | PatchOperation::RemoveSketchConstraint { sketch_id, .. } => Some(sketch_id),
@@ -147,6 +148,28 @@ pub(crate) fn apply_sketch_operations(
                 }
                 sketch.entities.push(entity.clone());
                 touched.insert(sketch_id.clone());
+            }
+            PatchOperation::ReplaceSketchEntity { sketch_id, entity } => {
+                let sketch = find_sketch_mut(sketches, sketch_id)?;
+                let existing = sketch
+                    .entities
+                    .iter_mut()
+                    .find(|e| e.id() == entity.id())
+                    .ok_or_else(|| {
+                        OpenCadError::validation(format!(
+                            "unknown stored entity '{}' in sketch '{sketch_id}'",
+                            entity.id()
+                        ))
+                    })?;
+                if matches!(entity, SketchEntity::Rectangle(_))
+                    || std::mem::discriminant(existing) != std::mem::discriminant(entity)
+                {
+                    return Err(OpenCadError::validation("replacement must retain primitive type; rectangle helpers require explicit conversion"));
+                }
+                if existing != entity {
+                    *existing = entity.clone();
+                    touched.insert(sketch_id.clone());
+                }
             }
             PatchOperation::SetSketchConstruction {
                 sketch_id,
@@ -365,6 +388,7 @@ pub(crate) fn validate_construction_bindings(
         .iter()
         .filter_map(|op| match op {
             PatchOperation::SetSketchConstruction { sketch_id, .. } => Some(sketch_id.as_str()),
+            PatchOperation::ReplaceSketchEntity { sketch_id, .. } => Some(sketch_id.as_str()),
             _ => None,
         })
         .collect();

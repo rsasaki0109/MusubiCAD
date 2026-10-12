@@ -4,6 +4,8 @@ pub mod agent_api;
 pub mod assembly;
 pub mod assertions;
 pub mod attachment_patch;
+pub mod curve_edit;
+pub use curve_edit::{plan_curve_edit, CurveEditPlan, CurveEditRequest};
 pub mod authoring;
 pub mod drawing;
 pub mod explain;

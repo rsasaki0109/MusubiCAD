@@ -110,3 +110,14 @@ is retained through flag edits. Consumer profile bindings are checked before and
 after edits so a generic outer alias cannot silently move to another loop.
 The guide-parameter regression solves a construction line from 40 to 50 mm
 while preserving the analytic plate volume; no kernel operation was added.
+
+## Trim/extend postconditions (ADR-051)
+
+The planner solves a source copy to current local SI geometry and computes
+analytic intersections. A caller-chosen new endpoint preserves neighbouring
+source IDs; constraint removal is explicit. `solved_sketch_copy` resolves and
+solves without changing source or invoking a geometry kernel. A unit-bearing
+expected point effect runs the same solve after the patch, catching retained
+constraints that move an apparently valid edit away from its intended point.
+The effect cannot be skipped by staged-authoring verification flags. Shape
+execution reuses existing kernel-neutral line/arc wire input.

@@ -463,3 +463,17 @@ profile or `profile:outer` switching to another loop refuses; explicitly
 rebind/remove consumers in the same patch. Dry-run, apply with history, then
 regenerate. See `examples/construction_plate.ocad.d` and
 `examples/agent/create_construction_plate_patch.json`.
+
+### Sketch trim and extend
+
+Call `plan_curve_edit` with `path` and `edit` containing stored sketch/target/cutter
+IDs, explicit `mode`, `end`, and fresh `new_point_id`. Targets are lines/arcs;
+cutters are finite lines/circles/arcs in the same sketch. Explicitly select
+`intersection_index` if needed. Review/dry-run/apply the returned DesignPatch,
+retaining its revision guard and solved-point expected effect. Old shared points
+remain intact. Constraint removal is explicit (`remove_constraints`); conflicts
+that move the solved endpoint refuse rather than undo the requested trim.
+Close/rebind consumed profiles in the same transaction if necessary. No tangent,
+coincident, rectangle-derived or sampled intersections. Angles edited by the
+planner are fixed source values, not an association to the cutter. See
+`examples/trim_extend_plate.ocad.d` and its authoring patch.

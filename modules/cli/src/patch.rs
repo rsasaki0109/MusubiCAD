@@ -87,7 +87,13 @@ pub fn patch_document_with_options(args: &PatchArgs) -> Result<()> {
         return Ok(());
     }
 
-    if !args.options.no_verify {
+    let point_effect = patch.expected_effects.iter().any(|effect| {
+        matches!(
+            effect,
+            opencad_ai::ExpectedEffect::SketchPointPosition { .. }
+        )
+    });
+    if !args.options.no_verify || point_effect {
         let verification = verification_report(&args.doc_path, &before, &patch);
         if !verification.passed {
             return Err(opencad_core::OpenCadError::validation(format!(

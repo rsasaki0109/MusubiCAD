@@ -680,6 +680,18 @@ fn check_expected_effects(
         .cloned()
         .map(|effect| {
             let (passed, message) = match &effect {
+                ExpectedEffect::SketchPointPosition { sketch_id, point_id, position_m, tolerance_m } => {
+                    let measured=(|| -> Result<[f64;2]> {
+                        if !tolerance_m.is_finite() || *tolerance_m<=0. || position_m.iter().any(|v| !v.is_finite()) { return Err(OpenCadError::validation("invalid sketch point expected effect")); }
+                        let sketch=after.sketches.iter().find(|s|s.id.as_str()==sketch_id).ok_or_else(||OpenCadError::not_found("expected sketch"))?;
+                        let values=opencad_graph::evaluate_param_graph(&after.parameters)?;
+                        let solved=opencad_feature::param_apply::solved_sketch_copy(sketch,&values)?;
+                        let Some(opencad_sketch::SketchEntity::Point(point))=solved.find_entity(point_id) else { return Err(OpenCadError::not_found("expected solved point")); };
+                        let (opencad_sketch::Coord::Literal(x),opencad_sketch::Coord::Literal(y))=(&point.x,&point.y) else { return Err(OpenCadError::validation("expected point coordinates unresolved")); };
+                        Ok([*x,*y])
+                    })();
+                    match measured { Ok(p)=> {let gap=(p[0]-position_m[0]).hypot(p[1]-position_m[1]);(gap<=*tolerance_m,format!("solved point {sketch_id}/{point_id} gap {gap} m (limit {tolerance_m} m)"))},Err(e)=>(false,e.to_string()) }
+                },
                 ExpectedEffect::ParameterExprEquals { id, expr } => {
                     let actual = after.parameters.get(id).map(|entry| entry.expr.as_str());
                     (
@@ -1128,6 +1140,11 @@ fn semantic_change_row(change: &SemanticChange) -> (String, String, String) {
 
 fn expected_effect_label(effect: &ExpectedEffect) -> String {
     match effect {
+        ExpectedEffect::SketchPointPosition {
+            sketch_id,
+            point_id,
+            ..
+        } => format!("Solved point {sketch_id}/{point_id}"),
         ExpectedEffect::ParameterExprEquals { id, expr } => {
             format!("Parameter {id} equals {expr}")
         }

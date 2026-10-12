@@ -311,6 +311,18 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_sketch_points" in task:
+        try:
+            sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
+            by_id = {sketch["id"]: sketch for sketch in sketches}
+            for desired in task["expected_sketch_points"]:
+                entities = {entity["id"]: entity for entity in by_id.get(desired["sketch_id"], {}).get("entities", [])}
+                point = entities.get(desired["point_id"], {})
+                actual = [point.get("x"), point.get("y")]
+                if point.get("type") != "point" or any(type(v) not in (int, float) or not math.isfinite(v) for v in actual) or math.dist(actual, desired["position_m"]) > 1e-9:
+                    problems.append(f"sketch point {desired['point_id']} lacks expected source SI coordinates")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            problems.append("sketch point source is absent or malformed")
     if "expected_construction_entities" in task:
         try:
             sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
@@ -696,6 +708,13 @@ def self_test() -> None:
     assert not check({**pdf_task, "expected_pdf_name": "missing.pdf"}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_pages": 1}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_paper_mm": [[297,210],[297,210]]}, printable_sheet, "")[0]
+    edited_doc = ROOT / "examples" / "trim_extend_plate.ocad.d"
+    edited_task = {"expected_sketch_points": [{"sketch_id": "sketch:base", "point_id": "ent:edited_end", "position_m": [0.04, 0.03]}]}
+    assert check(edited_task, edited_doc, "") == (True, [])
+    for field, value in [("point_id", "ent:missing"), ("position_m", [40,30])]:
+        wrong_edit = json.loads(json.dumps(edited_task))
+        wrong_edit["expected_sketch_points"][0][field] = value
+        assert not check(wrong_edit, edited_doc, "")[0]
     construction_doc = ROOT / "examples" / "construction_plate.ocad.d"
     construction_task = {"expected_construction_entities": [{"sketch_id": "sketch:base", "entity_id": "ent:guide_line", "type": "line", "construction": True}]}
     assert check(construction_task, construction_doc, "") == (True, [])

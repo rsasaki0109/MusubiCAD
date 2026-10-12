@@ -769,6 +769,9 @@ fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
         PatchOperation::AddSketchEntity { sketch_id, entity } => {
             (ConflictKind::Sketch, format!("{sketch_id}/{}", entity.id()))
         }
+        PatchOperation::ReplaceSketchEntity { sketch_id, entity } => {
+            (ConflictKind::Sketch, format!("{sketch_id}/{}", entity.id()))
+        }
         PatchOperation::RemoveSketchEntity {
             sketch_id,
             entity_id,
@@ -1026,6 +1029,10 @@ fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSna
                 .find(|item| item.ref_id.as_str() == ref_id),
         ),
         PatchOperation::AddSketchEntity { sketch_id, entity } => snapshot(
+            find_sketch(state, sketch_id)
+                .and_then(|sketch| sketch.find_entity(entity.id().as_str())),
+        ),
+        PatchOperation::ReplaceSketchEntity { sketch_id, entity } => snapshot(
             find_sketch(state, sketch_id)
                 .and_then(|sketch| sketch.find_entity(entity.id().as_str())),
         ),

@@ -183,6 +183,11 @@ pub enum PatchOperation {
         entity_id: String,
         construction: bool,
     },
+    /// Replace a stored primitive's definition while retaining its ID and type.
+    ReplaceSketchEntity {
+        sketch_id: String,
+        entity: SketchEntity,
+    },
     /// Remove an entity; fails while an entity or constraint references it.
     RemoveSketchEntity {
         sketch_id: String,
@@ -341,6 +346,7 @@ impl PatchOperation {
                 | Self::RemoveSketch { .. }
                 | Self::AddSketchEntity { .. }
                 | Self::SetSketchConstruction { .. }
+                | Self::ReplaceSketchEntity { .. }
                 | Self::RemoveSketchEntity { .. }
                 | Self::AddSketchConstraint { .. }
                 | Self::RemoveSketchConstraint { .. }
@@ -516,6 +522,13 @@ impl PatchPrecondition {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ExpectedEffect {
+    /// Require a solved point in sketch-local metres after regeneration.
+    SketchPointPosition {
+        sketch_id: String,
+        point_id: String,
+        position_m: [f64; 2],
+        tolerance_m: f64,
+    },
     /// Require a parameter expression in the resulting Design Graph.
     ParameterExprEquals { id: String, expr: String },
     /// Require regenerated mass delta to remain inside an inclusive kilogram range.
@@ -900,6 +913,7 @@ impl DesignPatch {
                 | PatchOperation::RemoveSketch { .. }
                 | PatchOperation::AddSketchEntity { .. }
                 | PatchOperation::SetSketchConstruction { .. }
+                | PatchOperation::ReplaceSketchEntity { .. }
                 | PatchOperation::RemoveSketchEntity { .. }
                 | PatchOperation::AddSketchConstraint { .. }
                 | PatchOperation::RemoveSketchConstraint { .. }
