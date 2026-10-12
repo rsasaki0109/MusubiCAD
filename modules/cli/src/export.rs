@@ -27,6 +27,8 @@ pub struct ExportSummary {
     /// Bytes written, for formats without a triangle count (STEP).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bytes: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pages: Option<usize>,
 }
 
 pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
@@ -37,13 +39,14 @@ pub fn export_document(input: &str, output: &str) -> Result<ExportSummary> {
     match extension.as_deref() {
         Some("stl") => export_stl(input, output),
         Some("svg") => export_svg(input, output),
+        Some("pdf") => export_pdf(input, output),
         Some("step" | "stp") => export_step(input, output),
         Some("urdf") => crate::urdf::export_urdf(input, output),
         Some("3mf") => export_mesh_package(input, output, "3mf"),
         Some("glb") => export_mesh_package(input, output, "glb"),
         Some("html") => crate::web_viewer::export_web_viewer(input, output),
         _ => Err(OpenCadError::validation(
-            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, .urdf, or .html extension",
+            "export output must use .stl, .3mf, .glb, .step/.stp, .svg, .pdf, .urdf, or .html extension",
         )),
     }
 }
@@ -66,6 +69,7 @@ pub fn export_stl(input: &str, output: &str) -> Result<ExportSummary> {
 
     write_binary_stl(output_path, &mesh, &name)?;
     Ok(ExportSummary {
+        pages: None,
         format: "stl".into(),
         triangles: mesh.triangle_count(),
         output: output.to_string(),
@@ -170,10 +174,45 @@ pub fn export_mesh_package(input: &str, output: &str, format: &str) -> Result<Ex
     fs::write(output, &bytes)
         .map_err(|error| OpenCadError::Other(format!("cannot write '{output}': {error}")))?;
     Ok(ExportSummary {
+        pages: None,
         format: format.into(),
         triangles: mesh.triangle_count(),
         output: output.to_string(),
         bytes: Some(bytes.len()),
+    })
+}
+
+pub fn export_pdf(input: &str, output: &str) -> Result<ExportSummary> {
+    if !Path::new(output)
+        .extension()
+        .and_then(|s| s.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("pdf"))
+    {
+        return Err(OpenCadError::validation(
+            "PDF output must use .pdf extension",
+        ));
+    }
+    let doc = read_ocad(input)?;
+    let regenerated = crate::drawing::regenerate_drawing(input, &doc)?;
+    let pages: Vec<_> = regenerated
+        .sheets
+        .iter()
+        .enumerate()
+        .map(|(i, (sheet, meshes))| opencad_drawing::PdfPageInput {
+            sheet,
+            meshes,
+            radial: &regenerated.radial_layouts[i],
+            sections: &regenerated.section_layouts[i],
+        })
+        .collect();
+    let bytes = opencad_drawing::render_drawing_pdf(&pages)?;
+    fs::write(output, &bytes).map_err(|e| OpenCadError::Other(e.to_string()))?;
+    Ok(ExportSummary {
+        pages: Some(pages.len()),
+        format: "pdf".into(),
+        triangles: 0,
+        bytes: Some(bytes.len()),
+        output: output.into(),
     })
 }
 
@@ -194,6 +233,7 @@ pub fn export_svg(input: &str, output: &str) -> Result<ExportSummary> {
     fs::write(output_path, svg).map_err(|err| OpenCadError::Other(err.to_string()))?;
 
     Ok(ExportSummary {
+        pages: None,
         format: "svg".into(),
         triangles: segments,
         output: output.to_string(),
@@ -245,6 +285,7 @@ pub fn export_step(input: &str, output: &str) -> Result<ExportSummary> {
         let step = kernel.export_step(&body)?;
         fs::write(output, &step).map_err(|err| OpenCadError::Other(err.to_string()))?;
         Ok(ExportSummary {
+            pages: None,
             format: "step".into(),
             triangles: 0,
             output: output.to_string(),
@@ -363,7 +404,12 @@ fn load_child_document(path: &Path) -> Result<ResolvedChild> {
 pub fn print_summary(summary: &ExportSummary) {
     println!("exported: {}", summary.output);
     println!("format: {}", summary.format);
-    if summary.format == "svg" {
+    if let Some(pages) = summary.pages {
+        println!("pages: {pages}");
+        if let Some(bytes) = summary.bytes {
+            println!("bytes: {bytes}");
+        }
+    } else if summary.format == "svg" {
         println!("wire segments: {}", summary.triangles);
     } else if let Some(bytes) = summary.bytes {
         println!("bytes: {bytes}");

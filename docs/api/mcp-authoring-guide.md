@@ -501,3 +501,32 @@ See `examples/agent/create_title_drawing_patch.json` and self-contained
 `examples/title_plate_drawing.ocad.d`; eval `drawing_title_block_revision`.
 The fixed template has no automatic wrapping, overlap avoidance or template
 library; place drawing views above the block and use bounded field text.
+
+### Multi-page vector PDF (MCAD-P12-006)
+
+Export a drawing with `musubicad export drawing.ocad.d drawing.pdf` or the existing
+`opencad.export` Agent method (`path`, `output`). No model patch is needed for a
+read-only export. Every sheet, source model and semantic dimension is regenerated
+before conversion. PDF pages follow canonical sheet-ID order, preserving each
+sheet's authored dimensions in metres, view scale and drawing annotations.
+
+Results include `format:"pdf"`, `pages` and `bytes` (generic `triangles` is zero).
+The output embeds a fixed DejaVu Sans subset and preserves vector lines/arcs,
+text, source/detail markers, even-odd section hatches and title blocks. There is
+no system-font search, external image/resource access or inferred timestamp.
+Unsupported glyphs (including CJK not covered by the bundled font), invalid
+references/layouts and numeric overflow fail before replacing an existing PDF.
+Source `.ocad` files remain unchanged. Fix the authored model/text through
+DesignPatch, verify regeneration, then retry export.
+
+Paper dimensions use 72 PDF points per inch, 25.4 mm per inch; PDF-specific precise
+SVG root sizing avoids legacy SVG's rounded physical dimensions. Supported bounds
+are 1–128 sheets, at most one million PDF objects and finite paper dimensions
+≤10⁷ points. The strict converter mode detects missing glyphs; the output is not
+claimed to be PDF/A-certified. No arbitrary images/filters are accepted.
+
+`examples/printable_plate_drawing.ocad.d` contains A4 portrait and landscape
+sheets, created with `examples/agent/create_printable_drawing_patch.json`; the
+embedded part uses the existing detail-plate creation patch.
+`examples/printable_plate_drawing.pdf` is a deterministic printable artifact.
+Eval `drawing_pdf_revision` checks authored metadata and required PDF evidence.

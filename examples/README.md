@@ -391,3 +391,10 @@ includes drawing number MUSUBI-P12-005, revision A, authored date 2026-10-12 and
 material Steel. The view starts above the block. Creation patch:
 `agent/create_title_drawing_patch.json`, using the existing detail plate creation
 patch for the embedded part. `title_plate_drawing.svg` is deterministic.
+
+`printable_plate_drawing.ocad.d` is a patch-authored two-sheet version of the title
+plate: A4 portrait and landscape, both at view scale 0.5. The embedded part is
+created by the existing detail-plate patch; `agent/create_printable_drawing_patch.json`
+rebuilds the drawing. `printable_plate_drawing.pdf` contains two vector pages with
+embedded font subsets, explicit metadata and preserved paper sizes. Export uses
+no timestamp/system font lookup; unsupported glyphs fail rather than being replaced.
