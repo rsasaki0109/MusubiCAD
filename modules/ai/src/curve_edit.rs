@@ -173,7 +173,7 @@ fn literal(coord: &Coord) -> Result<f64> {
         _ => Err(OpenCadError::validation("curve radius unresolved")),
     }
 }
-fn curve(sketch: &Sketch, id: &str) -> Result<EditCurve> {
+pub(crate) fn curve(sketch: &Sketch, id: &str) -> Result<EditCurve> {
     match sketch
         .find_entity(id)
         .ok_or_else(|| OpenCadError::not_found(format!("curve '{id}'")))?

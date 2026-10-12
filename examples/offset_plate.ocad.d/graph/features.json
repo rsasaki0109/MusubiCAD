@@ -1,0 +1,107 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_base",
+      "feature:extrude_base",
+      "feature:offset_sketch",
+      "feature:offset_body"
+    ],
+    "features": {
+      "feature:sketch_base": {
+        "id": "feature:sketch_base",
+        "name": "Base Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude_base": {
+        "id": "feature:extrude_base",
+        "name": "Extrude Base",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:offset_sketch": {
+        "id": "feature:offset_sketch",
+        "name": "Offset sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:offset_body": {
+        "id": "feature:offset_body",
+        "name": "Offset extrusion",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_base",
+        "target": "feature:extrude_base",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:offset_sketch",
+        "target": "feature:offset_body",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:extrude_base",
+      "name": "Extrude Base",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_base",
+        "profile_ref": "sketch:base/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:offset_body",
+      "name": "Offset extrusion",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:offset_sketch",
+        "profile_ref": "sketch:offset/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:offset_sketch",
+      "name": "Offset sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:offset"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_base",
+      "name": "Base Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:base"
+      },
+      "suppressed": false
+    }
+  ]
+}

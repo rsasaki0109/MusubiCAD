@@ -198,3 +198,5 @@ mod tests {
         assert!(sketch.add_entity(point).is_err());
     }
 }
+
+pub mod offset;

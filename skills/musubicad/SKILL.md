@@ -477,3 +477,18 @@ Close/rebind consumed profiles in the same transaction if necessary. No tangent,
 coincident, rectangle-derived or sampled intersections. Angles edited by the
 planner are fixed source values, not an association to the cutter. See
 `examples/trim_extend_plate.ocad.d` and its authoring patch.
+
+### Bounded offset copies
+
+`plan_offset` / `opencad.plan_offset` / CLI `plan-offset` is read-only. Specify
+source sketch, ordered CCW convex line/tangent-arc IDs or one circle,
+`distance_m` (outward positive), `join: mitre_tangent`, mandatory
+`association: independent_copy`, a new destination sketch/name and all fresh
+curve/point IDs. Points follow start-vertex order then arc-centre order; circle
+uses one centre. See MCP authoring guide and ADR-052. No constraints are copied
+and coordinate/parameter changes in the source do not update the copy. Existing
+semantic workplane references still retain plane dependencies. Refuse concavity,
+non-tangent joins, collapsed insets and ambiguous topology; never sample or
+repair. Review the returned DesignPatch, explicitly append consumer features if
+needed, dry-run and apply through verified patch/history. Example:
+`offset_plate.ocad.d` and `agent/create_offset_plate_patch.json`.

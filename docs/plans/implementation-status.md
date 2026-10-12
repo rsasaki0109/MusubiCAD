@@ -58,3 +58,10 @@ roadmap IDs:
 
 Historical `Task-###` references are retained only where they identify the
 original implementation change. New work must use `MCAD-P…` IDs.
+
+P13-003 / ADR-052: bounded analytic convex line/tangent-arc and circle offsets
+are independent authored copies through CLI/Agent/MCP planning and DesignPatch.
+Caller IDs, explicit SI distance, closure/convexity/inset refusals, both-kernel
+neutral wire dimensions and native analytical volumes, history and file round
+trips are covered. Concave repair and persistent source association remain
+unimplemented. serde_json float_roundtrip preserves source f64/history identity.

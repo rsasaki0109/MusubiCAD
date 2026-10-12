@@ -617,6 +617,45 @@
           "construction": true
         }
       ]
+    },
+    {
+      "id": "sketch_offset_independent",
+      "source": "examples/construction_plate.ocad.d",
+      "document": "offset_plate.ocad.d",
+      "prompt": "In {document}, use plan_offset to copy sketch:base ordered edges ent:e0, ent:e1, ent:e2, ent:e3 outward 3 mm with association independent_copy and join mitre_tangent into sketch:offset. Supply curve IDs ent:offset_curve_0 through ent:offset_curve_3 and point IDs ent:offset_point_0 through ent:offset_point_3. Preserve the source sketch and constraints. Inspect the returned DesignPatch, explicitly append feature:offset_sketch using sketch:offset and feature:offset_body as a 6 mm new-body extrusion of sketch:offset/profile:outer. Dry-run and apply with verified patch/history, then regenerate. The new body is 86 by 66 by 6 mm, volume 34056 mm3. Do not claim persistent association.",
+      "expected_volume_mm3": 34056.0,
+      "required_parameters": [
+        "width",
+        "height",
+        "thickness",
+        "guide_length"
+      ],
+      "expected_sketch_points": [
+        {
+          "sketch_id": "sketch:offset",
+          "point_id": "ent:offset_point_0",
+          "position_m": [
+            -0.003,
+            -0.003
+          ]
+        },
+        {
+          "sketch_id": "sketch:offset",
+          "point_id": "ent:offset_point_2",
+          "position_m": [
+            0.083,
+            0.063
+          ]
+        },
+        {
+          "sketch_id": "sketch:base",
+          "point_id": "ent:c2",
+          "position_m": [
+            0.08,
+            0.06
+          ]
+        }
+      ]
     }
   ]
 }

@@ -121,3 +121,10 @@ expected point effect runs the same solve after the patch, catching retained
 constraints that move an apparently valid edit away from its intended point.
 The effect cannot be skipped by staged-authoring verification flags. Shape
 execution reuses existing kernel-neutral line/arc wire input.
+
+ADR-052 offset planning resolves a cloned source sketch, then analytically
+shifts convex line supports and arc/circle radii. Ordered convexity/one-turn,
+tangent joins, closure and surviving-edge checks refuse topology changes.
+No sampling or solver constraint invention is involved. The output is an
+independent authored sketch with literal SI coordinates, caller-owned stable
+IDs and no copied constraints. Persistent offset association remains deferred.
