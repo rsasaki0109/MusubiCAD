@@ -36,6 +36,8 @@ pub use graph_derive::derive_feature_graph;
 pub use helix_sweep::{HelixSweepFeature, HelixSweepFeatureExecutor};
 pub use hole::{HoleFeature, HoleFeatureExecutor};
 pub use imported::{ImportedSolidExecutor, ImportedSolidFeature};
+pub mod imported_mesh;
+pub use imported_mesh::{ImportedMeshExecutor, ImportedMeshFeature};
 pub use inspect::{RegenerationFailure, RegenerationInspection};
 pub use loft::{LoftFeature, LoftFeatureExecutor, LoftSection};
 pub use param_apply::{apply_parameters, sketch_solve_state};

@@ -152,15 +152,24 @@ impl DocumentHistory {
 /// relation. The checksum manifest is derived from those source files and is
 /// omitted from identity comparison.
 fn same_source_snapshot(left: &OcadDocument, right: &OcadDocument) -> Result<bool> {
+    #[derive(PartialEq)]
+    enum SourceFile {
+        Json(serde_json::Value),
+        Attachment(Vec<u8>),
+    }
     fn canonical_files(
         doc: &OcadDocument,
-    ) -> Result<std::collections::BTreeMap<String, serde_json::Value>> {
+    ) -> Result<std::collections::BTreeMap<String, SourceFile>> {
         serialize_document_files(doc)?
             .into_iter()
             .filter(|(name, _)| name != CHECKSUMS_FILE)
             .map(|(name, bytes)| {
+                // Imported assets are immutable opaque bytes, not JSON models.
+                if name.starts_with("imports/") {
+                    return Ok((name, SourceFile::Attachment(bytes)));
+                }
                 serde_json::from_slice(&bytes)
-                    .map(|value| (name, value))
+                    .map(|value| (name, SourceFile::Json(value)))
                     .map_err(opencad_core::OpenCadError::from)
             })
             .collect()

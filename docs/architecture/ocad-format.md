@@ -49,3 +49,14 @@ let restored = validate_ocad("bracket.ocad.d")?;
 
 - `MusubiCAD/schemas/ocad.document.schema.json`
 - Format version: `0.1.0`
+
+## STL source assets (ADR-049)
+
+`imported_mesh` is an additive feature tag containing `source`, `sha256`,
+mandatory `source_unit`, and proper rigid `transform`. Only `.stl` attachments
+are added to STEP attachment admission; legacy STEP data is unchanged and older
+readers refuse the unknown tag. No migration guesses units or converts sources.
+History normalises model JSON and compares opaque attachments as bytes.
+Expanded writes remove only obsolete checksum-owned flat attachments whose
+bytes still match; modified assets and symlinks refuse removal. This prevents
+undo from reloading a removed asset while preserving unknown user files.

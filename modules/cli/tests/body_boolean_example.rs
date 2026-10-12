@@ -194,7 +194,7 @@ fn contract<K: GeometryKernel>(kernel: &K, analytic: bool) {
 }
 #[test]
 fn body_boolean_mock_contract() {
-    contract(&MockGeometryKernel, false);
+    contract(&MockGeometryKernel::new(), false);
 }
 #[test]
 fn body_boolean_occt_analytic_boxes_and_cache() {

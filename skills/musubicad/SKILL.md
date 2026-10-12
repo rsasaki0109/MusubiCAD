@@ -437,3 +437,17 @@ silently converted. Drawing DXF coordinates already include view scale. Bare
 sketches can be staged, then consumed through ordinary validated features.
 Example: `import/plate_outline.dxf` and `dxf_import_plate.ocad.d`; ADR-048 and eval
 `dxf_import_copy_sketch`. CLI: `inspect-dxf` / `import-dxf`; Agent equivalents exist.
+
+### Explicit-unit STL solid import
+
+Call `import_stl` with `path`, `stl_path`, a new `feature_id`, and mandatory
+`source_unit` (`m`/`mm`/`cm`/`in`). Dry-run first. This initial path accepts one
+closed connected outward-oriented manifold shell, at most 4 MiB/10,000 triangles;
+open scans, disconnected shells, self-intersections and repairs refuse. Never
+infer units from the document or label an STL asset as STEP. Optional rigid
+placement uses metres and a dimensionless proper rotation. The backend retains
+original bytes and SHA-256 through AddAttachment/AddFeature DesignPatch/history.
+For undo use the returned `history.history` payload. See
+`examples/stl_import_plate.ocad.d`, `examples/import/closed_plate_mm.stl` and
+`examples/agent/create_stl_import_plate_patch.json`. Mock preserves accurate mesh
+measurements/placement; imported-mesh shape edits/CSG/compounds/inertia refuse.

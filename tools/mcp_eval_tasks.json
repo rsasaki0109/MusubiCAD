@@ -292,7 +292,7 @@
       "id": "drawing_polygonal_section",
       "source": "examples/section_plate_drawing.ocad.d",
       "document": "section_drawing.ocad.d",
-      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m², two loops and eight edges; never store contour caches.",
+      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m\u00b2, two loops and eight edges; never store contour caches.",
       "expected_views": [
         "front"
       ],
@@ -505,6 +505,21 @@
               0.06
             ]
           ]
+        }
+      ]
+    },
+    {
+      "id": "stl_import_explicit_units",
+      "source": "examples/dxf_import_plate.ocad.d",
+      "document": "stl_import.ocad.d",
+      "prompt": "In {document}, dry-run import {root}/examples/import/closed_plate_mm.stl through import_stl with source_unit mm and feature_id feature:stl_plate, then apply with history. Preserve the existing graph and source bytes. Regenerate and verify the imported closed plate is 80 by 60 by 6 mm, volume 28800 mm^3. Do not infer units or disguise STL as STEP.",
+      "expected_volume_mm3": 28800.0,
+      "required_parameters": [],
+      "expected_imported_meshes": [
+        {
+          "id": "feature:stl_plate",
+          "source_unit": "mm",
+          "sha256": "860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0"
         }
       ]
     }

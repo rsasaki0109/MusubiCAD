@@ -8,7 +8,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use base64::Engine as _;
 use opencad_core::{sha256_hex, OpenCadError, Result};
-use opencad_feature::FeatureDefinition;
 use opencad_graph::SemanticChange;
 
 use crate::patch::PatchOperation;
@@ -17,13 +16,14 @@ use crate::DesignState;
 /// Maximum decoded attachment size in bytes (64 MiB).
 pub const MAX_ATTACHMENT_BYTES: usize = 64 * 1024 * 1024;
 
-/// Validate `imports/[a-z0-9_]+([.-][a-z0-9_]+)*\.(step|stp)`.
+/// Validate `imports/[a-z0-9_]+([.-][a-z0-9_]+)*\.(step|stp|stl)`.
 pub(crate) fn validate_attachment_path(path: &str) -> Result<()> {
     let valid = path
         .strip_prefix("imports/")
         .and_then(|name| {
             name.strip_suffix(".step")
                 .or_else(|| name.strip_suffix(".stp"))
+                .or_else(|| name.strip_suffix(".stl"))
         })
         .is_some_and(|stem| {
             !stem.is_empty()
@@ -38,7 +38,7 @@ pub(crate) fn validate_attachment_path(path: &str) -> Result<()> {
         Ok(())
     } else {
         Err(OpenCadError::validation(format!(
-            "invalid attachment path '{path}': expected imports/<lowercase_name>.step or .stp"
+            "invalid attachment path '{path}': expected imports/<lowercase_name>.step, .stp or .stl"
         )))
     }
 }
@@ -116,7 +116,9 @@ pub(crate) fn validate_attachment_candidate(
             .feature_nodes
             .iter()
             .filter(|node| {
-                matches!(&node.definition, FeatureDefinition::ImportedSolid(def) if def.source == *path)
+                node.definition
+                    .attachment_input()
+                    .is_some_and(|(source, _)| source == path)
             })
             .map(|node| node.id.as_str())
             .collect();
@@ -178,7 +180,7 @@ mod tests {
             "motor.step",
             "imports/Motor.step",
             "imports/../x.step",
-            "imports/motor.stl",
+            "imports/motor.obj",
             "imports/.step",
             "imports/sub/motor.step",
         ] {

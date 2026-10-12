@@ -114,7 +114,7 @@ fn contract<K: GeometryKernel>(kernel: &K, analytic: bool) {
 }
 #[test]
 fn draft_mock_contract_and_rollback() {
-    contract(&MockGeometryKernel, false);
+    contract(&MockGeometryKernel::new(), false);
 }
 #[test]
 fn draft_occt_analytic_volume_bounds_and_cache() {
@@ -160,7 +160,7 @@ fn draft_rejects_invalid_and_unsupported_inputs() {
     };
     assert!(kernel.draft_body(body.clone(), &input).is_err());
     input.angle_rad = f64::NAN;
-    assert!(MockGeometryKernel.draft_body(body, &input).is_err());
+    assert!(MockGeometryKernel::new().draft_body(body, &input).is_err());
     for angle in [0.0, 46_f64.to_radians(), f64::INFINITY] {
         assert!(opencad_feature::draft::validate_angle(angle).is_err());
     }

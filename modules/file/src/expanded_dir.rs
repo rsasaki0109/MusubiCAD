@@ -96,12 +96,57 @@ pub fn write_expanded_dir(path: impl AsRef<Path>, doc: &OcadDocument) -> Result<
     let path = path.as_ref();
     fs::create_dir_all(path.join(GRAPH_DIR)).map_err(io_error)?;
     let files = serialize_document_files(doc)?;
+    // Undo/removal must not leave checksum-owned attachments to be reloaded.
+    // Plan removals before writing and refuse changed assets or symlinks.
+    let mut obsolete = Vec::new();
+    let old_checksums = path.join(CHECKSUMS_FILE);
+    if old_checksums.is_file() {
+        let previous: ChecksumManifest =
+            serde_json::from_slice(&fs::read(old_checksums).map_err(io_error)?)?;
+        for (name, digest) in previous.files {
+            if !name.starts_with(ATTACHMENTS_DIR) || files.contains_key(&name) {
+                continue;
+            }
+            let components: Vec<_> = std::path::Path::new(&name).components().collect();
+            if components.len() != 2
+                || components
+                    .iter()
+                    .any(|c| !matches!(c, std::path::Component::Normal(_)))
+            {
+                return Err(OpenCadError::validation("invalid obsolete attachment path"));
+            }
+            let parent = path.join("imports");
+            if fs::symlink_metadata(&parent)
+                .map_err(io_error)?
+                .file_type()
+                .is_symlink()
+            {
+                return Err(OpenCadError::validation(
+                    "cannot remove attachment through symlink",
+                ));
+            }
+            let asset = path.join(&name);
+            let metadata = fs::symlink_metadata(&asset).map_err(io_error)?;
+            if !metadata.is_file()
+                || metadata.file_type().is_symlink()
+                || crate::checksums::hash_file(&asset)? != digest
+            {
+                return Err(OpenCadError::validation(
+                    "obsolete attachment changed outside document history",
+                ));
+            }
+            obsolete.push(asset);
+        }
+    }
     for (relative, bytes) in &files {
         let file_path = path.join(relative);
         if let Some(parent) = file_path.parent() {
             fs::create_dir_all(parent).map_err(io_error)?;
         }
         fs::write(&file_path, bytes).map_err(io_error)?;
+    }
+    for asset in obsolete {
+        fs::remove_file(asset).map_err(io_error)?;
     }
     Ok(())
 }

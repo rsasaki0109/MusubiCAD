@@ -1,4 +1,14 @@
 #include "cpp/variable_fillet.h"
+#include <BRepBuilderAPI_MakePolygon.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_Sewing.hxx>
+#include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepGProp.hxx>
+#include <BOPAlgo_ArgumentAnalyzer.hxx>
+#include <GProp_GProps.hxx>
+#include <TopoDS_Face.hxx>
+#include <TopoDS_Shell.hxx>
+#include <TopoDS_Solid.hxx>
 #include <BRepTools.hxx>
 #include <BRep_Tool.hxx>
 #include <BRep_Builder.hxx>
@@ -21,6 +31,45 @@
 #include <stdexcept>
 
 namespace musubicad {
+rust::Vec<std::uint8_t> triangle_solid(rust::Slice<const double> vertices, rust::Slice<const std::uint32_t> indices, double expected_volume) {
+    try {
+        if (vertices.empty() || vertices.size()%3 || indices.size()<12 || indices.size()%3 || indices.size()>30000 || !std::isfinite(expected_volume) || expected_volume<=0)
+            throw std::runtime_error("invalid triangle solid input");
+        BRepBuilderAPI_Sewing sewing(1e-8);
+        for (std::size_t t=0; t<indices.size(); t+=3) {
+            BRepBuilderAPI_MakePolygon polygon;
+            for (std::size_t j=0; j<3; ++j) {
+                auto i=static_cast<std::size_t>(indices[t+j])*3;
+                if (i+2>=vertices.size()) throw std::runtime_error("triangle vertex index out of bounds");
+                for (std::size_t axis=0; axis<3; ++axis) if (!std::isfinite(vertices[i+axis])) throw std::runtime_error("non-finite triangle vertex");
+                polygon.Add(gp_Pnt(vertices[i],vertices[i+1],vertices[i+2]));
+            }
+            polygon.Close();
+            if (!polygon.IsDone()) throw std::runtime_error("triangle wire failed");
+            BRepBuilderAPI_MakeFace face(polygon.Wire());
+            if (!face.IsDone()) throw std::runtime_error("triangle face failed");
+            sewing.Add(face.Face());
+        }
+        sewing.Perform();
+        auto shell=sewing.SewedShape();
+        if (shell.IsNull() || shell.ShapeType()!=TopAbs_SHELL) throw std::runtime_error("triangles must sew to one shell");
+        BRepBuilderAPI_MakeSolid builder(TopoDS::Shell(shell));
+        if (!builder.IsDone()) throw std::runtime_error("triangle solid failed");
+        auto solid=builder.Solid();
+        if (!BRepCheck_Analyzer(solid,true).IsValid()) throw std::runtime_error("invalid faceted B-rep");
+        BOPAlgo_ArgumentAnalyzer check;
+        check.SetShape1(solid); check.SelfInterMode()=true; check.StopOnFirstFaulty()=true; check.Perform();
+        if (check.HasFaulty()) throw std::runtime_error("self-intersecting faceted solid");
+        GProp_GProps mass; BRepGProp::VolumeProperties(solid,mass);
+        if (!std::isfinite(mass.Mass()) || mass.Mass()<=0 || std::abs(mass.Mass()-expected_volume)>std::max(1e-18,expected_volume*1e-8))
+            throw std::runtime_error("faceted solid volume differs from mesh volume");
+        std::ostringstream stream; BRepTools::Write(solid,stream);
+        auto bytes=stream.str(); rust::Vec<std::uint8_t> result;
+        for (auto byte:bytes) result.push_back(static_cast<std::uint8_t>(byte));
+        return result;
+    } catch (const Standard_Failure& failure) { throw std::runtime_error(failure.what()); }
+}
+
 bool is_straight_edge(rust::Slice<const std::uint8_t> brep, rust::Slice<const double> endpoints) {
     try {
         if (endpoints.size() != 6) throw std::runtime_error("invalid edge endpoints");

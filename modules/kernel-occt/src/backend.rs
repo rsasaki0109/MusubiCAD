@@ -1330,6 +1330,31 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn import_triangle_solid(&self, solid: &opencad_geometry::TriangleSolid) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let bytes = crate::ffi::native::triangle_solid(
+                &solid.vertices_m().concat(),
+                &solid.triangles().concat(),
+                solid.mass_properties(1.0)?.volume_m3,
+            )
+            .map_err(|err| OpenCadError::validation(format!("STL solid: {err}")))?;
+            let mut solids =
+                Solid::read_brep_text(&mut std::io::Cursor::new(bytes)).map_err(map_occt_error)?;
+            if solids.len() != 1 {
+                return Err(OpenCadError::validation("STL must produce one solid"));
+            }
+            Ok(KernelBody::new(
+                self.store.borrow_mut().insert_body(solids.remove(0)),
+            ))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = solid;
+            Err(OpenCadError::validation("STL solid import requires OCCT"))
+        }
+    }
+
     fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
         helix.validate()?;
         #[cfg(feature = "occt")]

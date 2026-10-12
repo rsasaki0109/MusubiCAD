@@ -25,6 +25,7 @@ MCP surface or the authoring guide:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -310,6 +311,19 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_imported_meshes" in task:
+        try:
+            nodes = json.loads((document / "graph" / "features.json").read_text(encoding="utf-8"))["feature_nodes"]
+            by_id = {node["id"]: node["definition"] for node in nodes}
+            for desired in task["expected_imported_meshes"]:
+                definition = by_id.get(desired["id"], {})
+                source = definition.get("source", "")
+                safe = re.fullmatch(r"imports/[a-z0-9_]+(?:[.-][a-z0-9_]+)*\.stl", source)
+                asset = (document / source).resolve()
+                if not safe or not asset.is_relative_to(document.resolve()) or definition.get("type") != "imported_mesh" or definition.get("source_unit") != desired["source_unit"] or definition.get("sha256") != desired["sha256"] or hashlib.sha256(asset.read_bytes()).hexdigest() != desired["sha256"]:
+                    problems.append(f"imported mesh {desired['id']} lacks expected explicit-unit source")
+        except (OSError, ValueError, KeyError, TypeError):
+            problems.append("imported mesh source is absent or malformed")
     if "expected_volume_mm3" in task:
         volume = regenerated_volume_mm3(regen_output)
         expected = task["expected_volume_mm3"]
@@ -671,6 +685,13 @@ def self_test() -> None:
     assert not check({**pdf_task, "expected_pdf_name": "missing.pdf"}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_pages": 1}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_paper_mm": [[297,210],[297,210]]}, printable_sheet, "")[0]
+    mesh_doc = ROOT / "examples" / "stl_import_plate.ocad.d"
+    mesh_task = {"expected_imported_meshes": [{"id": "feature:stl_plate", "source_unit": "mm", "sha256": "860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0"}]}
+    assert check(mesh_task, mesh_doc, "") == (True, [])
+    for field, value in [("id", "feature:missing"), ("source_unit", "m"), ("sha256", "0" * 64)]:
+        wrong_mesh = json.loads(json.dumps(mesh_task))
+        wrong_mesh["expected_imported_meshes"][0][field] = value
+        assert not check(wrong_mesh, mesh_doc, "")[0]
     robot = ROOT / "examples" / "robot_arm_assembly.ocad.d"
     assert check(
         {"expected_joint_ids": ["joint:shoulder", "joint:elbow", "joint:wrist"]},

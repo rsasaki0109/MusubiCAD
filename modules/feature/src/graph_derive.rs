@@ -125,6 +125,7 @@ impl FeatureDefinition {
             Self::ImportedSolid(def) => {
                 [("target_feature", def.target_feature.as_ref()), ("", None)]
             }
+            Self::ImportedMesh(_) => [("", None), ("", None)],
         };
         present(candidates)
     }
@@ -177,6 +178,7 @@ impl FeatureDefinition {
             | Self::LinearPattern(_)
             | Self::CircularPattern(_)
             | Self::ImportedSolid(_)
+            | Self::ImportedMesh(_)
             | Self::Shell(_)
             | Self::Draft(_)
             | Self::BodyBoolean(_)
@@ -292,6 +294,7 @@ impl FeatureDefinition {
             | Self::CircularPattern(_)
             | Self::MirrorPattern(_)
             | Self::ImportedSolid(_)
+            | Self::ImportedMesh(_)
             | Self::BodyBoolean(_)
             | Self::Rib(_)
             | Self::Loft(_)
@@ -571,6 +574,14 @@ mod tests {
                 target_feature: Some("feature:plate".into()),
             },
         ));
+        samples.push(FeatureDefinition::ImportedMesh(
+            crate::ImportedMeshFeature {
+                source: "imports/plate.stl".into(),
+                sha256: "0".repeat(64),
+                source_unit: opencad_core::LengthUnit::Millimeter,
+                transform: opencad_geometry::RigidTransform::identity(),
+            },
+        ));
         samples.push(FeatureDefinition::Sweep(crate::SweepFeature {
             sketch_feature: "feature:sketch_profile".into(),
             profile_ref: "sketch:profile/profile:outer".into(),
@@ -675,6 +686,7 @@ mod tests {
             "circular_pattern",
             "mirror_pattern",
             "imported_solid",
+            "imported_mesh",
             "shell",
             "loft",
             "sweep",

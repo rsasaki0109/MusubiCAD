@@ -132,6 +132,12 @@ fn tools() -> Vec<Tool> {
             schema: || json!({"type":"object","properties":{"dxf_path":{"type":"string"}},"required":["dxf_path"],"additionalProperties":false}),
         },
         Tool {
+            name: "import_stl",
+            description: "Import a bounded ASCII/binary STL as one connected closed oriented solid through verified DesignPatch/history. source_unit is mandatory because STL has no unit. Refuse open, disconnected, degenerate or self-intersecting geometry. dry_run verifies without writing; returned history supports undo/redo.",
+            handler: Handler::Agent("opencad.import_stl"),
+            schema: || json!({"type":"object","properties":{"path":{"type":"string"},"stl_path":{"type":"string"},"feature_id":{"type":"string"},"source_unit":{"enum":["m","mm","cm","in"]},"name":{"type":"string"},"transform":{"type":"object"},"dry_run":{"type":"boolean"},"history":{"type":"object"}},"required":["path","stl_path","feature_id","source_unit"],"additionalProperties":false}),
+        },
+        Tool {
             name: "import_dxf",
             description: "Import explicitly selected planar LINE/CIRCLE/ARC/straight LWPOLYLINE layers into an authored sketch through verified DesignPatch/history. Units must be declared or supplied and agree. Unsupported selected geometry refuses changes. dry_run verifies without writing; returned history supports undo/redo.",
             handler: Handler::Agent("opencad.import_dxf"),
@@ -632,7 +638,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 21);
+        assert_eq!(tools.len(), 22);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

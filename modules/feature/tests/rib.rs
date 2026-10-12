@@ -183,7 +183,7 @@ fn contract<K: GeometryKernel>(kernel: &K, analytic: bool) {
 
 #[test]
 fn rib_mock_contract_and_rollback() {
-    contract(&MockGeometryKernel, false);
+    contract(&MockGeometryKernel::new(), false);
 }
 
 #[test]
@@ -197,7 +197,7 @@ fn rib_rejects_degenerate_values() {
     let registry = FeatureRegistry::with_defaults();
     let params = params("0 mm", "12 mm");
     let error = model
-        .regenerate(&MockGeometryKernel, &registry, Some(&params), None)
+        .regenerate(&MockGeometryKernel::new(), &registry, Some(&params), None)
         .expect_err("zero thickness");
     assert!(error.to_string().contains("rib thickness"), "{error}");
 
@@ -212,7 +212,7 @@ fn rib_rejects_degenerate_values() {
     };
     def.length_expr = None;
     let error = model
-        .regenerate(&MockGeometryKernel, &registry, None, None)
+        .regenerate(&MockGeometryKernel::new(), &registry, None, None)
         .expect_err("zero extent");
     assert!(error.to_string().contains("extrude length"), "{error}");
 }

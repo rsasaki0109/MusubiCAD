@@ -249,6 +249,12 @@ pub struct CircularEdgeGeometry {
 }
 /// Kernel-neutral geometry operations.
 pub trait GeometryKernel {
+    /// Import an already admitted closed triangle shell in metres.
+    fn import_triangle_solid(&self, _solid: &crate::TriangleSolid) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this kernel does not support triangle solids",
+        ))
+    }
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire>;
 
     fn extrude(
@@ -474,15 +480,37 @@ pub trait GeometryKernel {
 
 /// In-memory mock kernel for tests and headless pipelines without OCCT.
 #[derive(Debug, Default)]
-pub struct MockGeometryKernel;
+pub struct MockGeometryKernel {
+    imported_meshes: std::cell::RefCell<std::collections::BTreeMap<u64, crate::TriangleSolid>>,
+}
 
 impl MockGeometryKernel {
     pub fn new() -> Self {
-        Self
+        Self::default()
+    }
+
+    fn store_mesh(&self, mesh: crate::TriangleSolid) -> KernelBody {
+        let mut store = self.imported_meshes.borrow_mut();
+        let id = u64::MAX - store.len() as u64;
+        store.insert(id, mesh);
+        KernelBody::new(id)
+    }
+
+    fn refuse_mesh_edit(&self, body: &KernelBody) -> Result<()> {
+        if self.imported_meshes.borrow().contains_key(&body.0) {
+            Err(OpenCadError::validation(
+                "Mock imported mesh shape edits are unsupported; use OCCT",
+            ))
+        } else {
+            Ok(())
+        }
     }
 }
 
 impl GeometryKernel for MockGeometryKernel {
+    fn import_triangle_solid(&self, solid: &crate::TriangleSolid) -> Result<KernelBody> {
+        Ok(self.store_mesh(solid.clone()))
+    }
     /// A deterministic stand-in body derived from the byte length, so
     /// imported-solid pipelines run without OCCT (ADR-016).  Mock export
     /// stays unsupported.
@@ -528,6 +556,7 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn draft_body(&self, body: KernelBody, input: &crate::DraftInput) -> Result<KernelBody> {
+        self.refuse_mesh_edit(&body)?;
         input.validate()?;
         let hash = input
             .neutral_origin_m
@@ -552,6 +581,7 @@ impl GeometryKernel for MockGeometryKernel {
         thickness_m: f64,
         open_faces: &[FacePick],
     ) -> Result<KernelBody> {
+        self.refuse_mesh_edit(&body)?;
         if !thickness_m.is_finite() || thickness_m <= 0.0 {
             return Err(OpenCadError::validation("shell thickness must be positive"));
         }
@@ -658,6 +688,14 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn boolean(&self, lhs: KernelBody, rhs: KernelBody, op: BooleanOp) -> Result<KernelBody> {
+        if [lhs.0, rhs.0]
+            .iter()
+            .any(|id| self.imported_meshes.borrow().contains_key(id))
+        {
+            return Err(OpenCadError::validation(
+                "Mock booleans with imported mesh solids are unsupported",
+            ));
+        }
         let id = match op {
             BooleanOp::Union => lhs.0 ^ rhs.0,
             BooleanOp::Subtract => lhs.0.wrapping_sub(rhs.0),
@@ -677,6 +715,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
+        if let Some(mesh) = self.imported_meshes.borrow().get(&body.0) {
+            return Ok(mesh.tessellate());
+        }
         Ok(MeshSet::box_prism(
             body.0 as f64 * 0.001,
             settings.linear_deflection,
@@ -688,6 +729,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
+        if let Some(mesh) = self.imported_meshes.borrow().get(&body.0) {
+            return mesh.mass_properties(density_kg_per_m3);
+        }
         let side = body.0 as f64 * 0.001;
         let volume = side * side * side;
         Ok(MassProperties {
@@ -704,6 +748,11 @@ impl GeometryKernel for MockGeometryKernel {
         body: &KernelBody,
         density_kg_per_m3: f64,
     ) -> Result<[[f64; 3]; 3]> {
+        if self.imported_meshes.borrow().contains_key(&body.0) {
+            return Err(OpenCadError::validation(
+                "Mock imported mesh inertia is unsupported",
+            ));
+        }
         let mass = self.mass_properties(body, density_kg_per_m3)?;
         let side = body.0 as f64 * 0.001;
         let moment = mass.mass_kg * side * side / 6.0;
@@ -711,6 +760,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
+        if let Some(mesh) = self.imported_meshes.borrow().get(&body.0) {
+            return Ok(mesh.bounding_box());
+        }
         let side = body.0 as f64 * 0.001;
         Ok(BoundingBox {
             min: [0.0, 0.0, 0.0],
@@ -833,6 +885,7 @@ impl GeometryKernel for MockGeometryKernel {
         radius_m: f64,
         _selector: FilletEdgeSelector,
     ) -> Result<KernelBody> {
+        self.refuse_mesh_edit(&body)?;
         if radius_m <= 0.0 {
             return Err(OpenCadError::validation("fillet radius must be positive"));
         }
@@ -846,6 +899,7 @@ impl GeometryKernel for MockGeometryKernel {
         end_radius_m: f64,
         selector: FilletEdgeSelector,
     ) -> Result<KernelBody> {
+        self.refuse_mesh_edit(&body)?;
         validate_variable_fillet_radii(start_radius_m, end_radius_m)?;
         match selector {
             FilletEdgeSelector::KernelEdges { kernel_edge_ids } if kernel_edge_ids.len() == 1 => {
@@ -866,6 +920,7 @@ impl GeometryKernel for MockGeometryKernel {
         distance_m: f64,
         _selector: FilletEdgeSelector,
     ) -> Result<KernelBody> {
+        self.refuse_mesh_edit(&body)?;
         if distance_m <= 0.0 {
             return Err(OpenCadError::validation(
                 "chamfer distance must be positive",
@@ -875,6 +930,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
+        if self.imported_meshes.borrow().contains_key(&body.0) {
+            return self.transform_body(body, RigidTransform::from_translation(translation_m));
+        }
         if translation_m[0] == 0.0 && translation_m[1] == 0.0 && translation_m[2] == 0.0 {
             return Ok(body);
         }
@@ -884,6 +942,10 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
+        let mesh = self.imported_meshes.borrow().get(&body.0).cloned();
+        if let Some(mesh) = mesh {
+            return Ok(self.store_mesh(mesh.transformed(transform)?));
+        }
         if transform.is_identity() {
             return Ok(body);
         }
@@ -891,6 +953,15 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn make_compound(&self, bodies: &[KernelBody]) -> Result<KernelBody> {
+        if bodies.len() > 1
+            && bodies
+                .iter()
+                .any(|b| self.imported_meshes.borrow().contains_key(&b.0))
+        {
+            return Err(OpenCadError::validation(
+                "Mock compounds containing imported mesh solids are unsupported",
+            ));
+        }
         if bodies.is_empty() {
             return Err(OpenCadError::validation(
                 "compound requires at least one body",
@@ -913,6 +984,7 @@ impl GeometryKernel for MockGeometryKernel {
         _axis_direction_m: [f64; 3],
         angle_rad: f64,
     ) -> Result<KernelBody> {
+        self.refuse_mesh_edit(&body)?;
         let delta = (angle_rad.abs() * 1000.0) as u64;
         Ok(KernelBody::new(body.0.wrapping_add(delta.max(1))))
     }
@@ -923,6 +995,7 @@ impl GeometryKernel for MockGeometryKernel {
         plane_origin_m: [f64; 3],
         plane_normal_m: [f64; 3],
     ) -> Result<KernelBody> {
+        self.refuse_mesh_edit(&body)?;
         let flip = plane_normal_m[0].abs() + plane_normal_m[1].abs() + plane_normal_m[2].abs();
         if flip <= 1e-12 {
             return Err(OpenCadError::validation(

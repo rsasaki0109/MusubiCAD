@@ -197,3 +197,16 @@ being dropped by the SVG parser. Precise PDF-only SVG root sizing and explicit
 that page size and reference IDs are deterministically renumbered. All page
 buffers are assembled before file output; no font lookup, timestamp or external
 I/O occurs in the drawing module. Root/Desktop lockfiles include the new deps.
+
+## Fixed faceted solids (ADR-049)
+
+`TriangleSolid` privately owns f64 metre coordinates and indexed triangles.
+Bounded explicit-unit STL parsing admits closed connected oriented manifold
+shells; vertex fans and a bounded deterministic triangle-intersection sweep
+reject ambiguous/self-intersecting inputs. Mass integrals use a local origin.
+`GeometryKernel::import_triangle_solid` accepts this neutral value, with opaque
+`KernelBody` output. OCCT constructs triangle faces, sews at 1e-8 m, validates
+and checks self-interference/volume before private BREP transfer to cadrum.
+Mock state is owned per instance; mesh measurements and rigid transforms are
+accurate. Unsupported mesh edits, compounds and inertia fail explicitly.
+No OCCT types or document ownership cross the geometry interface.

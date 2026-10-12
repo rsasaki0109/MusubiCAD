@@ -1,0 +1,16 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "document.ocad.json": "fa6d1512f1000d3e17107a239a9016516df8d1723ad7501bffd0b366448440ef",
+    "graph/assemblies.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "graph/constraints.json": "6471ad7d98dc0235da614a438f37c47e96cc355347a57c77c3e44d4d4abb894b",
+    "graph/drawings.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "graph/features.json": "3ae41f17c9234f2c2ab603d71c88e48c86ca947c168ed7ffc48673d5aee4869c",
+    "graph/materials.json": "75431017e3a6c79d0a8d746428bfc31df6aa40b8a44aa72ca4b9459ec5c79f44",
+    "graph/parameters.json": "f49b0fa8876f7ccc55e3c3704f3f7f9cbbcdb925d8620b9bf39446fdbe5c0d4b",
+    "graph/semantic_refs.json": "7ec2c65ddfbdf5010dab75c349b4d7cc17795eb01badbf8a94ef84ad6d223927",
+    "graph/sketches.json": "2510e0dea4a8a55e7845d40ca37b08081574923df268a934b3f66c5a83ea4681",
+    "imports/mesh_860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0.stl": "860dfa927f74c7b1ef3b6abbdda3ddfa3ecdb077127fd7f2f8b2ebccce7510b0",
+    "manifest.ocad.json": "ce345503f0ef92ee6a4104d216c4383a85bc7ff934bd317857a1e6297bdf822a"
+  }
+}
