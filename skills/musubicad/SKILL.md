@@ -522,3 +522,18 @@ coordinates are derived output only. Body-edge/Datum/FaceRef/arc/spline sources
 remain unsupported. Inspect with `inspect_projected_sketch` (Agent and CLI
 counterparts); edit the source or binding, dry-run and apply through verified
 patch/history. See ADR-054 and `projected_circle_plate.ocad.d` authoring example.
+
+### Explicit exploded presentations
+
+Use `add_exploded_view`, `set_exploded_view` or `remove_exploded_view` through
+DesignPatch. Offset fields are `instance_id` and world-space `translation_m`;
+never edit mechanical placements to fake an exploded view. Stable `view:` IDs, nonempty
+names, 1..256 unique declared top-level instances and finite bounded SI metres
+are required. A child assembly moves as one whole; internal paths and generated
+pattern targets refuse. Remove view consumers before instance deletion.
+Dry-run/apply, then call `preview_document` with `exploded_view:"view:exploded"`;
+CLI equivalent exports PNG with `preview ... --exploded-view view:exploded`.
+The default view, physical interference, BOM and URDF stay mechanical. No
+exploded drawing/STEP/STL/GLB output or automatic spacing is admitted yet.
+See ADR-055 and `examples/agent/add_arm_exploded_view_patch.json`. An example
+already containing that ID needs `set_exploded_view`, not a duplicate add.

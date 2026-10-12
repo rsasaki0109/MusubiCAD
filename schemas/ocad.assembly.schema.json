@@ -4,6 +4,7 @@
   "title": "MusubiCAD Assembly Model",
   "type": "object",
   "properties": {
+    "exploded_views": {"type":"array","items":{"$ref":"#/$defs/exploded_view"}},
     "components": {
       "type": "array",
       "items": { "$ref": "#/$defs/component" }
@@ -30,6 +31,7 @@
     }
   },
   "$defs": {
+    "exploded_view": {"type": "object", "required": ["id", "name", "offsets"], "properties": {"id": {"type": "string", "pattern": "^view:[a-zA-Z0-9_:/-]+$"}, "name": {"type": "string", "minLength": 1}, "offsets": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"type": "object", "required": ["instance_id", "translation_m"], "properties": {"instance_id": {"type": "string", "pattern": "^instance:[a-zA-Z0-9_:/-]+$"}, "translation_m": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}}, "additionalProperties": false}}}, "additionalProperties": false},
     "component": {
       "type": "object",
       "required": ["id", "source_path", "source_doc"],

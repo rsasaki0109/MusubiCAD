@@ -6,6 +6,9 @@ pub use bom::{
     BOM_MAX_OCCURRENCES, BOM_MAX_SOURCES,
 };
 
+pub mod exploded;
+pub use exploded::{exploded_meshes, validate_exploded_views, ExplodedOffset, ExplodedView};
+
 pub mod component;
 pub mod connector;
 pub mod dof;

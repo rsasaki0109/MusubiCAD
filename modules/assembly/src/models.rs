@@ -282,6 +282,7 @@ pub fn robot_arm_assembly_model() -> Result<AssemblyModel> {
         connectors,
         patterns: Vec::new(),
         joints,
+        exploded_views: Vec::new(),
     }
     .sorted_deterministic())
 }
@@ -551,6 +552,7 @@ pub fn six_axis_arm_model() -> Result<AssemblyModel> {
         connectors,
         patterns: Vec::new(),
         joints: arm_joints,
+        exploded_views: Vec::new(),
     }
     .sorted_deterministic())
 }

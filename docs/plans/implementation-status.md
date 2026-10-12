@@ -10,6 +10,7 @@ are defined in the [canonical roadmap](roadmap.md).
 
 | Area | Status | Current evidence | Remaining work |
 |---|---|---|---|
+| Exploded assembly presentations (MCAD-P13-006) | Implemented | ADR-055; stable named views and explicit SI offsets, DesignPatch add/set/remove, schemas/migration/history, both-kernel analytic translated mesh bounds and volume, read-only deterministic PNG preview/export via CLI/Agent/MCP and desktop backend, rigid-child physical report invariance, example/guide/skill/eval | Top-level declared instances only; child assembly moves as one compound; internal paths, pattern targets, rotation/spacing, exploded drawings and mechanical-format exports deferred; f32 render precision |
 | Core IDs, units, validation, and document metadata | Implemented | `modules/core/src/id.rs`, `units.rs`, `validation.rs`, `document.rs` | Keep public values unit-explicit; extend only through the roadmap |
 | Core transaction primitive | Implemented | `modules/core/src/transaction.rs` tracks successfully applied actions, rolls them back deterministically on apply/commit failure, and covers failure tests; `modules/file/src/history.rs` adds serializable full-document backend history with stale-snapshot validation | Keep public transaction/history contracts deterministic |
 | Design Graph, ParamGraph, Feature Graph, and semantic diff | Implemented | `modules/graph/src/` and graph tests | Preserve deterministic traversal while adding consumers |

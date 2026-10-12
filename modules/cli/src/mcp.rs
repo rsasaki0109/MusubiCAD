@@ -234,6 +234,7 @@ fn tools() -> Vec<Tool> {
                     "view": { "enum": ["iso", "front", "top", "right"] },
                     "width": { "type": "integer", "minimum": 16, "maximum": 2048 },
                     "height": { "type": "integer", "minimum": 16, "maximum": 2048 },
+                    "exploded_view": { "type": "string", "description": "Optional persisted assembly view ID, e.g. view:exploded; renders presentation only, not mechanical motion" },
                     "style": { "enum": ["plain", "studio", "dark"], "description": "plain (default) for checking; studio or dark for an image to share" }
                 },
                 "required": ["path"]

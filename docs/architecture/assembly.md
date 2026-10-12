@@ -118,3 +118,18 @@ failure, so each level must succeed before table output. JSON/CSV are optional
 same-directory atomic replacements outside source models. Native compound member
 transforms and flattening preserve exact separate solids for this verification;
 no OCCT types or new sampling enter the BOM contract. See ADR-047.
+
+## Exploded presentations (ADR-055)
+
+`AssemblyModel.exploded_views` stores named view IDs and explicit SI translations
+for declared top-level instances. Transactional DesignPatch owns creation,
+replacement and removal; absent collections migrate to empty. Canonical sorting
+uses view and instance IDs. Regeneration, mechanical placements and physical
+reports ignore presentation offsets. `exploded_meshes` clones regenerated
+instance tessellations, validates complete targets and translates only vertices.
+Normals, connectivity and original bodies remain unchanged. Desktop
+`load_assembly_presentation` and shared CLI/Agent/MCP preview select a saved view.
+A nested assembly is one compound; internal child paths are refused. Generated
+pattern instances, rotations, spacing algorithms and exploded drawing views are
+outside this admission. Rendering coordinates retain existing f32 precision;
+never use presentation mesh bounds as physical interference evidence.

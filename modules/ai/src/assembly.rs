@@ -257,6 +257,35 @@ pub fn apply_assembly_patch(
     let mut removed_connectors = Vec::new();
     for operation in operations {
         match operation {
+            PatchOperation::AddExplodedView { view } => {
+                check_new_id(
+                    view.id.as_str(),
+                    "view",
+                    model.exploded_views.iter().any(|v| v.id == view.id),
+                    &removed,
+                    "exploded view",
+                )?;
+                model.exploded_views.push(view.clone());
+            }
+            PatchOperation::SetExplodedView { view } => {
+                let existing = model
+                    .exploded_views
+                    .iter_mut()
+                    .find(|v| v.id == view.id)
+                    .ok_or_else(|| {
+                        OpenCadError::validation(format!("unknown exploded view '{}'", view.id))
+                    })?;
+                *existing = view.clone();
+            }
+            PatchOperation::RemoveExplodedView { id } => {
+                remove_by_id(
+                    &mut model.exploded_views,
+                    id,
+                    |v| v.id.as_str(),
+                    "exploded view",
+                    &mut removed,
+                )?;
+            }
             PatchOperation::AddComponent { component } => {
                 let id = component.id.as_str();
                 let exists = model.components.iter().any(|item| item.id == component.id);
@@ -450,6 +479,7 @@ pub fn apply_assembly_patch(
     validate_connectors(&model.connectors, &instance_ids)?;
     validate_patterns(model)?;
     validate_joints(&model.joints, &model.mates)?;
+    opencad_assembly::validate_exploded_views(model)?;
     Ok(())
 }
 
@@ -674,6 +704,7 @@ mod tests {
             connectors: Vec::new(),
             patterns: Vec::new(),
             joints: Vec::new(),
+            exploded_views: Vec::new(),
         })
     }
 

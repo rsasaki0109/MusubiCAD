@@ -260,6 +260,18 @@ pub enum PatchOperation {
     RemoveMate {
         id: String,
     },
+    /// Add an explicit assembly presentation (ADR-055).
+    AddExplodedView {
+        view: opencad_assembly::ExplodedView,
+    },
+    /// Replace an existing presentation retaining its ID.
+    SetExplodedView {
+        view: opencad_assembly::ExplodedView,
+    },
+    /// Remove an explicit presentation.
+    RemoveExplodedView {
+        id: String,
+    },
     /// Add a robot joint (motion type and limits) over an existing mate.
     AddJoint {
         joint: Box<AssemblyJoint>,
@@ -367,7 +379,10 @@ impl PatchOperation {
     pub fn is_assembly_structural(&self) -> bool {
         matches!(
             self,
-            Self::AddComponent { .. }
+            Self::AddExplodedView { .. }
+                | Self::SetExplodedView { .. }
+                | Self::RemoveExplodedView { .. }
+                | Self::AddComponent { .. }
                 | Self::RemoveComponent { .. }
                 | Self::AddInstance { .. }
                 | Self::RemoveInstance { .. }

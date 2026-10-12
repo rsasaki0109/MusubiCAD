@@ -116,6 +116,7 @@ mod tests {
                 name_prefix: "pin_".into(),
             }],
             joints: Vec::new(),
+            exploded_views: Vec::new(),
         };
 
         let expanded = expand_patterns(&model)?;

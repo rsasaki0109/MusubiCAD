@@ -489,21 +489,21 @@
     ],
     "joints": [
       {
-        "id": "joint:shoulder",
-        "mate": "mate:shoulder",
-        "type": "revolute",
-        "lower_rad": -2.6179938779914944,
-        "upper_rad": 2.6179938779914944,
-        "effort_n_m": 1.5,
-        "velocity_rad_s": 3.0
-      },
-      {
         "id": "joint:elbow",
         "mate": "mate:elbow",
         "type": "revolute",
         "lower_rad": -1.7453292519943295,
         "upper_rad": 2.443460952792061,
         "effort_n_m": 1.0,
+        "velocity_rad_s": 3.0
+      },
+      {
+        "id": "joint:shoulder",
+        "mate": "mate:shoulder",
+        "type": "revolute",
+        "lower_rad": -2.6179938779914944,
+        "upper_rad": 2.6179938779914944,
+        "effort_n_m": 1.5,
         "velocity_rad_s": 3.0
       },
       {
@@ -514,6 +514,38 @@
         "upper_rad": 1.5707963267948966,
         "effort_n_m": 0.4,
         "velocity_rad_s": 4.0
+      }
+    ],
+    "exploded_views": [
+      {
+        "id": "view:exploded",
+        "name": "Arm exploded",
+        "offsets": [
+          {
+            "instance_id": "instance:forearm",
+            "translation_m": [
+              0.2,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "instance_id": "instance:gripper",
+            "translation_m": [
+              0.3,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "instance_id": "instance:upper_arm",
+            "translation_m": [
+              0.1,
+              0.0,
+              0.0
+            ]
+          }
+        ]
       }
     ]
   }

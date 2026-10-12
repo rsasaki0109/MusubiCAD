@@ -1,0 +1,37 @@
+{
+  "operations": [
+    {
+      "type": "add_exploded_view",
+      "view": {
+        "id": "view:exploded",
+        "name": "Arm exploded",
+        "offsets": [
+          {
+            "instance_id": "instance:upper_arm",
+            "translation_m": [
+              0.1,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "instance_id": "instance:forearm",
+            "translation_m": [
+              0.2,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "instance_id": "instance:gripper",
+            "translation_m": [
+              0.3,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

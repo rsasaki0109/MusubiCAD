@@ -109,6 +109,14 @@ pub(crate) fn assembly_instance_meshes(
     input: &str,
     doc: &OcadDocument,
 ) -> Result<Vec<(opencad_core::InstanceId, String, opencad_geometry::MeshSet)>> {
+    assembly_instance_meshes_for_view(input, doc, None)
+}
+
+pub(crate) fn assembly_instance_meshes_for_view(
+    input: &str,
+    doc: &OcadDocument,
+    exploded_view: Option<&str>,
+) -> Result<Vec<(opencad_core::InstanceId, String, opencad_geometry::MeshSet)>> {
     let assembly = doc
         .assembly
         .as_ref()
@@ -129,6 +137,16 @@ pub(crate) fn assembly_instance_meshes(
             &report.scene,
             &TessellationSettings::default(),
         )?;
+        let meshes = if let Some(id) = exploded_view {
+            if report.successful_instances != report.instance_count {
+                return Err(OpenCadError::validation(
+                    "exploded presentation requires complete regeneration",
+                ));
+            }
+            opencad_assembly::exploded_meshes(assembly, &meshes, id)?
+        } else {
+            meshes
+        };
         Ok(meshes
             .into_iter()
             .map(|instance| {
@@ -144,7 +162,7 @@ pub(crate) fn assembly_instance_meshes(
     }
     #[cfg(not(feature = "occt"))]
     {
-        let _ = (input, assembly);
+        let _ = (input, assembly, exploded_view);
         Err(OpenCadError::Other(
             "assembly export requires OCCT; rebuild with --features occt".into(),
         ))

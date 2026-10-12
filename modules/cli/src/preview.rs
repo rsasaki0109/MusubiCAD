@@ -30,6 +30,9 @@ pub const DEFAULT_HEIGHT: u32 = 480;
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct PreviewParams {
     pub path: String,
+    /// Named assembly presentation; absent means mechanical configuration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exploded_view: Option<String>,
     #[serde(default = "default_view")]
     pub view: String,
     #[serde(default = "default_width")]
@@ -74,6 +77,8 @@ pub(crate) fn aspect_height(width: u32, aspect: &str) -> Result<u32> {
 /// What the image shows, for agents that also read text.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PreviewSummary {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exploded_view: Option<String>,
     pub view: String,
     pub width: u32,
     pub height: u32,
@@ -94,7 +99,14 @@ pub fn preview_document(params: &PreviewParams) -> Result<(Vec<u8>, PreviewSumma
             "preview renders parts and assemblies; export a drawing as SVG instead",
         ));
     }
-    let objects = crate::export::document_meshes(&params.path, doc)?;
+    let objects = if let Some(id) = &params.exploded_view {
+        crate::export::assembly_instance_meshes_for_view(&params.path, &doc, Some(id))?
+            .into_iter()
+            .map(|(_, name, mesh)| (name, mesh))
+            .collect()
+    } else {
+        crate::export::document_meshes(&params.path, doc)?
+    };
     let meshes: Vec<PreviewMesh<'_>> = objects
         .iter()
         .enumerate()
@@ -125,6 +137,7 @@ pub fn preview_document(params: &PreviewParams) -> Result<(Vec<u8>, PreviewSumma
     Ok((
         png,
         PreviewSummary {
+            exploded_view: params.exploded_view.clone(),
             view: view.name().into(),
             width: image.width,
             height: image.height,
@@ -238,10 +251,11 @@ pub(crate) fn write_preview_gif(
 /// Parse `preview <document> <output.png> [--view iso|front|top|right]
 /// [--width N] [--height N]`.
 pub fn parse_preview_args(args: &[String]) -> Result<(PreviewParams, String)> {
-    let usage = "usage: musubicad preview <document> <output.png> [--view iso|front|top|right] [--width N] [--height N | --aspect W:H] [--style plain|studio|dark]";
+    let usage = "usage: musubicad preview <document> <output.png> [--view iso|front|top|right] [--width N] [--height N | --aspect W:H] [--style plain|studio|dark] [--exploded-view view:id]";
     let mut positional = Vec::new();
     let mut params = PreviewParams {
         path: String::new(),
+        exploded_view: None,
         view: default_view(),
         width: DEFAULT_WIDTH,
         height: DEFAULT_HEIGHT,
@@ -256,6 +270,10 @@ pub fn parse_preview_args(args: &[String]) -> Result<(PreviewParams, String)> {
                 .ok_or_else(|| OpenCadError::validation(usage))
         };
         match args[index].as_str() {
+            "--exploded-view" => {
+                params.exploded_view = Some(value()?);
+                index += 2;
+            }
             "--view" => {
                 params.view = value()?;
                 index += 2;
@@ -316,6 +334,7 @@ mod tests {
         ] {
             let (png, summary) = preview_document(&PreviewParams {
                 path: example(name),
+                exploded_view: None,
                 view: "iso".into(),
                 width: 200,
                 height: 150,
@@ -329,6 +348,7 @@ mod tests {
         }
         let (_, carrier) = preview_document(&PreviewParams {
             path: example("bearing_carrier.ocad.d"),
+            exploded_view: None,
             view: "top".into(),
             width: 64,
             height: 64,
