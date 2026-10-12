@@ -26,6 +26,9 @@ impl DrawingModel {
         for sheet in &mut self.sheets {
             sheet.views.sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
             sheet
+                .radial_dimensions
+                .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
+            sheet
                 .angular_dimensions
                 .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
             sheet
@@ -51,6 +54,7 @@ impl DrawingModel {
                 .iter()
                 .map(|d| d.id.as_str())
                 .chain(sheet.angular_dimensions.iter().map(|d| d.id.as_str()))
+                .chain(sheet.radial_dimensions.iter().map(|d| d.id.as_str()))
             {
                 if !dimensions.insert(id) {
                     return Err(OpenCadError::validation(format!(
@@ -91,6 +95,7 @@ mod tests {
                 )],
                 dimensions: Vec::new(),
                 angular_dimensions: Vec::new(),
+                radial_dimensions: Vec::new(),
             }],
         };
         let json = serde_json::to_string(&model).expect("serialize");

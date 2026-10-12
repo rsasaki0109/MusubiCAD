@@ -610,6 +610,50 @@
         },
         "additionalProperties": false
       },
+    "radial_dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "view_id",
+        "edge_ref",
+        "kind",
+        "leader_direction",
+        "leader_extension_m"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^dim:[a-zA-Z0-9_:/-]+$"
+        },
+        "view_id": {
+          "type": "string",
+          "pattern": "^view:[a-zA-Z0-9_:/-]+$"
+        },
+        "edge_ref": {
+          "type": "string",
+          "pattern": "^ref:edge:[a-zA-Z0-9_:/-]+$"
+        },
+        "kind": {
+          "enum": [
+            "radius",
+            "diameter"
+          ]
+        },
+        "leader_direction": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number"
+          }
+        },
+        "leader_extension_m": {
+          "type": "number",
+          "exclusiveMinimum": 1e-09
+        }
+      }
+    },
     "angular_dimension": {
       "type": "object",
       "required": [
@@ -797,6 +841,7 @@
             "add_drawing_view",
             "add_drawing_dimension",
             "add_angular_dimension",
+            "add_radial_dimension",
             "add_attachment",
             "remove_attachment"
           ]
@@ -1225,6 +1270,31 @@
               },
               "dimension": {
                 "$ref": "#/$defs/angular_dimension"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "add_radial_dimension"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "type",
+              "sheet_id",
+              "dimension"
+            ],
+            "properties": {
+              "sheet_id": {
+                "type": "string",
+                "pattern": "^sheet:"
+              },
+              "dimension": {
+                "$ref": "#/$defs/radial_dimension"
               }
             }
           }

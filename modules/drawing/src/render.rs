@@ -130,6 +130,7 @@ mod tests {
 
         let sheet = Sheet {
             angular_dimensions: Vec::new(),
+            radial_dimensions: Vec::new(),
             id: SheetId::new("sheet:a4")?,
             name: "Sheet 1".into(),
             width_m: 0.210,

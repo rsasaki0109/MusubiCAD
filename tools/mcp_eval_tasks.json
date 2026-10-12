@@ -259,6 +259,34 @@
       "expected_arc_radii_m": [
         0.015
       ]
+    },
+    {
+      "id": "drawing_semantic_radial_layout",
+      "document": "radial_drawing.ocad.d",
+      "expected_radial_dimensions": [
+        {
+          "id": "dim:radius_extended",
+          "kind": "radius",
+          "edge_ref": "ref:edge:circle",
+          "measured_length_m": 0.01,
+          "radius_m": 0.01,
+          "leader_extension_m": 0.02
+        },
+        {
+          "id": "dim:diameter",
+          "kind": "diameter",
+          "edge_ref": "ref:edge:circle",
+          "measured_length_m": 0.02,
+          "radius_m": 0.01,
+          "leader_extension_m": 0.01
+        }
+      ],
+      "source": "examples/radial_plate_drawing.ocad.d",
+      "prompt": "In {document}, On the radial drawing, remove dim:radius and add dim:radius_extended on sheet:a4, view:front, edge ref ref:edge:circle, kind radius, leader direction [1, 1], extension 20 mm. Keep the diameter dimension and source geometry. Apply through DesignPatch, regenerate, and export an SVG.",
+      "expected_views": [
+        "front"
+      ],
+      "expected_dimension_lengths_m": []
     }
   ]
 }

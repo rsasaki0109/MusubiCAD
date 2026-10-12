@@ -862,6 +862,9 @@ fn model_structure_target(operation: &PatchOperation) -> Option<(ConflictKind, &
         PatchOperation::AddAngularDimension { dimension, .. } => {
             (ConflictKind::Drawing, dimension.id.as_str())
         }
+        PatchOperation::AddRadialDimension { dimension, .. } => {
+            (ConflictKind::Drawing, dimension.id.as_str())
+        }
         PatchOperation::RemoveSheet { id } | PatchOperation::RemoveDrawingDimension { id } => {
             (ConflictKind::Drawing, id.as_str())
         }
@@ -947,6 +950,14 @@ fn model_object_snapshot(state: &DesignState, kind: &ConflictKind, id: &str) -> 
                         .sheets
                         .iter()
                         .flat_map(|s| s.angular_dimensions.iter())
+                        .find(|d| d.id.as_str() == id)
+                        .and_then(|d| serde_json::to_value(d).ok())
+                })
+                .or_else(|| {
+                    drawing
+                        .sheets
+                        .iter()
+                        .flat_map(|s| s.radial_dimensions.iter())
                         .find(|d| d.id.as_str() == id)
                         .and_then(|d| serde_json::to_value(d).ok())
                 })

@@ -936,6 +936,40 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn circular_edge_geometry(
+        &self,
+        body: &KernelBody,
+        edge_id: u64,
+    ) -> Result<opencad_geometry::CircularEdgeGeometry> {
+        #[cfg(feature = "occt")]
+        {
+            let endpoints = self.edge_endpoints(body, edge_id)?;
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?;
+            let mut bytes = Vec::new();
+            Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+            let data = crate::ffi::native::circular_edge_geometry(&bytes, &endpoints.concat())
+                .map_err(|e| OpenCadError::validation(format!("circular edge query: {e}")))?;
+            if data.len() != 7 {
+                return Err(OpenCadError::validation("invalid native circle witness"));
+            }
+            Ok(opencad_geometry::CircularEdgeGeometry {
+                center_m: [data[0], data[1], data[2]],
+                normal: [data[3], data[4], data[5]],
+                radius_m: data[6],
+            })
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, edge_id);
+            Err(OpenCadError::validation(
+                "analytic circle query requires OCCT",
+            ))
+        }
+    }
+
     fn straight_edge_endpoints(&self, body: &KernelBody, edge_id: u64) -> Result<[[f64; 3]; 2]> {
         let endpoints = self.edge_endpoints(body, edge_id)?;
         #[cfg(feature = "occt")]

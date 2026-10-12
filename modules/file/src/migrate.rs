@@ -1,3 +1,4 @@
+// MCAD-P12-002: absent radial_dimensions defaults empty; never infer circle witnesses.
 //! Schema version migrations (Task-116+).
 
 use opencad_core::Result;

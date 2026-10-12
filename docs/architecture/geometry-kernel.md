@@ -143,3 +143,15 @@ Drawing resolution derives the supporting-line intersection and explicit rays;
 labels and orthographic layouts are transient. Semantic discovery retains its
 existing top-Z perimeter scope. See ADR-040 for units, degeneracy, canonical
 endpoint choices, view restrictions and additive file compatibility.
+
+### Analytic circular-edge witness (ADR-041)
+
+`GeometryKernel::circular_edge_geometry` returns neutral `CircularEdgeGeometry`
+(center in model metres, unit normal, radius in metres) for an exact complete
+circle. The OCCT backend reads its current BREP, matches one unique edge by its
+current endpoints (1e-8 m), requires native circle type and full 2π domain
+(1e-9 rad). It performs no sampled curve fit or document mutation. Mock edge 5
+provides a deterministic XY circle of radius half the body's side for contract
+tests; Mock box edges 1–4 refuse circle queries. Counting kernels forward queries.
+Drawing regeneration passes witnesses/layouts separately from authored Sheet
+data; unsupported curves and ambiguous topology fail closed.

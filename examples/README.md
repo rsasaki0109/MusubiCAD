@@ -364,3 +364,9 @@ and its referenced 80 × 60 × 6 mm part under `parts/plate.ocad.d`. The two
 `agent/create_angular_*_patch.json` files author the part and drawing through
 DesignPatch. The 10 mm arc is a sheet-space radius at view scale 0.5; radians
 are derived from current native straight edges, with SVG degree labels.
+
+`radial_plate_drawing.ocad.d` is a self-contained drawing of an embedded cylinder
+(radius 10 mm, height 6 mm), with semantic radius and diameter annotations. Create
+both documents using `agent/create_radial_cylinder_patch.json` and
+`agent/create_radial_drawing_patch.json`. `radial_plate_drawing.svg` shows derived
+R 10.00 mm and ⌀ 20.00 mm leaders; source refs remain authored through regeneration.

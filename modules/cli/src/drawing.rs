@@ -31,12 +31,24 @@ pub struct DrawingAngularDimensionResult {
     pub measured_angle_rad: f64,
     pub reference_provenance: Vec<ReferenceProvenance>,
 }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DrawingRadialDimensionResult {
+    pub sheet_id: String,
+    pub view_id: String,
+    pub dimension_id: String,
+    pub measured_length_m: f64,
+    pub radius_m: f64,
+    pub kind: opencad_drawing::RadialKind,
+    pub reference_provenance: ReferenceProvenance,
+}
 
 pub struct RegeneratedDrawing {
     /// Transient point-resolved sheets for renderers, never written to .ocad.
     pub sheets: Vec<(Sheet, Vec<ViewMesh>)>,
+    pub radial_layouts: Vec<Vec<opencad_drawing::RadialLayout>>,
     pub dimensions: Vec<DrawingDimensionResult>,
     pub angular_dimensions: Vec<DrawingAngularDimensionResult>,
+    pub radial_dimensions: Vec<DrawingRadialDimensionResult>,
 }
 
 /// Validate every sheet/view/dimension, even when exporting only the first sheet.
@@ -53,11 +65,14 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
     };
     let mut result = RegeneratedDrawing {
         sheets: Vec::new(),
+        radial_layouts: Vec::new(),
         dimensions: Vec::new(),
         angular_dimensions: Vec::new(),
+        radial_dimensions: Vec::new(),
     };
     for mut sheet in drawing.clone().sorted_deterministic().sheets {
         let mut meshes = Vec::new();
+        let mut radial_layouts = Vec::new();
         for view in &sheet.views {
             let reference_path = root.join(&view.model.source_path);
             let referenced = read_ocad(&reference_path)
@@ -68,16 +83,18 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
                     view.id, view.model.source_doc, referenced.metadata.id
                 )));
             }
-            let semantic_dimensions = sheet.angular_dimensions.iter().any(|d| {
-                d.view_id == view.id
-                    && matches!(
-                        d.measurement,
-                        opencad_drawing::AngularMeasurement::Edges { .. }
-                    )
-            }) || sheet.dimensions.iter().any(|dimension| {
-                dimension.view_id == view.id
-                    && matches!(dimension.measurement, LinearMeasurement::Edge { .. })
-            });
+            let semantic_dimensions = sheet.radial_dimensions.iter().any(|d| d.view_id == view.id)
+                || sheet.angular_dimensions.iter().any(|d| {
+                    d.view_id == view.id
+                        && matches!(
+                            d.measurement,
+                            opencad_drawing::AngularMeasurement::Edges { .. }
+                        )
+                })
+                || sheet.dimensions.iter().any(|dimension| {
+                    dimension.view_id == view.id
+                        && matches!(dimension.measurement, LinearMeasurement::Edge { .. })
+                });
             let mesh = match referenced.metadata.kind {
                 DocumentKind::Part => {
                     let kernel = OcctGeometryKernel::new();
@@ -159,6 +176,34 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
                             });
                         *dimension = resolved;
                     }
+                    for dimension in sheet
+                        .radial_dimensions
+                        .iter()
+                        .filter(|d| d.view_id == view.id)
+                    {
+                        let resolved = opencad_drawing::resolve_radial_dimension(
+                            dimension,
+                            &referenced.semantic_refs,
+                            &discoveries,
+                            &kernel,
+                            body,
+                        )?;
+                        let layout = opencad_drawing::layout_radial_dimension(
+                            dimension,
+                            &resolved.circle,
+                            view,
+                        )?;
+                        radial_layouts.push(layout);
+                        result.radial_dimensions.push(DrawingRadialDimensionResult {
+                            sheet_id: sheet.id.as_str().into(),
+                            view_id: view.id.as_str().into(),
+                            dimension_id: dimension.id.as_str().into(),
+                            measured_length_m: resolved.measured_length_m(),
+                            radius_m: resolved.circle.radius_m,
+                            kind: dimension.kind,
+                            reference_provenance: resolved.reference_provenance,
+                        });
+                    }
                     kernel.tessellate(body, &TessellationSettings::default())?
                 }
                 DocumentKind::Assembly => {
@@ -211,6 +256,7 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
             });
         }
         result.sheets.push((sheet, meshes));
+        result.radial_layouts.push(radial_layouts);
     }
     Ok(result)
 }

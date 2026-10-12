@@ -22,6 +22,8 @@ pub struct Sheet {
     pub dimensions: Vec<LinearDimension>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub angular_dimensions: Vec<crate::AngularDimension>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub radial_dimensions: Vec<crate::RadialDimension>,
 }
 
 impl Sheet {
@@ -34,6 +36,7 @@ impl Sheet {
             views: Vec::new(),
             dimensions: Vec::new(),
             angular_dimensions: Vec::new(),
+            radial_dimensions: Vec::new(),
         }
     }
 
@@ -80,6 +83,21 @@ impl Sheet {
             if !self.views.iter().any(|view| view.id == dimension.view_id) {
                 return Err(OpenCadError::validation(format!(
                     "angular dimension '{}' references missing view '{}'",
+                    dimension.id, dimension.view_id
+                )));
+            }
+            dimension.validate()?;
+        }
+        for dimension in &self.radial_dimensions {
+            if !dimension_ids.insert(dimension.id.as_str()) {
+                return Err(OpenCadError::validation(format!(
+                    "duplicate drawing dimension id '{}'",
+                    dimension.id
+                )));
+            }
+            if !self.views.iter().any(|view| view.id == dimension.view_id) {
+                return Err(OpenCadError::validation(format!(
+                    "radial dimension '{}' references missing view '{}'",
                     dimension.id, dimension.view_id
                 )));
             }

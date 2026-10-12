@@ -134,6 +134,15 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.draft_body(body, input)
     }
 
+    fn circular_edge_geometry(
+        &self,
+        body: &KernelBody,
+        edge_id: u64,
+    ) -> Result<crate::CircularEdgeGeometry> {
+        self.record();
+        self.inner.circular_edge_geometry(body, edge_id)
+    }
+
     fn straight_edge_endpoints(&self, body: &KernelBody, edge_id: u64) -> Result<[[f64; 3]; 2]> {
         self.record();
         self.inner.straight_edge_endpoints(body, edge_id)

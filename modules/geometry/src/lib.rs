@@ -19,9 +19,9 @@ pub mod transform;
 
 pub use instrument::CountingGeometryKernel;
 pub use kernel::{
-    BooleanOp, ExtrudeExtent, ExtrudeOperation, FacePick, FilletEdgeSelector, GeometryKernel,
-    HelixSpec, KernelBody, KernelWire, MockGeometryKernel, ProfilePlane, ProfileSegment,
-    RevolveInput, RevolveOperation, SketchPlacement, SolvedCircle, SolvedSketch,
+    BooleanOp, CircularEdgeGeometry, ExtrudeExtent, ExtrudeOperation, FacePick, FilletEdgeSelector,
+    GeometryKernel, HelixSpec, KernelBody, KernelWire, MockGeometryKernel, ProfilePlane,
+    ProfileSegment, RevolveInput, RevolveOperation, SketchPlacement, SolvedCircle, SolvedSketch,
 };
 pub use mass::{BoundingBox, MassProperties};
 pub use nurbs::NurbsSurface;
