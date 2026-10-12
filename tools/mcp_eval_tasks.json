@@ -717,6 +717,150 @@
           ]
         }
       ]
+    },
+    {
+      "id": "assembly_exploded_presentation",
+      "document": "arm.ocad.d",
+      "prompt": "Open the supplied arm assembly at {document}. Through DesignPatch set view:exploded upper-arm offset to [0.15, 0, 0] metres, preserve every other offset, view name, instance placement, mate and joint. Dry-run and apply. Preview view:exploded with preview_document. Do not move mechanical placements.",
+      "expected_exploded_views": [
+        {
+          "id": "view:exploded",
+          "name": "Arm exploded",
+          "offsets": [
+            {
+              "instance_id": "instance:forearm",
+              "translation_m": [
+                0.2,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "instance_id": "instance:gripper",
+              "translation_m": [
+                0.3,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "instance_id": "instance:upper_arm",
+              "translation_m": [
+                0.15,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        }
+      ],
+      "expected_mechanical_placements": {
+        "instance:base": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "instance:forearm": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.16,
+              0.044
+            ],
+            "rotation": [
+              [
+                0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                -0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "instance:gripper": {
+          "transform": {
+            "translation_m": [
+              0.07778174593052023,
+              0.23778174593052023,
+              0.055999999999999994
+            ],
+            "rotation": [
+              [
+                0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                -0.7071067811865476,
+                0.7071067811865476,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "instance:upper_arm": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.03
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        }
+      },
+      "source": "examples/robot_arm_assembly.ocad.d"
     }
   ]
 }

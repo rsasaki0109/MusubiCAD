@@ -870,3 +870,38 @@ Example: `projected_circle_plate.ocad.d` and its authoring patch. A 30 mm circle
 projected to a 30-degree tilted plane and extruded 6 mm has volume
 `pi*.03^2*cos(pi/6)*.006 m3` in both native and analytic Mock ellipse paths.
 Legacy Mock line/parallel-circle solids remain synthetic.
+
+## Explicit exploded assembly views (MCAD-P13-006 / ADR-055)
+
+Persist a named presentation with `add_exploded_view`; update it with
+`set_exploded_view` (retaining its ID) or delete it with `remove_exploded_view`.
+Use the normal dry-run/apply/history commands. Example operation:
+
+```json
+{"type":"add_exploded_view","view":{"id":"view:exploded","name":"Exploded",
+ "offsets":[{"instance_id":"instance:upper_arm","translation_m":[0.1,0,0]}]}}
+```
+
+Offsets are **world-space SI metres**, applied after mechanical regeneration.
+Target declared top-level instance IDs exactly; each child assembly moves as one
+rigid compound. Unlisted instances stay in place. A view needs a nonempty name
+and 1..256 unique offsets; missing/ambiguous targets, nested paths, generated
+pattern IDs, non-finite coordinates and values above one million metres refuse.
+Remove dependent views or replace their offsets before removing an instance.
+
+Select the saved view with MCP `preview_document` or Agent
+`opencad.preview_document` parameters `{"path":"...","exploded_view":"view:exploded"}`.
+The result labels the selected presentation and includes a deterministic PNG.
+CLI export uses `musubicad preview <assembly> <out.png> --exploded-view view:exploded`.
+Omit the selector for the mechanical view. Plain STEP/STL/GLB, drawings, BOM,
+interference and URDF retain mechanical positions. Exploded drawing projections,
+rotations, internal child offsets and automatic spacing are deferred.
+The desktop backend exposes `load_assembly_presentation` for the same contract;
+its reports remain mechanical while its render scene uses cloned meshes.
+
+See `examples/agent/add_arm_exploded_view_patch.json` and the saved view in
+`examples/robot_arm_assembly.ocad.d`. Do not apply that add operation twice to
+an already configured example; edit it with `set_exploded_view` instead.
+Presentation tessellations use existing f32 SI coordinates; tests compare bounds
+within 1 µm and volume within 1e-10 m³. Analytic Mock/OCCT evidence uses a closed
+80×60×6 mm triangle box (2.88e-5 m³), avoiding legacy synthetic Mock extrusions.

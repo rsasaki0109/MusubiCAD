@@ -311,6 +311,25 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_exploded_views" in task:
+        try:
+            assembly = json.loads((document / "graph" / "assemblies.json").read_text(encoding="utf-8"))["assembly"]
+            views = {v["id"]: v for v in assembly.get("exploded_views", [])}
+            if len(views) != len(assembly.get("exploded_views", [])):
+                problems.append("duplicate exploded view IDs")
+            for expected in task["expected_exploded_views"]:
+                actual = views.get(expected["id"], {})
+                actual = dict(actual)
+                actual["offsets"] = sorted(actual.get("offsets", []), key=lambda o: o["instance_id"])
+                expected = dict(expected)
+                expected["offsets"] = sorted(expected.get("offsets", []), key=lambda o: o["instance_id"])
+                if actual != expected:
+                    problems.append(f"exploded view {expected['id']} lacks expected SI offsets")
+            placements = {i["id"]: i["placement"] for i in assembly.get("instances", [])}
+            if placements != task.get("expected_mechanical_placements", placements):
+                problems.append("exploded presentation changed mechanical placements")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            problems.append("exploded assembly source is absent or malformed")
     if "expected_projected_sketches" in task:
         try:
             definitions = json.loads((document / "graph" / "features.json").read_text(encoding="utf-8"))["feature_nodes"]
@@ -799,6 +818,12 @@ def self_test() -> None:
         for step in task.get("setup", []):
             assert all(isinstance(arg, str) for arg in step), task["id"]
             [arg.format(**placeholders) for arg in step]
+    arm = ROOT / "examples" / "robot_arm_assembly.ocad.d"
+    assembly = json.loads((arm / "graph" / "assemblies.json").read_text())["assembly"]
+    exploded_task = {"expected_exploded_views": assembly["exploded_views"], "expected_mechanical_placements": {i["id"]: i["placement"] for i in assembly["instances"]}}
+    assert check(exploded_task, arm, "") == (True, [])
+    assert not check({**exploded_task, "expected_exploded_views": [{"id": "view:exploded", "name": "Wrong", "offsets": []}]}, arm, "")[0]
+    assert not check({**exploded_task, "expected_mechanical_placements": {}}, arm, "")[0]
     print("self-test passed")
 
 

@@ -229,6 +229,16 @@ pub fn load_assembly_evidence_with_assertions(
     doc: &OcadDocument,
     assertions: &[opencad_core::Assertion],
 ) -> Result<AssemblyEvidence> {
+    load_assembly_presentation(input, doc, assertions, None)
+}
+
+/// Select an explicit presentation while keeping reports and interference mechanical.
+pub fn load_assembly_presentation(
+    input: &str,
+    doc: &OcadDocument,
+    assertions: &[opencad_core::Assertion],
+    exploded_view: Option<&str>,
+) -> Result<AssemblyEvidence> {
     use opencad_kernel_occt::OcctGeometryKernel;
 
     let assembly = doc
@@ -248,6 +258,16 @@ pub fn load_assembly_evidence_with_assertions(
     )?;
     let instance_meshes =
         tessellate_assembly_instances(&kernel, &report.scene, &TessellationSettings::default())?;
+    let instance_meshes = if let Some(id) = exploded_view {
+        if report.successful_instances != report.instance_count {
+            return Err(opencad_core::OpenCadError::validation(
+                "exploded presentation requires complete regeneration",
+            ));
+        }
+        opencad_assembly::exploded_meshes(assembly, &instance_meshes, id)?
+    } else {
+        instance_meshes
+    };
     let mesh_sets: Vec<_> = instance_meshes
         .iter()
         .map(|instance| instance.mesh_set.clone())

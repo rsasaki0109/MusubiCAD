@@ -122,6 +122,9 @@ pub fn authoring_patch(state: &DesignState) -> Result<DesignPatch> {
                 joint: Box::new(joint.clone()),
             });
         }
+        for view in &assembly.exploded_views {
+            operations.push(PatchOperation::AddExplodedView { view: view.clone() });
+        }
         for pattern in &assembly.patterns {
             operations.push(PatchOperation::AddAssemblyPattern {
                 pattern: pattern.clone(),

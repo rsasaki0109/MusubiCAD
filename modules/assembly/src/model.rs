@@ -28,6 +28,9 @@ pub struct AssemblyModel {
     /// Robot joints refining mates (ADR-030).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub joints: Vec<AssemblyJoint>,
+    /// Explicit presentation configurations; never mechanical placements.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exploded_views: Vec<crate::ExplodedView>,
 }
 
 impl AssemblyModel {
@@ -50,6 +53,12 @@ impl AssemblyModel {
         self.patterns
             .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
         self.joints.sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
+        self.exploded_views
+            .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
+        for view in &mut self.exploded_views {
+            view.offsets
+                .sort_by(|a, b| a.instance_id.as_str().cmp(b.instance_id.as_str()));
+        }
         self
     }
 
@@ -79,6 +88,7 @@ impl AssemblyModel {
         validate_connectors(&self.connectors, &instance_ids)?;
         validate_patterns(self)?;
         validate_joints(&self.joints, &self.mates)?;
+        crate::validate_exploded_views(self)?;
         Ok(())
     }
 
@@ -121,6 +131,7 @@ mod tests {
             connectors: Vec::new(),
             patterns: Vec::new(),
             joints: Vec::new(),
+            exploded_views: Vec::new(),
         };
         let json = serde_json::to_string(&model).expect("serialize");
         let restored: AssemblyModel = serde_json::from_str(&json).expect("deserialize");
@@ -142,6 +153,7 @@ mod tests {
             connectors: Vec::new(),
             patterns: Vec::new(),
             joints: Vec::new(),
+            exploded_views: Vec::new(),
         };
         assert!(model.validate_no_self_reference(&assembly_id).is_err());
         Ok(())
