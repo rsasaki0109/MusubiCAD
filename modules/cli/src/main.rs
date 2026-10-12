@@ -42,4 +42,5 @@ fn main() {
 
 mod offset;
 
+mod joint_pose;
 mod projected_sketch;

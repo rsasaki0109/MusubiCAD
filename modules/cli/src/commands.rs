@@ -64,6 +64,7 @@ pub fn run() -> Result<()> {
         Some("import-step") => crate::import::cmd_import_step(args.collect()),
         Some("import-dxf") => crate::dxf_import::cmd_import_dxf(args.collect()),
         Some("import-stl") => crate::stl_import::cmd_import_stl(args.collect()),
+        Some("inspect-joint-pose") => crate::joint_pose::command(args.collect()),
         Some("inspect-projected-sketch") => crate::projected_sketch::command(args.collect()),
         Some("plan-offset") => crate::offset::command(args.collect()),
         Some("plan-curve-edit") => crate::curve_edit::command(args.collect()),
@@ -752,6 +753,7 @@ COMMANDS:
     inspect-dxf Inspect DXF units and layer/entity counts
     import-dxf  Import selected planar DXF layers as a verified sketch
     import-stl  Import an explicit-unit connected closed STL solid
+    inspect-joint-pose        Inspect explicit-unit driver and derived joint poses
     inspect-projected-sketch  Inspect associated generated sketch geometry
     plan-offset     Plan a bounded independent analytic sketch offset
     plan-curve-edit  Plan a stable-ID analytic sketch trim or extension

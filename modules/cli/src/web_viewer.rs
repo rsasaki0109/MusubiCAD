@@ -101,6 +101,11 @@ pub fn export_web_viewer(input: &str, output: &str) -> Result<ExportSummary> {
     let assembly = doc.assembly.as_ref().ok_or_else(|| {
         OpenCadError::validation("HTML viewer export needs an assembly document with joints")
     })?;
+    if !assembly.couplings.is_empty() {
+        return Err(OpenCadError::validation(
+            "HTML viewer export for coupled joints is not supported; use backend pose/animation",
+        ));
+    }
     let assembly = solved_assembly(assembly)?;
     let tree = kinematic_tree(&assembly)?;
     let named = movable_joints(&assembly, &tree);

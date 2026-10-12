@@ -80,7 +80,7 @@ pub fn reach_joints(tree: &KinematicTree) -> Vec<ReachJoint> {
         .iter()
         .filter_map(|link| {
             let joint = link.joint.as_ref()?;
-            if !joint.kind.is_movable() {
+            if !joint.kind.is_movable() || tree.is_follower(link.instance.as_str()) {
                 return None;
             }
             let range = joint

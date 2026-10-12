@@ -1,0 +1,221 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_gripper_body",
+      "feature:gripper_body",
+      "feature:sketch_wrist_bore",
+      "feature:wrist_bore",
+      "feature:sketch_finger_left",
+      "feature:finger_left",
+      "feature:sketch_finger_right",
+      "feature:finger_right"
+    ],
+    "features": {
+      "feature:sketch_gripper_body": {
+        "id": "feature:sketch_gripper_body",
+        "name": "Gripper Body Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:gripper_body": {
+        "id": "feature:gripper_body",
+        "name": "Gripper Body",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_wrist_bore": {
+        "id": "feature:sketch_wrist_bore",
+        "name": "Wrist Bore Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:wrist_bore": {
+        "id": "feature:wrist_bore",
+        "name": "Wrist Bore",
+        "feature_type": "hole",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_finger_left": {
+        "id": "feature:sketch_finger_left",
+        "name": "Left Finger Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:finger_left": {
+        "id": "feature:finger_left",
+        "name": "Left Finger",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_finger_right": {
+        "id": "feature:sketch_finger_right",
+        "name": "Right Finger Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:finger_right": {
+        "id": "feature:finger_right",
+        "name": "Right Finger",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_gripper_body",
+        "target": "feature:gripper_body",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_wrist_bore",
+        "target": "feature:wrist_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:gripper_body",
+        "target": "feature:wrist_bore",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_finger_left",
+        "target": "feature:finger_left",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:wrist_bore",
+        "target": "feature:finger_left",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_finger_right",
+        "target": "feature:finger_right",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:finger_left",
+        "target": "feature:finger_right",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:finger_left",
+      "name": "Left Finger",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_finger_left",
+        "profile_ref": "sketch:finger_left/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.018000000000000002
+          }
+        },
+        "operation": "join",
+        "length_expr": "finger_length",
+        "target_feature": "feature:wrist_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:finger_right",
+      "name": "Right Finger",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_finger_right",
+        "profile_ref": "sketch:finger_right/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.018000000000000002
+          }
+        },
+        "operation": "join",
+        "length_expr": "finger_length",
+        "target_feature": "feature:finger_left"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:gripper_body",
+      "name": "Gripper Body",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_gripper_body",
+        "profile_ref": "sketch:gripper_body/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.014
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "gripper_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_finger_left",
+      "name": "Left Finger Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:finger_left"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_finger_right",
+      "name": "Right Finger Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:finger_right"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_gripper_body",
+      "name": "Gripper Body Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:gripper_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_wrist_bore",
+      "name": "Wrist Bore Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:wrist_bore"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:wrist_bore",
+      "name": "Wrist Bore",
+      "definition": {
+        "type": "hole",
+        "sketch_feature": "feature:sketch_wrist_bore",
+        "profile_ref": "sketch:wrist_bore/profile:outer",
+        "depth": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.014
+          }
+        },
+        "target_feature": "feature:gripper_body",
+        "depth_expr": "gripper_thickness"
+      },
+      "suppressed": false
+    }
+  ]
+}

@@ -193,6 +193,7 @@ fn assembly_and_drawing_examples_are_rebuilt_byte_for_byte() {
             "assembly_two_brackets.ocad.d",
             "bom_nested_assembly.ocad.d",
             "bracket_front_view.ocad.d",
+            "coupled_arm.ocad.d",
             "detail_plate_drawing.ocad.d",
             "printable_plate_drawing.ocad.d",
             "radial_plate_drawing.ocad.d",

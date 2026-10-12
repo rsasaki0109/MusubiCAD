@@ -1,0 +1,202 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_base_plate",
+      "feature:base_plate",
+      "feature:sketch_turret",
+      "feature:turret",
+      "feature:sketch_bolt_hole",
+      "feature:bolt_hole_tool",
+      "feature:bolt_circle"
+    ],
+    "features": {
+      "feature:sketch_base_plate": {
+        "id": "feature:sketch_base_plate",
+        "name": "Base Plate Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:base_plate": {
+        "id": "feature:base_plate",
+        "name": "Base Plate",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_turret": {
+        "id": "feature:sketch_turret",
+        "name": "Turret Column Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:turret": {
+        "id": "feature:turret",
+        "name": "Turret Column",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_bolt_hole": {
+        "id": "feature:sketch_bolt_hole",
+        "name": "Bolt Hole Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:bolt_hole_tool": {
+        "id": "feature:bolt_hole_tool",
+        "name": "Bolt Hole Tool",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:bolt_circle": {
+        "id": "feature:bolt_circle",
+        "name": "Four Hole Bolt Circle",
+        "feature_type": "circular_pattern",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_base_plate",
+        "target": "feature:base_plate",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_turret",
+        "target": "feature:turret",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:base_plate",
+        "target": "feature:turret",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_bolt_hole",
+        "target": "feature:bolt_hole_tool",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:bolt_hole_tool",
+        "target": "feature:bolt_circle",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:turret",
+        "target": "feature:bolt_circle",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:base_plate",
+      "name": "Base Plate",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_base_plate",
+        "profile_ref": "sketch:base_plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "base_plate_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:bolt_circle",
+      "name": "Four Hole Bolt Circle",
+      "definition": {
+        "type": "circular_pattern",
+        "source_feature": "feature:bolt_hole_tool",
+        "axis_origin_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "axis_direction_m": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "count": 4,
+        "operation": "cut",
+        "target_feature": "feature:turret"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:bolt_hole_tool",
+      "name": "Bolt Hole Tool",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_bolt_hole",
+        "profile_ref": "sketch:bolt_hole/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "base_plate_thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_base_plate",
+      "name": "Base Plate Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:base_plate"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_bolt_hole",
+      "name": "Bolt Hole Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:bolt_hole"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_turret",
+      "name": "Turret Column Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:turret"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:turret",
+      "name": "Turret Column",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_turret",
+        "profile_ref": "sketch:turret/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.03
+          }
+        },
+        "operation": "join",
+        "length_expr": "turret_height",
+        "target_feature": "feature:base_plate"
+      },
+      "suppressed": false
+    }
+  ]
+}

@@ -24,6 +24,7 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "joint_coupling": {"oneOf": [{"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "ratio"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "gear"}, "ratio": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}, {"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "metres_per_radian"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "rack"}, "metres_per_radian": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}]},
     "exploded_view": {"type": "object", "required": ["id", "name", "offsets"], "properties": {"id": {"type": "string", "pattern": "^view:[a-zA-Z0-9_:/-]+$"}, "name": {"type": "string", "minLength": 1}, "offsets": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"type": "object", "required": ["instance_id", "translation_m"], "properties": {"instance_id": {"type": "string", "pattern": "^instance:[a-zA-Z0-9_:/-]+$"}, "translation_m": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}}, "additionalProperties": false}}}, "additionalProperties": false},
     "projected_sketch": {
       "type": "object",
@@ -1216,6 +1217,9 @@
             "remove_component",
             "remove_instance",
             "remove_mate",
+            "add_joint_coupling",
+            "set_joint_coupling",
+            "remove_joint_coupling",
             "add_exploded_view",
             "set_exploded_view",
             "remove_exploded_view",
@@ -1237,6 +1241,9 @@
         }
       },
       "allOf": [
+        {"if": {"properties": {"type": {"enum": ["add_joint_coupling", "set_joint_coupling"]}}}, "then": {"required": ["type", "coupling"], "properties": {"coupling": {"$ref": "#/$defs/joint_coupling"}}}},
+        {"if": {"properties": {"type": {"const": "remove_joint_coupling"}}}, "then": {"required": ["type", "id"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}}}},
+
         {"if": {"properties": {"type": {"enum": ["add_exploded_view", "set_exploded_view"]}}}, "then": {"required": ["type", "view"], "properties": {"view": {"$ref": "#/$defs/exploded_view"}}}},
         {"if": {"properties": {"type": {"const": "remove_exploded_view"}}}, "then": {"required": ["type", "id"], "properties": {"id": {"type": "string", "pattern": "^view:[a-zA-Z0-9_:/-]+$"}}}},
 

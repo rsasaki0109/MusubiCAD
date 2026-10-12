@@ -80,6 +80,7 @@ define_id!(InstanceId, "instance");
 define_id!(MateId, "mate");
 define_id!(ConnectorId, "connector");
 define_id!(JointId, "joint");
+define_id!(CouplingId, "coupling");
 define_id!(PatternId, "pattern");
 define_id!(SheetId, "sheet");
 define_id!(ViewId, "view");

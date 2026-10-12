@@ -1,0 +1,41 @@
+{
+  "parameters": {
+    "param:base_plate_diameter": {
+      "id": "param:base_plate_diameter",
+      "name": "base_plate_diameter",
+      "expr": "120 mm",
+      "dirty": false
+    },
+    "param:base_plate_thickness": {
+      "id": "param:base_plate_thickness",
+      "name": "base_plate_thickness",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:turret_diameter": {
+      "id": "param:turret_diameter",
+      "name": "turret_diameter",
+      "expr": "44 mm",
+      "dirty": false
+    },
+    "param:turret_height": {
+      "id": "param:turret_height",
+      "name": "turret_height",
+      "expr": "30 mm",
+      "dirty": false
+    },
+    "param:bolt_circle_radius": {
+      "id": "param:bolt_circle_radius",
+      "name": "bolt_circle_radius",
+      "expr": "50 mm",
+      "dirty": false
+    },
+    "param:bolt_hole_diameter": {
+      "id": "param:bolt_hole_diameter",
+      "name": "bolt_hole_diameter",
+      "expr": "8 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

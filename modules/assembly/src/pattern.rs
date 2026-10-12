@@ -117,6 +117,7 @@ mod tests {
             }],
             joints: Vec::new(),
             exploded_views: Vec::new(),
+            couplings: Vec::new(),
         };
 
         let expanded = expand_patterns(&model)?;

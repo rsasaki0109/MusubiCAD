@@ -86,6 +86,7 @@ pub struct KinematicTree {
     pub links: Vec<KinematicLink>,
     /// Non-fatal interpretation notes, for example unmated instances.
     pub warnings: Vec<String>,
+    pub couplings: Vec<crate::ResolvedCoupling>,
 }
 
 /// Tolerance on joint positions checked against declared limits (radians or
@@ -149,6 +150,28 @@ impl JointKind {
 }
 
 impl KinematicTree {
+    pub fn is_follower(&self, instance: &str) -> bool {
+        self.couplings
+            .iter()
+            .any(|c| c.follower_instance == instance)
+    }
+    pub fn resolve_positions(
+        &self,
+        positions: &BTreeMap<String, f64>,
+    ) -> Result<BTreeMap<String, f64>> {
+        for instance in positions.keys() {
+            if !self.links.iter().any(|l| {
+                l.instance.as_str() == instance
+                    && l.joint.as_ref().is_some_and(|j| j.kind.is_movable())
+            }) {
+                return Err(OpenCadError::validation(format!(
+                    "no movable joint for '{instance}'"
+                )));
+            }
+        }
+        crate::coupling::coupled_positions(&self.couplings, positions)
+    }
+
     /// World transform of every instance (part frame) with the joints of the
     /// child links (keyed by instance ID) at the given positions, in link
     /// order.  Joints not
@@ -157,6 +180,13 @@ impl KinematicTree {
         &self,
         positions: &BTreeMap<String, f64>,
     ) -> Result<Vec<(InstanceId, RigidTransform)>> {
+        let resolved;
+        let positions = if self.couplings.is_empty() {
+            positions
+        } else {
+            resolved = self.resolve_positions(positions)?;
+            &resolved
+        };
         for instance in positions.keys() {
             if !self
                 .links
@@ -319,7 +349,42 @@ pub fn kinematic_tree(model: &AssemblyModel) -> Result<KinematicTree> {
         });
         world_of.insert(instance.id.as_str().to_string(), world);
     }
-    Ok(KinematicTree { links, warnings })
+    let mut couplings = Vec::new();
+    for source in crate::ordered_couplings(model)? {
+        let moving_instance = |id: &opencad_core::JointId| -> Result<String> {
+            let declared = model
+                .joints
+                .iter()
+                .find(|j| j.id == *id)
+                .ok_or_else(|| OpenCadError::validation("missing coupled source joint"))?;
+            let mut matches = links.iter().filter(|l| {
+                l.joint
+                    .as_ref()
+                    .is_some_and(|j| j.mate.as_ref() == Some(&declared.mate) && j.kind.is_movable())
+            });
+            let link = matches.next().ok_or_else(|| {
+                OpenCadError::validation(format!(
+                    "coupled joint '{id}' has no movable derived link"
+                ))
+            })?;
+            if matches.next().is_some() {
+                return Err(OpenCadError::validation("ambiguous coupled moving link"));
+            }
+            Ok(link.instance.as_str().to_owned())
+        };
+        couplings.push(crate::ResolvedCoupling {
+            id: source.id().clone(),
+            driver_instance: moving_instance(source.driver())?,
+            follower_instance: moving_instance(source.follower())?,
+            multiplier: source.multiplier(),
+            follower_is_linear: source.follower_is_linear(),
+        });
+    }
+    Ok(KinematicTree {
+        links,
+        warnings,
+        couplings,
+    })
 }
 
 fn root_instance(model: &AssemblyModel) -> Result<InstanceId> {
