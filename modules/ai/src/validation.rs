@@ -45,6 +45,9 @@ pub fn validate_design_state(state: &DesignState) -> Result<()> {
         crate::sketch_patch::validate_sketch_references(sketch, state, &mut failures);
     }
     crate::sketch_patch::validate_profile_consumers(state, |_, _| true, &mut failures);
+    if let Err(error) = crate::feature_patch::validate_projection_state(state) {
+        failures.insert(error.to_string());
+    }
     for node in &state.feature_nodes {
         crate::feature_patch::check_feature_inputs(node, state, &mut failures);
     }

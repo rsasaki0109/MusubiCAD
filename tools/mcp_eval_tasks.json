@@ -689,6 +689,34 @@
           ]
         }
       ]
+    },
+    {
+      "id": "associated_projection_source_edit",
+      "source": "examples/projected_circle_plate.ocad.d",
+      "document": "projection_edit.ocad.d",
+      "prompt": "In {document}, change the source circle radius parameter radius from 30 mm to 40 mm. Preserve feature:projection as a graph-owned projected_sketch bound to feature:source_sketch / ent:source_circle, destination sketch:projection, ent:projected_curve and ent:projected_center. Preserve the 30-degree target plane and 6 mm extrusion. Do not add the generated sketch or derived coordinates to authored sketches. Use inspect_projected_sketch to verify new semiaxes 40 mm and 40*cos(30) mm, dry-run/apply a verified DesignPatch with history, regenerate and inspect again. Exact volume is pi*40^2*cos(30)*6 mm3.",
+      "expected_volume_mm3": 26118.71084497274,
+      "required_parameters": [
+        "radius",
+        "thickness"
+      ],
+      "expected_projected_sketches": [
+        {
+          "id": "feature:projection",
+          "sketch_id": "sketch:projection",
+          "projections": [
+            {
+              "source_feature": "feature:source_sketch",
+              "source_entity": "ent:source_circle",
+              "curve_id": "ent:projected_curve",
+              "point_ids": [
+                "ent:projected_center"
+              ],
+              "construction": false
+            }
+          ]
+        }
+      ]
     }
   ]
 }

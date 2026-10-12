@@ -94,6 +94,7 @@ impl Feature for ExtrudeFeatureExecutor {
         };
 
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(body),
             datum: None,
         })

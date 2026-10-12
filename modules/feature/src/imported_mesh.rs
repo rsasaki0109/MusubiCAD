@@ -68,6 +68,7 @@ impl Feature for ImportedMeshExecutor {
         let mesh = read_stl_solid(bytes, def.source_unit)?.transformed(def.transform)?;
         let body = ctx.kernel().import_triangle_solid(&mesh)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(body),
             datum: None,
         })

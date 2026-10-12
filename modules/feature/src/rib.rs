@@ -74,6 +74,7 @@ impl Feature for RibFeatureExecutor {
         let target = ctx.body_for_feature(&def.target_feature)?;
         let body = ctx.kernel().boolean(target, rib_body, BooleanOp::Union)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(body),
             datum: None,
         })

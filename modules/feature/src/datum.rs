@@ -94,6 +94,7 @@ impl Feature for DatumPlaneExecutor {
             std::array::from_fn(|i| placement.origin_m[i] + normal[i] * def.offset.meters());
         finite_origin(origin)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: None,
             datum: Some(DatumGeometry::Plane {
                 workplane: Workplane::Custom {
@@ -116,6 +117,7 @@ impl Feature for DatumAxisExecutor {
         };
         finite_origin(def.origin_m)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: None,
             datum: Some(DatumGeometry::Axis {
                 origin_m: def.origin_m,

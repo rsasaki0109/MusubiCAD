@@ -27,6 +27,7 @@ pub enum FeatureDefinition {
     DatumPlane(crate::datum::DatumPlaneFeature),
     DatumAxis(crate::datum::DatumAxisFeature),
     Sketch(SketchFeatureDef),
+    ProjectedSketch(crate::ProjectedSketchFeature),
     Extrude(ExtrudeFeature),
     Revolve(RevolveFeature),
     Hole(HoleFeature),
@@ -56,11 +57,20 @@ impl FeatureDefinition {
             _ => None,
         }
     }
+    /// Sketch identity produced from authored or graph-derived geometry.
+    pub fn sketch_output_id(&self) -> Option<&str> {
+        match self {
+            Self::Sketch(def) => Some(&def.sketch_id),
+            Self::ProjectedSketch(def) => Some(&def.sketch_id),
+            _ => None,
+        }
+    }
     pub fn feature_type(&self) -> &'static str {
         match self {
             Self::DatumPlane(_) => "datum_plane",
             Self::DatumAxis(_) => "datum_axis",
             Self::Sketch(_) => "sketch",
+            Self::ProjectedSketch(_) => "projected_sketch",
             Self::Extrude(_) => "extrude",
             Self::Revolve(_) => "revolve",
             Self::Hole(_) => "hole",
@@ -115,6 +125,9 @@ pub struct FeatureOutput {
     pub body: Option<KernelBody>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub datum: Option<crate::datum::DatumGeometry>,
+    /// Derived sketch output; never copied into authored document sketches.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sketch: Option<Sketch>,
 }
 
 /// Read-only regeneration context for feature executors.

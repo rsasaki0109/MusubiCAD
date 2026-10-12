@@ -60,6 +60,7 @@ impl Feature for ChamferFeatureExecutor {
         };
         let result = ctx.kernel().chamfer_edges(body, distance_m, selector)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(result),
             datum: None,
         })

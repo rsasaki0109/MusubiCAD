@@ -45,6 +45,7 @@ impl Feature for BodyBooleanExecutor {
         let source = ctx.body_for_feature(&def.source_feature)?;
         let body = ctx.kernel().body_boolean(target, source, def.operation)?;
         Ok(FeatureOutput {
+            sketch: None,
             body: Some(body),
             datum: None,
         })

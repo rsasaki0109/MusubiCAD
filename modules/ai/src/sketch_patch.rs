@@ -326,9 +326,10 @@ pub(crate) fn validate_profile_consumers(
     let sketch_of_feature: BTreeMap<&str, &str> = after
         .feature_nodes
         .iter()
-        .filter_map(|node| match &node.definition {
-            FeatureDefinition::Sketch(def) => Some((node.id.as_str(), def.sketch_id.as_str())),
-            _ => None,
+        .filter_map(|node| {
+            node.definition
+                .sketch_output_id()
+                .map(|id| (node.id.as_str(), id))
         })
         .collect();
     let mut prepared: BTreeMap<&str, std::result::Result<Sketch, String>> = BTreeMap::new();
@@ -340,18 +341,30 @@ pub(crate) fn validate_profile_consumers(
             if !select(node, sketch_id) {
                 continue;
             }
-            let Some(sketch) = after
-                .sketches
-                .iter()
-                .find(|sketch| sketch.id.as_str() == sketch_id)
-            else {
-                continue;
-            };
+            let projected = after.feature_nodes.iter().any(|n| {
+                n.id == sketch_feature
+                    && matches!(n.definition, FeatureDefinition::ProjectedSketch(_))
+            });
             let prepared = prepared.entry(sketch_id).or_insert_with(|| {
-                let mut copy = sketch.clone();
-                prepare_sketch(&mut copy)
-                    .map(|()| copy)
-                    .map_err(|error| error.to_string())
+                if projected {
+                    opencad_feature::projected_sketch::resolve_design_sketch(
+                        &after.feature_nodes,
+                        &after.sketches,
+                        &after.parameters,
+                        sketch_feature,
+                    )
+                    .map_err(|e| e.to_string())
+                } else {
+                    let sketch = after
+                        .sketches
+                        .iter()
+                        .find(|s| s.id.as_str() == sketch_id)
+                        .ok_or_else(|| format!("unknown sketch '{sketch_id}'"))?;
+                    let mut copy = sketch.clone();
+                    prepare_sketch(&mut copy)
+                        .map(|()| copy)
+                        .map_err(|e| e.to_string())
+                }
             });
             match prepared {
                 Err(error) => {

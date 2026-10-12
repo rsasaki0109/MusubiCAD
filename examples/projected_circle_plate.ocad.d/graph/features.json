@@ -1,0 +1,111 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:source_sketch",
+      "feature:projection",
+      "feature:projection_body"
+    ],
+    "features": {
+      "feature:source_sketch": {
+        "id": "feature:source_sketch",
+        "name": "Source sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:projection": {
+        "id": "feature:projection",
+        "name": "Projected sketch",
+        "feature_type": "projected_sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:projection_body": {
+        "id": "feature:projection_body",
+        "name": "Projected extrusion",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:source_sketch",
+        "target": "feature:projection",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:projection",
+        "target": "feature:projection_body",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:projection",
+      "name": "Projected sketch",
+      "definition": {
+        "type": "projected_sketch",
+        "sketch_id": "sketch:projection",
+        "workplane": {
+          "type": "custom",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.5,
+            0.8660254037844386
+          ],
+          "x_axis": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        "projections": [
+          {
+            "source_feature": "feature:source_sketch",
+            "source_entity": "ent:source_circle",
+            "curve_id": "ent:projected_curve",
+            "point_ids": [
+              "ent:projected_center"
+            ],
+            "construction": false
+          }
+        ]
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:projection_body",
+      "name": "Projected extrusion",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:projection",
+        "profile_ref": "sketch:projection/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "thickness"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:source_sketch",
+      "name": "Source sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:source"
+      },
+      "suppressed": false
+    }
+  ]
+}

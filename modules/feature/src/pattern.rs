@@ -181,6 +181,7 @@ impl Feature for MirrorPatternFeatureExecutor {
                     kernel.boolean(source, mirrored, BooleanOp::Union)?
                 };
                 Ok(FeatureOutput {
+                    sketch: None,
                     body: Some(body),
                     datum: None,
                 })
@@ -193,6 +194,7 @@ impl Feature for MirrorPatternFeatureExecutor {
                 result = kernel.boolean(result, source, BooleanOp::Subtract)?;
                 result = kernel.boolean(result, mirrored, BooleanOp::Subtract)?;
                 Ok(FeatureOutput {
+                    sketch: None,
                     body: Some(result),
                     datum: None,
                 })
@@ -247,6 +249,7 @@ fn execute_pattern(
                 result
             };
             Ok(FeatureOutput {
+                sketch: None,
                 body: Some(body),
                 datum: None,
             })
@@ -265,6 +268,7 @@ fn execute_pattern(
                 result = kernel.boolean(result, instance, BooleanOp::Subtract)?;
             }
             Ok(FeatureOutput {
+                sketch: None,
                 body: Some(result),
                 datum: None,
             })
@@ -511,6 +515,7 @@ mod tests {
         ctx.outputs.insert(
             "feature:base".into(),
             FeatureOutput {
+                sketch: None,
                 body: Some(KernelBody::new(20)),
                 datum: None,
             },
@@ -641,6 +646,7 @@ mod tests {
         ctx.outputs.insert(
             "feature:base".into(),
             FeatureOutput {
+                sketch: None,
                 body: Some(KernelBody::new(20)),
                 datum: None,
             },
@@ -668,6 +674,7 @@ mod tests {
         ctx.outputs.insert(
             "feature:base".into(),
             FeatureOutput {
+                sketch: None,
                 body: Some(KernelBody::new(20)),
                 datum: None,
             },
@@ -695,6 +702,7 @@ mod tests {
         ctx.outputs.insert(
             "feature:base".into(),
             FeatureOutput {
+                sketch: None,
                 body: Some(KernelBody::new(20)),
                 datum: None,
             },
@@ -721,6 +729,7 @@ mod tests {
         ctx.outputs.insert(
             "feature:base".into(),
             FeatureOutput {
+                sketch: None,
                 body: Some(KernelBody::new(20)),
                 datum: None,
             },

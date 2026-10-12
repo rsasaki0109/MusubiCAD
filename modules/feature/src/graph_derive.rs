@@ -24,6 +24,13 @@ impl FeatureDefinition {
     /// Feature IDs this definition consumes directly, as `(field, feature_id)`
     /// in canonical field order: sketch, source, then target.
     pub fn feature_inputs(&self) -> Vec<(&'static str, &str)> {
+        if let Self::ProjectedSketch(def) = self {
+            return def
+                .projections
+                .iter()
+                .map(|p| ("projections.source_feature", p.source_feature.as_str()))
+                .collect();
+        }
         if let Self::DatumPlane(def) = self {
             return match &def.base {
                 Workplane::DatumPlane { feature_id } => {
@@ -78,7 +85,10 @@ impl FeatureDefinition {
                 .collect();
         }
         let candidates: [(&'static str, Option<&String>); 2] = match self {
-            Self::Sketch(_) | Self::DatumPlane(_) | Self::DatumAxis(_) => [("", None), ("", None)],
+            Self::Sketch(_)
+            | Self::ProjectedSketch(_)
+            | Self::DatumPlane(_)
+            | Self::DatumAxis(_) => [("", None), ("", None)],
             Self::Extrude(def) => [
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", def.target_feature.as_ref()),
@@ -173,6 +183,7 @@ impl FeatureDefinition {
             Self::DatumPlane(_)
             | Self::DatumAxis(_)
             | Self::Sketch(_)
+            | Self::ProjectedSketch(_)
             | Self::Extrude(_)
             | Self::Revolve(_)
             | Self::LinearPattern(_)
@@ -291,6 +302,7 @@ impl FeatureDefinition {
             Self::DatumPlane(_)
             | Self::DatumAxis(_)
             | Self::Sketch(_)
+            | Self::ProjectedSketch(_)
             | Self::CircularPattern(_)
             | Self::MirrorPattern(_)
             | Self::ImportedSolid(_)

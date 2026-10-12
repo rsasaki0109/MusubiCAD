@@ -138,6 +138,12 @@ fn tools() -> Vec<Tool> {
             schema: || json!({"type":"object","properties":{"path":{"type":"string"},"stl_path":{"type":"string"},"feature_id":{"type":"string"},"source_unit":{"enum":["m","mm","cm","in"]},"name":{"type":"string"},"transform":{"type":"object"},"dry_run":{"type":"boolean"},"history":{"type":"object"}},"required":["path","stl_path","feature_id","source_unit"],"additionalProperties":false}),
         },
         Tool {
+            name: "inspect_projected_sketch",
+            description: "Resolve and inspect an associated projected_sketch feature from its semantic source bindings. Returns derived SI coordinates and bindings without writing the document. Generated coordinates are not authored source; edit upstream geometry or replace the projection definition through verified DesignPatch/history.",
+            handler: Handler::Agent("opencad.inspect_projected_sketch"),
+            schema: || json!({"type":"object","properties":{"path":{"type":"string"},"feature_id":{"type":"string"}},"required":["path","feature_id"],"additionalProperties":false}),
+        },
+        Tool {
             name: "plan_offset",
             description: "Plan an independent analytic offset copy of explicitly ordered convex CCW lines/tangent arcs or one circle. Signed distance_m is positive outward. Caller supplies all fresh destination IDs. Does not copy constraints or create persistent source association. Returns a revision-guarded DesignPatch; apply through verified patch tools. Concavity, collapse and non-tangent arc joins refuse.",
             handler: Handler::Agent("opencad.plan_offset"),
@@ -650,7 +656,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 24);
+        assert_eq!(tools.len(), 25);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

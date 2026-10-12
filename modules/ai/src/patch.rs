@@ -1025,6 +1025,7 @@ impl DesignPatch {
         // Structural checks run first so a dangling reference is reported
         // with its complete dependent list rather than as an evaluation error.
         self.validate_structural_candidate(state, &next)?;
+        crate::feature_patch::validate_projection_state(&next)?;
         let scope = evaluate_param_graph(&next.parameters)?;
         validate_feature_values(&next, &scope)?;
         *state = next;

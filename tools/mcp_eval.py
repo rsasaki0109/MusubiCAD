@@ -311,6 +311,18 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_projected_sketches" in task:
+        try:
+            definitions = json.loads((document / "graph" / "features.json").read_text(encoding="utf-8"))["feature_nodes"]
+            definitions = {node["id"]: node["definition"] for node in definitions}
+            authored = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
+            authored_ids = {sketch["id"] for sketch in authored}
+            for desired in task["expected_projected_sketches"]:
+                definition = definitions.get(desired["id"], {})
+                if definition.get("type") != "projected_sketch" or definition.get("sketch_id") != desired["sketch_id"] or definition.get("projections") != desired["projections"] or desired["sketch_id"] in authored_ids:
+                    problems.append(f"projection {desired['id']} lacks graph-owned source bindings or saves derived coordinates")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            problems.append("projection source is absent or malformed")
     if "expected_ellipse_sources" in task:
         try:
             sketches = json.loads((document / "graph" / "sketches.json").read_text(encoding="utf-8"))["sketches"]
@@ -719,6 +731,13 @@ def self_test() -> None:
     assert not check({**pdf_task, "expected_pdf_name": "missing.pdf"}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_pages": 1}, printable_sheet, "")[0]
     assert not check({**pdf_task, "expected_pdf_paper_mm": [[297,210],[297,210]]}, printable_sheet, "")[0]
+    projection_doc = ROOT / "examples" / "projected_circle_plate.ocad.d"
+    projection_task = {"expected_projected_sketches": [{"id": "feature:projection", "sketch_id": "sketch:projection", "projections": [{"source_feature": "feature:source_sketch", "source_entity": "ent:source_circle", "curve_id": "ent:projected_curve", "point_ids": ["ent:projected_center"], "construction": False}]}]}
+    assert check(projection_task, projection_doc, "") == (True, [])
+    for field, value in [("id", "feature:missing"), ("sketch_id", "sketch:wrong"), ("projections", [])]:
+        wrong_projection = json.loads(json.dumps(projection_task))
+        wrong_projection["expected_projected_sketches"][0][field] = value
+        assert not check(wrong_projection, projection_doc, "")[0]
     ellipse_doc = ROOT / "examples" / "ellipse_plate.ocad.d"
     ellipse_task = {"expected_ellipse_sources": [{"sketch_id": "sketch:ellipse", "entity_id": "ent:ellipse", "center": "ent:center", "major_radius": "major_radius", "minor_radius": "minor_radius", "axis_angle": "axis_angle_rad"}]}
     assert check(ellipse_task, ellipse_doc, "") == (True, [])
