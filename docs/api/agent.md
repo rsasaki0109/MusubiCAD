@@ -940,3 +940,12 @@ support, grid/tolerances, explicit layer selection and unsupported-input refusal
 triangle count, verification and history state. Missing units are invalid params.
 CLI: `musubicad import-stl part.ocad.d plate.stl --id feature:plate --unit mm`.
 See the MCP authoring guide for bounds, topology, units and refusal semantics.
+
+## Construction geometry patch (MCAD-P13-001)
+
+`set_sketch_construction` takes `sketch_id`, stored `entity_id`, and mandatory
+boolean `construction`. Use the existing CLI patch command, Agent document patch
+API or MCP verified patch tools. It preserves IDs/constraints and emits
+`sketch_entity_modified` with sketch/downstream change impact. Missing entities,
+lost consumed profiles and implicit alias rebinding refuse changes. Old entity
+flags still default false; no document format version change is required.

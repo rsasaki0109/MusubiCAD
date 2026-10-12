@@ -177,6 +177,12 @@ pub enum PatchOperation {
         sketch_id: String,
         entity: SketchEntity,
     },
+    /// Explicitly mark a stored entity as construction or manufacturing geometry.
+    SetSketchConstruction {
+        sketch_id: String,
+        entity_id: String,
+        construction: bool,
+    },
     /// Remove an entity; fails while an entity or constraint references it.
     RemoveSketchEntity {
         sketch_id: String,
@@ -334,6 +340,7 @@ impl PatchOperation {
                 | Self::AddSketch { .. }
                 | Self::RemoveSketch { .. }
                 | Self::AddSketchEntity { .. }
+                | Self::SetSketchConstruction { .. }
                 | Self::RemoveSketchEntity { .. }
                 | Self::AddSketchConstraint { .. }
                 | Self::RemoveSketchConstraint { .. }
@@ -892,6 +899,7 @@ impl DesignPatch {
                 | PatchOperation::AddSketch { .. }
                 | PatchOperation::RemoveSketch { .. }
                 | PatchOperation::AddSketchEntity { .. }
+                | PatchOperation::SetSketchConstruction { .. }
                 | PatchOperation::RemoveSketchEntity { .. }
                 | PatchOperation::AddSketchConstraint { .. }
                 | PatchOperation::RemoveSketchConstraint { .. }
@@ -1102,6 +1110,12 @@ impl DesignPatch {
         }
 
         validate_sketch_candidate(&self.operations, after, &mut failures);
+        crate::sketch_patch::validate_construction_bindings(
+            &self.operations,
+            before,
+            after,
+            &mut failures,
+        );
         validate_feature_candidate(&self.operations, after, &mut failures);
         crate::attachment_patch::validate_attachment_candidate(
             &self.operations,

@@ -125,6 +125,7 @@ pub fn predict_change_impact(
             | SemanticChange::SketchRemoved { id: sketch_id }
             | SemanticChange::SketchEntityAdded { sketch_id, .. }
             | SemanticChange::SketchEntityRemoved { sketch_id, .. }
+            | SemanticChange::SketchEntityModified { sketch_id, .. }
             | SemanticChange::SketchConstraintAdded { sketch_id, .. }
             | SemanticChange::SketchConstraintRemoved { sketch_id, .. } => {
                 for node in &after.feature_nodes {
@@ -212,6 +213,7 @@ fn changed_inputs(diff: &DesignDiff) -> Vec<ChangedInput> {
             }
             SemanticChange::SketchEntityAdded { sketch_id, .. }
             | SemanticChange::SketchEntityRemoved { sketch_id, .. }
+            | SemanticChange::SketchEntityModified { sketch_id, .. }
             | SemanticChange::SketchConstraintAdded { sketch_id, .. }
             | SemanticChange::SketchConstraintRemoved { sketch_id, .. } => {
                 (ChangedInputKind::Sketch, sketch_id)

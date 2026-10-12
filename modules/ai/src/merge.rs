@@ -772,6 +772,11 @@ fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
         PatchOperation::RemoveSketchEntity {
             sketch_id,
             entity_id,
+        }
+        | PatchOperation::SetSketchConstruction {
+            sketch_id,
+            entity_id,
+            ..
         } => (ConflictKind::Sketch, format!("{sketch_id}/{entity_id}")),
         PatchOperation::AddSketchConstraint {
             sketch_id,
@@ -1027,6 +1032,11 @@ fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSna
         PatchOperation::RemoveSketchEntity {
             sketch_id,
             entity_id,
+        }
+        | PatchOperation::SetSketchConstruction {
+            sketch_id,
+            entity_id,
+            ..
         } => {
             snapshot(find_sketch(state, sketch_id).and_then(|sketch| sketch.find_entity(entity_id)))
         }

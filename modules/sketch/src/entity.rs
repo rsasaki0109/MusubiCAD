@@ -163,6 +163,17 @@ impl SketchEntity {
             Self::Rectangle(e) => e.base.construction,
         }
     }
+
+    /// Set the persisted flag without replacing IDs, coordinates or constraints.
+    pub fn set_construction(&mut self, construction: bool) {
+        match self {
+            Self::Point(e) => e.base.construction = construction,
+            Self::Line(e) => e.base.construction = construction,
+            Self::Circle(e) => e.base.construction = construction,
+            Self::Arc(e) => e.base.construction = construction,
+            Self::Rectangle(e) => e.base.construction = construction,
+        }
+    }
 }
 
 /// Expand a rectangle helper into four corner points and four edge lines.

@@ -672,3 +672,27 @@ The example `stl_import_plate.ocad.d` and its authoring patch reconstruct an
 80×60×6 mm plate, volume 28,800 mm³. Eval `stl_import_explicit_units` independently
 checks volume, the explicit-unit feature and source byte digest. Checker tests
 are run locally; a paid agent-host run is separate evidence.
+
+### Construction geometry edits (MCAD-P13-001)
+
+Use `set_sketch_construction` through the existing verified patch tools:
+
+```json
+{"operations":[{"type":"set_sketch_construction","sketch_id":"sketch:base","entity_id":"ent:guide_line","construction":true}]}
+```
+
+The boolean is explicit and dimensionless; repeated requests do not invert it.
+Stored Point/Line/Circle/Arc/Rectangle IDs, coordinates and constraints remain.
+Rectangle helpers use their stored helper ID, not derived corner/edge IDs.
+Construction endpoints still participate in constraints. Construction curves
+stay in the solver and are excluded from solid profiles. Ordinary open guides
+also do not become closed solid boundaries.
+
+Dry-run before applying with history. Unknown entities, lost consumed profiles,
+or unchanged consumer aliases selecting a different loop refuse atomically.
+Explicitly rebind/remove consumers in the same patch when changing a boundary;
+never silently substitute another loop for `profile:outer`. Semantic diff reports
+`sketch_entity_modified`, and impact marks the sketch and downstream features.
+No-op flags have an empty semantic diff. Source defaults for old files remain
+false. Example: `construction_plate.ocad.d` and its authoring patch; eval
+`construction_geometry_edit` checks stable entity types/flags and plate volume.
