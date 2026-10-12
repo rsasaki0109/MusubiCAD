@@ -195,6 +195,9 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                         "sheet '{id}' must have finite, positive width_m and height_m"
                     )));
                 }
+                if let Some(block) = &sheet.title_block {
+                    opencad_drawing::layout_title_block(sheet, block)?;
+                }
                 model.sheets.push(sheet.clone());
             }
             PatchOperation::RemoveSheet { id } => {
@@ -329,6 +332,16 @@ pub fn apply_drawing_patch(model: &mut DrawingModel, operations: &[PatchOperatio
                     .retain(|dimension| dimension.id.as_str() != id);
                 removed.insert(id.clone());
             }
+            PatchOperation::SetTitleBlock {
+                sheet_id,
+                title_block,
+            } => {
+                let sheet = find_sheet_mut(model, sheet_id)?;
+                if let Some(block) = title_block {
+                    opencad_drawing::layout_title_block(sheet, block)?;
+                }
+                sheet.title_block = title_block.clone();
+            }
             PatchOperation::SetDrawingViewScale { view_id, scale } => {
                 if *scale <= 0.0 || !scale.is_finite() {
                     return Err(OpenCadError::validation(
@@ -400,6 +413,7 @@ fn diff_sheet(before: &Sheet, after: &Sheet, changes: &mut Vec<SemanticChange>) 
     if before.name != after.name
         || before.width_m != after.width_m
         || before.height_m != after.height_m
+        || before.title_block != after.title_block
     {
         changes.push(SemanticChange::DrawingSheetChanged {
             id: before.id.as_str().to_string(),

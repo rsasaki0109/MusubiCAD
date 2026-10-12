@@ -96,6 +96,7 @@ mod tests {
                 dimensions: Vec::new(),
                 angular_dimensions: Vec::new(),
                 radial_dimensions: Vec::new(),
+                title_block: None,
             }],
         };
         let json = serde_json::to_string(&model).expect("serialize");

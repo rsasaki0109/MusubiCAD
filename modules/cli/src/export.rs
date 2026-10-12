@@ -551,6 +551,7 @@ mod tests {
                 sheets: vec![Sheet {
                     angular_dimensions: Vec::new(),
                     radial_dimensions: Vec::new(),
+                    title_block: None,
                     id: SheetId::new("sheet:a4").expect("id"),
                     name: "Sheet 1".into(),
                     width_m: 0.210,

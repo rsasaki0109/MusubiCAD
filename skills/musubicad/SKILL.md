@@ -366,3 +366,15 @@ Edit crop/magnification via remove/add with a new view ID, then export SVG and
 verify the source rectangle and derived magnification label. Example:
 `examples/agent/create_detail_drawing_patch.json`; eval `drawing_bounded_detail`.
 See ADR-043 and the MCP authoring guide.
+
+### Explicit sheet title blocks
+
+Use `set_title_block` through DesignPatch with `sheet_id` and an explicitly supplied
+`title_block`: title (≤50 characters), drawing_number (≤24), revision (≤8), optional
+date (≤16), author/material (≤24) and scale_note (≤50). Required fields are nonempty;
+all text is one line. Never infer dates/authors/material/scale or insert caches.
+Dry-run/apply validates the 180 × 48 mm frame at 5 mm margins; existing geometry and
+annotations are preserved. Export SVG and verify escaped fields. Clear only with
+explicit null; a missing update field must fail. Small sheets, invalid text or
+unknown sheet IDs fail atomically. Use `examples/agent/create_title_drawing_patch.json`
+and eval `drawing_title_block_revision`; see ADR-044 and the authoring guide.

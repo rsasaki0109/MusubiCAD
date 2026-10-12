@@ -130,6 +130,11 @@ pub enum PatchOperation {
         instance_id: String,
         transform: opencad_geometry::RigidTransform,
     },
+    SetTitleBlock {
+        sheet_id: String,
+        #[serde(deserialize_with = "deserialize_title_block_update")]
+        title_block: Option<opencad_drawing::TitleBlock>,
+    },
     SetDrawingViewScale {
         view_id: String,
         scale: f64,
@@ -1251,7 +1256,8 @@ impl DesignPatch {
                         "drawing patch operation requires a drawing model",
                     ));
                 }
-                PatchOperation::SetDrawingViewScale { .. }
+                PatchOperation::SetTitleBlock { .. }
+                | PatchOperation::SetDrawingViewScale { .. }
                 | PatchOperation::SetDrawingViewOrigin { .. }
                     if drawing.is_none() =>
                 {
@@ -1352,6 +1358,16 @@ fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &st
             field.as_str()
         ))),
     }
+}
+
+// A missing update field must not be interpreted as an implicit clear.
+fn deserialize_title_block_update<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<opencad_drawing::TitleBlock>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<opencad_drawing::TitleBlock>::deserialize(deserializer)
 }
 
 #[cfg(test)]

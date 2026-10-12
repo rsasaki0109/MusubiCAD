@@ -610,6 +610,60 @@
         },
         "additionalProperties": false
       },
+    "title_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "drawing_number",
+        "revision"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "drawing_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 24
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 16
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 24
+        },
+        "material": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 24
+        },
+        "scale_note": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 50
+        }
+      }
+    },
     "detail_view": {
       "type": "object",
       "additionalProperties": false,
@@ -880,6 +934,7 @@
             "set_mate_distance",
             "add_connector",
             "set_drawing_view_scale",
+            "set_title_block",
             "set_drawing_view_origin",
             "add_parameter",
             "remove_parameter",
@@ -1210,6 +1265,38 @@
                 "type": "object",
                 "required": ["id"],
                 "properties": { "id": { "$ref": "#/$defs/stable_id_pattern" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "set_title_block"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "type",
+              "sheet_id",
+              "title_block"
+            ],
+            "properties": {
+              "sheet_id": {
+                "type": "string",
+                "pattern": "^sheet:"
+              },
+              "title_block": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/title_block"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }

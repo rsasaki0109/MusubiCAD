@@ -346,6 +346,27 @@
           "segment_count": 2
         }
       ]
+    },
+    {
+      "id": "drawing_title_block_revision",
+      "source": "examples/title_plate_drawing.ocad.d",
+      "document": "title_drawing.ocad.d",
+      "prompt": "In {document}, update sheet:a4 title block revision to B and title to Inspection plate revision B, preserving every other title field, sheet, view and model. Use set_title_block through DesignPatch, dry-run/apply, regenerate and export SVG. Do not infer timestamps or other metadata and do not modify geometry.",
+      "expected_views": [
+        "front"
+      ],
+      "expected_dimension_lengths_m": [],
+      "expected_title_blocks": {
+        "sheet:a4": {
+          "title": "Inspection plate revision B",
+          "drawing_number": "MUSUBI-P12-005",
+          "revision": "B",
+          "date": "2026-10-12",
+          "author": "MusubiCAD example",
+          "material": "Steel",
+          "scale_note": "FRONT 1:2"
+        }
+      }
     }
   ]
 }

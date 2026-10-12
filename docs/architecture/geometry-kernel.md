@@ -176,3 +176,12 @@ and explicit magnification are validated in drawing state, and child scale must
 match parent.scale × magnification. Crop data is authored in projected model
 metres; derived centered sheet segments remain disposable. The existing mesh
 wireframe accuracy applies, including its 1 µm projected endpoint quantization.
+
+### Title-block metadata and layout (ADR-044)
+
+Title blocks are explicit per-sheet authored metadata, not kernel geometry.
+`set_title_block` stages edits/clears through DesignPatch and sheet snapshots;
+missing update fields are refused. Shared SVG export renders the fixed SI frame
+on both Mock and OCCT drawing paths without changing their bodies or projection.
+Layout validates sheet fit and single-line text; SVG escapes markup. No current
+clock, inferred model metadata, new sampling or kernel dependencies are involved.

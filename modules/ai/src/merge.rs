@@ -798,6 +798,7 @@ fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
             (ConflictKind::Assembly, mate_id.clone())
         }
         PatchOperation::AddConnector { id, .. } => (ConflictKind::Assembly, id.clone()),
+        PatchOperation::SetTitleBlock { sheet_id, .. } => (ConflictKind::Drawing, sheet_id.clone()),
         PatchOperation::SetDrawingViewScale { view_id, .. }
         | PatchOperation::SetDrawingViewOrigin { view_id, .. } => {
             (ConflictKind::Drawing, view_id.clone())
@@ -1084,6 +1085,12 @@ fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSna
                     .find(|connector| connector.id.as_str() == id)
             }))
         }
+        PatchOperation::SetTitleBlock { sheet_id, .. } => snapshot(
+            state
+                .drawing
+                .as_ref()
+                .and_then(|drawing| drawing.sheets.iter().find(|s| s.id.as_str() == sheet_id)),
+        ),
         PatchOperation::SetDrawingViewScale { view_id, .. }
         | PatchOperation::SetDrawingViewOrigin { view_id, .. } => {
             snapshot(state.drawing.as_ref().and_then(|drawing| {

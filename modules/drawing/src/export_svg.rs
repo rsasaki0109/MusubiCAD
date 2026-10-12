@@ -163,6 +163,23 @@ pub fn render_sheet_svg_with_layouts(
         }
         svg.push_str("</svg>\n");
     }
+    if let Some(block) = &sheet.title_block {
+        let cells = crate::layout_title_block(sheet, block)?;
+        svg.truncate(svg.len() - "</svg>\n".len());
+        for cell in cells {
+            let x = cell.origin_m[0] * 1000.;
+            let y = flip_y(cell.origin_m[1] + cell.height_m, sheet.height_m) * 1000.;
+            let w = cell.width_m * 1000.;
+            let h = cell.height_m * 1000.;
+            svg.push_str(&format!("<rect class=\"title-block-cell\" x=\"{x:.6}\" y=\"{y:.6}\" width=\"{w:.6}\" height=\"{h:.6}\" fill=\"none\" stroke=\"#111111\" stroke-width=\"0.25\"/>\n"));
+            let tx = x + 2.;
+            let label_y = y + 3.;
+            let value_y = y + 9.;
+            svg.push_str(&format!("<text class=\"title-block-label\" x=\"{tx:.6}\" y=\"{label_y:.6}\" font-family=\"sans-serif\" font-size=\"2\" fill=\"#555555\">{}</text>\n",cell.label));
+            svg.push_str(&format!("<text class=\"title-block-value\" x=\"{tx:.6}\" y=\"{value_y:.6}\" font-family=\"sans-serif\" font-size=\"3\" fill=\"#111111\">{}</text>\n",crate::title_block::escape_svg_text(&cell.value)));
+        }
+        svg.push_str("</svg>\n");
+    }
     Ok(svg)
 }
 
