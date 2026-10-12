@@ -155,3 +155,14 @@ provides a deterministic XY circle of radius half the body's side for contract
 tests; Mock box edges 1–4 refuse circle queries. Counting kernels forward queries.
 Drawing regeneration passes witnesses/layouts separately from authored Sheet
 data; unsupported curves and ambiguous topology fail closed.
+
+### Exact polygonal sections (ADR-042)
+
+`section_body` returns neutral, transient `SectionGeometry` with canonical model
+loops and SI material area. Native OCCT BRepAlgoAPI_Section disables approximation
+and accepts only exact line edges. Cuts coincident with a planar face are refused.
+The neutral stitcher uses 1e-8 m tolerance, rejects open/branched/intersecting or
+touching boundaries, and derives area by even-odd loop nesting. Work is bounded to
+4096 edges with positive areas >1e-16 m². Mock supports analytic axis-aligned box
+slices. No new sampling is introduced. Drawing section metadata stores only the
+plane and hatch spacing; regenerated layouts pass separately to sheet renderers.

@@ -43,6 +43,7 @@ pub struct RegenSummary {
     pub drawing_dimensions: Vec<crate::drawing::DrawingDimensionResult>,
     pub drawing_angular_dimensions: Vec<crate::drawing::DrawingAngularDimensionResult>,
     pub drawing_radial_dimensions: Vec<crate::drawing::DrawingRadialDimensionResult>,
+    pub drawing_sections: Vec<crate::drawing::DrawingSectionResult>,
 }
 
 /// Serializable regeneration result for Agent API responses.
@@ -69,6 +70,8 @@ pub struct RegenResult {
     pub drawing_angular_dimensions: Vec<crate::drawing::DrawingAngularDimensionResult>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub drawing_radial_dimensions: Vec<crate::drawing::DrawingRadialDimensionResult>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub drawing_sections: Vec<crate::drawing::DrawingSectionResult>,
 }
 
 /// Design body required for in-memory regeneration.
@@ -97,6 +100,7 @@ impl From<RegenSummary> for RegenResult {
             drawing_dimensions: summary.drawing_dimensions,
             drawing_angular_dimensions: summary.drawing_angular_dimensions,
             drawing_radial_dimensions: summary.drawing_radial_dimensions,
+            drawing_sections: summary.drawing_sections,
         }
     }
 }
@@ -150,6 +154,7 @@ pub fn regen_ocad_document(path: &str, doc: &OcadDocument) -> Result<RegenSummar
             drawing_dimensions: drawing.dimensions,
             drawing_angular_dimensions: drawing.angular_dimensions,
             drawing_radial_dimensions: drawing.radial_dimensions,
+            drawing_sections: drawing.sections,
         });
     }
     if let Some(assembly) = &doc.assembly {
@@ -324,6 +329,7 @@ fn regen_assembly_with_kernel(
         drawing_dimensions: Vec::new(),
         drawing_angular_dimensions: Vec::new(),
         drawing_radial_dimensions: Vec::new(),
+        drawing_sections: Vec::new(),
     })
 }
 
@@ -416,6 +422,7 @@ pub fn regenerate_part(
             drawing_dimensions: Vec::new(),
             drawing_angular_dimensions: Vec::new(),
             drawing_radial_dimensions: Vec::new(),
+            drawing_sections: Vec::new(),
         })
     }
 
@@ -436,6 +443,7 @@ pub fn regenerate_part(
             drawing_dimensions: Vec::new(),
             drawing_angular_dimensions: Vec::new(),
             drawing_radial_dimensions: Vec::new(),
+            drawing_sections: Vec::new(),
         })
     }
 }
@@ -455,6 +463,12 @@ fn mass_for_active_body<K: GeometryKernel>(
 
 pub fn print_summary(summary: &RegenSummary) {
     println!("kernel: {}", summary.kernel);
+    for section in &summary.drawing_sections {
+        println!(
+            "section: {} area_m2: {} loops: {} edges: {}",
+            section.view_id, section.area_m2, section.loop_count, section.edge_count
+        );
+    }
     for d in &summary.drawing_radial_dimensions {
         println!(
             "dimension: {} measured_radial_length_m: {} radius_m: {}",

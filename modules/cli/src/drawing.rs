@@ -42,9 +42,20 @@ pub struct DrawingRadialDimensionResult {
     pub reference_provenance: ReferenceProvenance,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DrawingSectionResult {
+    pub sheet_id: String,
+    pub view_id: String,
+    pub area_m2: f64,
+    pub loop_count: usize,
+    pub edge_count: usize,
+}
+
 pub struct RegeneratedDrawing {
     /// Transient point-resolved sheets for renderers, never written to .ocad.
     pub sheets: Vec<(Sheet, Vec<ViewMesh>)>,
+    pub sections: Vec<DrawingSectionResult>,
+    pub section_layouts: Vec<Vec<opencad_drawing::SectionLayout>>,
     pub radial_layouts: Vec<Vec<opencad_drawing::RadialLayout>>,
     pub dimensions: Vec<DrawingDimensionResult>,
     pub angular_dimensions: Vec<DrawingAngularDimensionResult>,
@@ -66,6 +77,8 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
     let mut result = RegeneratedDrawing {
         sheets: Vec::new(),
         radial_layouts: Vec::new(),
+        section_layouts: Vec::new(),
+        sections: Vec::new(),
         dimensions: Vec::new(),
         angular_dimensions: Vec::new(),
         radial_dimensions: Vec::new(),
@@ -73,6 +86,7 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
     for mut sheet in drawing.clone().sorted_deterministic().sheets {
         let mut meshes = Vec::new();
         let mut radial_layouts = Vec::new();
+        let mut section_layouts = Vec::new();
         for view in &sheet.views {
             let reference_path = root.join(&view.model.source_path);
             let referenced = read_ocad(&reference_path)
@@ -204,9 +218,27 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
                             reference_provenance: resolved.reference_provenance,
                         });
                     }
-                    kernel.tessellate(body, &TessellationSettings::default())?
+                    if let Some(section) = &view.section {
+                        let geometry = kernel.section_body(body, &section.plane)?;
+                        section_layouts.push(opencad_drawing::layout_section(view, &geometry)?);
+                        result.sections.push(DrawingSectionResult {
+                            sheet_id: sheet.id.as_str().into(),
+                            view_id: view.id.as_str().into(),
+                            area_m2: geometry.area_m2,
+                            loop_count: geometry.loops_m.len(),
+                            edge_count: geometry.loops_m.iter().map(Vec::len).sum(),
+                        });
+                        opencad_geometry::MeshSet::merge(&[])
+                    } else {
+                        kernel.tessellate(body, &TessellationSettings::default())?
+                    }
                 }
                 DocumentKind::Assembly => {
+                    if view.section.is_some() {
+                        return Err(OpenCadError::validation(
+                            "section views require a part model; assembly sections are unsupported",
+                        ));
+                    }
                     if semantic_dimensions {
                         return Err(OpenCadError::validation(format!("drawing view '{}' semantic edge dimensions require a part model; assembly instance bindings are not supported", view.id)));
                     }
@@ -257,6 +289,7 @@ pub fn regenerate_drawing(path: &str, doc: &OcadDocument) -> Result<RegeneratedD
         }
         result.sheets.push((sheet, meshes));
         result.radial_layouts.push(radial_layouts);
+        result.section_layouts.push(section_layouts);
     }
     Ok(result)
 }

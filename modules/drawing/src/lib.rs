@@ -40,3 +40,8 @@ pub use radial::{
 };
 
 pub use export_svg::render_sheet_svg_with_radial_layouts;
+
+pub mod section;
+pub use section::{layout_section, SectionLayout, SectionView};
+
+pub use export_svg::render_sheet_svg_with_layouts;

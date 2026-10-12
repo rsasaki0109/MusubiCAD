@@ -370,3 +370,10 @@ are derived from current native straight edges, with SVG degree labels.
 both documents using `agent/create_radial_cylinder_patch.json` and
 `agent/create_radial_drawing_patch.json`. `radial_plate_drawing.svg` shows derived
 R 10.00 mm and ⌀ 20.00 mm leaders; source refs remain authored through regeneration.
+
+`section_plate_drawing.ocad.d` contains a patch-authored 80 × 60 × 6 mm plate with
+a 20 × 20 mm square through-hole and an XY slice at z = 3 mm. Its SVG shows two
+exact closed contours and material hatching, with the hole clear. Fresh section
+area is 0.0044 m² (4400 mm²); hatch spacing is 3 mm on the sheet at view scale 0.5.
+Creation patches: `agent/create_section_plate_patch.json` and
+`agent/create_section_drawing_patch.json`. Curved sections are deliberately refused.

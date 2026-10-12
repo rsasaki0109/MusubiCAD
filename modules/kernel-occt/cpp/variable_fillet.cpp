@@ -3,6 +3,7 @@
 #include <BRep_Tool.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <NCollection_Array1.hxx>
@@ -13,6 +14,9 @@
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <Standard_Failure.hxx>
+#include <BRepAlgoAPI_Section.hxx>
+#include <gp_Pln.hxx>
+#include <cmath>
 #include <sstream>
 #include <stdexcept>
 
@@ -40,6 +44,37 @@ bool is_straight_edge(rust::Slice<const std::uint8_t> brep, rust::Slice<const do
         if (matches != 1) throw std::runtime_error("straight edge query is missing or ambiguous");
         return straight;
     } catch (const Standard_Failure& failure) { throw std::runtime_error(failure.what()); }
+}
+
+rust::Vec<double> section_edges(rust::Slice<const std::uint8_t> brep, rust::Slice<const double> plane) {
+    try {
+        if (plane.size()!=6) throw std::runtime_error("invalid section plane");
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));
+        TopoDS_Shape shape; BRep_Builder builder; BRepTools::Read(shape,stream,builder);
+        if (shape.IsNull()) throw std::runtime_error("section BREP read failed");
+        gp_Pln cutting(gp_Pnt(plane[0],plane[1],plane[2]),gp_Dir(plane[3],plane[4],plane[5]));
+        for (TopExp_Explorer it(shape,TopAbs_FACE);it.More();it.Next()) {
+            BRepAdaptor_Surface surface(TopoDS::Face(it.Current()));
+            if (surface.GetType()==GeomAbs_Plane) {
+                auto face_plane=surface.Plane();
+                if (std::abs(face_plane.Axis().Direction().Dot(cutting.Axis().Direction()))>=1.0-1e-9 &&
+                    face_plane.Distance(cutting.Location())<=1e-8)
+                    throw std::runtime_error("section cutting plane is coincident with a body face");
+            }
+        }
+        BRepAlgoAPI_Section section(shape,cutting,false); section.Approximation(false); section.Build();
+        if (!section.IsDone()) throw std::runtime_error("OCCT section failed");
+        NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> edges; TopExp::MapShapes(section.Shape(),TopAbs_EDGE,edges);
+        if (edges.Extent()>4096) throw std::runtime_error("section exceeds edge limit");
+        rust::Vec<double> result;
+        for (int i=1;i<=edges.Extent();++i) {
+            auto edge=TopoDS::Edge(edges(i));BRepAdaptor_Curve curve(edge);
+            if (curve.GetType()!=GeomAbs_Line) throw std::runtime_error("section contains unsupported curved edges");
+            auto a=curve.Value(curve.FirstParameter()),b=curve.Value(curve.LastParameter());
+            for (double value:{a.X(),a.Y(),a.Z(),b.X(),b.Y(),b.Z()}) result.push_back(value);
+        }
+        return result;
+    } catch (const Standard_Failure& failure) {throw std::runtime_error(failure.what());}
 }
 
 rust::Vec<double> circular_edge_geometry(rust::Slice<const std::uint8_t> brep,

@@ -392,6 +392,17 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// Exact polygonal slice; unsupported geometry fails closed.
+    fn section_body(
+        &self,
+        _body: &KernelBody,
+        _plane: &crate::SectionPlane,
+    ) -> Result<crate::SectionGeometry> {
+        Err(OpenCadError::validation(
+            "kernel does not support polygonal sections",
+        ))
+    }
+
     /// Query an exact, complete circle. Arcs and noncircular curves are unsupported.
     fn circular_edge_geometry(
         &self,
@@ -763,6 +774,35 @@ impl GeometryKernel for MockGeometryKernel {
             .filter(|i| *i < 4)
             .ok_or_else(|| OpenCadError::not_found(format!("mock edge {kernel_edge_id}")))?;
         Ok([points[index], points[(index + 1) % 4]])
+    }
+
+    fn section_body(
+        &self,
+        body: &KernelBody,
+        plane: &crate::SectionPlane,
+    ) -> Result<crate::SectionGeometry> {
+        plane.validate_crossing(&self.bounding_box(body)?)?;
+        let axis = (0..3)
+            .find(|i| plane.normal[*i].abs() > 1. - 1e-9)
+            .ok_or_else(|| {
+                OpenCadError::validation("mock sections require an axis-aligned plane")
+            })?;
+        let axes: Vec<_> = (0..3).filter(|i| *i != axis).collect();
+        let side = body.0 as f64 * 0.001;
+        let points: Vec<[f64; 3]> = [[0., 0.], [side, 0.], [side, side], [0., side]]
+            .into_iter()
+            .map(|p| {
+                let mut v = [0.; 3];
+                v[axis] = plane.origin_m[axis];
+                v[axes[0]] = p[0];
+                v[axes[1]] = p[1];
+                v
+            })
+            .collect();
+        crate::polygonal_section(
+            plane,
+            (0..4).map(|i| [points[i], points[(i + 1) % 4]]).collect(),
+        )
     }
 
     fn circular_edge_geometry(

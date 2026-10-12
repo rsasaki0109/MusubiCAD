@@ -6,7 +6,7 @@ use std::path::Path;
 use opencad_assembly::{regenerate_assembly, tessellate_assembly_scene, ChildPart, ResolvedChild};
 use opencad_core::DocumentKind;
 use opencad_core::{OpenCadError, Result};
-use opencad_drawing::{render_sheet_svg_with_radial_layouts, validate_svg};
+use opencad_drawing::{render_sheet_svg_with_layouts, validate_svg};
 use opencad_feature::FeatureRegistry;
 use opencad_file::{read_ocad, OcadDocument};
 use opencad_geometry::{write_binary_stl, TessellationSettings};
@@ -267,10 +267,19 @@ pub(crate) fn render_drawing_svg(input: &str, doc: &OcadDocument) -> Result<(Str
         .sheets
         .first()
         .ok_or_else(|| OpenCadError::validation("drawing document has no sheets"))?;
-    let svg =
-        render_sheet_svg_with_radial_layouts(sheet, view_meshes, &regenerated.radial_layouts[0])?;
+    let svg = render_sheet_svg_with_layouts(
+        sheet,
+        view_meshes,
+        &regenerated.radial_layouts[0],
+        &regenerated.section_layouts[0],
+    )?;
     validate_svg(&svg)?;
-    let segments = opencad_drawing::build_sheet_segments(sheet, view_meshes)?.len();
+    let segments = opencad_drawing::build_sheet_segments(sheet, view_meshes)?.len()
+        + regenerated.section_layouts[0]
+            .iter()
+            .flat_map(|s| s.loops_on_sheet_m.iter())
+            .map(Vec::len)
+            .sum::<usize>();
     Ok((svg, segments))
 }
 

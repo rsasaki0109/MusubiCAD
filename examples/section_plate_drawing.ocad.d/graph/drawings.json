@@ -1,0 +1,43 @@
+{
+  "drawing": {
+    "sheets": [
+      {
+        "id": "sheet:a4",
+        "name": "Section drawing",
+        "width_m": 0.21,
+        "height_m": 0.297,
+        "views": [
+          {
+            "id": "view:front",
+            "name": "Section A-A",
+            "model": {
+              "source_path": "parts/plate.ocad.d",
+              "source_doc": "doc:section_plate"
+            },
+            "projection": "front",
+            "scale": 0.5,
+            "origin_on_sheet_m": [
+              0.05,
+              0.05
+            ],
+            "section": {
+              "plane": {
+                "origin_m": [
+                  0.0,
+                  0.0,
+                  0.003
+                ],
+                "normal": [
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              },
+              "hatch_spacing_m": 0.003
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

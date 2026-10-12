@@ -24,6 +24,27 @@ pub fn render_sheet_svg_with_radial_layouts(
     meshes: &[ViewMesh],
     radial: &[crate::RadialLayout],
 ) -> Result<String> {
+    render_sheet_svg_with_layouts(sheet, meshes, radial, &[])
+}
+
+pub fn render_sheet_svg_with_layouts(
+    sheet: &Sheet,
+    meshes: &[ViewMesh],
+    radial: &[crate::RadialLayout],
+    sections: &[crate::SectionLayout],
+) -> Result<String> {
+    if sections.len() != sheet.views.iter().filter(|v| v.section.is_some()).count()
+        || sections.iter().any(|s| {
+            !sheet
+                .views
+                .iter()
+                .any(|v| v.id == s.view_id && v.section.is_some())
+        })
+    {
+        return Err(OpenCadError::validation(
+            "section views require regenerated contour layouts",
+        ));
+    }
     if radial.len() != sheet.radial_dimensions.len() {
         return Err(OpenCadError::validation("missing radial dimension layouts"));
     }
@@ -89,6 +110,27 @@ pub fn render_sheet_svg_with_radial_layouts(
             svg.push_str(&format!("<line class=\"radial-dimension\" x1=\"{:.6}\" y1=\"{:.6}\" x2=\"{:.6}\" y2=\"{:.6}\" stroke=\"#225588\" stroke-width=\"0.18\"/>\n",a[0],a[1],b[0],b[1]));
             svg.push_str(&format!("<line class=\"radial-leader\" x1=\"{:.6}\" y1=\"{:.6}\" x2=\"{:.6}\" y2=\"{:.6}\" stroke=\"#225588\" stroke-width=\"0.18\"/>\n",b[0],b[1],t[0],t[1]));
             svg.push_str(&format!("<text class=\"radial-label\" x=\"{:.6}\" y=\"{:.6}\" font-family=\"sans-serif\" font-size=\"3\" fill=\"#225588\">{}</text>\n",t[0],t[1]-1.,layout.label));
+        }
+        svg.push_str("</svg>\n");
+    }
+    if !sections.is_empty() {
+        svg.truncate(svg.len() - "</svg>\n".len());
+        for (index, section) in sections.iter().enumerate() {
+            let h = section.hatch_spacing_m * 1000. * 2_f64.sqrt();
+            svg.push_str(&format!("<defs><pattern id=\"section-hatch-{index}\" patternUnits=\"userSpaceOnUse\" width=\"{h:.6}\" height=\"{h:.6}\"><path d=\"M 0 {h:.6} L {h:.6} 0\" fill=\"none\" stroke=\"#777777\" stroke-width=\"0.15\"/></pattern></defs>\n"));
+            let mut path = String::new();
+            for points in &section.loops_on_sheet_m {
+                for (i, p) in points.iter().enumerate() {
+                    path.push_str(&format!(
+                        "{} {:.6} {:.6} ",
+                        if i == 0 { "M" } else { "L" },
+                        p[0] * 1000.,
+                        flip_y(p[1], sheet.height_m) * 1000.
+                    ));
+                }
+                path.push_str("Z ");
+            }
+            svg.push_str(&format!("<path class=\"section-contour\" d=\"{path}\" fill=\"url(#section-hatch-{index})\" fill-rule=\"evenodd\" stroke=\"#111111\" stroke-width=\"0.25\"/>\n"));
         }
         svg.push_str("</svg>\n");
     }

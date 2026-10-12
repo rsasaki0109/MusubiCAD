@@ -71,6 +71,13 @@ impl Sheet {
                     dimension.id, dimension.view_id
                 )));
             }
+            if self
+                .views
+                .iter()
+                .any(|v| v.id == dimension.view_id && v.section.is_some())
+            {
+                return Err(OpenCadError::validation("dimensions on section contours require separate semantic bindings and are not yet supported"));
+            }
             dimension.validate()?;
         }
         for dimension in &self.angular_dimensions {
@@ -86,6 +93,13 @@ impl Sheet {
                     dimension.id, dimension.view_id
                 )));
             }
+            if self
+                .views
+                .iter()
+                .any(|v| v.id == dimension.view_id && v.section.is_some())
+            {
+                return Err(OpenCadError::validation("dimensions on section contours require separate semantic bindings and are not yet supported"));
+            }
             dimension.validate()?;
         }
         for dimension in &self.radial_dimensions {
@@ -100,6 +114,13 @@ impl Sheet {
                     "radial dimension '{}' references missing view '{}'",
                     dimension.id, dimension.view_id
                 )));
+            }
+            if self
+                .views
+                .iter()
+                .any(|v| v.id == dimension.view_id && v.section.is_some())
+            {
+                return Err(OpenCadError::validation("dimensions on section contours require separate semantic bindings and are not yet supported"));
             }
             dimension.validate()?;
         }

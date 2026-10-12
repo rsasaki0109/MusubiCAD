@@ -72,6 +72,9 @@ fn check_new_drawing_id(
 }
 
 fn validate_view_values(view: &DrawingView) -> Result<()> {
+    if let Some(section) = &view.section {
+        section.validate(view.projection)?;
+    }
     if view.scale <= 0.0 || !view.scale.is_finite() {
         return Err(OpenCadError::validation(format!(
             "drawing view '{}' scale must be finite and > 0",

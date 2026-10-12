@@ -220,6 +220,46 @@
       },
       "additionalProperties": false
     },
+    "section_view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plane",
+        "hatch_spacing_m"
+      ],
+      "properties": {
+        "plane": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "origin_m",
+            "normal"
+          ],
+          "properties": {
+            "origin_m": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            },
+            "normal": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "hatch_spacing_m": {
+          "type": "number",
+          "exclusiveMinimum": 1e-06
+        }
+      }
+    },
     "view": {
       "type": "object",
       "required": [
@@ -237,6 +277,7 @@
         },
         "name": { "type": "string", "minLength": 1 },
         "model": { "$ref": "#/$defs/model_reference" },
+        "section": {"anyOf":[{"$ref":"#/$defs/section_view"},{"type":"null"}]},
         "projection": {
           "type": "string",
           "enum": ["front", "top", "right", "isometric"]

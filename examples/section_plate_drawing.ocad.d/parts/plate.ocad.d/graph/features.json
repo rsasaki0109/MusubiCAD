@@ -1,0 +1,135 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_plate",
+      "feature:plate",
+      "feature:sketch_hole",
+      "feature:hole",
+      "feature:cut"
+    ],
+    "features": {
+      "feature:sketch_plate": {
+        "id": "feature:sketch_plate",
+        "name": "Plate sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:plate": {
+        "id": "feature:plate",
+        "name": "Plate",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_hole": {
+        "id": "feature:sketch_hole",
+        "name": "Hole tool",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:hole": {
+        "id": "feature:hole",
+        "name": "Hole tool",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:cut": {
+        "id": "feature:cut",
+        "name": "Subtract square through-hole",
+        "feature_type": "body_boolean",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_plate",
+        "target": "feature:plate",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_hole",
+        "target": "feature:hole",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:hole",
+        "target": "feature:cut",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:plate",
+        "target": "feature:cut",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:cut",
+      "name": "Subtract square through-hole",
+      "definition": {
+        "type": "body_boolean",
+        "source_feature": "feature:hole",
+        "target_feature": "feature:plate",
+        "operation": "subtract"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:hole",
+      "name": "Hole tool",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_hole",
+        "profile_ref": "sketch:hole/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:plate",
+      "name": "Plate",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_plate",
+        "profile_ref": "sketch:plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_hole",
+      "name": "Hole tool",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:hole"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_plate",
+      "name": "Plate sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:plate"
+      },
+      "suppressed": false
+    }
+  ]
+}

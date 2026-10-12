@@ -936,6 +936,39 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn section_body(
+        &self,
+        body: &KernelBody,
+        plane: &opencad_geometry::SectionPlane,
+    ) -> Result<opencad_geometry::SectionGeometry> {
+        plane.validate_crossing(&self.bounding_box(body)?)?;
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?;
+            let mut bytes = Vec::new();
+            Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+            let data =
+                crate::ffi::native::section_edges(&bytes, &[plane.origin_m, plane.normal].concat())
+                    .map_err(|e| OpenCadError::validation(format!("section query: {e}")))?;
+            if data.len() % 6 != 0 {
+                return Err(OpenCadError::validation("invalid native section witness"));
+            }
+            opencad_geometry::polygonal_section(
+                plane,
+                data.chunks_exact(6)
+                    .map(|p| [[p[0], p[1], p[2]], [p[3], p[4], p[5]]])
+                    .collect(),
+            )
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            Err(OpenCadError::validation("section query requires OCCT"))
+        }
+    }
+
     fn circular_edge_geometry(
         &self,
         body: &KernelBody,
