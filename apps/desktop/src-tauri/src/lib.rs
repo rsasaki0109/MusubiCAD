@@ -23,6 +23,24 @@ fn map_error(err: opencad_core::OpenCadError) -> String {
 }
 
 #[tauri::command]
+fn plan_selection_edit_cmd(
+    path: String,
+    edit: opencad_desktop::selection::SelectionEdit,
+) -> Result<opencad_desktop::FeatureEditPlan, String> {
+    opencad_desktop::selection::plan_document_selection_edit(&path, &edit).map_err(map_error)
+}
+
+#[tauri::command]
+fn apply_selection_edit_cmd(
+    path: String,
+    edit: opencad_desktop::selection::SelectionEdit,
+    history: Option<DocumentHistory>,
+) -> Result<opencad_desktop::FeatureEditResult, String> {
+    opencad_desktop::selection::apply_document_selection_edit(&path, &edit, history)
+        .map_err(map_error)
+}
+
+#[tauri::command]
 fn list_document_features_cmd(path: String) -> Result<opencad_desktop::FeatureTree, String> {
     opencad_desktop::list_document_features(&path).map_err(map_error)
 }
@@ -257,6 +275,8 @@ fn run_gui() {
             list_document_features_cmd,
             plan_feature_edit_cmd,
             apply_feature_edit_cmd,
+            plan_selection_edit_cmd,
+            apply_selection_edit_cmd,
             list_templates,
             default_example_path,
             inspect_document_cmd,

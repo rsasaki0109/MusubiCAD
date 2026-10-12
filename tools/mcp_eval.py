@@ -444,6 +444,23 @@ def check(
                     problems.append(f"imported mesh {desired['id']} lacks expected explicit-unit source")
         except (OSError, ValueError, KeyError, TypeError):
             problems.append("imported mesh source is absent or malformed")
+    if "expected_selection_ref" in task:
+        try:
+            refs = json.loads((document / "graph" / "semantic_refs.json").read_text(encoding="utf-8"))["semantic_refs"]
+            desired = task["expected_selection_ref"]
+            matches = [r for r in refs if r.get("ref_id") == desired["ref_id"] and r.get("kind") == "face" and r.get("semantic", {}).get("created_by") == desired["created_by"] and r.get("semantic", {}).get("role") == desired["role"]]
+            if len(matches) != 1:
+                problems.append("selection semantic reference identity/owner is missing or ambiguous")
+        except (OSError, ValueError, KeyError, TypeError):
+            problems.append("selection semantic reference source is absent or malformed")
+    if "expected_parameter_expressions" in task:
+        try:
+            params = json.loads((document / "graph" / "parameters.json").read_text(encoding="utf-8"))["parameters"]
+            expressions = {p["name"]: p["expr"] for p in params.values()}
+            if any(expressions.get(name) != value for name, value in task["expected_parameter_expressions"].items()):
+                problems.append("selection edit changed unrelated named parameter expressions")
+        except (OSError, ValueError, KeyError, TypeError):
+            problems.append("selection parameter source is absent or malformed")
     if "expected_feature_editor" in task:
         try:
             features = json.loads((document / "graph" / "features.json").read_text(encoding="utf-8"))
@@ -931,6 +948,29 @@ def self_test() -> None:
         features["feature_graph"]["order"].reverse()
         features_file.write_text(json.dumps(features), encoding="utf-8")
         assert not check(editor_task, editor_doc, "volume_m3: 0.0000024\n")[0]
+    selection_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "semantic_selection_edit")
+    with tempfile.TemporaryDirectory() as selection_tmp:
+        selection_doc = Path(selection_tmp) / "selection.ocad.d"
+        shutil.copytree(ROOT / "examples/ellipse_plate.ocad.d", selection_doc)
+        features_file = selection_doc / "graph" / "features.json"
+        features = json.loads(features_file.read_text(encoding="utf-8"))
+        next(n for n in features["feature_nodes"] if n["id"] == "feature:ellipse_body")["definition"]["length_expr"] = "10 mm"
+        features_file.write_text(json.dumps(features), encoding="utf-8")
+        ref_file = selection_doc / "graph" / "semantic_refs.json"
+        refs = {"semantic_refs":[{"ref_id":"ref:face:ellipse_top","kind":"face","semantic":{"created_by":"feature:ellipse_body","role":"top"}}]}
+        ref_file.write_text(json.dumps(refs), encoding="utf-8")
+        output = f"volume_m3: {selection_task['expected_volume_mm3'] * 1e-9}\n"
+        assert check(selection_task, selection_doc, output)[0], check(selection_task, selection_doc, output)[1]
+        refs["semantic_refs"][0]["semantic"]["created_by"] = "feature:wrong_name_hint"
+        ref_file.write_text(json.dumps(refs), encoding="utf-8")
+        assert not check(selection_task, selection_doc, output)[0]
+        refs["semantic_refs"][0]["semantic"]["created_by"] = "feature:ellipse_body"
+        ref_file.write_text(json.dumps(refs), encoding="utf-8")
+        params_file = selection_doc / "graph" / "parameters.json"
+        params = json.loads(params_file.read_text(encoding="utf-8"))
+        params["parameters"]["param:thickness"]["expr"] = "10 mm"
+        params_file.write_text(json.dumps(params), encoding="utf-8")
+        assert not check(selection_task, selection_doc, output)[0]
     print("self-test passed")
 
 

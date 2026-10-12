@@ -72,6 +72,56 @@ impl Drop for Session {
 }
 
 #[test]
+fn actual_mcp_semantic_selection_matches_tauri_backend_source_and_history() {
+    use opencad_desktop::selection::{
+        apply_document_selection_edit, plan_document_selection_edit, SelectionEdit,
+    };
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut doc = opencad_file::read_ocad(root.join("examples/ellipse_plate.ocad.d")).unwrap();
+    doc.semantic_refs.push(opencad_geometry::TopoRef::face(
+        opencad_core::TopoRefId::new("ref:face:ellipse_top").unwrap(),
+        "feature:ellipse_body",
+        "top",
+    ));
+    let dir = tempfile::tempdir().unwrap();
+    let gui = dir.path().join("gui.ocad.d");
+    let agent = dir.path().join("agent.ocad.d");
+    opencad_file::write_ocad(&gui, &doc).unwrap();
+    opencad_file::write_ocad(&agent, &doc).unwrap();
+    let mut session = Session::start();
+    session.request("initialize", json!({"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"selection-parity","version":"0"}}));
+    session.send(&json!({"jsonrpc":"2.0","method":"notifications/initialized"}));
+    let frame = session.tool("inspect_selection_frame", json!({"path":agent}));
+    let gui_frame = opencad_desktop::load_view_data(gui.to_str().unwrap())
+        .unwrap()
+        .selection_frame
+        .unwrap();
+    assert_eq!(frame, serde_json::to_value(&gui_frame).unwrap());
+    let edit = json!({"source_revision":frame["source_revision"],"scene_revision":frame["scene_revision"],"target":{"kind":"face_reference","ref_id":"ref:face:ellipse_top"},"field":"length_expr","expr":"10 mm"});
+    let typed: SelectionEdit = serde_json::from_value(edit.clone()).unwrap();
+    let preview = session.tool("plan_selection_edit", json!({"path":agent,"edit":edit}));
+    assert_eq!(
+        preview,
+        serde_json::to_value(plan_document_selection_edit(gui.to_str().unwrap(), &typed).unwrap())
+            .unwrap()
+    );
+    assert_eq!(opencad_file::read_ocad(&agent).unwrap(), doc);
+    let direct = apply_document_selection_edit(gui.to_str().unwrap(), &typed, None).unwrap();
+    let result = session.tool("apply_selection_edit", json!({"path":agent,"edit":edit}));
+    assert_eq!(result, serde_json::to_value(&direct).unwrap());
+    let expected = std::f64::consts::PI * 0.030 * 0.020 * 0.010;
+    assert!((result["evidence"]["volume_m3"].as_f64().unwrap() - expected).abs() < 1e-12);
+    let after = opencad_file::read_ocad(&agent).unwrap();
+    assert_eq!(after, opencad_file::read_ocad(&gui).unwrap());
+    assert_eq!(after.parameters, doc.parameters);
+    assert_eq!(after.sketches, doc.sketches);
+    assert_eq!(after.semantic_refs, doc.semantic_refs);
+    let stale = session.request("tools/call",json!({"name":"apply_selection_edit","arguments":{"path":agent,"edit":edit,"history":result["history"]["history"]}}));
+    assert_eq!(stale["result"]["isError"], true);
+    assert_eq!(opencad_file::read_ocad(&agent).unwrap(), after);
+}
+
+#[test]
 fn feature_tree_ui_and_agent_commands_produce_same_source_and_history() {
     use opencad_desktop::{
         apply_document_feature_edit, list_document_features, plan_document_feature_edit,

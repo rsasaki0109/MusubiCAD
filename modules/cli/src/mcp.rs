@@ -218,6 +218,24 @@ fn tools() -> Vec<Tool> {
             schema: feature_edit_schema,
         },
         Tool {
+            name: "inspect_selection_frame",
+            description: "Rebuild a native part scene and read source/scene revisions and uniquely admitted semantic selection bindings. Does not write or rasterize. This is the same geometry/source evidence used by the Tauri preview and pick queries.",
+            handler: Handler::Agent("opencad.inspect_selection_frame"),
+            schema: path_schema,
+        },
+        Tool {
+            name: "plan_selection_edit",
+            description: "Plan a dimension edit from a backend selection binding returned by pick_document or inspect_selection_frame. Requires exact source/scene revisions and stable target face_ref or authored sketch/entity IDs. Missing, ambiguous, consumed, unsupported or stale bindings refuse; feature-name hints never bind a mutation. Returns a concrete verified DesignPatch without writing.",
+            handler: Handler::Agent("opencad.plan_selection_edit"),
+            schema: selection_edit_schema,
+        },
+        Tool {
+            name: "apply_selection_edit",
+            description: "Rebind and verify a reviewed selection dimension edit through the same backend as Tauri. Preserves source/history on failure and returns native geometry evidence, current tree and opaque history.",
+            handler: Handler::Agent("opencad.apply_selection_edit"),
+            schema: selection_edit_schema,
+        },
+        Tool {
             name: "regen_document",
             description: "Regenerate geometry and report mass, bounds, references, and assertions.",
             handler: Handler::Agent("opencad.regen_document"),
@@ -369,6 +387,10 @@ fn tools() -> Vec<Tool> {
 /// Agent API method behind each delegating tool (for parity checks).
 fn feature_edit_schema() -> Value {
     json!({"type":"object","properties":{"path":{"type":"string"},"revision":{"type":"string"},"edit":{"type":"object","description":"FeatureEdit: operation create_extrude with id/name/sketch_feature/profile_ref/length_expr; set_expression with id/field/expr; move with id/position; suppress with id/suppressed."},"history":{"type":"object"}},"required":["path","revision","edit"],"additionalProperties":false})
+}
+
+fn selection_edit_schema() -> Value {
+    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","required":["source_revision","scene_revision","target","field","expr"],"properties":{"source_revision":{"type":"string"},"scene_revision":{"type":"string"},"target":{"type":"object","description":"{kind:face_reference,ref_id} or {kind:sketch_entity,sketch_id,entity_id}, from selection_frame.bindings"},"field":{"type":"string"},"expr":{"type":"string"}},"additionalProperties":false},"history":{"type":"object"}},"required":["path","edit"],"additionalProperties":false})
 }
 
 #[cfg(test)]
@@ -685,7 +707,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 29);
+        assert_eq!(tools.len(), 32);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

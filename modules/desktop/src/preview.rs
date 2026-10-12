@@ -73,6 +73,7 @@ impl CameraState {
 /// Document data prepared for viewport or PNG preview.
 #[derive(Debug, Clone)]
 pub struct ViewData {
+    pub selection_frame: Option<crate::selection::SelectionFrame>,
     pub scene: RenderScene,
     pub overlay: SketchOverlay,
     pub name: String,
@@ -86,6 +87,8 @@ pub struct ViewData {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocumentPreview {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selection_frame: Option<crate::selection::SelectionFrame>,
     pub name: String,
     pub path: String,
     pub triangles: usize,
@@ -105,6 +108,7 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
     }
 
     let parameters = doc.parameters.clone();
+    let source_doc = doc.clone();
     let feature_nodes = doc.feature_nodes.clone();
     let semantic_refs = doc.semantic_refs.clone();
     let mut model = doc.into_part_model();
@@ -115,6 +119,12 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
     let sketches = opencad_feature::datum::resolved_datum_sketches(&model)?;
     let overlay = build_sketch_overlay(&sketches, &values)?;
     let scene = RenderScene::from_mesh_set(&tessellated.mesh_set)?;
+    let selection_frame = crate::selection::build_selection_frame(
+        &source_doc,
+        &scene,
+        &overlay,
+        &tessellated.reference_provenance,
+    )?;
     let parameter_ids = parameters.evaluation_order()?;
     let parameter_name_to_id = parameter_ids
         .iter()
@@ -126,6 +136,7 @@ pub fn load_view_data(input: &str) -> Result<ViewData> {
         .collect();
     let sketches = model.sketches.into_iter().collect::<BTreeMap<_, _>>();
     Ok(ViewData {
+        selection_frame: Some(selection_frame),
         scene,
         overlay,
         name,
@@ -154,6 +165,7 @@ fn load_assembly_view_data(input: &str, doc: OcadDocument, name: String) -> Resu
     {
         let (scene, _) = load_assembly_scene_from_document(input, &doc)?;
         Ok(ViewData {
+            selection_frame: None,
             scene,
             overlay: SketchOverlay::default(),
             name,
@@ -343,6 +355,7 @@ pub fn preview_document(path: &str) -> Result<DocumentPreview> {
         .map(|mesh| mesh.vertex_count())
         .sum();
     Ok(DocumentPreview {
+        selection_frame: data.selection_frame,
         name: data.name,
         path: path.to_string(),
         triangles: data.scene.triangle_count(),

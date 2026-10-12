@@ -50,3 +50,5 @@ DesignPatch candidates; backend source/history publish after geometry/assertion/
 mesh admission. Both-kernel analytic evidence, real MCP parity and real Linux
 Tauri interactions are recorded. No upstream code/application execution or
 Fusion benchmark parity is claimed.
+
+P14-003 applies the shared-command principle to selection: stable declared source identities and native scene revisions admit a reviewed DesignPatch, with refusal and checkpoint retention. Native Tauri pointer interaction, Mock/OCCT analytic verification and real MCP parity provide local evidence; this is not upstream application or Fusion benchmark parity.

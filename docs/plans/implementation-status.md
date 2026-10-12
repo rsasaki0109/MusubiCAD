@@ -128,3 +128,25 @@ suppress and verified Undo/Redo justify GUI 10 → 20 under the fixed rubric
 agent operation 86 → 87. Before the merge, the baseline remains about 44% / 86%.
 This credit does not claim interactive sketching, semantic selection-to-patch
 or external host verification.
+
+
+P14-003: source/scene-bound selection to reviewed dimension patch. Declared face
+semantic refs use current unique Exact/Derived/Fingerprint provenance; authored
+overlay IDs require a unique active supported profile consumer. Missing,
+ambiguous, consumed, aliased, generated, suppressed, unsupported and stale
+bindings refuse. Scene evidence captures the exact source document and hashes
+its identity plus actual mesh/overlay data; camera/kernel IDs cannot bind source.
+Tauri pointer selection and dimension forms share native rebinding/planning/
+verified application with Agent/MCP. Name hints no longer focus editable
+parameters. Both-kernel analytic plans, native repeatability/document-scope and
+source/history refusal, real MCP parity, actual Linux Tauri interactions and
+independent eval evidence accompany the example/guide/skill updates. No source
+schema, sampler, dependency, kernel operation or golden changes. Declared native
+face refs and supported authored line/circle/arc overlays only; ellipse/cubic
+strokes, edge/vertex/assembly editing, sketch manipulation and physical nonempty
+BodyCount remain explicit limitations.
+
+Upon P14-003's main merge, semantic selection to reviewed verified edits
+justifies GUI 20 → 30 (+1.5 weighted): general 45.45 → 46.95 (about 47%) and
+agent operation 87 → 88. Before merge the baseline remains about 45% / 87%.
+P14-004 interactive sketching and Phase 15 host/ecosystem work remain.

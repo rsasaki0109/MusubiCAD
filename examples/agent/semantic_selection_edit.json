@@ -1,0 +1,26 @@
+{
+  "source": "examples/ellipse_plate.ocad.d",
+  "semantic_ref_patch": {
+    "operations": [
+      {
+        "type": "add_semantic_ref",
+        "topo_ref": {
+          "ref_id": "ref:face:ellipse_top",
+          "kind": "face",
+          "semantic": {
+            "created_by": "feature:ellipse_body",
+            "role": "top"
+          }
+        }
+      }
+    ]
+  },
+  "target": {
+    "kind": "face_reference",
+    "ref_id": "ref:face:ellipse_top"
+  },
+  "field": "length_expr",
+  "expr": "10 mm",
+  "instructions": "Copy the source, dry-run and apply semantic_ref_patch through DesignPatch. Inspect selection_frame or pick the top face. Use its source_revision and scene_revision in plan_selection_edit, review, then apply_selection_edit with opaque history. Keep the ellipse/sketch/parameter IDs and source expressions. No name or role hint may authorize the mutation.",
+  "expected_volume_mm3": 18849.55592153876
+}

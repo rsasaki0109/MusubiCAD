@@ -190,6 +190,10 @@ pub fn handle_agent_request_with_plugins(
         "opencad.list_features" | "opencad.plan_feature_edit" | "opencad.apply_feature_edit" => {
             handle_feature_editor(request)
         }
+        "opencad.plan_selection_edit" | "opencad.apply_selection_edit" => {
+            handle_selection_editor(request)
+        }
+        "opencad.inspect_selection_frame" => handle_inspect_selection_frame(request),
         "opencad.inspect" => handle_inspect(request),
         "opencad.validate" => handle_validate(request),
         "opencad.patch_dry_run_document" => handle_patch_dry_run_document(request),
@@ -1184,6 +1188,61 @@ fn handle_feature_editor(request: &JsonRpcRequest) -> JsonRpcResponse {
                 opencad_desktop::apply_document_feature_edit(&p.path, &revision, edit, p.history)?,
             )?)
         }
+    })();
+    match result {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(error) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(error.to_string()),
+        ),
+    }
+}
+
+fn handle_selection_editor(request: &JsonRpcRequest) -> JsonRpcResponse {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Params {
+        path: String,
+        edit: opencad_desktop::selection::SelectionEdit,
+        history: Option<opencad_file::DocumentHistory>,
+    }
+    let result = (|| -> opencad_core::Result<Value> {
+        let p: Params = serde_json::from_value(request.params.clone())?;
+        if request.method == "opencad.plan_selection_edit" {
+            Ok(serde_json::to_value(
+                opencad_desktop::selection::plan_document_selection_edit(&p.path, &p.edit)?,
+            )?)
+        } else {
+            Ok(serde_json::to_value(
+                opencad_desktop::selection::apply_document_selection_edit(
+                    &p.path, &p.edit, p.history,
+                )?,
+            )?)
+        }
+    })();
+    match result {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(error) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(error.to_string()),
+        ),
+    }
+}
+
+fn handle_inspect_selection_frame(request: &JsonRpcRequest) -> JsonRpcResponse {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Params {
+        path: String,
+    }
+    let result = (|| -> opencad_core::Result<Value> {
+        let p: Params = serde_json::from_value(request.params.clone())?;
+        let frame = opencad_desktop::load_view_data(&p.path)?
+            .selection_frame
+            .ok_or_else(|| {
+                opencad_core::OpenCadError::validation("selection editing requires a part scene")
+            })?;
+        Ok(serde_json::to_value(frame)?)
     })();
     match result {
         Ok(value) => JsonRpcResponse::success(request.id.clone(), value),

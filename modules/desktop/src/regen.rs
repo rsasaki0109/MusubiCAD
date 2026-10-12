@@ -12,6 +12,7 @@ use opencad_kernel_occt::OcctGeometryKernel;
 pub struct TessellatedBody {
     pub mesh_set: MeshSet,
     pub face_history: Vec<FaceDerivation>,
+    pub reference_provenance: Vec<opencad_geometry::ReferenceProvenance>,
 }
 
 pub fn tessellate_active_body(
@@ -45,6 +46,7 @@ pub fn tessellate_active_body_detailed(
         Ok(TessellatedBody {
             mesh_set,
             face_history,
+            reference_provenance: report.reference_provenance,
         })
     }
 
