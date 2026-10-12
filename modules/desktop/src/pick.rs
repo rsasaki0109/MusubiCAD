@@ -80,6 +80,10 @@ pub struct ScreenSegment {
 /// Summary returned by `pick_document`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PickSummary {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selection_frame: Option<crate::selection::SelectionFrame>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selection_binding: Option<crate::selection::SelectionBinding>,
     pub x: f64,
     pub y: f64,
     pub width: u32,
@@ -167,6 +171,24 @@ pub fn build_pick_summary(data: &ViewData, pick: PickResult, options: &PickOptio
     );
 
     PickSummary {
+        selection_binding: data.selection_frame.as_ref().and_then(|frame| {
+            let hit = match &selection {
+                PickTarget::SketchLine { line_index, .. } => {
+                    crate::selection::SelectionHit::SketchLine { index: *line_index }
+                }
+                PickTarget::SolidTriangle {
+                    face_group_index: Some(index),
+                    ..
+                } => crate::selection::SelectionHit::FaceGroup { index: *index },
+                _ => return None,
+            };
+            frame
+                .bindings
+                .iter()
+                .find(|b| b.hits.contains(&hit))
+                .cloned()
+        }),
+        selection_frame: data.selection_frame.clone(),
         x: options.x,
         y: options.y,
         width: options.width,

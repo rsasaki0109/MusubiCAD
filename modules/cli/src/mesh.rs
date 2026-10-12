@@ -53,6 +53,7 @@ pub fn mesh_document(input: &str, options: &MeshOptions) -> Result<MeshSummary> 
             RenderScene::from_mesh_set(&mesh_set)?
         };
         ViewData {
+            selection_frame: None,
             scene,
             overlay: SketchOverlay::default(),
             name: String::new(),

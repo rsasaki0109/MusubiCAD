@@ -23,6 +23,9 @@ const viewportBtn = document.getElementById("viewport-btn");
 const createBtn = document.getElementById("create-btn");
 
 let documentLoadSequence = 0;
+let previewSelectionFrame = null;
+let selectedBinding = null;
+let selectedFrame = null;
 let featureTree = null;
 let reviewedFeatureEdit = null;
 let featureBusy = false;
@@ -325,6 +328,9 @@ function renderSelection(summary) {
 }
 
 function clearSelection() {
+  selectedBinding = null;
+  selectedFrame = null;
+  document.getElementById("selection-edit").hidden = true;
   renderInfo(selectionInfo, [["Kind", "none"]]);
   renderHighlight([]);
   clearParameterFocus();
@@ -343,6 +349,17 @@ function renderHighlight(segments) {
 }
 
 function handlePickSummary(summary, sourceLabel) {
+  cancelFeatureReview();
+  selectedBinding = null;
+  selectedFrame = null;
+  const frame = summary.selection_frame;
+  const matchesPreview = sourceLabel !== "preview" || (frame?.source_revision === previewSelectionFrame?.source_revision && frame?.scene_revision === previewSelectionFrame?.scene_revision);
+  const currentSource = frame?.source_revision === featureTree?.revision;
+  if (summary.selection_binding && matchesPreview && currentSource) {
+    selectedBinding = summary.selection_binding;
+    selectedFrame = frame;
+  }
+  renderSelectedDimensionForm();
   renderSelection(summary);
   renderHighlight(summary.highlight_segments_px ?? []);
   if (summary.selection.kind === "none") {
@@ -358,21 +375,24 @@ function handlePickSummary(summary, sourceLabel) {
     showReferenceIntent(refId).catch((error) => setStatus(`Error: ${error}`));
   }
   const label = summary.selection.kind.replaceAll("_", " ");
-  const relatedNames = focusRelatedParameters(
-    relatedParameterIds(summary.selection, summary),
-  );
+  // Related parameter/name guesses remain display hints; selecting geometry
+  // does not focus an editable parameter or create an inferred mutation.
+  const relatedNames = [];
   let message =
     sourceLabel === "preview" ? `Selected ${label}` : `3D viewport: ${label}`;
   if (relatedNames.length) {
     message += ` — related: ${relatedNames.join(", ")}`;
   }
+  if (!selectedBinding) message += " — no current unique editable source binding; refresh or select supported geometry.";
   setStatus(message);
 }
 
 async function pickAtPreview(event) {
-  if (!currentPath) {
+  if (!currentPath || documentMutationBusy) {
     return;
   }
+  const path = currentPath;
+  const sequence = documentLoadSequence;
   const coords = previewImageCoords(event);
   if (!coords) {
     return;
@@ -381,10 +401,11 @@ async function pickAtPreview(event) {
   setStatus(`Picking at ${coords.x.toFixed(0)}, ${coords.y.toFixed(0)}…`);
   try {
     const summary = await invoke("pick_document_cmd", {
-      path: currentPath,
+      path,
       x: coords.x,
       y: coords.y,
     });
+    if (sequence !== documentLoadSequence || currentPath !== path || documentMutationBusy) return;
     handlePickSummary(summary, "preview");
   } catch (error) {
     setStatus(`Error: ${error}`);
@@ -688,6 +709,7 @@ async function loadDocument(path, options = {}) {
   clearIntent();
 
   if (previewResult.status === "rejected") {
+    previewSelectionFrame = null;
     preview.removeAttribute("src");
     preview.alt = "No preview";
     renderInfo(previewInfo, [["Preview", "unavailable"]]);
@@ -695,6 +717,7 @@ async function loadDocument(path, options = {}) {
     return;
   }
   const previewData = previewResult.value;
+  previewSelectionFrame = previewData.selection_frame ?? null;
   preview.src = `data:image/png;base64,${previewData.png_base64}`;
   preview.alt = previewData.name;
 
@@ -847,7 +870,7 @@ function cancelFeatureReview() {
   document.getElementById("feature-review").hidden = true;
 }
 
-async function reviewFeatureEdit(edit) {
+async function reviewFeatureEdit(edit, selectionEdit = null) {
   if (featureBusy || documentMutationBusy || !featureTree || !currentPath) return;
   cancelFeatureReview();
   featureBusy = true;
@@ -857,9 +880,11 @@ async function reviewFeatureEdit(edit) {
   const sequence = documentLoadSequence;
   setStatus("Verifying feature edit…");
   try {
-    const plan = await invoke("plan_feature_edit_cmd", { path, revision, edit });
+    const plan = selectionEdit
+      ? await invoke("plan_selection_edit_cmd", { path, edit: selectionEdit })
+      : await invoke("plan_feature_edit_cmd", { path, revision, edit });
     if (reviewSequence !== featureReviewSequence || sequence !== documentLoadSequence || path !== currentPath || revision !== featureTree?.revision) return;
-    reviewedFeatureEdit = { path, revision, edit: plan.edit };
+    reviewedFeatureEdit = { path, revision, edit: plan.edit, selectionEdit };
     const volume = plan.evidence.volume_m3;
     const admitted = plan.edit;
     const detail = admitted.operation === "set_expression" ? `${admitted.field} = ${admitted.expr}`
@@ -929,7 +954,9 @@ document.getElementById("feature-apply").addEventListener("click", async () => {
   featureBusy = true;
   documentMutationBusy = true;
   try {
-    const result = await invoke("apply_feature_edit_cmd", { ...reviewed, history: documentHistoryState?.history ?? null });
+    const result = reviewed.selectionEdit
+      ? await invoke("apply_selection_edit_cmd", { path: reviewed.path, edit: reviewed.selectionEdit, history: documentHistoryState?.history ?? null })
+      : await invoke("apply_feature_edit_cmd", { path: reviewed.path, revision: reviewed.revision, edit: reviewed.edit, history: documentHistoryState?.history ?? null });
     if (currentPath === reviewed.path) {
       acceptDocumentHistory(result.history);
       await loadDocument(currentPath, { keepParamHistory: true });
@@ -937,4 +964,29 @@ document.getElementById("feature-apply").addEventListener("click", async () => {
     }
   } catch (error) { setStatus(`Edit refused: ${error}`); }
   finally { featureBusy = false; documentMutationBusy = false; cancelFeatureReview(); }
+});
+
+function renderSelectedDimensionForm() {
+  const form = document.getElementById("selection-edit");
+  form.hidden = !selectedBinding;
+  if (!selectedBinding) return;
+  document.getElementById("selection-source").textContent = `Source: ${selectedBinding.target.kind} → ${selectedBinding.feature_id}`;
+  const fields = document.getElementById("selection-field"); fields.replaceChildren();
+  selectedBinding.fields.forEach(field => {
+    const option = document.createElement("option"); option.value = field.field; option.textContent = `${field.field} (${field.unit_hint})`; fields.append(option);
+  });
+  updateSelectedDimensionExpression();
+}
+function updateSelectedDimensionExpression() {
+  cancelFeatureReview();
+  const field = selectedBinding?.fields.find(f => f.field === document.getElementById("selection-field").value);
+  document.getElementById("selection-expr").value = field?.expr ?? "";
+}
+document.getElementById("selection-field").addEventListener("change", updateSelectedDimensionExpression);
+document.getElementById("selection-expr").addEventListener("input", cancelFeatureReview);
+document.getElementById("selection-edit").addEventListener("submit", event => {
+  event.preventDefault();
+  if (!selectedBinding || !selectedFrame) return;
+  const edit = { source_revision: selectedFrame.source_revision, scene_revision: selectedFrame.scene_revision, target: selectedBinding.target, field: document.getElementById("selection-field").value, expr: document.getElementById("selection-expr").value.trim() };
+  reviewFeatureEdit(null, edit);
 });

@@ -13,6 +13,7 @@ pub mod regen;
 pub mod regenerate;
 pub mod related_parameters;
 pub mod scene_query;
+pub mod selection;
 pub mod smoke;
 pub mod template;
 pub mod viewport;

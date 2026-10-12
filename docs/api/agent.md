@@ -1074,3 +1074,7 @@ strip the wire guard or add a relationship by editing JSON directly.
 ## Feature editor gateway
 
 `opencad.list_features`, `opencad.plan_feature_edit`, and `opencad.apply_feature_edit` delegate to the same verified backend as Tauri. Read the [typed feature edit contract](feature-editor.md); revision and explicit units are mandatory for mutations.
+
+## Semantic selection gateway
+
+`opencad.inspect_selection_frame`, `opencad.plan_selection_edit` and `opencad.apply_selection_edit` expose the [selection editing contract](selection-editing.md). Pixel picks also return bindings; submit stable target IDs and current source/scene revisions, never inferred feature names or renderer indices.

@@ -172,3 +172,7 @@ bracket's under-constrained sketch before editing it.
 ## Feature editor tools
 
 `list_features`, `plan_feature_edit`, and `apply_feature_edit` provide the [shared part editor contract](feature-editor.md). The local stdio parity test compares the Tauri helpers and MCP source/history at every step; it does not establish an external host run.
+
+## Semantic selection tools
+
+`inspect_selection_frame`, `plan_selection_edit` and `apply_selection_edit` share the Tauri backend [selection contract](selection-editing.md). The native frame query does not rasterize or write. The GPU-free styled `preview_document` image remains a separate API and is not a selection token. Actual MCP stdio source/history parity and local Linux Tauri pointer-selection evidence are included; no external host or paid eval is claimed.

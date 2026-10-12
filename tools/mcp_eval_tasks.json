@@ -1129,6 +1129,82 @@
           }
         }
       ]
+    },
+    {
+      "id": "semantic_selection_edit",
+      "source": "examples/ellipse_plate.ocad.d",
+      "document": "semantic_selection_edit.ocad.d",
+      "prompt": "In {document}, add the declared face ref ref:face:ellipse_top with created_by feature:ellipse_body and role top using the verified semantic_ref_patch in examples/agent/semantic_selection_edit.json. Read inspect_selection_frame (or pick_document) for its actual source/scene revision and declared binding. Use plan_selection_edit and apply_selection_edit to change that selected extrusion length_expr to 10 mm, preserving sketch:ellipse, ent:ellipse, the profile reference and all original named parameters. Do not bind a mutation from inferred feature names/roles, bypass the selection tools, or edit generated coordinates. Preserve major_radius 30 mm, minor_radius 20 mm, axis_angle_rad 30 degrees and thickness parameter 6 mm; only the feature expression is changed. Regenerate; exact volume pi*30*20*10 = 18849.555922 mm3.",
+      "expected_volume_mm3": 18849.55592153876,
+      "required_parameters": [
+        "major_radius",
+        "minor_radius",
+        "axis_angle_rad",
+        "thickness"
+      ],
+      "expected_ellipse_sources": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "entity_id": "ent:ellipse",
+          "center": "ent:center",
+          "major_radius": "major_radius",
+          "minor_radius": "minor_radius",
+          "axis_angle": "axis_angle_rad"
+        }
+      ],
+      "expected_feature_editor": {
+        "order": [
+          "feature:ellipse_sketch",
+          "feature:ellipse_body"
+        ],
+        "nodes": {
+          "feature:ellipse_body": {
+            "suppressed": false,
+            "definition": {
+              "type": "extrude",
+              "sketch_feature": "feature:ellipse_sketch",
+              "profile_ref": "sketch:ellipse/profile:outer",
+              "operation": "new_body",
+              "length_expr": "10 mm",
+              "extent": {
+                "type": "distance",
+                "length": {
+                  "value_si": 0.006
+                }
+              }
+            }
+          }
+        }
+      },
+      "expected_selection_ref": {
+        "ref_id": "ref:face:ellipse_top",
+        "created_by": "feature:ellipse_body",
+        "role": "top"
+      },
+      "expected_parameter_expressions": {
+        "major_radius": "0.03 m",
+        "minor_radius": "0.02 m",
+        "axis_angle_rad": "0.5235987755982989 rad",
+        "thickness": "6 mm"
+      },
+      "expected_sketch_points": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "point_id": "ent:center",
+          "position_m": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "sketch_id": "sketch:ellipse",
+          "point_id": "ent:anchor",
+          "position_m": [
+            0.0,
+            0.0
+          ]
+        }
+      ]
     }
   ]
 }

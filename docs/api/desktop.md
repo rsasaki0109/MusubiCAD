@@ -136,3 +136,7 @@ The Linux workflow downloads its AppImage and runs this mode with
 ## Part feature editor (MCAD-P14-002)
 
 See [feature-editor.md](feature-editor.md) for admitted create/edit/reorder/suppress forms, shared Tauri/Agent/MCP commands, explicit-unit review/apply, verified parameter/history publication and intentional part-only limitations.
+
+## Selection to reviewed dimension patch (MCAD-P14-003)
+
+Part previews/picks carry backend source/scene revisions and uniquely admitted source bindings. `plan_selection_edit_cmd` and `apply_selection_edit_cmd` rebind declared face refs or authored overlay IDs before the verified feature gateway. Read [selection-editing.md](selection-editing.md); name/role guesses remain display hints and do not authorize mutation.

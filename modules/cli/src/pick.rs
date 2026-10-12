@@ -99,6 +99,7 @@ mod tests {
         let scene = RenderScene::from_mesh_set(&opencad_geometry::MeshSet::box_prism(0.08, 0.006))
             .expect("scene");
         let data = ViewData {
+            selection_frame: None,
             scene,
             overlay,
             name: String::new(),
