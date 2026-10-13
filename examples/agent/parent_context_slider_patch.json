@@ -1,0 +1,38 @@
+{
+  "operations": [
+    {
+      "type": "set_instance_articulation",
+      "instance_id": "instance:left",
+      "articulation": {
+        "source_doc": "doc:art_mechanism",
+        "source_revision": "d5cda8de4728c9315fb401825847b5fff85ceb2d2a28bd7e183cfce117df62cc",
+        "positions": [],
+        "context_constraints": [
+          {
+            "id": "mate:parent_context",
+            "joint_id": "joint:hinge",
+            "moving": {
+              "instance_path": [
+                "instance:left",
+                "instance:link"
+              ],
+              "source_doc": "doc:art_mechanism",
+              "connector_id": "connector:link_tip"
+            },
+            "target": {
+              "instance_path": [
+                "instance:target"
+              ],
+              "source_doc": "doc:art_pair",
+              "connector_id": "connector:target"
+            },
+            "relation": {
+              "type": "signed_distance",
+              "distance": "0 mm"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

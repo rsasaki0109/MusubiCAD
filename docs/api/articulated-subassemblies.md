@@ -97,3 +97,73 @@ prismatic displacement, all three collision pair categories, strict readers,
 round trips and opaque Undo/Redo. The MCP eval has independent leaf-frame and
 child-file checks; it does not compute expected poses with production helpers.
 This stage earns no full flexible-subassembly maturity credit.
+
+## Parent-context constraints (P13-012 / ADR-061)
+
+Current main additionally admits parent-owned analytic connector constraints.
+The `set_instance_articulation` object can contain `context_constraints`; a
+constrained component's mandatory wire kind is `flexible_assembly`, which also
+refuses P13-011 readers. Removing the last constraint restores the earlier guard.
+Use exact named connector IDs returned by `inspect_articulation_source` (its
+`connectors` field), retaining the assembly document that owns each definition.
+
+```json
+{
+  "type": "set_instance_articulation",
+  "instance_id": "instance:left",
+  "articulation": {
+    "source_doc": "doc:art_mechanism",
+    "source_revision": "<inspected child revision>",
+    "positions": [],
+    "context_constraints": [{
+      "id": "mate:parent_context",
+      "joint_id": "joint:hinge",
+      "moving": {"instance_path":["instance:left","instance:link"],"source_doc":"doc:art_mechanism","connector_id":"connector:link_tip"},
+      "target": {"instance_path":["instance:target"],"source_doc":"doc:art_pair","connector_id":"connector:target"},
+      "relation": {"type":"signed_distance","distance":"25 mm"}
+    }]
+  }
+}
+```
+
+The outer instances are fixed. The moving connector belongs to the exact
+immediate child part link moved by a declared independent bounded prismatic or
+revolute joint beneath the grounded child root. The target connector belongs to
+a fixed direct parent part. This solves internal motion from the parent context;
+it does not alter saved child coordinates or child source. Each independent
+movable driver in that flexible child must have exactly one saved coordinate or
+one constraint; followers derive through existing couplings without extra DOF.
+
+`signed_distance` measures the moving origin minus the target origin along the
+target connector's +Z normal, in metres. It drives prismatic motion; zero makes
+planes coincident, without claiming full three-dimensional point coincidence.
+A zero/near-zero projected motion axis refuses as singular.
+
+For revolute motion use `{"type":"signed_angle","angle":"180 deg","turns":0}`.
+The angle is oriented from target +Z to moving +Z about the world joint axis.
+Both normals must be perpendicular to that axis. Specify an angle in [-180,180]
+degrees and an integer `turns` from -32 to 32 to select the displacement branch.
+The result is angle minus rest angle plus full turns; joint and follower limits
+still apply. No clamping, wrapping or branch guessing occurs.
+
+Unsupported/free outer placements, undeclared/unbound drivers, conflicting saved
+and solved drivers, follower inputs, repeated IDs, wrong owners, missing named
+connectors, nested flexible scopes, root/child patterns and root couplings refuse.
+The total saved-plus-solved coordinate budget is 64 per copy. Source snapshots,
+mandatory verification and opaque Undo/Redo use the same publication gate as
+P13-011. The neutral physical leaf scene is shared by static geometry, review,
+BOM and complete internal/external collision checks. An admitted fully bound
+system reports `context_dof:0` in `regen_document`; DOF assertions use that
+system, rather than the generic root mate estimate. Hierarchical motion, reach,
+URDF and HTML mechanics remain refused. No new sampling is introduced.
+
+`examples/parent_context_slider.ocad.d` uses a rotated parent to drive 25 mm of
+child displacement; `examples/parent_context_hinge.ocad.d` uses a parent 180°
+connector-angle target to drive 90° of child rotation. Five 10 × 20 × 30 mm boxes
+sum to 30000 mm³. The right copy remains at rest. The supplied patches change
+only the parent constraint to 0 mm / 90°, respectively. Apply on a disposable
+copy and inspect the five scoped leaves. The independent eval grades source
+ownership, child-file hashes, DOF, frames, bounds and volumes.
+
+P13-012 supplies this admitted flexible-subassembly workflow; general nonlinear
+six-DOF constraints, closed loops and arbitrary deeper scopes remain deferred.

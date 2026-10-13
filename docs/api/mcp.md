@@ -197,3 +197,26 @@ instance paths and SI placement/bounds/volume evidence. See
 the independently graded `articulated_copy_zero` eval. Hierarchical motion,
 reach, URDF and HTML mechanics refuse; this is P13-011, not parent-context
 flexibility. Available from current main, after published v0.2.0.
+
+
+## Parent-context flexible constraints (P13-012)
+
+Current main accepts `context_constraints` in `set_instance_articulation`.
+Inspect exact child joint/connector IDs and revision with
+`inspect_articulation_source`; the returned `connectors` retain source ownership.
+Bind moving `[parent_instance, child_link]` plus owning child DocumentId and
+ConnectorId, and target `[fixed_parent_part]` plus the parent DocumentId and
+ConnectorId. Author the constraint in a DesignPatch, dry-run, review and apply.
+Never modify a child to move one copy. The mandatory `flexible_assembly` guard
+refuses older readers, including P13-011 readers.
+
+Outer instances must be fixed; each independent flexible-child coordinate must
+be explicitly saved or solved exactly once. Signed-distance constraints drive
+bounded prismatic joints; signed-angle constraints drive bounded revolute joints
+with explicit `turns` branch selection. Followers remain derived. Unknown,
+ambiguous, singular, contradictory, unbound, wrong-unit/range or unsupported
+scopes refuse. Static physical consumers share solved leaves;
+`regen_document.context_dof` is zero for the admitted bound system. Hierarchical
+motion/reach/URDF/HTML still refuse. See ADR-061, the articulated-subassembly API,
+`examples/parent_context_slider.ocad.d`, `parent_context_hinge.ocad.d` and their
+parent-only patches. Published v0.2.0 predates this API.

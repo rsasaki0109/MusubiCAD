@@ -11,6 +11,8 @@ pub struct InstanceArticulation {
     pub source_doc: DocumentId,
     pub source_revision: String,
     pub positions: Vec<ChildJointCoordinate>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub context_constraints: Vec<crate::context::ContextConstraint>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -67,8 +69,10 @@ pub fn validate_articulations(model: &AssemblyModel) -> Result<()> {
         let component = model
             .component(&instance.component)
             .ok_or_else(|| OpenCadError::validation("articulation has unknown component"))?;
-        if component.source_kind != ComponentSourceKind::ArticulatedAssembly
-            || component.source_doc != articulation.source_doc
+        if !matches!(
+            component.source_kind,
+            ComponentSourceKind::ArticulatedAssembly | ComponentSourceKind::FlexibleAssembly
+        ) || component.source_doc != articulation.source_doc
         {
             return Err(OpenCadError::validation(
                 "articulation source owner or mandatory wire guard mismatch",
@@ -103,7 +107,29 @@ pub fn validate_articulations(model: &AssemblyModel) -> Result<()> {
             .instances
             .iter()
             .any(|i| i.component == component.id && i.articulation.is_some());
-        if has != (component.source_kind == ComponentSourceKind::ArticulatedAssembly) {
+        let context = model
+            .instances
+            .iter()
+            .filter(|i| i.component == component.id)
+            .any(|i| {
+                i.articulation
+                    .as_ref()
+                    .is_some_and(|a| !a.context_constraints.is_empty())
+            });
+        let expected = if context {
+            ComponentSourceKind::FlexibleAssembly
+        } else if has {
+            ComponentSourceKind::ArticulatedAssembly
+        } else {
+            ComponentSourceKind::Assembly
+        };
+        if (has
+            || matches!(
+                component.source_kind,
+                ComponentSourceKind::ArticulatedAssembly | ComponentSourceKind::FlexibleAssembly
+            ))
+            && component.source_kind != expected
+        {
             return Err(OpenCadError::validation(
                 "orphan or missing articulated assembly wire guard",
             ));
@@ -114,10 +140,18 @@ pub fn validate_articulations(model: &AssemblyModel) -> Result<()> {
             ));
         }
     }
+    crate::context::validate_context_source(model)?;
     Ok(())
 }
 
 impl AssemblyModel {
+    pub fn has_context_constraints(&self) -> bool {
+        self.instances.iter().any(|i| {
+            i.articulation
+                .as_ref()
+                .is_some_and(|a| !a.context_constraints.is_empty())
+        })
+    }
     pub fn has_articulations(&self) -> bool {
         self.instances.iter().any(|i| i.articulation.is_some())
     }

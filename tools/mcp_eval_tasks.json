@@ -1520,6 +1520,479 @@
           ]
         }
       ]
+    },
+    {
+      "id": "parent_context_slider",
+      "source": "examples/parent_context_slider.ocad.d",
+      "document": "pair.ocad.d",
+      "prompt": "The assembly {document} has two copies of one child mechanism and a fixed parent target connector. Inspect child joint/connector ownership and revision. Change only instance:left mate:parent_context relation to a signed distance of 0 mm. Keep positions empty, retain exact structured moving/target references, and do not modify any child or the right copy. Dry-run, review and apply through set_instance_articulation, regenerate, and report all five physical leaves and the bound context DOF.",
+      "expected_volume_mm3": 30000,
+      "required_parameters": [],
+      "expected_instances": 3,
+      "expected_mates": 0,
+      "expected_instance_ids": [
+        "instance:left",
+        "instance:right",
+        "instance:target"
+      ],
+      "expected_source_kind": "flexible_assembly",
+      "expected_context_dof": 0,
+      "expected_articulations": {
+        "instance:left": {
+          "source_doc": "doc:art_mechanism",
+          "source_revision": "d5cda8de4728c9315fb401825847b5fff85ceb2d2a28bd7e183cfce117df62cc",
+          "positions": [],
+          "context_constraints": [
+            {
+              "id": "mate:parent_context",
+              "joint_id": "joint:hinge",
+              "moving": {
+                "instance_path": [
+                  "instance:left",
+                  "instance:link"
+                ],
+                "source_doc": "doc:art_mechanism",
+                "connector_id": "connector:link_tip"
+              },
+              "target": {
+                "instance_path": [
+                  "instance:target"
+                ],
+                "source_doc": "doc:art_pair",
+                "connector_id": "connector:target"
+              },
+              "relation": {
+                "type": "signed_distance",
+                "distance": "0 mm"
+              }
+            }
+          ]
+        }
+      },
+      "expected_child_tree_sha256": "bf68a35ef81ada9e8cbfbabee094c3cc951a893dc901ea821b9432e43c311908",
+      "expected_articulated_leaves": [
+        {
+          "instance_path": [
+            "instance:left",
+            "instance:anchor"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0.06,
+              0
+            ],
+            "rotation": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                -1
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.01,
+            0.03,
+            0.02
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:left",
+            "instance:link"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0,
+              0
+            ],
+            "rotation": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                -1
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.01,
+            0.03,
+            0.02
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:right",
+            "instance:anchor"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0.2,
+              -0.06
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:right",
+            "instance:link"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0.2,
+              0
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:target"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.2,
+              0,
+              0
+            ],
+            "rotation": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                -1
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.01,
+            0.03,
+            0.02
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parent_context_hinge",
+      "source": "examples/parent_context_hinge.ocad.d",
+      "document": "pair.ocad.d",
+      "prompt": "The assembly {document} has two copies of one child mechanism and a fixed parent target connector. Inspect child joint/connector ownership and revision. Change only instance:left mate:parent_context relation to a signed angle of 90 deg with turns 0. Keep positions empty, retain exact structured moving/target references, and do not modify any child or the right copy. Dry-run, review and apply through set_instance_articulation, regenerate, and report all five physical leaves and the bound context DOF.",
+      "expected_volume_mm3": 30000,
+      "required_parameters": [],
+      "expected_instances": 3,
+      "expected_mates": 0,
+      "expected_instance_ids": [
+        "instance:left",
+        "instance:right",
+        "instance:target"
+      ],
+      "expected_source_kind": "flexible_assembly",
+      "expected_context_dof": 0,
+      "expected_articulations": {
+        "instance:left": {
+          "source_doc": "doc:art_mechanism",
+          "source_revision": "f3281549e91d5dbe0e0101372671c214fec65ed4cb70a6f365209cddceb28330",
+          "positions": [],
+          "context_constraints": [
+            {
+              "id": "mate:parent_context",
+              "joint_id": "joint:hinge",
+              "moving": {
+                "instance_path": [
+                  "instance:left",
+                  "instance:link"
+                ],
+                "source_doc": "doc:art_mechanism",
+                "connector_id": "connector:link_tip"
+              },
+              "target": {
+                "instance_path": [
+                  "instance:target"
+                ],
+                "source_doc": "doc:art_pair",
+                "connector_id": "connector:target"
+              },
+              "relation": {
+                "type": "signed_angle",
+                "angle": "90 deg",
+                "turns": 0
+              }
+            }
+          ]
+        }
+      },
+      "expected_child_tree_sha256": "eb8f474992596500bb9ad4f4819a530e0614ca723c4040c6bdddb34f8cb91c4e",
+      "expected_articulated_leaves": [
+        {
+          "instance_path": [
+            "instance:left",
+            "instance:anchor"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0,
+              -0.06
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:left",
+            "instance:link"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0,
+              0
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:right",
+            "instance:anchor"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0.2,
+              -0.06
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:right",
+            "instance:link"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0.2,
+              0
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:target"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.2,
+              0,
+              0
+            ],
+            "rotation": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.01,
+            0.02,
+            0.03
+          ]
+        }
+      ]
     }
   ]
 }

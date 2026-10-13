@@ -10,6 +10,7 @@ are defined in the [canonical roadmap](roadmap.md).
 
 | Area | Status | Current evidence | Remaining work |
 |---|---|---|---|
+| Parent-context flexible constraints (MCAD-P13-012) | Complete upon PR merge | ADR-061; exact connector scopes/owners, analytic distance/angle solve, explicit angular branch, bounded unique coordinates/coupled followers, fully bound DOF and shared physical leaves; DesignPatch/schema/migration/history, Mock/OCCT analytic fixtures, actual MCP, examples/guide/skill/eval | Fixed outer instances and immediate root-child drivers only; unsupported nonlinear/deeper/free scopes and motion/reach/URDF/HTML refuse; Mock exact mesh intersection/inertia refuse |
 | Independent articulated copies (MCAD-P13-011) | Complete upon PR merge | ADR-059/060; strict parent-owned coordinates, source inspection/snapshots, scoped physical leaves, consumer gates, DesignPatch/history/schema round trips, both-kernel analytic example, guide/skill/eval | Parent-context constraints remain P13-012; full hierarchical DOF/motion/reach/URDF/HTML and nested articulated/pattern scopes refuse; Mock exact mesh intersection/inertia refuse; no maturity credit |
 | Coupled gear/rack joints (MCAD-P13-007) | Implemented | ADR-056; source joint ID relations, signed dimensionless/SI coefficients, deterministic DAG and range/owner validation, DesignPatch/authoring/history/schema migration with legacy-reader wire refusal; shared read-only unit-bearing pose API, derived follower controls, both-kernel analytic bounds/centres/volume and native internal-moving-pair collisions, gear URDF mimic, example/guide/skill/eval | Sampled independent-driver grid only; no inferred phase/tooth contact; rack URDF and coupled HTML refused; Mock exact imported-solid Boolean support remains absent (bounded member compounds added by ADR-060); generic mate DOF estimate unchanged |
 | Exploded assembly presentations (MCAD-P13-006) | Implemented | ADR-055; stable named views and explicit SI offsets, DesignPatch add/set/remove, schemas/migration/history, both-kernel analytic translated mesh bounds and volume, read-only deterministic PNG preview/export via CLI/Agent/MCP and desktop backend, rigid-child physical report invariance, example/guide/skill/eval | Top-level declared instances only; child assembly moves as one compound; internal paths, pattern targets, rotation/spacing, exploded drawings and mechanical-format exports deferred; f32 render precision |
@@ -301,3 +302,16 @@ copy/copy and parent/child collision tests, expanded/packed round trips, real
 MCP apply/review/Agent Undo/Redo, example, guide, skill and independently graded
 eval accompany the task. No parent-context constraint or full flexibility
 credit: assembly remains 68; general 49.80 (about 50%), agent 89.
+
+
+P13-012 / ADR-061 completes an admitted parent-context flexible-subassembly
+workflow: parent connector constraints solve internal bounded prismatic/revolute
+drivers in one copy, preserving child bytes and other copies. Independent
+Mock/OCCT transforms/centres/dimensions/volumes, derived coupling ownership and
+unique zero DOF, full leaf collisions, strict reader/schema/migration round trips,
+source snapshots, verified actual MCP/review/history, examples, guide, skill and
+independent eval accompany the implementation. Existing unsupported consumers
+explicitly refuse; no nonlinear free-outer or continuous collision proof claimed.
+Only after this PR merges, assembly 68 → 70, weighted general 49.80 → 50.10
+(about 50%), agent operation 89 → 90. Before merge the baseline remains 50%/89%.
+The fixed rubric weights and all other component scores remain unchanged.

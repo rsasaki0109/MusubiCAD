@@ -69,6 +69,8 @@ impl AssemblyModel {
         }
         for instance in &mut self.instances {
             if let Some(pose) = &mut instance.articulation {
+                pose.context_constraints
+                    .sort_by(|a, b| a.id.as_str().cmp(b.id.as_str()));
                 pose.positions
                     .sort_by(|a, b| a.joint_id.as_str().cmp(b.joint_id.as_str()));
             }

@@ -18,6 +18,7 @@ pub struct SourceInspection {
     pub source_doc: String,
     pub source_revision: String,
     pub independent_joints: Vec<String>,
+    pub connectors: Vec<opencad_assembly::Connector>,
     pub can_articulate_child: bool,
     pub unsupported_reason: Option<String>,
     pub revision_precondition: opencad_ai::PatchPrecondition,
@@ -65,6 +66,7 @@ pub fn inspect(request: &SourceRequest) -> Result<SourceInspection> {
         source_doc: doc.metadata.id.as_str().to_owned(),
         source_revision: design_state_revision(&document_design_state(&doc))?,
         independent_joints: joints,
+        connectors: model.clone().sorted_deterministic().connectors,
         can_articulate_child,
         unsupported_reason,
         revision_precondition: opencad_ai::PatchPrecondition::revision_equals(
@@ -87,7 +89,7 @@ pub fn command(args: Vec<String>) -> Result<()> {
     Ok(())
 }
 pub fn requires_verification(doc: &OcadDocument, patch: &DesignPatch) -> bool {
-    doc.assembly.as_ref().is_some_and(|m|m.has_articulations()) || patch.operations.iter().any(|op|matches!(op,PatchOperation::SetInstanceArticulation{..}) || matches!(op,PatchOperation::AddInstance{instance} if instance.articulation.is_some()) || matches!(op,PatchOperation::AddComponent{component} if component.source_kind==opencad_assembly::ComponentSourceKind::ArticulatedAssembly))
+    doc.assembly.as_ref().is_some_and(|m|m.has_articulations()) || patch.operations.iter().any(|op|matches!(op,PatchOperation::SetInstanceArticulation{..}) || matches!(op,PatchOperation::AddInstance{instance} if instance.articulation.is_some()) || matches!(op,PatchOperation::AddComponent{component} if matches!(component.source_kind,opencad_assembly::ComponentSourceKind::ArticulatedAssembly | opencad_assembly::ComponentSourceKind::FlexibleAssembly)))
 }
 pub fn before_verification(
     path: &str,
