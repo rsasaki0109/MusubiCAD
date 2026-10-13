@@ -257,6 +257,33 @@ pub fn apply_assembly_patch(
     let mut removed_connectors = Vec::new();
     for operation in operations {
         match operation {
+            PatchOperation::SetInstanceArticulation {
+                instance_id,
+                articulation,
+            } => {
+                let instance = find_instance_mut(model, instance_id)?;
+                instance.articulation = articulation.clone();
+                let component_id = instance.component.clone();
+                let active = model
+                    .instances
+                    .iter()
+                    .any(|i| i.component == component_id && i.articulation.is_some());
+                let component = model
+                    .components
+                    .iter_mut()
+                    .find(|c| c.id == component_id)
+                    .ok_or_else(|| OpenCadError::validation("unknown articulation component"))?;
+                if component.source_kind == opencad_assembly::ComponentSourceKind::Part {
+                    return Err(OpenCadError::validation(
+                        "cannot articulate a part component",
+                    ));
+                }
+                component.source_kind = if active {
+                    opencad_assembly::ComponentSourceKind::ArticulatedAssembly
+                } else {
+                    opencad_assembly::ComponentSourceKind::Assembly
+                };
+            }
             PatchOperation::AddJointCoupling { coupling } => {
                 check_new_id(
                     coupling.id().as_str(),
@@ -512,6 +539,7 @@ pub fn apply_assembly_patch(
     validate_patterns(model)?;
     validate_joints(&model.joints, &model.mates)?;
     opencad_assembly::validate_exploded_views(model)?;
+    opencad_assembly::validate_articulations(model)?;
     opencad_assembly::ordered_couplings(model)?;
     if !model.couplings.is_empty() {
         opencad_assembly::kinematic_tree(model)?;
@@ -561,6 +589,16 @@ pub fn diff_assembly_models(before: &AssemblyModel, after: &AssemblyModel) -> De
     {
         match (before_instances.get(id), after_instances.get(id)) {
             (Some(before_instance), Some(after_instance)) => {
+                if before_instance.articulation != after_instance.articulation {
+                    changes.push(SemanticChange::AssemblyInstanceChanged {
+                        id: id.clone(),
+                        field: "articulation".into(),
+                        before: serde_json::to_string(&before_instance.articulation)
+                            .unwrap_or_default(),
+                        after: serde_json::to_string(&after_instance.articulation)
+                            .unwrap_or_default(),
+                    });
+                }
                 if before_instance.placement != after_instance.placement {
                     changes.push(SemanticChange::AssemblyInstanceChanged {
                         id: id.clone(),

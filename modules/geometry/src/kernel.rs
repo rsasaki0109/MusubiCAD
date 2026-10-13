@@ -255,6 +255,11 @@ pub struct CircularEdgeGeometry {
 }
 /// Kernel-neutral geometry operations.
 pub trait GeometryKernel {
+    /// False only for test/plumbing bodies without exact physical rigid placement.
+    fn has_exact_rigid_placement(&self, _body: &KernelBody) -> bool {
+        true
+    }
+
     /// Import an already admitted closed triangle shell in metres.
     fn import_triangle_solid(&self, _solid: &crate::TriangleSolid) -> Result<KernelBody> {
         Err(OpenCadError::validation(
@@ -487,6 +492,7 @@ pub trait GeometryKernel {
 /// In-memory mock kernel for tests and headless pipelines without OCCT.
 #[derive(Debug, Default)]
 pub struct MockGeometryKernel {
+    compounds: std::cell::RefCell<std::collections::BTreeMap<u64, Vec<KernelBody>>>,
     cubic_wires: std::cell::RefCell<std::collections::BTreeMap<u64, crate::CubicBezierFrame>>,
     cubic_bodies: std::cell::RefCell<std::collections::BTreeMap<u64, crate::CubicBezierPrism>>,
     ellipse_wires: std::cell::RefCell<std::collections::BTreeMap<u64, crate::EllipseFrame>>,
@@ -520,6 +526,11 @@ impl MockGeometryKernel {
         KernelBody::new(id)
     }
     fn refuse_ellipse_edit(&self, body: &KernelBody) -> Result<()> {
+        if self.compounds.borrow().contains_key(&body.0) {
+            return Err(OpenCadError::validation(
+                "Mock compound shape/topology/inertia operation unsupported",
+            ));
+        }
         if self.cubic_bodies.borrow().contains_key(&body.0) {
             return Err(OpenCadError::validation(
                 "Mock cubic shape/topology operation is unsupported; use OCCT",
@@ -546,6 +557,13 @@ impl MockGeometryKernel {
 }
 
 impl GeometryKernel for MockGeometryKernel {
+    fn has_exact_rigid_placement(&self, body: &KernelBody) -> bool {
+        self.imported_meshes.borrow().contains_key(&body.0)
+            || self.cubic_bodies.borrow().contains_key(&body.0)
+            || self.ellipse_bodies.borrow().contains_key(&body.0)
+            || self.compounds.borrow().contains_key(&body.0)
+    }
+
     fn import_triangle_solid(&self, solid: &crate::TriangleSolid) -> Result<KernelBody> {
         Ok(self.store_mesh(solid.clone()))
     }
@@ -860,6 +878,15 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
+        let members = self.compounds.borrow().get(&body.0).cloned();
+        if let Some(members) = members {
+            let meshes = members
+                .iter()
+                .map(|m| self.tessellate(m, settings))
+                .collect::<Result<Vec<_>>>()?;
+            return Ok(MeshSet::merge(&meshes));
+        }
+
         self.refuse_ellipse_edit(body)?;
 
         if let Some(mesh) = self.imported_meshes.borrow().get(&body.0) {
@@ -876,6 +903,30 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
+        let members = self.compounds.borrow().get(&body.0).cloned();
+        if let Some(members) = members {
+            let properties = members
+                .iter()
+                .map(|m| self.mass_properties(m, density_kg_per_m3))
+                .collect::<Result<Vec<_>>>()?;
+            let volume: f64 = properties.iter().map(|p| p.volume_m3).sum();
+            if !volume.is_finite() || volume <= 0. {
+                return Err(OpenCadError::validation("Mock compound has invalid volume"));
+            }
+            let mut center = [0.; 3];
+            for props in &properties {
+                for (axis, value) in center.iter_mut().enumerate() {
+                    *value += props.center_of_mass[axis] * props.volume_m3 / volume;
+                }
+            }
+            return Ok(MassProperties {
+                volume_m3: volume,
+                area_m2: properties.iter().map(|p| p.area_m2).sum(),
+                mass_kg: properties.iter().map(|p| p.mass_kg).sum(),
+                center_of_mass: center,
+            });
+        }
+
         if let Some(prism) = self.cubic_bodies.borrow().get(&body.0) {
             return prism.mass_properties(density_kg_per_m3);
         }
@@ -915,6 +966,25 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
+        let members = self.compounds.borrow().get(&body.0).cloned();
+        if let Some(members) = members {
+            let mut bounds: Option<BoundingBox> = None;
+            for member in &members {
+                let next = self.bounding_box(member)?;
+                bounds = Some(match bounds {
+                    None => next,
+                    Some(mut b) => {
+                        for axis in 0..3 {
+                            b.min[axis] = b.min[axis].min(next.min[axis]);
+                            b.max[axis] = b.max[axis].max(next.max[axis]);
+                        }
+                        b
+                    }
+                });
+            }
+            return bounds.ok_or_else(|| OpenCadError::validation("empty Mock compound"));
+        }
+
         if let Some(prism) = self.cubic_bodies.borrow().get(&body.0) {
             return Ok(prism.bounding_box());
         }
@@ -1101,6 +1171,10 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
+        if self.compounds.borrow().contains_key(&body.0) {
+            return self.transform_body(body, RigidTransform::from_translation(translation_m));
+        }
+
         if self.cubic_bodies.borrow().contains_key(&body.0) {
             return self.transform_body(body, RigidTransform::from_translation(translation_m));
         }
@@ -1120,6 +1194,15 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
+        let members = self.compounds.borrow().get(&body.0).cloned();
+        if let Some(members) = members {
+            let moved = members
+                .into_iter()
+                .map(|member| self.transform_body(member, transform))
+                .collect::<Result<Vec<_>>>()?;
+            return self.make_compound(&moved);
+        }
+
         let cubic = self.cubic_bodies.borrow().get(&body.0).copied();
         if let Some(prism) = cubic {
             return Ok(self.store_cubic(prism.transformed(transform)?));
@@ -1140,6 +1223,45 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn make_compound(&self, bodies: &[KernelBody]) -> Result<KernelBody> {
+        if bodies.len() > 100000 {
+            return Err(OpenCadError::validation(
+                "Mock compound member budget exceeded",
+            ));
+        }
+        let tracked = bodies.iter().any(|b| {
+            self.imported_meshes.borrow().contains_key(&b.0)
+                || self.compounds.borrow().contains_key(&b.0)
+        });
+        if tracked {
+            let mut flat = Vec::new();
+            let mut pending: Vec<_> = bodies.iter().cloned().map(|body| (body, 0usize)).collect();
+            while let Some((body, depth)) = pending.pop() {
+                if depth >= 64 || flat.len() + pending.len() >= 100000 {
+                    return Err(OpenCadError::validation(
+                        "Mock compound depth/member budget exceeded",
+                    ));
+                }
+                let members = self.compounds.borrow().get(&body.0).cloned();
+                if let Some(members) = members {
+                    pending.extend(members.into_iter().map(|m| (m, depth + 1)));
+                } else if self.imported_meshes.borrow().contains_key(&body.0) {
+                    flat.push(body);
+                } else {
+                    return Err(OpenCadError::validation(
+                        "Mock physical compound requires tracked mesh members",
+                    ));
+                }
+            }
+            flat.reverse();
+            if flat.len() == 1 {
+                return Ok(flat[0].clone());
+            }
+            let mut store = self.compounds.borrow_mut();
+            let id = u64::MAX / 4 - store.len() as u64;
+            store.insert(id, flat);
+            return Ok(KernelBody::new(id));
+        }
+
         if bodies.len() > 1 {
             for body in bodies {
                 self.refuse_ellipse_edit(body)?;

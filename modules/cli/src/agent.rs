@@ -212,6 +212,7 @@ pub fn handle_agent_request_with_plugins(
         "opencad.import_dxf" => handle_import_dxf(request),
         "opencad.import_stl" => handle_import_stl(request),
         "opencad.plan_offset" => handle_plan_offset(request),
+        "opencad.inspect_articulation_source" => handle_inspect_articulation_source(request),
         "opencad.inspect_joint_pose" => handle_inspect_joint_pose(request),
         "opencad.inspect_projected_sketch" => handle_inspect_projected_sketch(request),
         "opencad.plan_curve_edit" => handle_plan_curve_edit(request),
@@ -459,7 +460,18 @@ fn handle_patch_apply_document(request: &JsonRpcRequest) -> JsonRpcResponse {
             opencad_ai::ExpectedEffect::SketchPointPosition { .. }
         )
     });
-    let verification = if params.verify || point_effect {
+    let dependencies =
+        match crate::articulation::before_verification(&params.path, &doc, &params.patch) {
+            Ok(value) => value,
+            Err(error) => {
+                return JsonRpcResponse::error(
+                    request.id.clone(),
+                    JsonRpcError::application_error(error.to_string()),
+                )
+            }
+        };
+    let original = doc.clone();
+    let verification = if params.verify || point_effect || dependencies.is_some() {
         let verification = verification_report(&params.path, &doc, &params.patch);
         if !verification.passed {
             return JsonRpcResponse::error(
@@ -482,6 +494,19 @@ fn handle_patch_apply_document(request: &JsonRpcRequest) -> JsonRpcResponse {
             request.id.clone(),
             JsonRpcError::application_error(err.to_string()),
         );
+    }
+    if let Some(dependencies) = &dependencies {
+        if let Err(err) = crate::articulation::ensure_sources_unchanged(
+            &params.path,
+            &original,
+            &doc,
+            dependencies,
+        ) {
+            return JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::application_error(err.to_string()),
+            );
+        }
     }
     if let Err(err) = write_ocad(&params.path, &doc) {
         return JsonRpcResponse::error(
@@ -595,6 +620,7 @@ fn handle_history_document(
             ),
         };
     }
+    let original = doc.clone();
     let mut history = params.history;
     let result = match direction {
         HistoryDirection::Undo => history.undo(&mut doc),
@@ -605,6 +631,25 @@ fn handle_history_document(
             request.id.clone(),
             JsonRpcError::application_error(err.to_string()),
         );
+    }
+    if original
+        .assembly
+        .as_ref()
+        .is_some_and(|m| m.has_articulations())
+        || doc.assembly.as_ref().is_some_and(|m| m.has_articulations())
+    {
+        let verified = (|| -> opencad_core::Result<()> {
+            let snapshot =
+                opencad_file::snapshot_assembly_sources(std::path::Path::new(&params.path), &doc)?;
+            regen::regen_ocad_document(&params.path, &doc)?;
+            crate::articulation::ensure_sources_unchanged(&params.path, &original, &doc, &snapshot)
+        })();
+        if let Err(err) = verified {
+            return JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::application_error(err.to_string()),
+            );
+        }
     }
     if let Err(err) = write_ocad(&params.path, &doc) {
         return JsonRpcResponse::error(
@@ -777,6 +822,29 @@ fn handle_plan_curve_edit(request: &JsonRpcRequest) -> JsonRpcResponse {
         }
     };
     match crate::curve_edit::plan(&params).and_then(|p| serde_json::to_value(p).map_err(Into::into))
+    {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(e) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(e.to_string()),
+        ),
+    }
+}
+
+fn handle_inspect_articulation_source(request: &JsonRpcRequest) -> JsonRpcResponse {
+    let params = match serde_json::from_value::<crate::articulation::SourceRequest>(
+        request.params.clone(),
+    ) {
+        Ok(params) => params,
+        Err(e) => {
+            return JsonRpcResponse::error(
+                request.id.clone(),
+                JsonRpcError::invalid_params(e.to_string()),
+            )
+        }
+    };
+    match crate::articulation::inspect(&params)
+        .and_then(|p| serde_json::to_value(p).map_err(Into::into))
     {
         Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
         Err(e) => JsonRpcResponse::error(

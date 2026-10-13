@@ -67,6 +67,12 @@ impl AssemblyModel {
             view.offsets
                 .sort_by(|a, b| a.instance_id.as_str().cmp(b.instance_id.as_str()));
         }
+        for instance in &mut self.instances {
+            if let Some(pose) = &mut instance.articulation {
+                pose.positions
+                    .sort_by(|a, b| a.joint_id.as_str().cmp(b.joint_id.as_str()));
+            }
+        }
         self
     }
 
@@ -97,6 +103,7 @@ impl AssemblyModel {
         validate_patterns(self)?;
         validate_joints(&self.joints, &self.mates)?;
         crate::validate_exploded_views(self)?;
+        crate::validate_articulations(self)?;
         crate::ordered_couplings(self)?;
         Ok(())
     }

@@ -244,6 +244,7 @@ fn axis_angle_rotation(axis: [f64; 3], angle_rad: f64) -> [[f64; 3]; 3] {
 
 /// Derive a kinematic tree from the assembly's instances and mates.
 pub fn kinematic_tree(model: &AssemblyModel) -> Result<KinematicTree> {
+    model.require_rigid_kinematics()?;
     let instances: BTreeMap<&str, &Instance> = model
         .instances
         .iter()

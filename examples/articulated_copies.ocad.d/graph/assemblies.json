@@ -1,0 +1,88 @@
+{
+  "assembly": {
+    "components": [
+      {
+        "id": "component:mechanism",
+        "source_path": "parts/mechanism.ocad.d",
+        "source_doc": "doc:art_mechanism",
+        "source_kind": "articulated_assembly"
+      }
+    ],
+    "instances": [
+      {
+        "id": "instance:left",
+        "component": "component:mechanism",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:left",
+        "articulation": {
+          "source_doc": "doc:art_mechanism",
+          "source_revision": "3560aa556211e747d35a8b9825a57dffb123d32309b489b49742303fdf71f93b",
+          "positions": [
+            {
+              "joint_id": "joint:hinge",
+              "position": "90 deg"
+            }
+          ]
+        }
+      },
+      {
+        "id": "instance:right",
+        "component": "component:mechanism",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.1,
+              0.2,
+              0.0
+            ],
+            "rotation": [
+              [
+                0.0,
+                -1.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:right"
+      }
+    ]
+  }
+}

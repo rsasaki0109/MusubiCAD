@@ -172,7 +172,7 @@ fn walk(
                 .ok_or_else(|| invalid(format!("missing source '{child_key}'")))?;
             if child.doc_id != component.source_doc
                 || (child.assembly.is_some()
-                    != (component.source_kind == ComponentSourceKind::Assembly))
+                    != (component.source_kind != ComponentSourceKind::Part))
             {
                 return Err(invalid(format!(
                     "component '{}' source identity/kind mismatch",

@@ -30,6 +30,8 @@ pub struct Instance {
     pub placement: Placement,
     pub fixed: bool,
     pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub articulation: Option<crate::InstanceArticulation>,
 }
 
 impl Instance {
@@ -45,6 +47,7 @@ impl Instance {
             placement,
             fixed: false,
             name: name.into(),
+            articulation: None,
         }
     }
 }

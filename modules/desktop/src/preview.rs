@@ -313,6 +313,7 @@ fn assembly_root_for_path(path: &Path) -> PathBuf {
 
 fn load_child_document(path: &Path) -> Result<ResolvedChild> {
     let doc = read_ocad(path)?;
+    let revision = opencad_ai::design_state_revision(&opencad_file::document_design_state(&doc))?;
     match doc.metadata.kind {
         DocumentKind::Assembly => {
             let assembly = doc.assembly.ok_or_else(|| {
@@ -343,6 +344,7 @@ fn load_child_document(path: &Path) -> Result<ResolvedChild> {
             path.display()
         ))),
     }
+    .map(|child| child.with_revision(revision))
 }
 
 pub fn preview_document(path: &str) -> Result<DocumentPreview> {

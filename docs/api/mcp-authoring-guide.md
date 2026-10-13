@@ -665,7 +665,8 @@ units still remain explicit per feature. AddAttachment/AddFeature DesignPatch
 and backend transaction/history perform all changes. Open scans, disconnected
 solids, cavities, repair and surface editing are outside initial admission.
 Mock reports genuine mesh bounds/mass/area and placement; imported-mesh CSG,
-shape edits, compounds and inertia refuse rather than invent geometry. OCCT
+shape edits and inertia refuse rather than invent geometry. ADR-060 adds bounded
+mesh member compounds. OCCT
 is the production solid path. Existing STEP inputs retain their original tag.
 
 The example `stl_import_plate.ocad.d` and its authoring patch reconstruct an
@@ -951,7 +952,8 @@ Gear URDF emits named zero-offset mimic relationships. Rack URDF and coupled
 HTML viewer export refuse before producing artifacts; cross-unit URDF semantics
 and JS coupling controls are deferred. Native OCCT executes exact coupled solid
 intersections. Mock imported-solid placements have true dimensions/volume, but
-exact imported-solid Boolean intersection and multi-solid compounds still refuse.
+exact imported-solid Boolean intersection still refuses. ADR-060 adds bounded
+actual mesh member compounds for P13-011.
 No fake Mock collision result is accepted. Example: `coupled_arm.ocad.d` with
 `examples/agent/add_arm_gear_coupling_patch.json`. The example already contains
 that association; use set instead of adding its ID again.
@@ -1025,3 +1027,26 @@ See [host evidence and scope](../plans/host-integration-evidence.md). This uses
 a temporary fixture and an empty ephemeral host thread; it never starts a model
 turn or writes persistent host configuration. Protocol-only or mocked transport
 tests must not be reported as actual Cursor/Gemini/Windows client verification.
+
+
+## Independent articulated subassembly copies (P13-011)
+
+Current main adds `inspect_articulation_source` (published v0.2.0 predates this
+API). Inspect the child for its owning document, revision and independent joint
+IDs, and inspect the parent for the patch revision precondition. Author
+`set_instance_articulation` with a strict `articulation` object containing
+`source_doc`, `source_revision` and `positions` as an array of
+`{"joint_id":"joint:hinge","position":"90 deg"}`. Dry-run, review and apply via
+DesignPatch; never edit the child to change one copy. An explicit null clears
+the instance configuration. Application forces regeneration and rechecks source
+dependencies before writing, even with `verify:false`.
+
+Use `examples/articulated_copies.ocad.d` and its zero-coordinate patch as the
+reference. `regen_document` reports sorted structured `assembly_leaves` with
+source ownership, composed SI placements, bounds and volumes. Missing/wrong
+owners, stale revisions, duplicate coordinates, followers, illegal units/ranges,
+nested articulated scopes and articulated pattern targets refuse. Motion, reach,
+URDF and HTML mechanics also refuse before output. Static geometry, reviews,
+BOM and native leaf-pair interference are supported; Mock exact mesh intersection
+refuses. Parent-context constraints remain P13-012. See
+[the articulated-copy API](articulated-subassemblies.md) and ADR-059/060.

@@ -12,6 +12,8 @@ pub enum ComponentSourceKind {
     #[default]
     Part,
     Assembly,
+    /// Mandatory old-reader refusal for parent-owned child coordinates.
+    ArticulatedAssembly,
 }
 
 /// Reference to an external part document loaded at regeneration time.

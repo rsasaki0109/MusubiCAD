@@ -1,0 +1,18 @@
+{
+  "operations": [
+    {
+      "type": "set_instance_articulation",
+      "instance_id": "instance:left",
+      "articulation": {
+        "source_doc": "doc:art_mechanism",
+        "source_revision": "3560aa556211e747d35a8b9825a57dffb123d32309b489b49742303fdf71f93b",
+        "positions": [
+          {
+            "joint_id": "joint:hinge",
+            "position": "0 deg"
+          }
+        ]
+      }
+    }
+  ]
+}

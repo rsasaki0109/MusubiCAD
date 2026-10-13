@@ -115,6 +115,11 @@ pub enum PatchOperation {
         #[serde(default = "default_normal_up")]
         normal_m: [f32; 3],
     },
+    SetInstanceArticulation {
+        instance_id: String,
+        #[serde(deserialize_with = "deserialize_articulation_update")]
+        articulation: Option<opencad_assembly::InstanceArticulation>,
+    },
     SetInstancePlacement {
         instance_id: String,
         translation_m: [f64; 3],
@@ -389,7 +394,8 @@ impl PatchOperation {
     pub fn is_assembly_structural(&self) -> bool {
         matches!(
             self,
-            Self::AddJointCoupling { .. }
+            Self::SetInstanceArticulation { .. }
+                | Self::AddJointCoupling { .. }
                 | Self::SetJointCoupling { .. }
                 | Self::RemoveJointCoupling { .. }
                 | Self::AddExplodedView { .. }
@@ -1434,6 +1440,12 @@ where
     D: serde::Deserializer<'de>,
 {
     Option::<opencad_drawing::TitleBlock>::deserialize(deserializer)
+}
+
+fn deserialize_articulation_update<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> std::result::Result<Option<opencad_assembly::InstanceArticulation>, D::Error> {
+    Option::deserialize(d)
 }
 
 #[cfg(test)]

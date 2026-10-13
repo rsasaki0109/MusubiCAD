@@ -178,6 +178,9 @@ fn example_arm_motion_sweeps_match_a_full_repose() {
         .map(|(instance, world)| (instance.as_str().to_string(), world))
         .collect();
     let scene = AssemblyScene {
+        leaves: Vec::new(),
+        articulated: false,
+
         instances: arm_scene
             .instances
             .iter()

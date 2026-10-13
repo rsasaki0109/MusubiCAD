@@ -1059,7 +1059,8 @@ Gear URDF emits named zero-offset mimic relationships. Rack URDF and coupled
 HTML viewer export refuse before producing artifacts; cross-unit URDF semantics
 and JS coupling controls are deferred. Native OCCT executes exact coupled solid
 intersections. Mock imported-solid placements have true dimensions/volume, but
-exact imported-solid Boolean intersection and multi-solid compounds still refuse.
+exact imported-solid Boolean intersection still refuses. ADR-060 adds bounded
+actual mesh member compounds for P13-011.
 No fake Mock collision result is accepted. Example: `coupled_arm.ocad.d` with
 `examples/agent/add_arm_gear_coupling_patch.json`. The example already contains
 that association; use set instead of adding its ID again.

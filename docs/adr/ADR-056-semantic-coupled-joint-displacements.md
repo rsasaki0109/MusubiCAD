@@ -91,9 +91,9 @@ No OCCT types escape the kernel adapter. Coupling is graph and neutral pose math
 both Mock and OCCT execute resulting placements and interference through existing
 interfaces. Use validated triangle solids for independent analytic placement and
 volume probes; generic legacy Mock extrusion/translation is synthetic and cannot
-prove true physical motion. Mock multi-imported-solid compounds are currently
-refused; construct focused per-instance scene evidence without claiming that
-unsupported compound regeneration works.
+prove true physical motion. At this ADR’s introduction Mock multi-imported-solid compounds were refused.
+ADR-060 subsequently adds bounded physical mesh member compounds for P13-011;
+exact imported-solid Boolean/intersection and inertia remain unsupported.
 
 ## Acceptance evidence
 

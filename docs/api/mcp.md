@@ -183,3 +183,17 @@ and atomic history publication. Use explicit units, stable authored IDs and the
 current revision; review never writes. Existing global-workplane sketches only;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 [sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.
+
+
+## Independent articulated copies
+
+`inspect_articulation_source` takes a source assembly `path` and returns owning
+`source_doc`, graph `source_revision`, independent declared joint IDs, an
+admission flag/reason, and a parent revision precondition. Use these with
+`set_instance_articulation` through normal dry-run/review/apply.
+`regen_document` returns a shared sorted `assembly_leaves` scene with structured
+instance paths and SI placement/bounds/volume evidence. See
+[the articulated-copy contract](articulated-subassemblies.md), its example and
+the independently graded `articulated_copy_zero` eval. Hierarchical motion,
+reach, URDF and HTML mechanics refuse; this is P13-011, not parent-context
+flexibility. Available from current main, after published v0.2.0.

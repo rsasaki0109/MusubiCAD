@@ -33,11 +33,37 @@ pub struct ChildPart {
 /// Child document resolved from disk (part or nested assembly).
 #[derive(Debug, Clone)]
 pub enum ResolvedChild {
+    /// Source graph revision supplied by the owning file/application loader.
+    Versioned {
+        revision: String,
+        child: Box<ResolvedChild>,
+    },
     Part(Box<ChildPart>),
     Assembly {
         model: Box<AssemblyModel>,
         doc_id: DocumentId,
     },
+}
+
+impl ResolvedChild {
+    pub fn with_revision(self, revision: String) -> Self {
+        Self::Versioned {
+            revision,
+            child: Box::new(self),
+        }
+    }
+}
+
+/// Mechanical leaf identity is structured; local IDs are never treated as global.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScopedLeaf {
+    pub instance_path: Vec<InstanceId>,
+    pub source_doc: DocumentId,
+    pub source_revision: String,
+    pub source_path: PathBuf,
+    pub component: opencad_core::ComponentId,
+    pub placement: RigidTransform,
+    pub body: KernelBody,
 }
 
 /// Per-instance regeneration outcome.
@@ -58,6 +84,8 @@ pub struct InstanceRegenResult {
 /// Aggregated assembly scene after static regeneration.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AssemblyScene {
+    pub leaves: Vec<ScopedLeaf>,
+    pub articulated: bool,
     pub instances: Vec<InstanceRegenResult>,
     pub compound_body: Option<KernelBody>,
     pub bounding_box: Option<BoundingBox>,
@@ -83,6 +111,8 @@ pub struct AssemblyInterference {
     pub first: InstanceId,
     pub second: InstanceId,
     pub common_volume_m3: f64,
+    pub first_path: Option<Vec<InstanceId>>,
+    pub second_path: Option<Vec<InstanceId>>,
 }
 
 /// Explicit geometric tolerances for assembly interference detection.
@@ -146,24 +176,41 @@ pub fn detect_interferences_with_tolerance<K: GeometryKernel>(
     tolerance: AssemblyInterferenceTolerance,
 ) -> Result<Vec<AssemblyInterference>> {
     tolerance.validate()?;
-    let mut bodies = scene
-        .instances
-        .iter()
-        .filter_map(|instance| instance.body.as_ref().map(|body| (instance, body)))
-        .collect::<Vec<_>>();
-    bodies.sort_by(|(first, _), (second, _)| {
-        first.instance_id.as_str().cmp(second.instance_id.as_str())
+    if scene.articulated && scene.instances.iter().any(|i| i.body.is_none()) {
+        return Err(OpenCadError::validation(
+            "articulated interference requires every body",
+        ));
+    }
+    let mut bodies: Vec<(Vec<InstanceId>, &KernelBody)> = if scene.articulated {
+        scene
+            .leaves
+            .iter()
+            .map(|leaf| (leaf.instance_path.clone(), &leaf.body))
+            .collect()
+    } else {
+        scene
+            .instances
+            .iter()
+            .filter_map(|i| i.body.as_ref().map(|b| (vec![i.instance_id.clone()], b)))
+            .collect()
+    };
+    bodies.sort_by(|a, b| {
+        a.0.iter()
+            .map(|id| id.as_str())
+            .cmp(b.0.iter().map(|id| id.as_str()))
     });
     let mut result = Vec::new();
     for first_index in 0..bodies.len() {
-        for second_index in (first_index + 1)..bodies.len() {
-            let (first, first_body) = bodies[first_index];
-            let (second, second_body) = bodies[second_index];
+        for second_index in first_index + 1..bodies.len() {
+            let (first, first_body) = &bodies[first_index];
+            let (second, second_body) = &bodies[second_index];
             if let Some(volume) = interference_volume(kernel, first_body, second_body, tolerance)? {
                 result.push(AssemblyInterference {
-                    first: first.instance_id.clone(),
-                    second: second.instance_id.clone(),
+                    first: first[0].clone(),
+                    second: second[0].clone(),
                     common_volume_m3: volume,
+                    first_path: scene.articulated.then(|| first.clone()),
+                    second_path: scene.articulated.then(|| second.clone()),
                 });
             }
         }
@@ -237,16 +284,38 @@ pub fn regenerate_assembly<K: GeometryKernel>(
     load_child: &mut dyn FnMut(&Path) -> Result<ResolvedChild>,
 ) -> Result<AssemblyRegenReport> {
     let mut stack = Vec::new();
+    let mut revisions = BTreeMap::new();
+    let mut consistent_loader = |path: &Path| {
+        let child = load_child(path)?;
+        if model.has_articulations() {
+            let ResolvedChild::Versioned { revision, .. } = &child else {
+                return Err(OpenCadError::validation(
+                    "articulated sources require versioned loader snapshots",
+                ));
+            };
+            if revision.is_empty()
+                || revisions
+                    .insert(path.to_path_buf(), revision.clone())
+                    .is_some_and(|previous| previous != *revision)
+            {
+                return Err(OpenCadError::validation(
+                    "source changed during articulated regeneration",
+                ));
+            }
+        }
+        Ok(child)
+    };
     regenerate_assembly_with_stack(
         model,
         assembly_doc_id,
         AssemblyPaths {
             root: assembly_root,
             document: assembly_root,
+            articulation: None,
         },
         kernel,
         registry,
-        load_child,
+        &mut consistent_loader,
         &mut stack,
     )
 }
@@ -260,6 +329,7 @@ struct AssemblyStackEntry {
 struct AssemblyPaths<'a> {
     root: &'a Path,
     document: &'a Path,
+    articulation: Option<&'a crate::InstanceArticulation>,
 }
 
 fn regenerate_assembly_with_stack<K: GeometryKernel>(
@@ -271,6 +341,28 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
     load_child: &mut dyn FnMut(&Path) -> Result<ResolvedChild>,
     stack: &mut Vec<AssemblyStackEntry>,
 ) -> Result<AssemblyRegenReport> {
+    if stack.len() >= 64 {
+        return Err(OpenCadError::validation(
+            "assembly regeneration depth exceeded",
+        ));
+    }
+    if model.has_articulations() {
+        crate::articulation::validate_articulations(model)?;
+        let count = model
+            .patterns
+            .iter()
+            .try_fold(model.instances.len(), |n, p| n.checked_add(p.count));
+        if count.map_or(true, |n| n > 256) {
+            return Err(OpenCadError::validation(
+                "articulated expanded root instance budget exceeded",
+            ));
+        }
+    }
+    if paths.articulation.is_some() && (!model.patterns.is_empty() || model.instances.len() > 256) {
+        return Err(OpenCadError::validation(
+            "articulated child patterns/link budget unsupported",
+        ));
+    }
     let expanded = expand_patterns(model)?;
     expanded.validate(assembly_doc_id)?;
     let canonical_root = fs::canonicalize(paths.root).map_err(|err| {
@@ -303,7 +395,7 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
     });
 
     let result = (|| {
-        let (model, mate_solve) = if expanded.mates.is_empty() {
+        let (mut model, mate_solve) = if expanded.mates.is_empty() {
             (expanded, None)
         } else {
             let (instances, report) = crate::solve::solve_assembly_mates(&expanded)?;
@@ -311,6 +403,10 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
             solved.instances = instances;
             (solved, Some(report))
         };
+
+        if let Some(articulation) = paths.articulation {
+            model = crate::articulation::posed_child(&model, articulation)?;
+        }
 
         let dof = match &mate_solve {
             Some(solve) => solve.dof,
@@ -320,6 +416,7 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
 
         let mut instance_results = Vec::new();
         let mut placed_bodies = Vec::new();
+        let mut leaves = Vec::new();
 
         for instance in &model.instances {
             let Some(component) = model.component(&instance.component) else {
@@ -335,15 +432,13 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
             };
 
             match regenerate_instance(
-                component,
-                instance.placement.transform,
-                paths.root,
-                kernel,
-                registry,
-                load_child,
-                stack,
+                component, instance, paths.root, kernel, registry, load_child, stack,
             ) {
-                Ok(body) => {
+                Ok((body, instance_leaves)) => {
+                    leaves.extend(instance_leaves);
+                    if leaves.len() > 100000 {
+                        return Err(OpenCadError::validation("assembly leaf budget exceeded"));
+                    }
                     placed_bodies.push(body.clone());
                     instance_results.push(InstanceRegenResult {
                         instance_id: instance.id.clone(),
@@ -366,6 +461,49 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
             .filter(|result| matches!(result.status, InstanceRegenStatus::Ok))
             .count();
 
+        if model.has_articulations() && successful_instances != instance_results.len() {
+            let failures: Vec<_> = instance_results
+                .iter()
+                .filter_map(|i| match &i.status {
+                    InstanceRegenStatus::Failed(e) => Some(e.as_str()),
+                    _ => None,
+                })
+                .collect();
+            return Err(OpenCadError::validation(format!(
+                "articulated scene incomplete: {}",
+                failures.join("; ")
+            )));
+        }
+        if model.has_articulations() && leaves.iter().any(|l| l.source_revision.is_empty()) {
+            return Err(OpenCadError::validation(
+                "articulated leaves require source revisions from loader",
+            ));
+        }
+        if model.has_articulations() {
+            let mut revisions = BTreeMap::new();
+            for leaf in &leaves {
+                if let Some(previous) = revisions.insert(&leaf.source_path, &leaf.source_revision) {
+                    if previous != &leaf.source_revision {
+                        return Err(OpenCadError::validation(
+                            "child source changed during articulated regeneration",
+                        ));
+                    }
+                }
+            }
+            leaves.sort_by(|a, b| {
+                a.instance_path
+                    .iter()
+                    .map(|id| id.as_str())
+                    .cmp(b.instance_path.iter().map(|id| id.as_str()))
+            });
+        }
+        if model.has_articulations()
+            && leaves
+                .iter()
+                .any(|l| !kernel.has_exact_rigid_placement(&l.body))
+        {
+            return Err(OpenCadError::validation("articulated physical evidence requires exact rigid-placement bodies; synthetic Mock shapes are unsupported"));
+        }
         let compound_body = if placed_bodies.is_empty() {
             None
         } else {
@@ -376,6 +514,8 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
         let mass = aggregate_mass(kernel, &placed_bodies, DEFAULT_DENSITY_KG_PER_M3)?;
 
         let scene = AssemblyScene {
+            leaves,
+            articulated: model.has_articulations(),
             instances: instance_results.clone(),
             compound_body,
             bounding_box,
@@ -422,17 +562,30 @@ fn validate_duplicate_component_paths(model: &AssemblyModel, canonical_root: &Pa
 
 fn regenerate_instance<K: GeometryKernel>(
     component: &Component,
-    transform: RigidTransform,
+    instance: &crate::Instance,
     assembly_root: &Path,
     kernel: &K,
     registry: &FeatureRegistry,
     load_child: &mut dyn FnMut(&Path) -> Result<ResolvedChild>,
     stack: &mut Vec<AssemblyStackEntry>,
-) -> Result<KernelBody> {
+) -> Result<(KernelBody, Vec<ScopedLeaf>)> {
+    let transform = instance.placement.transform;
     let child_path = validate_component_path(assembly_root, &component.source_path)?;
 
     let child_root = assembly_root_for_path(&child_path);
-    let body = match load_child(&child_path)? {
+    let (loaded, revision) = match load_child(&child_path)? {
+        ResolvedChild::Versioned { revision, child } => (*child, revision),
+        child => (child, String::new()),
+    };
+    if let Some(pose) = &instance.articulation {
+        if pose.source_revision != revision {
+            return Err(OpenCadError::validation(
+                "child articulation source revision is stale",
+            ));
+        }
+    }
+    let mut leaves = Vec::new();
+    let body = match loaded {
         ResolvedChild::Part(mut child) => {
             if child.doc_id != component.source_doc {
                 return Err(OpenCadError::validation(format!(
@@ -440,7 +593,7 @@ fn regenerate_instance<K: GeometryKernel>(
                     component.id, component.source_doc, child.doc_id
                 )));
             }
-            if component.source_kind == ComponentSourceKind::Assembly {
+            if component.source_kind != ComponentSourceKind::Part {
                 return Err(OpenCadError::validation(format!(
                     "component '{}' expects assembly but '{}' is a part document",
                     component.id,
@@ -462,16 +615,21 @@ fn regenerate_instance<K: GeometryKernel>(
                     ))
                 })?;
 
-            child
+            let body = child
                 .part
                 .active_body()
-                .ok_or_else(|| {
-                    OpenCadError::validation(format!(
-                        "child part '{}' has no active solid body",
-                        component.id
-                    ))
-                })?
-                .clone()
+                .ok_or_else(|| OpenCadError::validation("child part has no active solid body"))?
+                .clone();
+            leaves.push(ScopedLeaf {
+                instance_path: vec![instance.id.clone()],
+                source_doc: child.doc_id,
+                source_revision: revision.clone(),
+                source_path: child_path.clone(),
+                component: component.id.clone(),
+                placement: RigidTransform::identity(),
+                body: body.clone(),
+            });
+            body
         }
         ResolvedChild::Assembly { model, doc_id } => {
             if doc_id != component.source_doc {
@@ -487,18 +645,42 @@ fn regenerate_instance<K: GeometryKernel>(
                     child_path.display()
                 )));
             }
+            if model.has_articulations() {
+                return Err(OpenCadError::validation(
+                    "nested articulated scopes are unsupported",
+                ));
+            }
             let report = regenerate_assembly_with_stack(
                 &model,
                 &doc_id,
                 AssemblyPaths {
                     root: &child_root,
                     document: &child_path,
+                    articulation: instance.articulation.as_ref(),
                 },
                 kernel,
                 registry,
                 load_child,
                 stack,
             )?;
+            if report.successful_instances != report.instance_count {
+                let failures: Vec<_> = report
+                    .instances
+                    .iter()
+                    .filter_map(|i| match &i.status {
+                        InstanceRegenStatus::Failed(message) => Some(message.as_str()),
+                        InstanceRegenStatus::Ok => None,
+                    })
+                    .collect();
+                return Err(OpenCadError::validation(format!(
+                    "child assembly has failed geometry: {}",
+                    failures.join("; ")
+                )));
+            }
+            leaves = report.scene.leaves;
+            for leaf in &mut leaves {
+                leaf.instance_path.insert(0, instance.id.clone());
+            }
             report.scene.compound_body.ok_or_else(|| {
                 let detail = report
                     .instances
@@ -514,9 +696,17 @@ fn regenerate_instance<K: GeometryKernel>(
                 ))
             })?
         }
+        ResolvedChild::Versioned { .. } => {
+            return Err(OpenCadError::validation(
+                "nested loader revision wrapper is invalid",
+            ))
+        }
     };
-
-    kernel.transform_body(body, transform)
+    for leaf in &mut leaves {
+        leaf.placement = transform.compose(leaf.placement);
+        leaf.body = kernel.transform_body(leaf.body.clone(), transform)?;
+    }
+    Ok((kernel.transform_body(body, transform)?, leaves))
 }
 
 fn assembly_root_for_path(path: &Path) -> PathBuf {
@@ -1105,6 +1295,9 @@ mod tests {
     #[test]
     fn detects_common_solid_volume_above_tolerance() -> Result<()> {
         let scene = AssemblyScene {
+            leaves: Vec::new(),
+            articulated: false,
+
             instances: vec![
                 InstanceRegenResult {
                     instance_id: InstanceId::new("instance:first")?,
@@ -1148,6 +1341,9 @@ mod tests {
     #[test]
     fn interference_pairs_are_ordered_and_threshold_is_exclusive() -> Result<()> {
         let scene = AssemblyScene {
+            leaves: Vec::new(),
+            articulated: false,
+
             instances: vec![
                 InstanceRegenResult {
                     instance_id: InstanceId::new("instance:z")?,
@@ -1192,6 +1388,9 @@ mod tests {
         let at_threshold = detect_interferences_with_tolerance(
             &kernel,
             &AssemblyScene {
+                leaves: Vec::new(),
+                articulated: false,
+
                 instances: scene.instances[0..2].to_vec(),
                 compound_body: None,
                 bounding_box: None,
