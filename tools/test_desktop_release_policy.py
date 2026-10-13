@@ -180,6 +180,26 @@ def test_signed_credentials_fail_before_expensive_setup() -> None:
         assert apple_gate < position, f"Apple credential gate must precede {step}"
 
 
+def test_windows_ui_is_a_required_real_app_gate() -> None:
+    text = DESKTOP.read_text(encoding="utf-8")
+    for needle in ('include="[$linux,$windows]"',
+                   'Exercise actual Windows native Tauri forms',
+                   './tools/test_windows_desktop_ui.ps1',
+                   '-BinaryPath "${{ matrix.binary_path }}"',
+                   "node-version: '24'"):
+        require(text, needle, DESKTOP)
+    parsed = parse_yaml_if_available(text, DESKTOP)
+    if parsed is not None:
+        steps = parsed["jobs"]["build"]["steps"]
+        ui = next(step for step in steps if step.get("name") == "Exercise actual Windows native Tauri forms")
+        assert ui["if"] == "${{ matrix.platform == 'windows-x86_64' }}"
+        assert not ui.get("continue-on-error", False)
+        assert ui["shell"] == "pwsh"
+        names = [step.get("name") for step in steps]
+        assert names.index("Verify native executable") < names.index(ui["name"])
+        assert names.index(ui["name"]) < names.index("Package desktop artifacts and generate checksums")
+
+
 def main() -> int:
     test_yaml_shape()
     test_unsigned_workflow_has_no_signing_boundary()
@@ -187,6 +207,7 @@ def main() -> int:
     test_cached_bundle_cleanup_is_narrow_and_shared()
     test_signed_workflow_contract()
     test_signed_credentials_fail_before_expensive_setup()
+    test_windows_ui_is_a_required_real_app_gate()
     print("desktop release policy contract: ok")
     return 0
 

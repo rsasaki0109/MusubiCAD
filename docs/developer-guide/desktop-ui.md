@@ -81,3 +81,26 @@ as documented above):
 node tools/test_tauri_sketch_editor.mjs http://127.0.0.1:9223 /tmp/editor/examples/bracket.ocad.d
 ```
 This drives the real WebView and backend, not an IPC replacement harness.
+
+
+## Actual Windows WebView2 editing checks
+
+P15-005 runs `tools/test_windows_desktop_ui.ps1 -BinaryPath <native-exe>` on the
+Windows desktop CI target with Node 24. The wrapper copies the cubic-plate
+fixture to a disposable directory, launches the actual native app and points
+WebView2's profile and loopback debugger at the test process only.
+`tools/test_windows_tauri_editor.mjs` connects to the actual `tauri.localhost`
+WebView2 page, checks real Tauri IPC presence and operates existing product
+forms/buttons. It reviews and applies create/length/reorder/suppress edits,
+checks an independent 2400 mm³ preview, verifies opaque Undo/Redo source identity
+and confirms dependency/unit refusals preserve source/checksum bytes. It does
+not install browser mocks or replace the backend invoke function. The original
+fixture is hash-checked and the owned app/profile is removed afterwards.
+
+Windows is now included alongside Linux in desktop PR builds so the test must
+pass before merge; main/tag/manual builds still cover all four platforms.
+Inspector arguments are runtime-only test configuration; production configuration
+and unsigned desktop trust remain unchanged. No manual user session, installation
+wizard, code signing, Cursor or authenticated Gemini session is inferred from
+this automated native GUI check. Record the exact CI/head before claiming
+Windows evidence. The cloud Linux environment cannot execute this Windows test.

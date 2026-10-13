@@ -135,3 +135,16 @@ The cloud draft preserves existing Rust/OCCT/Mesa/Tauri setup and adds the pinne
 Gemini install/startup instructions. Saving the draft does not apply or publish
 it, and a new-task restore remains unverified. P15-004 is complete only for its
 bounded startup acceptance; P15-003 remains partial, with no new maturity credit.
+
+
+## P15-005 Windows native UI gate
+
+The desktop Windows CI target now runs the actual native Tauri executable and
+WebView2 UI via `tools/test_windows_desktop_ui.ps1`. Product forms/buttons are
+operated through loopback CDP, with real IPC, native reviewed geometry and
+source/refusal/history checks. See [desktop verification](../developer-guide/desktop-ui.md)
+for the exact scope and reproduction. Windows is included in main-target PR
+CI, so a successful Windows job at the merged head is required evidence.
+Until that job succeeds and the task merges, Windows UI validation remains
+pending. Automated GUI execution does not establish a manual desktop session,
+installer/signing, Cursor or authenticated Gemini editing.
