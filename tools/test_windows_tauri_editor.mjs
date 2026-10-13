@@ -1,7 +1,7 @@
 // Actual Windows Tauri/WebView2 forms via loopback CDP; no browser/IPC mocks.
 // Node >=22; run through tools/test_windows_desktop_ui.ps1 on a disposable fixture.
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Also annotate failures during inspector discovery before the UI checks start.
@@ -74,7 +74,10 @@ const click = (id,text) => `Array.from(${row(id)}.querySelectorAll("button")).fi
 const results = [];
 try {
   assert.equal(await evaluate('typeof window.__TAURI__?.core?.invoke'), 'function', 'Real Tauri IPC required');
-  await until('currentPath === '+JSON.stringify(partPath), 'Disposable source path');
+  await until('typeof currentPath === \"string\" && currentPath.length > 0', 'Disposable source path');
+  // Windows may expose the same temp directory through a short-name/case alias.
+  assert.equal(realpathSync.native(await evaluate('currentPath')).toLowerCase(),
+    realpathSync.native(partPath).toLowerCase(), 'Actual UI must edit the disposable directory');
   await until('featureTree?.rows?.length === 2 && document.getElementById("status").textContent === "Loaded Closed cubic plate"', 'Initial part load');
   await review('document.getElementById("feature-id").value="feature:second"; document.getElementById("feature-name").value="Second cubic prism"; document.getElementById("feature-length").value="12 mm"; document.getElementById("feature-create").requestSubmit();');
   await apply(); results.push('create via product form');
@@ -95,12 +98,14 @@ try {
   await until('document.getElementById("status").textContent === "Redid document edit"', 'Redo');
   assert.deepEqual(logicalSource(), after); results.push('undo/redo restores canonical source identity');
   const restored = source();
+  const restoredHistory = await evaluate('JSON.stringify(documentHistoryState)');
   await evaluate(click('feature:cubic_sketch','Review suppress'));
   await until('!featureBusy && document.getElementById("status").textContent.startsWith("Edit refused:")', 'Invalid suppression');
   assert.equal(source(), restored);
   await evaluate(`${row('feature:second')}.querySelector("input").value="90 deg"; ${click('feature:second','Review dimension')}`);
   await until('!featureBusy && document.getElementById("status").textContent.startsWith("Edit refused:")', 'Invalid unit');
   assert.equal(source(), restored);
+  assert.equal(await evaluate('JSON.stringify(documentHistoryState)'), restoredHistory, 'Refusal must retain opaque UI history');
   results.push('invalid dependency and unit retain source/history');
   console.log(JSON.stringify({actual_windows_tauri_webview2_forms:'passed',webview_url:pages[0].url,results}, null, 2));
 } finally { socket.close(); }
