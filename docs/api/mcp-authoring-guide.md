@@ -1017,3 +1017,11 @@ in a built checkout, or pass the packaged `--binary` and `--fixture` paths.
 The real MCP/Agent exercise checks reviews, stale/unit refusals, source identity,
 Undo/Redo and native analytic dimensions/volume; it is not actual client-host
 integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.
+
+
+For reproducible actual Codex app-server dispatch, run
+`python tools/run_codex_host_smoke.py --binary /absolute/path/to/musubicad`.
+See [host evidence and scope](../plans/host-integration-evidence.md). This uses
+a temporary fixture and an empty ephemeral host thread; it never starts a model
+turn or writes persistent host configuration. Protocol-only or mocked transport
+tests must not be reported as actual Cursor/Gemini/Windows client verification.

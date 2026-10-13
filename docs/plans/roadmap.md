@@ -793,7 +793,7 @@ and Tauri workflows, ADR-027 plugin distribution and ADR-005 desktop trust.
 |---|---|---|---|
 | MCAD-P15-001 | Reproducible editing tutorial | Unit-explicit walkthrough and runnable real-MCP exercise, independent volume/source/history/failure checks, example/eval and guide/skill; archive includes all inputs and executes the walkthrough on the packaged native binary; actual client-host validation is not inferred | Complete |
 | MCAD-P15-002 | Release the accumulated CAD capabilities | Version/tag/main agreement, merged release notes, all native build/smoke gates, official CLI release assets and independent downloaded checksum/runtime verification; desktop trust policy unchanged; published v0.2.0, four native archived tutorials, independent downloaded checksum/runtime verification and bounded actual Codex API dispatch recorded in cli-release-v0.2.0-evidence.md | Complete |
-| MCAD-P15-003 | Actual host integration evidence | Versioned Windows/Codex/Cursor/Gemini sessions exercising discovery, reviewed patch, source preservation/refusal and native regeneration; record each unavailable host explicitly | Planned |
+| MCAD-P15-003 | Actual host integration evidence | Versioned Windows/Codex/Cursor/Gemini sessions exercising discovery, reviewed patch, source preservation/refusal and native regeneration; record each unavailable host explicitly | Partial: reproducible Codex app-server dispatch verified; Windows desktop/Cursor/Gemini sessions unavailable |
 
 **Completion definition:** each task has a single main-target PR, applicable
 examples/evals/docs, all four pre-push checks and all applicable CI. Tutorials

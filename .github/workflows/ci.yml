@@ -38,6 +38,9 @@ jobs:
       - name: Verify agent plugin manifests and installer
         run: python tools/test_agent_plugin.py
 
+      - name: Verify Codex smoke transport failures (no client/model required)
+        run: python tools/test_codex_host_smoke.py
+
       - name: Verify repository Python cache hygiene
         run: python tools/test_repo_hygiene.py
 
