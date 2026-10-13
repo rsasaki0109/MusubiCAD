@@ -1089,3 +1089,17 @@ v0.3.1 CLI archives). This exercises actual MCP/Agent, without paid models;
 it supplies no Cursor/Gemini client-host evidence. Published v0.2.0 predates
 these APIs and archive inputs; official v0.3.1 includes them and passed the native
 packaged tutorial gates. See the [v0.3.1 release evidence](../plans/cli-release-v0.3.1-evidence.md).
+
+
+## Analytic Mock evidence boundary (P16-002)
+
+SDK tests may explicitly select `MockGeometryKernel::with_analytic_primitives()`
+for bounded physical rectangle/circle/concentric-cut evidence. The default Mock
+ordinary IDs remain synthetic; their cube measurements do not prove hole volume
+or placement. See the [analytic Mock API](analytic-mock.md) and runnable example
+in `examples/analytic-mock/`. This adds no MCP command or persisted setting and
+does not switch CLI/MCP Mock mode. Document counterbores/countersinks are still
+P16-003/004 gates; do not invent seat fields or author a plain bore as a seat.
+Use the existing verified native DesignPatch path for supported document edits.
+Unsupported Mock topology/tessellation/inertia/Boolean consumers must refuse;
+this infrastructure has no document-level MCP eval until the feature is admitted.

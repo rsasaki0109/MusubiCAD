@@ -225,13 +225,13 @@ resolved controls enter cubic-only cache identities. No NURBS type escapes the
 kernel or becomes editable by inference. See [the API limits](../api/cubic-spline.md).
 
 
-## Planned bounded analytic Mock admission
+## Bounded analytic Mock admission
 
 [ADR-062](../adr/ADR-062-analytic-seated-hole-admission.md), registered by
 MCAD-P16-001, admits an explicit analytic-primitives Mock configuration for
-MCAD-P16-002. This is an accepted design, not implemented capability: current
-ordinary Mock IDs/mass remain synthetic, while existing tracked ellipse/cubic/
-mesh/compound paths retain their documented physical scope.
+MCAD-P16-002. MCAD-P16-002 implements this explicit mode; default ordinary Mock IDs/mass
+remain synthetic, while existing tracked ellipse/cubic/mesh/compound paths retain
+their documented physical scope.
 
 The new mode must retain SI primitive/cut provenance, independently calculate
 contained concentric removal without overlap double-counting, and refuse
@@ -240,3 +240,12 @@ Mock behavior and geometry-neutral OCCT boundaries stay intact. Runtime records
 are disposable; no kernel handle or new source representation is serialized.
 Seated-hole source/schema, semantic faces and usable tessellation require their
 feature-specific gate before MCAD-P16-003/004 implementation.
+
+Analytic mode stores bounded SI rectangle/circle profiles and stock/cylinder
+records. Coaxial subtraction decomposes the exact axial endpoints and integrates
+the largest removed radius on each interval; overlapping tools are counted once.
+First moments, cylindrical walls, internal annular caps and changed outer faces
+produce physical centre and area. Bounds use stock corners or cylindrical support
+radii; proper rigid placement preserves source records. No mesh sampling, OCCT
+dependency, global state or serialized source DTO is introduced. Unsupported
+consumers refuse; see [the API contract](../api/analytic-mock.md).

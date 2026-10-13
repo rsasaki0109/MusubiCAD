@@ -2,6 +2,7 @@
 //!
 //! OCCT types must not leak outside `opencad-kernel-occt`.
 
+mod analytic_mock;
 pub mod brep;
 pub mod draft;
 pub use draft::DraftInput;

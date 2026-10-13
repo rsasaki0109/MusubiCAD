@@ -679,3 +679,16 @@ v0.3.1 CLI archives). This exercises actual MCP/Agent, without paid models;
 it supplies no Cursor/Gemini client-host evidence. Published v0.2.0 predates
 these APIs and archive inputs; official v0.3.1 includes them and passed the native
 packaged tutorial gates. See the [v0.3.1 release evidence](../../docs/plans/cli-release-v0.3.1-evidence.md).
+
+
+## Analytic Mock evidence boundary (P16-002)
+
+`MockGeometryKernel::with_analytic_primitives()` is an explicit Rust SDK testing
+mode for bounded physical rectangle/circle/concentric cuts. Default ordinary
+Mock IDs remain synthetic and cannot prove physical hole dimensions or volume.
+See `docs/api/analytic-mock.md` and `examples/analytic-mock/`. No new MCP command,
+persisted setting or document seat feature is introduced. Counterbores and
+countersinks still require P16-003/004 admission; do not invent seat fields or
+substitute a plain bore. Use verified native DesignPatch for supported document
+edits. Analytic Mock topology/tessellation/inertia and unsupported geometry
+queries explicitly refuse; never count a synthetic fallback as physical evidence.
