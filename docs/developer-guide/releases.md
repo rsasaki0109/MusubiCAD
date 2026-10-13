@@ -68,3 +68,5 @@ and runs the tutorial with its packaged executable before artifact upload.
 The tutorial uses real MCP/Agent, requires no model/GPU and checks native
 analytic volume/dimensions, review/refusal/source identity and Undo/Redo.
 It does not prove actual Codex/Cursor/Gemini client registration or interaction.
+
+Published v0.2.0: [exact source/gate/asset/downloaded verification and host scope](../plans/cli-release-v0.2.0-evidence.md).

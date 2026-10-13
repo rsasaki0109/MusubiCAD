@@ -200,3 +200,25 @@ execution gate justify ecosystem 10 → 11 (+0.15 weighted), general 49.20 →
 Before merge the baseline remains general 49.20 / agent 89. No weights/targets,
 source schema, kernel operations, dependencies, golden files or desktop signing
 policy change.
+
+
+P15-001 merged as PR #90 (`c2b7ffbf`), after all applicable CI succeeded:
+ecosystem 11, general weighted 49.35 (about 49%), agent operation 89.
+
+P15-002: official v0.2.0 publication from the exact tested main/tag; all four
+native CLI archives run their included tutorial before upload, complete
+main/tag CI inventories pass, and the independently downloaded Linux archive
+matches official SHA-256 and passes fresh native tutorial/source/history checks.
+The downloaded binary also passes actual Codex CLI 0.159.2 app-server startup,
+35-tool discovery and typed review/apply/refusal/regeneration dispatch in an
+ephemeral session with zero model turns. This is not autonomous model selection,
+persistent plugin installation, Cursor/Gemini integration or Windows desktop
+interaction. See [release evidence](cli-release-v0.2.0-evidence.md) for exact
+commits, runs, assets, official hashes and observed scope. Unsigned CLI/desktop
+trust scope is unchanged; no schema, kernel, dependency or golden changes.
+
+After this evidence task's main merge, ecosystem 11 → 13 (+0.30 weighted)
+justifies general 49.35 → 49.65 (about 50%), agent operation unchanged at 89.
+Before merge the baseline remains about 49% / 89%. The fixed ecosystem target
+15 remains pending further client/GUI host evidence; no unexecuted host check
+is credited and rubric weights/targets are unchanged.
