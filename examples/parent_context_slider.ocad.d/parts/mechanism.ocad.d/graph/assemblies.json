@@ -1,0 +1,175 @@
+{
+  "assembly": {
+    "components": [
+      {
+        "id": "component:box",
+        "source_path": "parts/box.ocad.d",
+        "source_doc": "doc:art_box",
+        "source_kind": "part"
+      }
+    ],
+    "instances": [
+      {
+        "id": "instance:anchor",
+        "component": "component:box",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              -0.06
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:anchor"
+      },
+      {
+        "id": "instance:link",
+        "component": "component:box",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": false,
+        "name": "instance:link"
+      }
+    ],
+    "mates": [
+      {
+        "id": "mate:ground",
+        "type": "ground",
+        "instance": "instance:anchor",
+        "suppressed": false
+      },
+      {
+        "id": "mate:hinge",
+        "type": "concentric",
+        "a": {
+          "instance": "instance:anchor",
+          "topo_ref": {
+            "ref_id": "ref:face:instance:anchor",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:stl_plate",
+              "role": "bottom_z"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.06
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "b": {
+          "instance": "instance:link",
+          "topo_ref": {
+            "ref_id": "ref:face:instance:link",
+            "kind": "face",
+            "semantic": {
+              "created_by": "feature:stl_plate",
+              "role": "bottom_z"
+            }
+          },
+          "local_origin_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "local_axis_m": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "suppressed": false
+      }
+    ],
+    "connectors": [
+      {
+        "id": "connector:link_tip",
+        "name": "tip",
+        "instance": "instance:link",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      }
+    ],
+    "joints": [
+      {
+        "id": "joint:hinge",
+        "mate": "mate:hinge",
+        "type": "prismatic",
+        "lower_m": -0.06,
+        "upper_m": 0.06,
+        "effort_n": 1.0,
+        "velocity_m_s": 1.0
+      }
+    ]
+  }
+}

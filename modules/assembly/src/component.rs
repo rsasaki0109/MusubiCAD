@@ -14,6 +14,8 @@ pub enum ComponentSourceKind {
     Assembly,
     /// Mandatory old-reader refusal for parent-owned child coordinates.
     ArticulatedAssembly,
+    /// Mandatory refusal in readers predating parent-context constraints.
+    FlexibleAssembly,
 }
 
 /// Reference to an external part document loaded at regeneration time.

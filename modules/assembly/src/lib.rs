@@ -1,5 +1,7 @@
 //! Assembly document model (Phase 3).
 
+pub mod context;
+pub use context::{ContextConstraint, ContextRelation, ScopedConnectorRef};
 pub mod articulation;
 pub use articulation::{
     validate_articulations, ChildJointCoordinate, InstanceArticulation, JointValue,

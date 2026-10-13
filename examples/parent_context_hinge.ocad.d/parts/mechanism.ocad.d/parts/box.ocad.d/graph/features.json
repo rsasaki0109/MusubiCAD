@@ -1,0 +1,54 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:stl_plate"
+    ],
+    "features": {
+      "feature:stl_plate": {
+        "id": "feature:stl_plate",
+        "name": "Imported STL solid",
+        "feature_type": "imported_mesh",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": []
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:stl_plate",
+      "name": "Imported STL solid",
+      "definition": {
+        "type": "imported_mesh",
+        "source": "imports/mesh_129172c9ac8ff189ad01b4e620c9b7d29f4996f4198cb27d7e9f905dc2e6e7be.stl",
+        "sha256": "129172c9ac8ff189ad01b4e620c9b7d29f4996f4198cb27d7e9f905dc2e6e7be",
+        "source_unit": "mm",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "suppressed": false
+    }
+  ]
+}

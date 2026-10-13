@@ -86,6 +86,7 @@ pub struct InstanceRegenResult {
 pub struct AssemblyScene {
     pub leaves: Vec<ScopedLeaf>,
     pub articulated: bool,
+    pub context_dof: Option<i32>,
     pub instances: Vec<InstanceRegenResult>,
     pub compound_body: Option<KernelBody>,
     pub bounding_box: Option<BoundingBox>,
@@ -404,6 +405,18 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
             (solved, Some(report))
         };
 
+        let context_dof = if model.has_context_constraints() {
+            model = crate::context::solve_parent_context(
+                &model,
+                assembly_doc_id,
+                paths.root,
+                load_child,
+            )?;
+            Some(0)
+        } else {
+            None
+        };
+
         if let Some(articulation) = paths.articulation {
             model = crate::articulation::posed_child(&model, articulation)?;
         }
@@ -516,6 +529,7 @@ fn regenerate_assembly_with_stack<K: GeometryKernel>(
         let scene = AssemblyScene {
             leaves,
             articulated: model.has_articulations(),
+            context_dof,
             instances: instance_results.clone(),
             compound_body,
             bounding_box,
@@ -1297,6 +1311,7 @@ mod tests {
         let scene = AssemblyScene {
             leaves: Vec::new(),
             articulated: false,
+            context_dof: None,
 
             instances: vec![
                 InstanceRegenResult {
@@ -1343,6 +1358,7 @@ mod tests {
         let scene = AssemblyScene {
             leaves: Vec::new(),
             articulated: false,
+            context_dof: None,
 
             instances: vec![
                 InstanceRegenResult {
@@ -1390,6 +1406,7 @@ mod tests {
             &AssemblyScene {
                 leaves: Vec::new(),
                 articulated: false,
+                context_dof: None,
 
                 instances: scene.instances[0..2].to_vec(),
                 compound_body: None,

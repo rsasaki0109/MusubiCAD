@@ -1,0 +1,11 @@
+{
+  "schema": "opencad.document.v0.1",
+  "document": {
+    "id": "doc:art_box",
+    "name": "Analytic 10 x 20 x 30 mm box",
+    "units": "mm",
+    "kind": "part",
+    "created_with": "OpenCAD 0.2.0",
+    "schema_version": "opencad.document.v0.1"
+  }
+}

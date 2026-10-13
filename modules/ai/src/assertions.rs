@@ -109,7 +109,10 @@ pub fn assembly_assertion_context(
         }),
         body_count: Some(u32::try_from(body_count).unwrap_or(u32::MAX)),
         reference_provenance: Vec::new(),
-        assembly_dof: (!report.scene.articulated).then_some(report.dof),
+        assembly_dof: report
+            .scene
+            .context_dof
+            .or_else(|| (!report.scene.articulated).then_some(report.dof)),
         interference_count: Some(interference_count),
         motion_interference: BTreeMap::new(),
     }
@@ -434,6 +437,7 @@ mod tests {
             scene: AssemblyScene {
                 leaves: Vec::new(),
                 articulated: false,
+                context_dof: None,
 
                 instances: instances.clone(),
                 compound_body: None,

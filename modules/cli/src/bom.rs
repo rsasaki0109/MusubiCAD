@@ -203,7 +203,8 @@ impl Snapshots {
                     let kind = match component.source_kind {
                         ComponentSourceKind::Part => DocumentKind::Part,
                         ComponentSourceKind::Assembly
-                        | ComponentSourceKind::ArticulatedAssembly => DocumentKind::Assembly,
+                        | ComponentSourceKind::ArticulatedAssembly
+                        | ComponentSourceKind::FlexibleAssembly => DocumentKind::Assembly,
                     };
                     if child.metadata.id != component.source_doc || child.metadata.kind != kind {
                         return Err(OpenCadError::validation(format!(

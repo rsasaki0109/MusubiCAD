@@ -1,0 +1,178 @@
+{
+  "assembly": {
+    "components": [
+      {
+        "id": "component:mechanism",
+        "source_path": "parts/mechanism.ocad.d",
+        "source_doc": "doc:art_mechanism",
+        "source_kind": "flexible_assembly"
+      },
+      {
+        "id": "component:target",
+        "source_path": "parts/mechanism.ocad.d/parts/box.ocad.d",
+        "source_doc": "doc:art_box",
+        "source_kind": "part"
+      }
+    ],
+    "instances": [
+      {
+        "id": "instance:left",
+        "component": "component:mechanism",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.1,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                0.0,
+                -1.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:left",
+        "articulation": {
+          "source_doc": "doc:art_mechanism",
+          "source_revision": "f3281549e91d5dbe0e0101372671c214fec65ed4cb70a6f365209cddceb28330",
+          "positions": [],
+          "context_constraints": [
+            {
+              "id": "mate:parent_context",
+              "joint_id": "joint:hinge",
+              "moving": {
+                "instance_path": [
+                  "instance:left",
+                  "instance:link"
+                ],
+                "source_doc": "doc:art_mechanism",
+                "connector_id": "connector:link_tip"
+              },
+              "target": {
+                "instance_path": [
+                  "instance:target"
+                ],
+                "source_doc": "doc:art_pair",
+                "connector_id": "connector:target"
+              },
+              "relation": {
+                "type": "signed_angle",
+                "angle": "180 deg",
+                "turns": 0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "instance:right",
+        "component": "component:mechanism",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.1,
+              0.2,
+              0.0
+            ],
+            "rotation": [
+              [
+                0.0,
+                -1.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:right"
+      },
+      {
+        "id": "instance:target",
+        "component": "component:target",
+        "placement": {
+          "transform": {
+            "translation_m": [
+              0.2,
+              0.0,
+              0.0
+            ],
+            "rotation": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ]
+          }
+        },
+        "fixed": true,
+        "name": "instance:target"
+      }
+    ],
+    "connectors": [
+      {
+        "id": "connector:target",
+        "name": "target",
+        "instance": "instance:target",
+        "transform": {
+          "translation_m": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              -1.0,
+              0.0,
+              0.0
+            ]
+          ]
+        }
+      }
+    ]
+  }
+}

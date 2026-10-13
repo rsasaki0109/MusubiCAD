@@ -322,10 +322,12 @@ def check_articulated_evidence(task: dict, document: Path, report: dict) -> list
         if configured != task["expected_articulations"]:
             problems.append("articulation source owner/revision/coordinates differ")
         guards = [c["source_kind"] for c in assembly["components"] if c["id"] == "component:mechanism"]
-        if guards != ["articulated_assembly"] or set(instances) != {"instance:left", "instance:right"}:
+        if guards != [task.get("expected_source_kind","articulated_assembly")] or set(instances) != set(task.get("expected_instance_ids",["instance:left","instance:right"])):
             problems.append("articulated instance identity or mandatory guard differs")
         if child_tree_digest(document) != task["expected_child_tree_sha256"]:
             problems.append("child source files were modified")
+        if "expected_context_dof" in task and report.get("context_dof") != task["expected_context_dof"]:
+            problems.append("fully bound context DOF evidence differs")
         leaves = report["assembly_leaves"]
         expected = task["expected_articulated_leaves"]
         paths = [l["instance_path"] for l in leaves]
@@ -348,7 +350,7 @@ def check_articulated_evidence(task: dict, document: Path, report: dict) -> list
                     problems.append("posed leaf analytic bounds differ")
                 if not math.isfinite(got["volume_m3"]) or abs(got["volume_m3"]-6e-6) > 1e-11:
                     problems.append("posed leaf analytic volume differs")
-        if not math.isfinite(report["volume_m3"]) or abs(report["volume_m3"]-24e-6) > 1e-11:
+        if not math.isfinite(report["volume_m3"]) or abs(report["volume_m3"]-task.get("expected_volume_mm3",24000)*1e-9) > 1e-11:
             problems.append("articulated total volume differs")
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         problems.append("articulation evidence is absent or malformed")
@@ -1077,6 +1079,29 @@ def self_test() -> None:
     wrong_task = copy.deepcopy(task)
     wrong_task["expected_child_tree_sha256"] = "wrong"
     assert check_articulated_evidence(wrong_task,document,report)
+    for task_id, angular in [("parent_context_slider",False),("parent_context_hinge",True)]:
+        task = copy.deepcopy(next(t for t in json.loads(TASKS.read_text())["tasks"] if t["id"] == task_id))
+        document = ROOT / task["source"]
+        source = json.loads((document/"graph/assemblies.json").read_text())["assembly"]
+        task["expected_articulations"] = {i["id"]:i["articulation"] for i in source["instances"] if i.get("articulation")}
+        if angular:
+            task["expected_articulated_leaves"][1]["placement"]["rotation"] = [[-1,0,0],[0,-1,0],[0,0,1]]
+            task["expected_articulated_leaves"][1]["bounds_size_m"] = [.01,.02,.03]
+        else:
+            task["expected_articulated_leaves"][1]["placement"]["translation_m"][1] = -.025
+        report = {"context_dof":0,"volume_m3":30e-6,"assembly_leaves":copy.deepcopy(task["expected_articulated_leaves"])}
+        for leaf in report["assembly_leaves"]: leaf["volume_m3"] = 6e-6
+        assert not check_articulated_evidence(task,document,report)
+        wrong = copy.deepcopy(report); wrong["context_dof"] = 1
+        assert check_articulated_evidence(task,document,wrong)
+        wrong = copy.deepcopy(report); wrong.pop("context_dof")
+        assert check_articulated_evidence(task,document,wrong)
+        wrong = copy.deepcopy(report); wrong["assembly_leaves"][3]["placement"]["translation_m"][0] += .025
+        assert check_articulated_evidence(task,document,wrong)
+        wrong_task = copy.deepcopy(task)
+        relation = wrong_task["expected_articulations"]["instance:left"]["context_constraints"][0]["relation"]
+        relation["angle" if angular else "distance"] = "0 deg" if angular else "0 mm"
+        assert check_articulated_evidence(wrong_task,document,report)
     print("self-test passed")
 
 

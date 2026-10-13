@@ -1,6 +1,6 @@
 # ADR-059: Scoped flexible subassemblies
 
-Status: Accepted design gate; implementation remains planned
+Status: Accepted; P13-011 implemented, P13-012 admission specified by ADR-061
 
 Tasks: MCAD-P13-010 (design), MCAD-P13-011 (articulated copies),
 MCAD-P13-012 (parent-context constraints)
@@ -77,7 +77,7 @@ also be graph-owned and use DesignPatch, not a UI-only pose override.
 Use the existing `GeometryKernel` transform/compound/mass/intersection boundary.
 No concrete OCCT types or new hidden filesystem I/O enter core/graph/geometry.
 Both Mock and OCCT must evaluate admitted neutral placements/analytic solids.
-Existing Mock unsupported imported-solid compounds/exact intersections remain
+ADR-060 adds bounded Mock mesh member compounds. Unsupported exact intersections remain
 explicit refusals; an AABB overlap must not be substituted for exact solid volume.
 
 ## Parent-context constraints (P13-012)

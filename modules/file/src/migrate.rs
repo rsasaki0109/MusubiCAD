@@ -71,6 +71,9 @@ use crate::document::OcadDocument;
 /// keep their original feature graph and round-trip unchanged.
 /// MCAD-P12-001: legacy sheets default to an empty angular collection.
 /// Angular annotations are never inferred from old geometry or labels.
+// ADR-061 additive migration: absent context_constraints remains empty. A
+// flexible_assembly discriminator is mandatory for constrained components;
+// readers predating P13-012 refuse instead of dropping the constraints.
 pub fn migrate_to_current(mut doc: OcadDocument) -> Result<OcadDocument> {
     if let Some(assembly) = doc.assembly.take() {
         doc.assembly = Some(assembly.sorted_deterministic());

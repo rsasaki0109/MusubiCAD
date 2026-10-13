@@ -53,6 +53,8 @@ pub struct RegenSummary {
 pub struct RegenResult {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub assembly_leaves: Vec<AssemblyLeafResult>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context_dof: Option<i32>,
     pub kernel: String,
     pub regenerated: Vec<String>,
     pub skipped_suppressed: Vec<String>,
@@ -103,6 +105,11 @@ impl From<RegenSummary> for RegenResult {
     fn from(summary: RegenSummary) -> Self {
         let report = summary.report;
         Self {
+            context_dof: if summary.assembly_leaves.is_empty() {
+                None
+            } else {
+                summary.mate_dof
+            },
             assembly_leaves: summary.assembly_leaves,
             kernel: summary.kernel,
             regenerated: report.regenerated,
@@ -371,7 +378,7 @@ fn regen_assembly_with_kernel(
         mass_kg,
         instances: Some(report.instance_count),
         mate_dof: if report.scene.articulated {
-            None
+            report.scene.context_dof
         } else {
             report.mate_solve.as_ref().map(|solve| solve.dof)
         },

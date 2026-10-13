@@ -268,6 +268,15 @@ pub fn apply_assembly_patch(
                     .instances
                     .iter()
                     .any(|i| i.component == component_id && i.articulation.is_some());
+                let context = model
+                    .instances
+                    .iter()
+                    .filter(|i| i.component == component_id)
+                    .any(|i| {
+                        i.articulation
+                            .as_ref()
+                            .is_some_and(|a| !a.context_constraints.is_empty())
+                    });
                 let component = model
                     .components
                     .iter_mut()
@@ -278,7 +287,9 @@ pub fn apply_assembly_patch(
                         "cannot articulate a part component",
                     ));
                 }
-                component.source_kind = if active {
+                component.source_kind = if context {
+                    opencad_assembly::ComponentSourceKind::FlexibleAssembly
+                } else if active {
                     opencad_assembly::ComponentSourceKind::ArticulatedAssembly
                 } else {
                     opencad_assembly::ComponentSourceKind::Assembly

@@ -180,6 +180,7 @@ fn example_arm_motion_sweeps_match_a_full_repose() {
     let scene = AssemblyScene {
         leaves: Vec::new(),
         articulated: false,
+        context_dof: None,
 
         instances: arm_scene
             .instances
