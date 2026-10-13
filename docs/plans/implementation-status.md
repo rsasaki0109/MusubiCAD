@@ -352,3 +352,10 @@ official release is claimed. Recovery exposes real failure diagnostics in Action
 annotations and exercises Windows packaged tutorials in PRs. The v0.3.1 candidate
 keeps workspace/desktop/plugin/locks coherent; publication remains P15-009 after
 all gates. No capability, host, signing or maturity credit is assigned here.
+
+PR #100 diagnosed the actual Windows failure: ASCII STL LF-to-CRLF conversion
+produced hash 666cdf8c… while feature:stl_plate required 129172c9…. Git binary
+STL attributes and a real core.autocrlf=true checkout regression preserve exact
+asset bytes; source hashes, fixtures, units and physical assertions are unchanged.
+Actual native Windows archive execution must still pass before this recovery
+is complete or v0.3.1 publication can proceed.

@@ -22,11 +22,22 @@ success. The tag is retained without replacement; recovery uses v0.3.1.
 The release publisher requires every native build. No local binaries are uploaded
 to bypass that boundary, and no v0.3.0 official asset inventory or downloaded
 tutorial success is asserted. API check annotations initially only exposed
-`Process completed with exit code 1`; the failure text is needed before choosing
-a repair. A Linux temporary-copy CRLF experiment preserved the child revision
-and regenerated successfully, so newline conversion is not established as cause.
+`Process completed with exit code 1`. PR #100 added real failure annotations and
+reproduced the Windows failure in [Release 38390841664](https://github.com/rsasaki0109/MusubiCAD/actions/runs/38390841664),
+job `115274075763`. The child part's imported **ASCII STL** bytes had SHA-256
+`666cdf8ccad22547437de036752f88a5f47e643d39278a0d92dadbc98d8edfa0`
+while the feature required
+`129172c9ac8ff189ad01b4e620c9b7d29f4996f4198cb27d7e9f905dc2e6e7be`.
+The original 1133-byte LF asset has the required hash; LF-to-CRLF conversion
+produces exactly the observed bad Windows hash. JSON-only CRLF conversion did
+not change the child revision; the affected data is the opaque STL attachment.
 
-Recovery emits bounded, escaped real Python failure traces as Actions check
+Recovery marks every `*.stl` as Git `binary`, preserving opaque asset bytes even
+when ASCII content would otherwise be transformed by Windows `core.autocrlf`.
+A real temporary Git repository, index and `core.autocrlf=true` checkout test
+verifies original bytes and required SHA-256; no STL, feature checksum or geometry
+assertion is rewritten. Hash validation continues to reject changed attachments.
+Recovery also emits bounded, escaped real Python failure traces as Actions check
 annotations while preserving nonzero exit and normal stderr. Release-input PRs
 now exercise Windows and Linux extracted-archive tutorials; tags still require
 all four platforms. Assertions, source guards, units, tolerances and native
