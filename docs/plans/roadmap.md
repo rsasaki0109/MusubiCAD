@@ -836,6 +836,8 @@ and Tauri workflows, ADR-027 plugin distribution and ADR-005 desktop trust.
 
 | MCAD-P15-006 | Reproduce flexible assemblies from packaged CLI | Real MCP parent-only constraint edits, independent SI frames/bounds/volume and exported mesh checks, byte-preserving review/refusal/history, complete packaged inputs and extracted-archive execution; keep actual host gaps and published release scope explicit | Complete upon tutorial PR merge |
 
+| MCAD-P15-007 | Prepare the flexible-assembly v0.3.0 release | Workspace/desktop/plugin/lock versions agree; reviewed release notes identify reader guards and bounded mechanics; native packaged tutorials pass before publication; release remains unpublished until tag matrix and asset verification | Complete upon preparation PR merge |
+
 **Completion definition:** each task has a single main-target PR, applicable
 examples/evals/docs, all four pre-push checks and all applicable CI. Tutorials
 must execute against a real CLI/MCP backend. Release publication follows the

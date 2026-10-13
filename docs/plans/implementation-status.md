@@ -333,3 +333,13 @@ predates these APIs. Future tag execution remains required on all four platforms
 Cursor/authenticated Gemini remain P15-003 gaps. No maturity increment: general
 50.10 (about 50%), assembly 70, ecosystem 14 and agent operation 90. Source
 schema, kernels, dependencies, lockfiles, versions and goldens are unchanged.
+
+
+P15-007 prepares v0.3.0 with coherent workspace, desktop, plugin and lockfile
+versions and reviewed release notes for the accumulated flexible-assembly APIs.
+Publication is a separate tag-build/asset-verification step; a merged preparation
+PR alone is not a published release. No maturity increment is assigned.
+Local pre-push checks passed (1042 Rust tests, zero failures, 31 ignored). Actual
+PowerShell packaging with the native development v0.3.0 binary and both tutorials
+from its extracted Linux archive passed; these are local checks, not official
+release assets or validation of all four native tag builds.
