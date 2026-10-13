@@ -275,3 +275,14 @@ PR #94's final-head applicable CI remains required before merge. After that
 merge, the current baseline is ecosystem 14, general 49.80 (about 50%), agent 89,
 based on this actual Windows evidence; P15-003 stays partial for Cursor and
 authenticated Gemini editing. Manual desktop interaction/signing is not claimed.
+
+
+P13-010 / ADR-059 defines the flexible-subassembly implementation gate. It is
+design only: current children remain rigid and no new source/API is available.
+P13-011 will introduce independent parent-owned child coordinates and a shared
+scoped leaf scene; P13-012 will add admitted parent-context constraints. A posed
+copy alone is not full flexibility. Both must address source snapshots/cache
+ownership, internal collision pairs, consumer refusal, reader migration and the
+five required feature deliverables. No maturity credit from the design PR:
+general 49.80 (about 50%), assembly 68, ecosystem 14, agent operation 89.
+Cursor/authenticated Gemini verification remains P15-003, independently pending.
