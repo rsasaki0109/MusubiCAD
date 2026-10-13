@@ -8,8 +8,16 @@ import struct
 import unittest
 import json
 import tempfile
+import os
+import subprocess
+import sys
+import io
+import hashlib
+from contextlib import redirect_stdout
+from unittest.mock import patch
 from pathlib import Path
 from run_assembly_tutorial import check_mesh, check_regeneration, mesh_properties, run
+from run_editing_tutorial import report_action_error
 
 FACES=[(0,2,1),(0,3,2),(4,5,6),(4,6,7),(0,1,5),(0,5,4),(1,2,6),(1,6,5),(2,3,7),(2,7,6),(3,0,4),(3,4,7)]
 
@@ -32,6 +40,42 @@ def slider(shift=0.):
     ]],[])
 
 class GraderTests(unittest.TestCase):
+    def test_windows_git_checkout_preserves_real_ascii_stl_asset(self):
+        root=Path(__file__).resolve().parents[1]
+        asset=next((root/'examples/parent_context_slider.ocad.d/parts/mechanism.ocad.d/parts/box.ocad.d/imports').glob('*.stl'))
+        original=asset.read_bytes()
+        self.assertTrue(original.startswith(b'solid '))
+        expected=asset.stem.removeprefix('mesh_')
+        self.assertEqual(hashlib.sha256(original).hexdigest(),expected)
+        # Actual Git checkout filters reproduce the Windows asset corruption
+        # if the repository's STL attribute is removed; no client is simulated.
+        with tempfile.TemporaryDirectory() as directory:
+            repo=Path(directory);relative=Path('nested/imports')/asset.name
+            def git(*args):
+                return subprocess.run(['git','-C',str(repo),'-c','core.autocrlf=true',*args],capture_output=True,text=True,check=True)
+            git('init','--quiet')
+            (repo/'.gitattributes').write_bytes((root/'.gitattributes').read_bytes())
+            path=repo/relative;path.parent.mkdir(parents=True);path.write_bytes(original)
+            git('add','--','.gitattributes',relative.as_posix())
+            path.unlink();git('checkout-index','--force','--',relative.as_posix())
+            self.assertEqual(path.read_bytes(),original)
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),expected)
+    def test_action_annotation_escapes_data_and_preserves_real_child_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing=Path(directory)/'missing-native-binary'
+            result=subprocess.run([sys.executable,str(Path(__file__).with_name('run_assembly_tutorial.py')),'--binary',str(missing)],capture_output=True,text=True,env={**os.environ,'GITHUB_ACTIONS':'true'})
+            self.assertNotEqual(result.returncode,0)
+            self.assertIn('::error title=Packaged assembly tutorial::',result.stdout)
+            self.assertIn('FileNotFoundError',result.stdout)
+            self.assertIn('FileNotFoundError',result.stderr)
+        with patch.dict(os.environ,{'GITHUB_ACTIONS':'true'}),redirect_stdout(io.StringIO()) as output:
+            report_action_error(ValueError('percent%\n::warning::injected\rnext'),'Packaged assembly tutorial')
+        self.assertEqual(output.getvalue().count('\n'),1)
+        self.assertIn('percent%25%0A::warning::injected%0Dnext',output.getvalue())
+    def test_local_failure_does_not_emit_actions_command(self):
+        with patch.dict(os.environ,{'GITHUB_ACTIONS':'false'}),redirect_stdout(io.StringIO()) as output:
+            report_action_error(ValueError('local failure'),'Packaged assembly tutorial')
+        self.assertEqual(output.getvalue(),'')
     def test_empty_scenario_cannot_report_success_without_execution(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);scenario=root/'empty.json';scenario.write_text(json.dumps({'cases':[]}))

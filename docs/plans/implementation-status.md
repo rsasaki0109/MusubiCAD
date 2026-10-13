@@ -343,3 +343,19 @@ Local pre-push checks passed (1042 Rust tests, zero failures, 31 ignored). Actua
 PowerShell packaging with the native development v0.3.0 binary and both tutorials
 from its extracted Linux archive passed; these are local checks, not official
 release assets or validation of all four native tag builds.
+
+
+P15-008 recovers the failed v0.3.0 tag: exact-main gates passed and the annotated
+tag points to PR #99 main commit 75ac288fb97402433310d1d513041821deb7a434,
+but Windows failed while executing the extracted archive tutorial. No v0.3.0
+official release is claimed. Recovery exposes real failure diagnostics in Actions
+annotations and exercises Windows packaged tutorials in PRs. The v0.3.1 candidate
+keeps workspace/desktop/plugin/locks coherent; publication remains P15-009 after
+all gates. No capability, host, signing or maturity credit is assigned here.
+
+PR #100 diagnosed the actual Windows failure: ASCII STL LF-to-CRLF conversion
+produced hash 666cdf8c… while feature:stl_plate required 129172c9…. Git binary
+STL attributes and a real core.autocrlf=true checkout regression preserve exact
+asset bytes; source hashes, fixtures, units and physical assertions are unchanged.
+Actual native Windows archive execution must still pass before this recovery
+is complete or v0.3.1 publication can proceed.

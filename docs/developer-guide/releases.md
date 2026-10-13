@@ -26,7 +26,7 @@ current CI verification status tracked by `MCAD-P1-004`.
   and its review DesignPatch.
 - The release contains a generated `SHA256SUMS` file covering all four archives.
 
-Pull requests that change the release inputs build and smoke-test the Linux archive and cannot
+Pull requests that change the release inputs build and smoke-test Linux and Windows archives and cannot
 publish a release. Version tags run the complete build matrix. Non-Linux compile breakage is caught
 on `main`, where the Desktop workflow builds every platform. In all three workflows, a newer push
 to the same pull request cancels its running checks. The `publish` job receives `contents: write` only for a matching tag run after every build
@@ -39,19 +39,19 @@ passes.
    configuration, both lockfiles, and intended tag agree:
 
 ```bash
-python tools/test_release_version.py --tag v0.3.0
+python tools/test_release_version.py --tag v0.3.1
 ```
 
 3. Wait for CI and every Desktop platform build to pass on `main`.
-   Review the [v0.3.0 release notes](../releases/v0.3.0.md). The complete CLI
-   Release matrix runs after the tag; PR archive checks cover Linux only.
+   Review the [v0.3.1 release notes](../releases/v0.3.1.md). The complete CLI
+   Release matrix runs after the tag; PR archive checks cover Linux and Windows.
 4. Create and push an annotated version tag:
 
 ```bash
 git switch main
 git pull --ff-only
-git tag -a v0.3.0 -m "MusubiCAD CLI v0.3.0"
-git push origin v0.3.0
+git tag -a v0.3.1 -m "MusubiCAD CLI v0.3.1"
+git push origin v0.3.1
 ```
 
 5. Verify the GitHub Release has four platform archives and `SHA256SUMS`.
@@ -81,7 +81,14 @@ P15-006 additionally packages `ASSEMBLY-TUTORIAL.md`,
 `examples/agent/assembly_tutorial.json` and both complete parent-context
 mechanisms with nested part assets. The archive contract requires these inputs
 and executes both tutorials with the extracted native executable before upload.
-Release pull requests test Linux; future version tags test all four native
+Release pull requests test Linux and Windows; version tags test all four native
 platforms. The published v0.2.0 archive predates this gate; do not infer a new
 publication from local packaging or PR artifacts. No client-host evidence or
 maturity increment is assigned by this packaging task.
+
+
+The immutable v0.3.0 tag failed its Windows packaged tutorial and was not an
+official publication. See [the failed gate evidence](../plans/cli-release-v0.3.0-evidence.md).
+Do not replace the tag or upload local binaries to bypass its failed gate.
+The recovered v0.3.1 candidate still requires every tag gate and independent
+official download verification before publication can be reported.

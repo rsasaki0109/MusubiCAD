@@ -7,14 +7,24 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import queue
 import threading
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import traceback
 
 ROOT = Path(__file__).resolve().parents[1]
+
+def report_action_error(error: Exception, title: str) -> None:
+    """Expose a real runner failure in Actions check annotations, without hiding it."""
+    if os.environ.get('GITHUB_ACTIONS') != 'true':
+        return
+    detail = ''.join(traceback.format_exception(type(error), error, error.__traceback__))[-12000:]
+    detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+    print(f'::error title={title}::{detail}', flush=True)
 
 def snapshot(path: Path) -> dict[str, bytes]:
     return {p.relative_to(path).as_posix(): p.read_bytes() for p in path.rglob('*') if p.is_file()}
@@ -147,4 +157,8 @@ def main():
     print(json.dumps(run(args.binary.resolve(),args.fixture.resolve(),args.output.resolve() if args.output is not None else None),indent=2))
 
 if __name__=='__main__':
-    main()
+    try:
+        main()
+    except Exception as error:
+        report_action_error(error, 'Packaged editing tutorial')
+        raise
