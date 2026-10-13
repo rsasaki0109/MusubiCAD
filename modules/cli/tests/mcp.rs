@@ -317,3 +317,67 @@ fn an_agent_authors_reviews_and_applies_a_part_over_mcp() {
     let validated = session.tool("validate_document", json!({ "path": part_path }));
     assert_eq!(validated["valid"], true);
 }
+
+#[test]
+fn actual_mcp_sketch_editor_matches_tauri_backend_source_and_history() {
+    use opencad_desktop::sketch_editor::{
+        apply_document_sketch_edit, inspect_document_sketches, plan_document_sketch_edit,
+        SketchEdit, SketchForm,
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let desktop = dir.path().join("desktop.ocad.d");
+    let agent = dir.path().join("agent.ocad.d");
+    let doc = opencad_file::read_ocad(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/ellipse_plate.ocad.d"),
+    )
+    .unwrap();
+    opencad_file::write_ocad(&desktop, &doc).unwrap();
+    opencad_file::write_ocad(&agent, &doc).unwrap();
+    let desktop = desktop.to_str().unwrap();
+    let agent = agent.to_str().unwrap();
+    let mut session = Session::start();
+    session.request("initialize",json!({"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"sketch-parity","version":"1"}}));
+    let state = session.tool("inspect_sketches", json!({"path":agent}));
+    assert_eq!(
+        state,
+        serde_json::to_value(inspect_document_sketches(desktop).unwrap()).unwrap()
+    );
+    let edit = SketchEdit {
+        revision: state["revision"].as_str().unwrap().into(),
+        sketch_id: "sketch:ellipse".into(),
+        operations: vec![SketchForm::Ellipse {
+            id: "ent:ellipse".into(),
+            center: "ent:center".into(),
+            major_radius: "40 mm".into(),
+            minor_radius: "15 mm".into(),
+            axis_angle: "0 deg".into(),
+            construction: false,
+            create: false,
+        }],
+    };
+    let before = opencad_file::read_ocad(agent).unwrap();
+    let plan = session.tool("plan_sketch_edit", json!({"path":agent,"edit":edit}));
+    assert_eq!(
+        plan,
+        serde_json::to_value(plan_document_sketch_edit(desktop, &edit).unwrap()).unwrap()
+    );
+    assert_eq!(opencad_file::read_ocad(agent).unwrap(), before);
+    let result = session.tool("apply_sketch_edit", json!({"path":agent,"edit":edit}));
+    let expected = apply_document_sketch_edit(desktop, &edit, None).unwrap();
+    assert_eq!(result, serde_json::to_value(expected).unwrap());
+    assert_eq!(
+        opencad_file::read_ocad(agent).unwrap(),
+        opencad_file::read_ocad(desktop).unwrap()
+    );
+    assert!(
+        (result["evidence"]["volume_m3"].as_f64().unwrap()
+            - std::f64::consts::PI * 0.04 * 0.015 * 0.006)
+            .abs()
+            < VOLUME_TOLERANCE_M3
+    );
+    let stale = session.request(
+        "tools/call",
+        json!({"name":"apply_sketch_edit","arguments":{"path":agent,"edit":edit}}),
+    );
+    assert_eq!(stale["result"]["isError"], true);
+}

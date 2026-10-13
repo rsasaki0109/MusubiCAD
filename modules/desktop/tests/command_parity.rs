@@ -25,6 +25,21 @@ fn every_ui_model_command_has_a_tauri_handler_and_cli_or_agent_route() {
     // headless smoke contract and are not Tauri/UI commands.
     let parity = [
         (
+            "inspect_sketches_cmd",
+            "inspect_sketches_cmd",
+            "opencad.inspect_sketches",
+        ),
+        (
+            "plan_sketch_edit_cmd",
+            "plan_sketch_edit_cmd",
+            "opencad.plan_sketch_edit",
+        ),
+        (
+            "apply_sketch_edit_cmd",
+            "apply_sketch_edit_cmd",
+            "opencad.apply_sketch_edit",
+        ),
+        (
             "plan_selection_edit_cmd",
             "plan_selection_edit_cmd",
             "opencad.plan_selection_edit",

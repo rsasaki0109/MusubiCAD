@@ -90,3 +90,5 @@ mod tests {
         assert!(info.sketches > 0);
     }
 }
+
+pub mod sketch_editor;

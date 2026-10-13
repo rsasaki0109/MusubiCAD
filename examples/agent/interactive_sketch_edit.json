@@ -1,0 +1,32 @@
+{
+  "task": "MCAD-P14-004",
+  "source": "examples/ellipse_plate.ocad.d",
+  "workflow": [
+    "inspect_sketches",
+    "plan_sketch_edit",
+    "apply_sketch_edit"
+  ],
+  "edit": {
+    "sketch_id": "sketch:ellipse",
+    "revision": "Read current revision from inspect_sketches",
+    "operations": [
+      {
+        "operation": "ellipse",
+        "id": "ent:ellipse",
+        "center": "ent:center",
+        "major_radius": "40 mm",
+        "minor_radius": "15 mm",
+        "axis_angle": "0 deg",
+        "construction": false,
+        "create": false
+      }
+    ]
+  },
+  "expected_volume_mm3": 11309.733552923255,
+  "expected_bounds_size_mm": [
+    80,
+    30,
+    6
+  ],
+  "source_parameters_unchanged": true
+}

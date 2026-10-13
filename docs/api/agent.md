@@ -1078,3 +1078,10 @@ strip the wire guard or add a relationship by editing JSON directly.
 ## Semantic selection gateway
 
 `opencad.inspect_selection_frame`, `opencad.plan_selection_edit` and `opencad.apply_selection_edit` expose the [selection editing contract](selection-editing.md). Pixel picks also return bindings; submit stable target IDs and current source/scene revisions, never inferred feature names or renderer indices.
+
+Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
+`apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
+and atomic history publication. Use explicit units, stable authored IDs and the
+current revision; review never writes. Existing global-workplane sketches only;
+unsupported/ambiguous/stale/failed-solve candidates refuse. See
+[sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.

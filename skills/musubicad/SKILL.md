@@ -603,3 +603,10 @@ Use `list_features` to obtain backend source IDs, admitted length fields, author
 ### Semantic selection editing
 
 Use `inspect_selection_frame` (native scene, no rasterization/write) or `pick_document` for authoritative stable targets and source/scene revisions. `plan_selection_edit` previews `{source_revision,scene_revision,target,field,expr}`; `apply_selection_edit` rebinds and uses the verified feature transaction, with optional unchanged opaque history. Targets are declared `face_reference` IDs or authored `sketch_entity` IDs from backend bindings; no inferred name/role, index, generated coordinate or kernel handle can authorize mutation. Missing/ambiguous/consumed/stale/unsupported bindings refuse. Initial forms edit admitted length expressions on the uniquely resolved owner. Preserve named parameters unless explicitly editing them through their separate API. Follow `examples/agent/semantic_selection_edit.json` and `docs/api/selection-editing.md`; re-query after edits. Local Linux Tauri and stdio MCP evidence are separate from actual external hosts.
+
+Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
+`apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
+and atomic history publication. Use explicit units, stable authored IDs and the
+current revision; review never writes. Existing global-workplane sketches only;
+unsupported/ambiguous/stale/failed-solve candidates refuse. See
+`docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.

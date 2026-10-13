@@ -47,3 +47,10 @@ continues to require its own admission ADR.
 ## P14-003 selection implementation
 
 The exact document used for scene generation creates a disposable SelectionFrame. Its versioned digest includes document identity, patchable source revision, actual mesh geometry and overlay bindings, excluding camera and disposable kernel IDs. Backend source ownership resolves declared refs through current regeneration provenance, or authored overlay IDs through unique active profile consumption. The selection mutation API never accepts an authoritative client frame/provenance. It rebuilds the native frame, rejects stale/ambiguous/missing/consumed/unsupported targets and publishes only through the P14-002 verified gateway. Tauri, Agent and MCP share these planners/applicators. Existing name/role hints remain presentation only; picking no longer focuses editable parameters via those guesses. This introduces no sampler/kernel feature/source schema; ADR-058 remains the accepted contract.
+
+Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
+`apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
+and atomic history publication. Use explicit units, stable authored IDs and the
+current revision; review never writes. Existing global-workplane sketches only;
+unsupported/ambiguous/stale/failed-solve candidates refuse. See
+`docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.

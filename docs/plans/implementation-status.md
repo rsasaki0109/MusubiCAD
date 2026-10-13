@@ -150,3 +150,30 @@ Upon P14-003's main merge, semantic selection to reviewed verified edits
 justifies GUI 20 → 30 (+1.5 weighted): general 45.45 → 46.95 (about 47%) and
 agent operation 87 → 88. Before merge the baseline remains about 45% / 87%.
 P14-004 interactive sketching and Phase 15 host/ecosystem work remain.
+
+
+P14-003 merged as PR #88 (`42a318ed`), after all applicable CI succeeded:
+GUI 30, general weighted 46.95 (about 47%), agent operation 88.
+
+P14-004: interactive local-mm SVG drafts for existing global-plane authored
+sketches. Point selection/move, two-click line drafts, circle/ellipse forms,
+construction flags and horizontal/vertical/coincident/distance/radius constraints
+are typed shared backend commands. Read-only review solves all admitted sketches,
+verifies graph/profile/geometry/assertions and returns the concrete DesignPatch;
+apply rechecks source revision and verifies tessellation before atomic write.
+Source expressions and IDs survive; unsupported/failed/overconstrained/stale
+candidates retain source/history/display. Undo/Redo stays backend-owned. Mock and
+OCCT analytic volume/dimensions, constraint residuals, native history/refusal,
+real MCP stdio parity and actual Linux Tauri interaction accompany the example,
+API/architecture/guide/skill and independent eval task. No schema, dependency,
+new kernel operation, sampler or golden changes. Initial scope excludes new
+sketches, custom/face workplanes, arc/rectangle/cubic/NURBS editing, trim/offset,
+constraint replacement and assembly sketch editing; external host evidence and
+physical nonempty BodyCount remain unavailable.
+
+Upon P14-004's main merge, interactive sketch editing completes the three
+implemented GUI rubric capabilities and justifies GUI 30 → 45 (+2.25 weighted):
+general 46.95 → 49.20 (about 49%), agent operation 88 → 89. Before merge,
+the baseline remains about 47% / 88%. Phase 15 ecosystem evidence remains to
+reach the fixed approximate 50% target; do not infer external host verification
+from Linux Tauri or local MCP checks.

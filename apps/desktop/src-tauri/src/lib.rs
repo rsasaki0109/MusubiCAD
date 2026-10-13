@@ -23,6 +23,29 @@ fn map_error(err: opencad_core::OpenCadError) -> String {
 }
 
 #[tauri::command]
+fn inspect_sketches_cmd(
+    path: String,
+) -> Result<opencad_desktop::sketch_editor::SketchEditorState, String> {
+    opencad_desktop::sketch_editor::inspect_document_sketches(&path).map_err(map_error)
+}
+#[tauri::command]
+fn plan_sketch_edit_cmd(
+    path: String,
+    edit: opencad_desktop::sketch_editor::SketchEdit,
+) -> Result<opencad_desktop::sketch_editor::SketchEditPlan, String> {
+    opencad_desktop::sketch_editor::plan_document_sketch_edit(&path, &edit).map_err(map_error)
+}
+#[tauri::command]
+fn apply_sketch_edit_cmd(
+    path: String,
+    edit: opencad_desktop::sketch_editor::SketchEdit,
+    history: Option<DocumentHistory>,
+) -> Result<opencad_desktop::FeatureEditResult, String> {
+    opencad_desktop::sketch_editor::apply_document_sketch_edit(&path, &edit, history)
+        .map_err(map_error)
+}
+
+#[tauri::command]
 fn plan_selection_edit_cmd(
     path: String,
     edit: opencad_desktop::selection::SelectionEdit,
@@ -275,6 +298,9 @@ fn run_gui() {
             list_document_features_cmd,
             plan_feature_edit_cmd,
             apply_feature_edit_cmd,
+            inspect_sketches_cmd,
+            plan_sketch_edit_cmd,
+            apply_sketch_edit_cmd,
             plan_selection_edit_cmd,
             apply_selection_edit_cmd,
             list_templates,

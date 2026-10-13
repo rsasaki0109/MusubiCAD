@@ -1003,3 +1003,10 @@ Query `list_features` for stable row IDs, admitted fields/profiles and revision.
 ## Semantic selection to dimension patch (MCAD-P14-003)
 
 Use `inspect_selection_frame` or `pick_document` to obtain backend source/scene revisions and admitted bindings. Only declared face refs with unique current provenance and exact authored overlay IDs may bind an edit; missing/ambiguous/consumed/stale/unsupported bindings refuse. Choose an admitted field and explicit-unit expression, call `plan_selection_edit` with `{path, edit:{source_revision,scene_revision,target,field,expr}}`, review the concrete patch and SI evidence, then call `apply_selection_edit` with the same edit and optional unchanged opaque history. Re-query after source changes; no name/role hint or mesh index can choose a mutation owner. This changes the selected feature expression, not a guessed named parameter. `examples/agent/semantic_selection_edit.json` prepares an ellipse top ref through DesignPatch and changes only extrusion length_expr to 10 mm; its independent eval expects 18849.555922 mm³ and unchanged source IDs/parameters. See [selection-editing.md](selection-editing.md), including limits for assemblies, generated coordinates, ellipse/cubic overlays and physical BodyCount.
+
+Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
+`apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
+and atomic history publication. Use explicit units, stable authored IDs and the
+current revision; review never writes. Existing global-workplane sketches only;
+unsupported/ambiguous/stale/failed-solve candidates refuse. See
+[sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.
