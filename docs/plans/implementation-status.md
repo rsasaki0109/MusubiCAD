@@ -264,3 +264,14 @@ new Windows GUI evidence justifies ecosystem 13 → 14 (+0.15 weighted), general
 the baseline remains 49.65 / ecosystem 13 / agent 89. Cursor and authenticated
 Gemini editing remain P15-003 gaps and no unavailable-host credit is assigned.
 No source schema, production UI/backend, kernel, dependencies or golden changes.
+
+
+P15-005 Windows native GUI passed at `a408e015` in Desktop run 38346081515,
+job 115127806676 (`Exercise actual Windows native Tauri forms`: success).
+The initial test-only Windows path representation mismatch was corrected using
+filesystem-resolved identity; all product form, native preview, source, refusal
+and history checks then passed. Failed runs were never merged or credited.
+PR #94's final-head applicable CI remains required before merge. After that
+merge, the current baseline is ecosystem 14, general 49.80 (about 50%), agent 89,
+based on this actual Windows evidence; P15-003 stays partial for Cursor and
+authenticated Gemini editing. Manual desktop interaction/signing is not claimed.

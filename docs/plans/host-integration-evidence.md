@@ -9,7 +9,7 @@ ecosystem 13, agent operation 89. Fixed rubric targets and weights are unchanged
 | Host | Version / platform | Observed scope | Remaining evidence |
 |---|---|---|---|
 | Codex | CLI 0.159.2, Linux x86_64 | Actual app-server MCP startup, 35-tool inventory, typed review/apply, refusal, source retention and native regeneration | Model-driven tool selection, persistent plugin installation and graphical client interaction untested |
-| Windows | Native CLI archive tests on Windows release runner | Packaging/tutorial evidence from P15-002 only | Actual Windows desktop/client session unavailable in this Linux environment |
+| Windows | windows-2022 x86_64 runner; native Tauri 0.2.0 | P15-002 CLI packaging plus P15-005 actual native WebView2 forms, analytic preview, source/history/refusal checks | Manual user session and installer/signing unverified; actual automated GUI check passed |
 | Cursor | Executable unavailable | No actual session | Versioned client session required |
 | Gemini | CLI 0.63.0, Linux x86_64 | Actual extension link/load, native MCP Connected, ACP initialize | ACP session/new refuses without API key; tools/list, host edits and authenticated model session untested |
 
@@ -129,7 +129,7 @@ binding. Presence of `GOOGLE_APPLICATION_CREDENTIALS` was checked by name only;
 its contents were not read and its presence does not establish valid Vertex AI
 setup. No API key, login, auth workaround or extra model-service network access
 was invented. Actual tool discovery, editing/refusal and native regeneration
-through Gemini remain unverified. Windows desktop and Cursor remain unavailable.
+through Gemini remain unverified. Windows native GUI is now covered by the P15-005 CI evidence below; Cursor remains unavailable.
 
 The cloud draft preserves existing Rust/OCCT/Mesa/Tauri setup and adds the pinned
 Gemini install/startup instructions. Saving the draft does not apply or publish
@@ -145,6 +145,28 @@ operated through loopback CDP, with real IPC, native reviewed geometry and
 source/refusal/history checks. See [desktop verification](../developer-guide/desktop-ui.md)
 for the exact scope and reproduction. Windows is included in main-target PR
 CI, so a successful Windows job at the merged head is required evidence.
-Until that job succeeds and the task merges, Windows UI validation remains
-pending. Automated GUI execution does not establish a manual desktop session,
+Windows UI validation passed in the exact execution below; maturity credit
+still requires this task to merge main. Automated GUI execution does not establish a manual desktop session,
 installer/signing, Cursor or authenticated Gemini editing.
+
+
+P15-005's actual Windows step **succeeded** at source
+`a408e0157b45fe3efe656eed105aba07f841db3f`:
+[Desktop run 38346081515, Windows job 115127806676](https://github.com/rsasaki0109/MusubiCAD/actions/runs/38346081515/job/115127806676).
+`Exercise actual Windows native Tauri forms` completed successfully, followed
+by Windows artifact/version/checksum gates. The identical tested UI scripts
+remain in the final documentation update. Windows runtime metadata is emitted
+by the wrapper; the exact browser version is not reproduced here because this
+cloud's log-download destinations were blocked (standard GitHub API job/step
+conclusions were available). No browser version is guessed.
+
+The first execution reached a real loaded Tauri document but a test-only raw
+path comparison rejected Windows short-name/case representations. The final
+runner resolves both paths through `realpathSync.native` and compares the same
+physical disposable directory; it does not remove the identity check. Failed
+runs were not merged or credited. Refusal now additionally checks the opaque
+UI history remains unchanged. [PR #94](https://github.com/rsasaki0109/MusubiCAD/pull/94)
+contains the bounded task and exact final-head CI. After its all-green main
+merge, ecosystem 13 → 14 is justified by actual Windows native GUI evidence;
+general weighted maturity becomes 49.80 (about 50%), agent operation remains 89.
+Cursor and authenticated Gemini editing keep P15-003 partial.
