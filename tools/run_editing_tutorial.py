@@ -17,14 +17,14 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 
 def snapshot(path: Path) -> dict[str, bytes]:
-    return {str(p.relative_to(path)): p.read_bytes() for p in path.rglob('*') if p.is_file()}
+    return {p.relative_to(path).as_posix(): p.read_bytes() for p in path.rglob('*') if p.is_file()}
 
 def logical(path: Path) -> dict:
-    return {str(p.relative_to(path)): json.loads(p.read_text(encoding='utf-8')) for p in path.rglob('*.json') if p.is_file() and p.name != 'checksums.json'}
+    return {p.relative_to(path).as_posix(): json.loads(p.read_text(encoding='utf-8')) for p in path.rglob('*.json') if p.is_file() and p.name != 'checksums.json'}
 
 class MCP:
     def __init__(self, binary: Path):
-        self.process = subprocess.Popen([str(binary), 'mcp'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        self.process = subprocess.Popen([str(binary), 'mcp'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, encoding='utf-8')
         self.sequence = 0
         self.lines: queue.Queue[str] = queue.Queue()
         def read_lines():
@@ -63,7 +63,7 @@ class MCP:
 
 def agent(binary: Path, method: str, params: dict) -> dict:
     request = {'jsonrpc':'2.0','id':1,'method':method,'params':params}
-    completed = subprocess.run([str(binary),'agent'], input=json.dumps(request)+'\n', capture_output=True, text=True, timeout=30, check=True)
+    completed = subprocess.run([str(binary),'agent'], input=json.dumps(request)+'\n', capture_output=True, text=True, encoding='utf-8', timeout=30, check=True)
     response = json.loads(completed.stdout)
     if 'error' in response:
         raise RuntimeError(f'Agent history refused: {response}')
@@ -75,7 +75,7 @@ def run(binary: Path, fixture: Path, output: Path | None = None) -> dict:
             raise ValueError('Output must be a new path outside the original fixture')
     original_bytes = snapshot(fixture)
     scenario = json.loads((ROOT/'examples/agent/editing_tutorial.json').read_text(encoding='utf-8'))
-    version = subprocess.run([str(binary),'version'],capture_output=True,text=True,timeout=10,check=True).stdout.strip()
+    version = subprocess.run([str(binary),'version'],capture_output=True,text=True,encoding='utf-8',timeout=10,check=True).stdout.strip()
     with tempfile.TemporaryDirectory(prefix='musubicad-tutorial-') as temporary:
         path = Path(temporary)/'ellipse.ocad.d'
         shutil.copytree(fixture,path)
