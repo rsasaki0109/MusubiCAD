@@ -834,6 +834,8 @@ and Tauri workflows, ADR-027 plugin distribution and ADR-005 desktop trust.
 | MCAD-P15-004 | Verify Gemini extension startup | P15-003 follow-up: pinned actual Gemini CLI loads the distributed extension and connects to native MCP; distinguish startup from discovery/editing, diagnose auth gating, retain reusable setup and record limits | Complete (startup only; authenticated editing remains P15-003) |
 | MCAD-P15-005 | Verify real Windows desktop editing | Actual native Tauri/WebView2 forms in Windows CI exercise backend review/apply, independent analytic preview, reorder/suppress, Undo/Redo and refusal preservation; keep source fixtures intact and inspector test-only | Complete upon main merge: Windows native UI job verified at a408e015, run 38346081515 |
 
+| MCAD-P15-006 | Reproduce flexible assemblies from packaged CLI | Real MCP parent-only constraint edits, independent SI frames/bounds/volume and exported mesh checks, byte-preserving review/refusal/history, complete packaged inputs and extracted-archive execution; keep actual host gaps and published release scope explicit | Complete upon tutorial PR merge |
+
 **Completion definition:** each task has a single main-target PR, applicable
 examples/evals/docs, all four pre-push checks and all applicable CI. Tutorials
 must execute against a real CLI/MCP backend. Release publication follows the

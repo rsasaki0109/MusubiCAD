@@ -41,6 +41,9 @@ jobs:
       - name: Verify Codex smoke transport failures (no client/model required)
         run: python tools/test_codex_host_smoke.py
 
+      - name: Verify flexible assembly analytic grader
+        run: python tools/test_assembly_tutorial.py
+
       - name: Verify repository Python cache hygiene
         run: python tools/test_repo_hygiene.py
 
@@ -90,3 +93,6 @@ jobs:
 
       - name: Execute reproducible MCP editing tutorial
         run: python tools/run_editing_tutorial.py
+
+      - name: Execute flexible assembly tutorial
+        run: python tools/run_assembly_tutorial.py --binary target/debug/musubicad > target/assembly-tutorial-report.json

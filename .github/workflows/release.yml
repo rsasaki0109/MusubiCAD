@@ -9,6 +9,12 @@ on:
       - Cargo.toml
       - modules/**
       - tools/run_editing_tutorial.py
+      - tools/run_assembly_tutorial.py
+      - tools/test_assembly_tutorial.py
+      - docs/tutorials/assemblies.md
+      - examples/parent_context_slider.ocad.d/**
+      - examples/parent_context_hinge.ocad.d/**
+      - examples/agent/assembly_tutorial.json
       - docs/tutorials/editing.md
       - examples/ellipse_plate.ocad.d/**
       - examples/agent/editing_tutorial.json
@@ -195,6 +201,11 @@ jobs:
               "$root/README.md",
               "$root/QUICKSTART.md",
               "$root/EDITING-TUTORIAL.md",
+              "$root/ASSEMBLY-TUTORIAL.md",
+              "$root/tools/run_assembly_tutorial.py",
+              "$root/examples/agent/assembly_tutorial.json",
+              "$root/examples/parent_context_slider.ocad.d/manifest.ocad.json",
+              "$root/examples/parent_context_hinge.ocad.d/manifest.ocad.json",
               "$root/tools/run_editing_tutorial.py",
               "$root/examples/ellipse_plate.ocad.d/manifest.ocad.json",
               "$root/examples/agent/editing_tutorial.json",
@@ -223,6 +234,8 @@ jobs:
               $executable = if ($env:RELEASE_PLATFORM.StartsWith("windows-")) { "musubicad.exe" } else { "musubicad" }
               & python (Join-Path $root "tools/run_editing_tutorial.py") --binary (Join-Path $root $executable) --fixture (Join-Path $root "examples/ellipse_plate.ocad.d")
               if ($LASTEXITCODE -ne 0) { throw "Packaged tutorial failed" }
+              & python (Join-Path $root "tools/run_assembly_tutorial.py") --binary (Join-Path $root $executable) --fixtures (Join-Path $root "examples")
+              if ($LASTEXITCODE -ne 0) { throw "Packaged flexible assembly tutorial failed" }
           } finally {
               Remove-Item -Recurse -Force -LiteralPath $unpacked
           }

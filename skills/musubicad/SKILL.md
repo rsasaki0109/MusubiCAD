@@ -663,3 +663,18 @@ scopes refuse. Static physical consumers share solved leaves;
 motion/reach/URDF/HTML still refuse. See ADR-061, the articulated-subassembly API,
 `examples/parent_context_slider.ocad.d`, `parent_context_hinge.ocad.d` and their
 parent-only patches. Published v0.2.0 predates this API.
+
+
+## Reproduce parent-context editing from a package (P15-006)
+
+Use `python tools/run_assembly_tutorial.py --binary <trusted-native-binary>`
+with the supplied slider/hinge fixtures and `examples/agent/assembly_tutorial.json`.
+The walkthrough inspects exact ownership/revisions, reviews and applies only a
+parent constraint, checks independent SI poses plus native dimensions/volume,
+and independently integrates the exported STL's volume/centre/bounds/closedness.
+It verifies child/other-copy preservation, stale/unit/range/owner/reference
+refusal, protected unsupported output and opaque Agent Undo/Redo. See the
+assembly tutorial in `docs/tutorials/assemblies.md` (`ASSEMBLY-TUTORIAL.md` in
+future CLI archives). This exercises actual MCP/Agent, without paid models;
+it supplies no Cursor/Gemini client-host evidence. Published v0.2.0 predates
+these APIs and archive inputs; current-main packaging gates cover future releases.
