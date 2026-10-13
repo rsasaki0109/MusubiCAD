@@ -64,6 +64,7 @@ pub fn run() -> Result<()> {
         Some("import-step") => crate::import::cmd_import_step(args.collect()),
         Some("import-dxf") => crate::dxf_import::cmd_import_dxf(args.collect()),
         Some("import-stl") => crate::stl_import::cmd_import_stl(args.collect()),
+        Some("inspect-articulation-source") => crate::articulation::command(args.collect()),
         Some("inspect-joint-pose") => crate::joint_pose::command(args.collect()),
         Some("inspect-projected-sketch") => crate::projected_sketch::command(args.collect()),
         Some("plan-offset") => crate::offset::command(args.collect()),
@@ -315,8 +316,15 @@ fn cmd_regen(path: Option<&str>, extra_args: &[String]) -> Result<()> {
     })?;
     let sync_topo_refs = extra_args.iter().any(|arg| arg == "--sync-topo-refs");
     let summary = regen::regen_document(path, sync_topo_refs)?;
-    regen::print_summary(&summary);
-    if sync_topo_refs {
+    if extra_args.iter().any(|arg| arg == "--json") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&regen::RegenResult::from(summary))?
+        );
+    } else {
+        regen::print_summary(&summary);
+    }
+    if sync_topo_refs && !extra_args.iter().any(|arg| arg == "--json") {
         println!("synced_topo_refs: true");
     }
     Ok(())
@@ -749,6 +757,7 @@ COMMANDS:
                 or where regeneration fails (`intent <path> regen`)
     params      List document parameters
     regen       Regenerate features through the geometry kernel
+    inspect-articulation-source  Inspect child joint ownership and source revision
     bom         Count verified assembly parts; optionally export JSON or CSV
     inspect-dxf Inspect DXF units and layer/entity counts
     import-dxf  Import selected planar DXF layers as a verified sketch

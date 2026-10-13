@@ -349,6 +349,7 @@ mod tests {
     #[test]
     fn distance_residual_at_target() -> opencad_core::Result<()> {
         let left = Instance {
+            articulation: None,
             id: InstanceId::new("instance:left")?,
             component: ComponentId::new("component:bracket")?,
             placement: Placement::identity(),

@@ -42,5 +42,6 @@ fn main() {
 
 mod offset;
 
+mod articulation;
 mod joint_pose;
 mod projected_sketch;

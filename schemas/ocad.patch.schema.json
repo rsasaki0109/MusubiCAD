@@ -24,6 +24,7 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "instance_articulation": {"type": "object", "required": ["source_doc", "source_revision", "positions"], "properties": {"source_doc": {"type": "string", "pattern": "^doc:[a-zA-Z0-9_-]+$"}, "source_revision": {"type": "string", "minLength": 1, "maxLength": 256}, "positions": {"type": "array", "maxItems": 64, "items": {"type": "object", "required": ["joint_id", "position"], "properties": {"joint_id": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "position": {"type": "string", "maxLength": 128}}, "additionalProperties": false}}}, "additionalProperties": false},
     "joint_coupling": {"oneOf": [{"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "ratio"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "gear"}, "ratio": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}, {"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "metres_per_radian"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "rack"}, "metres_per_radian": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}]},
     "exploded_view": {"type": "object", "required": ["id", "name", "offsets"], "properties": {"id": {"type": "string", "pattern": "^view:[a-zA-Z0-9_:/-]+$"}, "name": {"type": "string", "minLength": 1}, "offsets": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"type": "object", "required": ["instance_id", "translation_m"], "properties": {"instance_id": {"type": "string", "pattern": "^instance:[a-zA-Z0-9_:/-]+$"}, "translation_m": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}}, "additionalProperties": false}}}, "additionalProperties": false},
     "projected_sketch": {
@@ -638,6 +639,7 @@
         "radius"
       ],
       "properties": {
+        "articulation": {"oneOf":[{"type":"null"},{"$ref":"#/$defs/instance_articulation"}]},
         "type": {
           "const": "fillet"
         },
@@ -724,6 +726,7 @@
       },
       "additionalProperties": false,
       "allOf": [
+        {"if":{"properties":{"type":{"const":"set_instance_articulation"}}},"then":{"required":["type","instance_id","articulation"]}},
 
 
 
@@ -1214,6 +1217,7 @@
             "set_feature_expr",
             "set_feature_ref",
             "assign_face_ref",
+            "set_instance_articulation",
             "set_instance_placement",
             "set_mate_distance",
             "add_connector",

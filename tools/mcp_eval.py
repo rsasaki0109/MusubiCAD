@@ -302,6 +302,59 @@ def bom_artifact_problems(path: Path, task: dict) -> list[str]:
         return ["required BOM artifact is absent or malformed"]
 
 
+def child_tree_digest(document: Path) -> str:
+    """Byte-exact nested source evidence; exclude the editable parent."""
+    digest = hashlib.sha256()
+    root = document / "parts"
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8") + b"\0")
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def check_articulated_evidence(task: dict, document: Path, report: dict) -> list[str]:
+    """Compare source ownership and SI frames with independent analytic fixtures."""
+    problems = []
+    try:
+        assembly = json.loads((document / "graph/assemblies.json").read_text(encoding="utf-8"))["assembly"]
+        instances = {i["id"]: i for i in assembly["instances"]}
+        configured = {i["id"]: i["articulation"] for i in assembly["instances"] if i.get("articulation") is not None}
+        if configured != task["expected_articulations"]:
+            problems.append("articulation source owner/revision/coordinates differ")
+        guards = [c["source_kind"] for c in assembly["components"] if c["id"] == "component:mechanism"]
+        if guards != ["articulated_assembly"] or set(instances) != {"instance:left", "instance:right"}:
+            problems.append("articulated instance identity or mandatory guard differs")
+        if child_tree_digest(document) != task["expected_child_tree_sha256"]:
+            problems.append("child source files were modified")
+        leaves = report["assembly_leaves"]
+        expected = task["expected_articulated_leaves"]
+        paths = [l["instance_path"] for l in leaves]
+        if paths != sorted(paths) or paths != [l["instance_path"] for l in expected]:
+            problems.append("posed leaf identities/order/count differ")
+        else:
+            for got, want in zip(leaves, expected):
+                if (got["source_doc"], got["source_revision"]) != (want["source_doc"], want["source_revision"]):
+                    problems.append("posed leaf source ownership differs")
+                for key in ("translation_m", "rotation"):
+                    actual = got["placement"][key]
+                    target = want["placement"][key]
+                    if key == "rotation":
+                        actual = [v for row in actual for v in row]
+                        target = [v for row in target for v in row]
+                    if len(actual) != len(target) or any(not math.isfinite(a) or abs(a-b) > 1e-9 for a,b in zip(actual,target)):
+                        problems.append("posed leaf analytic frame differs")
+                bounds = got["bounds_size_m"]
+                if len(bounds) != 3 or any(not math.isfinite(a) or abs(a-b) > 3e-7 for a,b in zip(bounds,want["bounds_size_m"])):
+                    problems.append("posed leaf analytic bounds differ")
+                if not math.isfinite(got["volume_m3"]) or abs(got["volume_m3"]-6e-6) > 1e-11:
+                    problems.append("posed leaf analytic volume differs")
+        if not math.isfinite(report["volume_m3"]) or abs(report["volume_m3"]-24e-6) > 1e-11:
+            problems.append("articulated total volume differs")
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        problems.append("articulation evidence is absent or malformed")
+    return problems
+
+
 def check(
     task: dict,
     document: Path,
@@ -311,6 +364,18 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_articulated_leaves" in task:
+        if musubicad is None:
+            problems.append("articulated checker requires fresh native regeneration")
+        else:
+            try:
+                result = subprocess.run([str(musubicad), "regen", str(document), "--json"], capture_output=True, text=True, timeout=60)
+                if result.returncode:
+                    problems.append("articulated regeneration refused")
+                else:
+                    problems.extend(check_articulated_evidence(task, document, json.loads(result.stdout)))
+            except (OSError, ValueError, subprocess.TimeoutExpired):
+                problems.append("articulated regeneration evidence unavailable")
     if "expected_joint_couplings" in task:
         try:
             assembly = json.loads((document / "graph" / "assemblies.json").read_text(encoding="utf-8"))["assembly"]
@@ -988,6 +1053,30 @@ def self_test() -> None:
         ellipse["center"] = "ent:center"
         sketches_file.write_text(json.dumps(sketches), encoding="utf-8")
         assert not check(sketch_task, sketch_doc, "volume_m3: 0.00001\n")[0]
+    import copy
+    task = next(t for t in json.loads(TASKS.read_text())["tasks"] if t["id"] == "articulated_copy_zero")
+    task = copy.deepcopy(task)
+    task["expected_articulations"]["instance:left"]["positions"][0]["position"] = "90 deg"
+    task["expected_articulated_leaves"][1]["placement"]["rotation"] = [[0,-1,0],[1,0,0],[0,0,1]]
+    task["expected_articulated_leaves"][1]["bounds_size_m"] = [.02,.01,.03]
+    report = {"volume_m3":24e-6,"assembly_leaves":copy.deepcopy(task["expected_articulated_leaves"])}
+    for leaf in report["assembly_leaves"]:
+        leaf["volume_m3"] = 6e-6
+    document = ROOT / "examples/articulated_copies.ocad.d"
+    assert not check_articulated_evidence(task,document,report)
+    for field, value in [("volume_m3",float("nan")),("source_doc","doc:wrong"),("bounds_size_m",[.01,.01,.03]),("source_revision","stale")]:
+        wrong = copy.deepcopy(report)
+        wrong["assembly_leaves"][1][field] = value
+        assert check_articulated_evidence(task,document,wrong)
+    wrong = copy.deepcopy(report)
+    wrong["assembly_leaves"][1]["placement"]["rotation"] = [[1,0,0],[0,1,0],[0,0,1]]
+    assert check_articulated_evidence(task,document,wrong)
+    wrong = copy.deepcopy(report)
+    wrong["assembly_leaves"].pop()
+    assert check_articulated_evidence(task,document,wrong)
+    wrong_task = copy.deepcopy(task)
+    wrong_task["expected_child_tree_sha256"] = "wrong"
+    assert check_articulated_evidence(wrong_task,document,report)
     print("self-test passed")
 
 

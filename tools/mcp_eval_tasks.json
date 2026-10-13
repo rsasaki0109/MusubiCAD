@@ -1347,6 +1347,179 @@
           }
         }
       }
+    },
+    {
+      "id": "articulated_copy_zero",
+      "source": "examples/articulated_copies.ocad.d",
+      "document": "pair.ocad.d",
+      "prompt": "The parent assembly {document} contains two copies of the same hinge child. Inspect child ownership and independent joints using inspect_articulation_source. Reset only instance:left joint:hinge from 90 deg to 0 deg using set_instance_articulation with the inspected child revision. Keep instance:right and both authored placements unchanged. Do not modify any child files. Dry-run, review, apply and regenerate the parent; report the four posed leaves.",
+      "expected_volume_mm3": 24000,
+      "required_parameters": [],
+      "expected_instances": 2,
+      "expected_mates": 0,
+      "expected_articulations": {
+        "instance:left": {
+          "source_doc": "doc:art_mechanism",
+          "source_revision": "3560aa556211e747d35a8b9825a57dffb123d32309b489b49742303fdf71f93b",
+          "positions": [
+            {
+              "joint_id": "joint:hinge",
+              "position": "0 deg"
+            }
+          ]
+        }
+      },
+      "expected_child_tree_sha256": "4c0e53bca06f5f870b5fb179eb65eb39366fe54433265e3620fae241a211a42b",
+      "expected_articulated_leaves": [
+        {
+          "instance_path": [
+            "instance:left",
+            "instance:anchor"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0,
+              0,
+              -0.06
+            ],
+            "rotation": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.01,
+            0.02,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:left",
+            "instance:link"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.01,
+            0.02,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:right",
+            "instance:anchor"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0.2,
+              -0.06
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        },
+        {
+          "instance_path": [
+            "instance:right",
+            "instance:link"
+          ],
+          "source_doc": "doc:art_box",
+          "source_revision": "4a2e9fb8bc6f7f81a158a2af5fc349415c771eb9808e091157d6fa3860fd0814",
+          "placement": {
+            "translation_m": [
+              0.1,
+              0.2,
+              0
+            ],
+            "rotation": [
+              [
+                0,
+                -1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1
+              ]
+            ]
+          },
+          "bounds_size_m": [
+            0.02,
+            0.01,
+            0.03
+          ]
+        }
+      ]
     }
   ]
 }

@@ -138,6 +138,12 @@ fn tools() -> Vec<Tool> {
             schema: || json!({"type":"object","properties":{"path":{"type":"string"},"stl_path":{"type":"string"},"feature_id":{"type":"string"},"source_unit":{"enum":["m","mm","cm","in"]},"name":{"type":"string"},"transform":{"type":"object"},"dry_run":{"type":"boolean"},"history":{"type":"object"}},"required":["path","stl_path","feature_id","source_unit"],"additionalProperties":false}),
         },
         Tool {
+            name: "inspect_articulation_source",
+            description: "Inspect exact child assembly document/revision and independent joint IDs before authoring parent-owned articulated copies. Read-only; rejects missing/invalid sources and reports unsupported hierarchical scopes.",
+            handler: Handler::Agent("opencad.inspect_articulation_source"),
+            schema: path_schema,
+        },
+        Tool {
             name: "inspect_joint_pose",
             description: "Inspect mechanical assembly poses using exact declared joint IDs and explicit-unit coordinates (90deg, 0.5rad, 20mm, 0.02m). Derive coupled gear/rack followers and refuse conflicts, limits or mismatched units. Returns SI positions and world placements without writing.",
             handler: Handler::Agent("opencad.inspect_joint_pose"),
@@ -742,7 +748,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 35);
+        assert_eq!(tools.len(), 36);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

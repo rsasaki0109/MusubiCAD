@@ -1,5 +1,10 @@
 //! Assembly document model (Phase 3).
 
+pub mod articulation;
+pub use articulation::{
+    validate_articulations, ChildJointCoordinate, InstanceArticulation, JointValue,
+};
+
 pub mod bom;
 pub use bom::{
     bom_expanded_model, build_bill_of_materials, BillOfMaterials, BomRow, BomSource, BOM_MAX_DEPTH,
@@ -53,7 +58,7 @@ pub use regen::{
     resolve_component_path, tessellate_assembly_instances, tessellate_assembly_scene,
     validate_component_path, AssemblyInterference, AssemblyInterferenceTolerance,
     AssemblyRegenReport, AssemblyScene, ChildPart, InstanceMesh, InstanceRegenResult,
-    InstanceRegenStatus, ResolvedChild, DEFAULT_INTERFERENCE_BOUNDS_TOLERANCE_M,
+    InstanceRegenStatus, ResolvedChild, ScopedLeaf, DEFAULT_INTERFERENCE_BOUNDS_TOLERANCE_M,
     DEFAULT_INTERFERENCE_VOLUME_TOLERANCE_M3,
 };
 pub use solve::{solve_assembly_mates, AssemblySolveReport};

@@ -129,6 +129,7 @@ impl TryFrom<AssemblyWire> for AssemblyModel {
         if !model.couplings.is_empty() {
             crate::ordered_couplings(&model)?;
         }
+        crate::validate_articulations(&model)?;
         Ok(model)
     }
 }

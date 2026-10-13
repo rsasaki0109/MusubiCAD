@@ -74,42 +74,7 @@ impl Default for JointAnimationOptions {
     }
 }
 
-/// A joint position with its unit, converted to SI.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum JointValue {
-    AngleRad(f64),
-    LengthM(f64),
-}
-
-impl JointValue {
-    /// Parse `45deg`, `0.5rad`, `20mm`, or `0.02m`.
-    pub fn parse(text: &str) -> Result<Self> {
-        let text = text.trim();
-        let (number, value): (&str, fn(f64) -> Self) =
-            if let Some(number) = text.strip_suffix("deg") {
-                (number, |v| Self::AngleRad(v.to_radians()))
-            } else if let Some(number) = text.strip_suffix("rad") {
-                (number, Self::AngleRad)
-            } else if let Some(number) = text.strip_suffix("mm") {
-                (number, |v| Self::LengthM(v / 1000.0))
-            } else if let Some(number) = text.strip_suffix('m') {
-                (number, Self::LengthM)
-            } else {
-                return Err(OpenCadError::validation(format!(
-                    "joint position '{text}' needs a unit: deg, rad, mm, or m"
-                )));
-            };
-        let number: f64 = number.trim().parse().map_err(|_| {
-            OpenCadError::validation(format!("joint position '{text}' is not a number"))
-        })?;
-        if !number.is_finite() {
-            return Err(OpenCadError::validation(format!(
-                "joint position '{text}' must be finite"
-            )));
-        }
-        Ok(value(number))
-    }
-}
+pub use opencad_assembly::JointValue;
 
 /// One joint that moves in the clip.
 #[derive(Debug, Clone, PartialEq, Serialize)]

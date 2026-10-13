@@ -24,3 +24,6 @@ pub use patch::{
     dry_run_patch_document,
 };
 pub use topo_assign::{apply_assign_face_ref, AssignFaceRefOp};
+
+pub mod assembly_sources;
+pub use assembly_sources::{snapshot_assembly_sources, AssemblySourceSnapshot};

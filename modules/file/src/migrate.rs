@@ -1,3 +1,6 @@
+// MCAD-P13-011 / ADR-059: absent instance.articulation remains None. The
+// mandatory articulated_assembly source-kind guard rejects old readers; missing
+// or orphan guards refuse on decoding. No coordinates or child motion inferred.
 // MCAD-P13-008 / ADR-057: cubic_bezier is an additive strict entity tag.
 // Existing files are not inferred/mutated. Fixed non-rational convention,
 // explicit closed endpoint/control IDs; unknown fields or tags refuse.

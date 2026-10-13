@@ -30,6 +30,7 @@ pub use opencad_desktop::{inspect_document_regeneration, RegenInspectionResult};
 /// Summary printed by `musubicad regen`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RegenSummary {
+    pub assembly_leaves: Vec<AssemblyLeafResult>,
     pub kernel: String,
     pub report: RegenReport,
     pub volume_m3: Option<f64>,
@@ -50,6 +51,8 @@ pub struct RegenSummary {
 /// Serializable regeneration result for Agent API responses.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RegenResult {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub assembly_leaves: Vec<AssemblyLeafResult>,
     pub kernel: String,
     pub regenerated: Vec<String>,
     pub skipped_suppressed: Vec<String>,
@@ -86,10 +89,21 @@ pub struct RegenBodyParams {
     pub feature_nodes: Vec<opencad_feature::FeatureNode>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AssemblyLeafResult {
+    pub instance_path: Vec<String>,
+    pub source_doc: String,
+    pub source_revision: String,
+    pub placement: opencad_geometry::RigidTransform,
+    pub bounds_size_m: [f64; 3],
+    pub volume_m3: f64,
+}
+
 impl From<RegenSummary> for RegenResult {
     fn from(summary: RegenSummary) -> Self {
         let report = summary.report;
         Self {
+            assembly_leaves: summary.assembly_leaves,
             kernel: summary.kernel,
             regenerated: report.regenerated,
             skipped_suppressed: report.skipped_suppressed,
@@ -112,6 +126,11 @@ impl From<RegenSummary> for RegenResult {
 pub fn regen_document(path: &str, sync_topo_refs: bool) -> Result<RegenSummary> {
     if sync_topo_refs {
         let mut doc = read_ocad(path)?;
+        if doc.assembly.as_ref().is_some_and(|m| m.has_articulations()) {
+            return Err(OpenCadError::validation(
+                "articulated assembly topo-ref sync is unsupported; use DesignPatch",
+            ));
+        }
         let summary = regen_ocad_document(path, &doc)?;
         crate::topo_sync::sync_document_topo_refs(&mut doc)?;
         write_expanded_dir(path, &doc)?;
@@ -135,6 +154,7 @@ pub fn regen_ocad_document(path: &str, doc: &OcadDocument) -> Result<RegenSummar
             .filter_map(|d| d.reference_provenance.clone())
             .collect();
         return Ok(RegenSummary {
+            assembly_leaves: Vec::new(),
             kernel: "OCCT 8.0.0 (cadrum static)".into(),
             report: RegenReport {
                 regenerated: regenerated.clone(),
@@ -300,6 +320,27 @@ fn regen_assembly_with_kernel(
         &registry,
         &mut load_child_document,
     )?;
+    let mut assembly_leaves = Vec::new();
+    if report.scene.articulated {
+        for leaf in &report.scene.leaves {
+            let bounds = kernel.bounding_box(&leaf.body)?;
+            assembly_leaves.push(AssemblyLeafResult {
+                instance_path: leaf
+                    .instance_path
+                    .iter()
+                    .map(|id| id.as_str().to_owned())
+                    .collect(),
+                source_doc: leaf.source_doc.as_str().to_owned(),
+                source_revision: leaf.source_revision.clone(),
+                placement: leaf.placement,
+                bounds_size_m: bounds.size(),
+                volume_m3: kernel
+                    .mass_properties(&leaf.body, DEFAULT_DENSITY_KG_PER_M3)?
+                    .volume_m3,
+            });
+        }
+        assembly_leaves.sort_by(|a, b| a.instance_path.cmp(&b.instance_path));
+    }
     let assertions = if doc.assertions.is_empty() {
         Vec::new()
     } else {
@@ -323,12 +364,17 @@ fn regen_assembly_with_kernel(
         .map(|mass| (Some(mass.volume_m3), Some(mass.mass_kg)))
         .unwrap_or((None, None));
     Ok(RegenSummary {
+        assembly_leaves,
         kernel: kernel_name,
         report: assembly_regen_report(&report),
         volume_m3,
         mass_kg,
         instances: Some(report.instance_count),
-        mate_dof: report.mate_solve.as_ref().map(|solve| solve.dof),
+        mate_dof: if report.scene.articulated {
+            None
+        } else {
+            report.mate_solve.as_ref().map(|solve| solve.dof)
+        },
         mate_max_error: report.mate_solve.as_ref().map(|solve| solve.max_error),
         assertions,
         drawing_dimensions: Vec::new(),
@@ -371,6 +417,7 @@ pub(crate) fn assembly_root(path: &str) -> std::path::PathBuf {
 
 fn load_child_document(path: &Path) -> Result<ResolvedChild> {
     let doc = read_ocad(path)?;
+    let revision = opencad_ai::design_state_revision(&opencad_file::document_design_state(&doc))?;
     match doc.metadata.kind {
         DocumentKind::Assembly => {
             let assembly = doc.assembly.ok_or_else(|| {
@@ -401,6 +448,7 @@ fn load_child_document(path: &Path) -> Result<ResolvedChild> {
             path.display()
         ))),
     }
+    .map(|child| child.with_revision(revision))
 }
 
 pub fn regenerate_part(
@@ -417,6 +465,7 @@ pub fn regenerate_part(
         let report = model.regenerate(&kernel, &registry, parameters, semantic_refs)?;
         let (volume_m3, mass_kg) = mass_for_active_body(model, &kernel);
         Ok(RegenSummary {
+            assembly_leaves: Vec::new(),
             kernel: kernel_name,
             report,
             volume_m3,
@@ -439,6 +488,7 @@ pub fn regenerate_part(
         let report = model.regenerate(&kernel, &registry, parameters, semantic_refs)?;
         let (volume_m3, mass_kg) = mass_for_active_body(model, &kernel);
         Ok(RegenSummary {
+            assembly_leaves: Vec::new(),
             kernel: "MockGeometryKernel".into(),
             report,
             volume_m3,

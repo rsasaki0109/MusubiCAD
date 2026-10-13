@@ -32,6 +32,7 @@
     }
   },
   "$defs": {
+    "instance_articulation": {"type":"object","required":["source_doc","source_revision","positions"],"properties":{"source_doc":{"type":"string","pattern":"^doc:[a-zA-Z0-9_-]+$"},"source_revision":{"type":"string","minLength":1,"maxLength":256},"positions":{"type":"array","maxItems":64,"items":{"type":"object","required":["joint_id","position"],"properties":{"joint_id":{"type":"string","pattern":"^joint:[a-zA-Z0-9_:/-]+$"},"position":{"type":"string","maxLength":128}},"additionalProperties":false}}},"additionalProperties":false},
     "joint": {"oneOf":[{"$ref":"#/$defs/physical_joint"},{"$ref":"#/$defs/coupled_joint"}]},
     "coupled_joint": {"type": "object", "required": ["id", "mate", "type", "coupling_id", "motion"], "properties": {"id": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "mate": {"type": "string", "pattern": "^mate:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "coupled"}, "coupling_id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "motion": {"description": "Underlying physical joint motion; SI radians/metres (ADR-056).", "type": "object", "required": ["type"], "properties": {"type": {"type": "string", "enum": ["revolute", "continuous", "prismatic", "fixed"]}, "lower_rad": {"type": "number"}, "upper_rad": {"type": "number"}, "effort_n_m": {"type": "number", "exclusiveMinimum": 0}, "velocity_rad_s": {"type": "number", "exclusiveMinimum": 0}, "lower_m": {"type": "number"}, "upper_m": {"type": "number"}, "effort_n": {"type": "number", "exclusiveMinimum": 0}, "velocity_m_s": {"type": "number", "exclusiveMinimum": 0}}, "allOf": [{"if": {"properties": {"type": {"const": "revolute"}}}, "then": {"required": ["lower_rad", "upper_rad", "effort_n_m", "velocity_rad_s"]}}, {"if": {"properties": {"type": {"const": "prismatic"}}}, "then": {"required": ["lower_m", "upper_m", "effort_n", "velocity_m_s"]}}], "additionalProperties": false}}, "additionalProperties": false},
     "joint_coupling": {"oneOf": [{"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "ratio"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "gear"}, "ratio": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}, {"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "metres_per_radian"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "rack"}, "metres_per_radian": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}]},
@@ -51,7 +52,7 @@
         },
         "source_kind": {
           "type": "string",
-          "enum": ["part", "assembly"]
+          "enum": ["part", "assembly", "articulated_assembly"]
         }
       },
       "additionalProperties": false
@@ -70,7 +71,8 @@
         },
         "placement": { "$ref": "#/$defs/placement" },
         "fixed": { "type": "boolean" },
-        "name": { "type": "string" }
+        "name": { "type": "string" },
+        "articulation": {"$ref":"#/$defs/instance_articulation"}
       },
       "additionalProperties": false
     },

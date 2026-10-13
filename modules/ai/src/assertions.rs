@@ -89,6 +89,11 @@ pub fn assembly_assertion_context(
             matches!(instance.status, InstanceRegenStatus::Ok) && instance.body.is_some()
         })
         .count();
+    let body_count = if report.scene.articulated {
+        report.scene.leaves.len()
+    } else {
+        body_count
+    };
     AssertionContext {
         parameter_values: evaluate_param_graph(parameters)
             .unwrap_or_default()
@@ -104,7 +109,7 @@ pub fn assembly_assertion_context(
         }),
         body_count: Some(u32::try_from(body_count).unwrap_or(u32::MAX)),
         reference_provenance: Vec::new(),
-        assembly_dof: Some(report.dof),
+        assembly_dof: (!report.scene.articulated).then_some(report.dof),
         interference_count: Some(interference_count),
         motion_interference: BTreeMap::new(),
     }
@@ -427,6 +432,9 @@ mod tests {
             instance_count: instances.len(),
             successful_instances: 2,
             scene: AssemblyScene {
+                leaves: Vec::new(),
+                articulated: false,
+
                 instances: instances.clone(),
                 compound_body: None,
                 bounding_box: Some(BoundingBox {
@@ -463,6 +471,23 @@ mod tests {
         assert_eq!(context.assembly_dof, Some(1));
         assert_eq!(context.interference_count, Some(2));
         assert!(context.reference_provenance.is_empty());
+    }
+
+    #[test]
+    fn articulated_scene_cannot_certify_parent_context_dof() {
+        let mut report = assembly_report(0);
+        report.scene.articulated = true;
+        let context = assembly_assertion_context(&ParamGraph::new(), &report, 0);
+        let assertion = Assertion::new(
+            "assertion:dof",
+            "Full assembly DOF",
+            AssertionSeverity::Required,
+            AssertionKind::AssemblyDofAtMost { max_dof: 0 },
+        );
+        assert!(!required_assertions_pass(&evaluate_assertions(
+            &[assertion],
+            &context
+        )));
     }
 
     #[test]

@@ -132,6 +132,7 @@ pub fn sample_motion_interference<K: GeometryKernel>(
     samples_per_joint: u32,
     tolerance: AssemblyInterferenceTolerance,
 ) -> Result<MotionInterferenceReport> {
+    model.require_rigid_kinematics()?;
     if !(MIN_MOTION_SAMPLES_PER_JOINT..=MAX_MOTION_SAMPLES_PER_JOINT).contains(&samples_per_joint) {
         return Err(OpenCadError::validation(format!(
             "samples per joint must be between {MIN_MOTION_SAMPLES_PER_JOINT} and \

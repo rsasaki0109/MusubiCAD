@@ -161,6 +161,7 @@ mod tests {
             )],
             instances: vec![
                 Instance {
+                    articulation: None,
                     id: InstanceId::new("instance:left")?,
                     component: ComponentId::new("component:bracket")?,
                     placement: Placement::identity(),

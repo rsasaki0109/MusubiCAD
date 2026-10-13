@@ -372,6 +372,9 @@ fn collision_scene<K: GeometryKernel>(kernel: &K) -> AssemblyScene {
         })
         .collect();
     AssemblyScene {
+        leaves: Vec::new(),
+        articulated: false,
+
         instances,
         compound_body: None,
         bounding_box: None,

@@ -93,7 +93,8 @@ pub fn patch_document_with_options(args: &PatchArgs) -> Result<()> {
             opencad_ai::ExpectedEffect::SketchPointPosition { .. }
         )
     });
-    if !args.options.no_verify || point_effect {
+    let dependencies = crate::articulation::before_verification(&args.doc_path, &before, &patch)?;
+    if !args.options.no_verify || point_effect || dependencies.is_some() {
         let verification = verification_report(&args.doc_path, &before, &patch);
         if !verification.passed {
             return Err(opencad_core::OpenCadError::validation(format!(
@@ -115,8 +116,17 @@ pub fn patch_document_with_options(args: &PatchArgs) -> Result<()> {
             println!("verified: regenerates");
         }
     }
+    let original = before.clone();
     let mut doc = before;
     apply_patch_to_document(&mut doc, &patch)?;
+    if let Some(dependencies) = &dependencies {
+        crate::articulation::ensure_sources_unchanged(
+            &args.doc_path,
+            &original,
+            &doc,
+            dependencies,
+        )?;
+    }
     write_ocad(&args.doc_path, &doc)?;
     println!("patched: {}", args.doc_path);
     Ok(())

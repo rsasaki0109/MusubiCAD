@@ -450,7 +450,7 @@ original bytes and SHA-256 through AddAttachment/AddFeature DesignPatch/history.
 For undo use the returned `history.history` payload. See
 `examples/stl_import_plate.ocad.d`, `examples/import/closed_plate_mm.stl` and
 `examples/agent/create_stl_import_plate_patch.json`. Mock preserves accurate mesh
-measurements/placement; imported-mesh shape edits/CSG/compounds/inertia refuse.
+measurements/placement; imported-mesh shape edits/CSG/inertia refuse; ADR-060 adds bounded mesh compounds.
 
 ### Construction geometry editing
 
@@ -617,3 +617,26 @@ in a built checkout, or pass the packaged `--binary` and `--fixture` paths.
 The real MCP/Agent exercise checks reviews, stale/unit refusals, source identity,
 Undo/Redo and native analytic dimensions/volume; it is not actual client-host
 integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.
+
+
+## Independent articulated subassembly copies (P13-011)
+
+Current main adds `inspect_articulation_source` (published v0.2.0 predates this
+API). Inspect the child for its owning document, revision and independent joint
+IDs, and inspect the parent for the patch revision precondition. Author
+`set_instance_articulation` with a strict `articulation` object containing
+`source_doc`, `source_revision` and `positions` as an array of
+`{"joint_id":"joint:hinge","position":"90 deg"}`. Dry-run, review and apply via
+DesignPatch; never edit the child to change one copy. An explicit null clears
+the instance configuration. Application forces regeneration and rechecks source
+dependencies before writing, even with `verify:false`.
+
+Use `examples/articulated_copies.ocad.d` and its zero-coordinate patch as the
+reference. `regen_document` reports sorted structured `assembly_leaves` with
+source ownership, composed SI placements, bounds and volumes. Missing/wrong
+owners, stale revisions, duplicate coordinates, followers, illegal units/ranges,
+nested articulated scopes and articulated pattern targets refuse. Motion, reach,
+URDF and HTML mechanics also refuse before output. Static geometry, reviews,
+BOM and native leaf-pair interference are supported; Mock exact mesh intersection
+refuses. Parent-context constraints remain P13-012. See
+[the articulated-copy API](../../docs/api/articulated-subassemblies.md) and ADR-059/060.

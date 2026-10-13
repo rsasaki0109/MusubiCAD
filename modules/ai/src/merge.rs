@@ -799,7 +799,8 @@ fn patch_target(operation: &PatchOperation) -> Option<PatchTarget> {
         PatchOperation::AssignFaceRef { ref_id, .. } => {
             (ConflictKind::UnsupportedStructure, ref_id.clone())
         }
-        PatchOperation::SetInstancePlacement { instance_id, .. } => {
+        PatchOperation::SetInstancePlacement { instance_id, .. }
+        | PatchOperation::SetInstanceArticulation { instance_id, .. } => {
             (ConflictKind::Assembly, instance_id.clone())
         }
         PatchOperation::SetMateDistance { mate_id, .. } => {
@@ -1078,7 +1079,8 @@ fn target_snapshot(state: &DesignState, operation: &PatchOperation) -> TargetSna
                 .iter()
                 .find(|topo_ref| topo_ref.ref_id.as_str() == ref_id),
         ),
-        PatchOperation::SetInstancePlacement { instance_id, .. } => {
+        PatchOperation::SetInstancePlacement { instance_id, .. }
+        | PatchOperation::SetInstanceArticulation { instance_id, .. } => {
             snapshot(state.assembly.as_ref().and_then(|assembly| {
                 assembly
                     .instances

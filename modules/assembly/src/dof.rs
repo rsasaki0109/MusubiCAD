@@ -147,6 +147,7 @@ mod tests {
     #[test]
     fn grounded_instance_has_no_pose_vars() -> Result<()> {
         let left = Instance {
+            articulation: None,
             id: InstanceId::new("instance:left")?,
             component: ComponentId::new("component:bracket")?,
             placement: Placement::identity(),

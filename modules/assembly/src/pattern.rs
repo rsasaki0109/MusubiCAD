@@ -78,6 +78,7 @@ pub fn expand_patterns(model: &AssemblyModel) -> Result<AssemblyModel> {
             let instance_id =
                 InstanceId::new(format!("instance:{}{}", pattern.name_prefix, index))?;
             expanded.instances.push(Instance {
+                articulation: None,
                 id: instance_id,
                 component: pattern.component.clone(),
                 placement: Placement::new(transform),

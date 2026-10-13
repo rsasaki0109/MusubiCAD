@@ -202,7 +202,8 @@ impl Snapshots {
                     };
                     let kind = match component.source_kind {
                         ComponentSourceKind::Part => DocumentKind::Part,
-                        ComponentSourceKind::Assembly => DocumentKind::Assembly,
+                        ComponentSourceKind::Assembly
+                        | ComponentSourceKind::ArticulatedAssembly => DocumentKind::Assembly,
                     };
                     if child.metadata.id != component.source_doc || child.metadata.kind != kind {
                         return Err(OpenCadError::validation(format!(
@@ -244,11 +245,14 @@ impl Snapshots {
                 ))
             })?
             .clone();
+        let revision =
+            opencad_ai::design_state_revision(&opencad_file::document_design_state(&doc))?;
         if let Some(model) = &doc.assembly {
             return Ok(ResolvedChild::Assembly {
                 model: Box::new(model.clone()),
                 doc_id: doc.metadata.id,
-            });
+            }
+            .with_revision(revision));
         }
         let doc_id = doc.metadata.id.clone();
         let parameters = doc.parameters.clone();
@@ -258,7 +262,8 @@ impl Snapshots {
             parameters,
             semantic_refs,
             part: doc.into_part_model(),
-        })))
+        }))
+        .with_revision(revision))
     }
 }
 
