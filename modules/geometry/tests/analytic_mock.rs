@@ -180,7 +180,7 @@ fn unsupported_physical_queries_and_edits_never_return_synthetic_geometry() {
     let original = kernel.mass_properties(&stock, 1.).expect("original");
     assert!(kernel
         .tessellate(&stock, &TessellationSettings::default())
-        .is_err());
+        .is_ok());
     assert!(kernel.discover_body_edges(&stock).is_err());
     assert!(kernel.discover_body_edges(&KernelBody::new(0)).is_err());
     assert!(kernel.edge_endpoints(&stock, 1).is_err());

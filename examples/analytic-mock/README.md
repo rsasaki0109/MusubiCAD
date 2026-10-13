@@ -1,6 +1,6 @@
 # Bounded physical Mock kernel example
 
-Developer SDK example for MCAD-P16-002 / ADR-062:
+Developer SDK example for MCAD-P16-002/010 / ADR-062/063:
 
 ```sh
 cargo run -p opencad-geometry --example analytic_stock_and_cuts
@@ -21,17 +21,29 @@ Independent expectations:
 - Surface area: `3994.213257844921` mm².
 - Bounds: `(0, 0, 0)` to `(40, 30, 10)` mm.
 
-The default Mock still uses legacy synthetic plumbing for ordinary features.
-Analytic mode supports only admitted primitives, bounded concentric subtraction,
-mass/area/centre/bounds and proper rigid transforms/translation. It refuses
-through-all, oblique/laterally intersecting/out-of-stock cuts, nonconcentric
-chains, unions/intersections, topology, tessellation, STEP, compounds, inertia,
-and other shape edits. It cannot supply viewport/semantic-face output yet.
-MCAD-P16-003 needs its own feature/schema/semantic/tessellation gate before
-implementing document-level counterbores; do not substitute a plain hole.
+The example now prints the original cuboid entry witness, exact measurements,
+and an actual closed mesh (10 µm linear deflection, 8° angular deflection), with
+body-owned triangle face IDs. It performs no hidden file export. Repeat runs
+produce the same mesh/IDs. Default Mock remains synthetic for ordinary features.
 
-Native integration evidence is in
-`modules/kernel-occt/tests/analytic_primitives.rs`: both kernels are independently
-checked for stepped removal in either order, blind cuts, first moments, surface
-area, original input preservation, placed geometry, centered symmetric rectangle/
-circle extrusions and tilted cylinder bounds. No new curve sampling is used.
+Analytic mode also supports physical meshes and face membership/history. It
+refuses through-all, oblique/laterally intersecting/out-of-stock cuts,
+nonconcentric chains, unions/intersections, edge/circular-edge discovery, STEP,
+compounds, inertia, other shape edits and unrepresentable/out-of-budget meshes.
+The cuboid witness refuses cut stock and unsupported picks. This remains kernel
+infrastructure: MCAD-P16-003 needs its source/schema/semantic and DesignPatch gate
+before document counterbores; do not substitute a plain hole or invent seat fields.
+
+Independent evidence:
+
+```sh
+cargo test -p opencad-geometry --test analytic_mock
+cargo test -p opencad-geometry --test physical_mesh
+cargo test -p opencad-kernel-occt --test analytic_primitives
+cargo test -p opencad-kernel-occt --test physical_mesh
+```
+
+Tests integrate the exported triangles independently, check closed opposite-edge
+pairing, winding, volume, centre, true ring contact/radii, actual gap/deflection,
+face coverage, owned picks and failure preservation. Native and Mock are checked
+against physical expectations; matching each other's output is not the oracle.

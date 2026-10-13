@@ -9,6 +9,8 @@ use crate::{
     DEFAULT_VECTOR_NORM_EPSILON, POSITION_TOLERANCE_M, ROTATION_TOLERANCE,
 };
 
+mod mesh;
+
 const RECORD_BUDGET: usize = 100_000;
 const CUT_BUDGET: usize = 64;
 const MAX_LENGTH_M: f64 = 1_000.;
@@ -526,6 +528,9 @@ impl Body {
 pub(crate) struct AnalyticMock {
     wires: BTreeMap<u64, Profile>,
     bodies: BTreeMap<u64, Body>,
+    faces: BTreeMap<u64, BTreeMap<mesh::FaceKey, u64>>,
+    histories: BTreeMap<u64, Vec<(u64, u64)>>,
+    next_face: u64,
 }
 impl AnalyticMock {
     fn next_id(count: usize) -> Result<u64> {
@@ -549,12 +554,51 @@ impl AnalyticMock {
     pub(crate) fn bounds(&self, body: &KernelBody) -> Result<BoundingBox> {
         Ok(self.body(body)?.bounds())
     }
-    fn store(&mut self, body: Body) -> Result<KernelBody> {
+    fn store(
+        &mut self,
+        body: Body,
+        source: Option<KernelBody>,
+        preserve: bool,
+    ) -> Result<KernelBody> {
         let id = Self::next_id(self.bodies.len())?;
         body.mass(1.)?;
         let bounds = body.bounds();
         position(bounds.min)?;
         position(bounds.max)?;
+        let keys = mesh::keys(&body)?;
+        let previous = source.as_ref().and_then(|b| self.faces.get(&b.0));
+        let mut faces = BTreeMap::new();
+        let mut history = Vec::new();
+        for key in keys {
+            let old = previous.and_then(|p| p.get(&key)).copied();
+            let face = if preserve && old.is_some() {
+                old.ok_or_else(|| invalid("missing inherited face"))?
+            } else {
+                self.next_face += 1;
+                u64::MAX / 6 - self.next_face
+            };
+            if let Some(old) = old {
+                history.push((face, old));
+            } else if let mesh::FaceKey::Wall(a, b, r) = &key {
+                // A later cut may split an existing cylindrical wall. Retain
+                // its actual same-radius overlapping ancestry, not a nearby face.
+                if let Some(previous) = previous {
+                    for (parent, parent_id) in previous {
+                        if let mesh::FaceKey::Wall(c, d, s) = parent {
+                            if r == s
+                                && f64::from_bits(*a).max(f64::from_bits(*c))
+                                    < f64::from_bits(*b).min(f64::from_bits(*d))
+                            {
+                                history.push((face, *parent_id));
+                            }
+                        }
+                    }
+                }
+            }
+            faces.insert(key, face);
+        }
+        self.faces.insert(id, faces);
+        self.histories.insert(id, history);
         self.bodies.insert(id, body);
         Ok(KernelBody::new(id))
     }
@@ -577,6 +621,7 @@ impl AnalyticMock {
             .get(&wire.0)
             .ok_or_else(|| invalid("unknown physical wire"))?;
         let tool = profile.extruded(&extent, direction)?;
+        let source = target.clone();
         let output = match (operation, target) {
             (ExtrudeOperation::NewBody, None) => tool,
             (ExtrudeOperation::Cut, Some(target)) => self.body(&target)?.subtract(&tool)?,
@@ -586,7 +631,7 @@ impl AnalyticMock {
                 ))
             }
         };
-        self.store(output)
+        self.store(output, source, true)
     }
     pub(crate) fn boolean(
         &mut self,
@@ -598,7 +643,7 @@ impl AnalyticMock {
             return Err(unsupported());
         }
         let output = self.body(&lhs)?.subtract(self.body(&rhs)?)?;
-        self.store(output)
+        self.store(output, Some(lhs), true)
     }
     pub(crate) fn transformed(
         &mut self,
@@ -606,6 +651,6 @@ impl AnalyticMock {
         transform: RigidTransform,
     ) -> Result<KernelBody> {
         let output = self.body(&body)?.transformed(transform)?;
-        self.store(output)
+        self.store(output, Some(body), false)
     }
 }

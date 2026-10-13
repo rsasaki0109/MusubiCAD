@@ -238,20 +238,21 @@ contained concentric removal without overlap double-counting, and refuse
 unsupported operations/queries instead of synthesizing a cube. Default legacy
 Mock behavior and geometry-neutral OCCT boundaries stay intact. Runtime records
 are disposable; no kernel handle or new source representation is serialized.
-Seated-hole source/schema, semantic faces and usable tessellation require their
-feature-specific gate before MCAD-P16-003/004 implementation.
+Seated-hole source/schema and semantic/source ownership still require their
+feature-specific gate before MCAD-P16-003/004 implementation; the physical
+mesh/stock witness prerequisite is implemented below.
 
 Analytic mode stores bounded SI rectangle/circle profiles and stock/cylinder
 records. Coaxial subtraction decomposes the exact axial endpoints and integrates
 the largest removed radius on each interval; overlapping tools are counted once.
 First moments, cylindrical walls, internal annular caps and changed outer faces
 produce physical centre and area. Bounds use stock corners or cylindrical support
-radii; proper rigid placement preserves source records. No mesh sampling, OCCT
-dependency, global state or serialized source DTO is introduced. Unsupported
+radii; proper rigid placement preserves source records. P16-010 adds bounded mesh sampling without a triangulation dependency; no OCCT
+dependency, global state or serialized source DTO enters the geometry module. Unsupported
 consumers refuse; see [the API contract](../api/analytic-mock.md).
 
 
-## Counterbore mesh and face gate (planned)
+## Counterbore mesh and face gate (P16-010)
 
 [ADR-063](../adr/ADR-063-counterbore-source-and-physical-mesh-admission.md)
 registers P16-010 before P16-003. The legacy synthetic box helper is not a closed
@@ -263,6 +264,11 @@ owned face identities and independently integrated mesh/error evidence.
 A transient rectangular-stock query verifies actual geometry and one unique
 entry pick; the feature layer separately owns source-node/semantic bindings.
 Native checks stay private and IDs remain body scoped; no OCCT types or source
-ownership cross the interface. This is a planned gate: meshes and the new
-stock-face query are not implemented by P16-009, and analytic Mock continues to
-refuse them until P16-010. Default Mock factories remain unchanged.
+ownership cross the interface. P16-010 implements these runtime meshes and the
+stock-face query; default Mock factories remain unchanged. The private native
+bridge is necessary because cadrum does not expose exact surface/curve types or
+complete cuboid topology admission. It exchanges BREP bytes and finite SI face
+frames only. Native face enumeration follows the existing TopExp_Explorer order,
+verified against actual tessellation metadata. Source/seat/schema and document
+ownership gates are still P16-003 work. See the [runtime API](../api/analytic-mock.md)
+for quality, budgets, history and unsupported query boundaries.

@@ -409,3 +409,14 @@ not a closed box. No source, schema, feature or sampling implementation changes
 are included by this design task. New feature/seat fields remain unavailable
 until P16-003, and default Mock factories remain unchanged. Actual baseline stays
 weighted 50.10, agent operation 90; no planning/infrastructure maturity credit.
+
+
+MCAD-P16-010 implements ADR-063 runtime prerequisites: actual closed analytic
+Mock stock/cylinder/concentric-cut meshes with strict sampling/coordinate/output
+budgets, owned face IDs and transform/split-wall history, and a physical uncut
+rectangular-stock face witness in both Mock and OCCT. Native exact BREP admission
+stays private; default Mock factories and source serialization stay unchanged.
+Independent exported-triangle and pick/refusal tests and the runnable SDK example
+supply evidence. Completion requires this task PR's checks and merge; this
+infrastructure earns no score. MCAD-P16-003 source/schema/semantic/DesignPatch seat
+feature work still follows after that merge.

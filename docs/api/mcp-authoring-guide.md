@@ -1101,5 +1101,7 @@ in `examples/analytic-mock/`. This adds no MCP command or persisted setting and
 does not switch CLI/MCP Mock mode. Document counterbores/countersinks are still
 P16-003/004 gates; do not invent seat fields or author a plain bore as a seat.
 Use the existing verified native DesignPatch path for supported document edits.
-Unsupported Mock topology/tessellation/inertia/Boolean consumers must refuse;
+P16-010 admits bounded actual closed meshes and body-owned planar stock witnesses
+in this explicit SDK mode (ADR-063); it does not add source-node or semantic
+ownership to the kernel. Unsupported Mock edge/inertia/Boolean consumers refuse;
 this infrastructure has no document-level MCP eval until the feature is admitted.

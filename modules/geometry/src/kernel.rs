@@ -305,6 +305,17 @@ pub trait GeometryKernel {
 
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet>;
 
+    /// Physical cuboid witness. Unsupported kernels refuse instead of using bounds.
+    fn rectangular_stock_geometry(
+        &self,
+        _body: &KernelBody,
+        _entry_pick: FacePick,
+    ) -> Result<crate::RectangularStockGeometry> {
+        Err(OpenCadError::validation(
+            "rectangular stock witness unsupported",
+        ))
+    }
+
     /// Face derivation pairs `(post_id, src_id)` from the kernel's last modifying op.
     fn face_derivation_history(&self, body: &KernelBody) -> Vec<(u64, u64)>;
 
@@ -930,8 +941,8 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
-        if self.analytic.is_some() {
-            return Err(crate::analytic_mock::unsupported());
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow().tessellate(body, settings);
         }
         let members = self.compounds.borrow().get(&body.0).cloned();
         if let Some(members) = members {
@@ -953,8 +964,23 @@ impl GeometryKernel for MockGeometryKernel {
         ))
     }
 
-    fn face_derivation_history(&self, _body: &KernelBody) -> Vec<(u64, u64)> {
-        Vec::new()
+    fn rectangular_stock_geometry(
+        &self,
+        body: &KernelBody,
+        entry_pick: FacePick,
+    ) -> Result<crate::RectangularStockGeometry> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow()
+            .stock_geometry(body, entry_pick)
+    }
+
+    fn face_derivation_history(&self, body: &KernelBody) -> Vec<(u64, u64)> {
+        self.analytic
+            .as_ref()
+            .map(|state| state.borrow().history(body))
+            .unwrap_or_default()
     }
 
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
@@ -1069,6 +1095,9 @@ impl GeometryKernel for MockGeometryKernel {
         kernel_face_id: u64,
         ref_id: TopoRefId,
     ) -> Result<()> {
+        if let Some(state) = &self.analytic {
+            return state.borrow().validate_face(body, kernel_face_id);
+        }
         let mesh = self.tessellate(body, &TessellationSettings::default())?;
         crate::topo_sync::validate_kernel_face_on_mesh(&mesh, kernel_face_id)?;
         let _ = ref_id;
