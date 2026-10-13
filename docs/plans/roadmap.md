@@ -697,6 +697,9 @@ references, assembly joints, verified patches/history, Mock and OCCT.
 | MCAD-P13-007 | Coupled joints | Semantic gear/rack displacement DAGs (ADR-056), explicit units/range admission, transactional source/history with old-reader wire refusal, shared pose/animation/reach/workspace and full posed pair checks; analytic Mock/OCCT placement and true native collisions, gear URDF mimic; rack URDF/HTML deferred | Complete |
 | MCAD-P13-008 | Sketch splines (gate first) | Accepted ADR-057 under every ADR-012 gate; closed non-rational cubic spans with stable control-point edits/constraints, exact normal NewBody extrusion, Mock/OCCT analytic evidence, strict source/schema/refusal and warm-cache/history round trips, example/guide/skill/eval and real MCP stdio; general NURBS and knot/weight editing deferred | Complete |
 | MCAD-P13-009 | Generated Python cache hygiene | Remove tracked bytecode, ignore reproducible interpreter caches and verify source-tree hygiene; corrective maintenance only, with no maturity credit | Complete |
+| MCAD-P13-010 | Flexible subassembly design gate | ADR-059 defines scoped child-joint ownership, parent-context constraints, leaf identity, reader refusal, complete interference and consumer gates; design only, no maturity credit | Complete upon design PR merge |
+| MCAD-P13-011 | Independent articulated subassembly copies | Parent-owned per-instance child driver displacements, shared posed leaf scene and fail-closed consumer integration; child source unchanged, schema/migration/history, Mock/OCCT analytic example and guide/skill/eval (ADR-059) | Planned |
+| MCAD-P13-012 | Parent-context flexible constraints | Parent mates resolve scoped child connectors and solve admitted internal coordinates with outer placements; unique DOF/coupling ownership, ambiguity/unsupported refusal and complete leaf interference, all ADR-059 completion evidence | Planned |
 
 **Definition of done:** one reviewed main-target PR per task with complete
 backend/DesignPatch semantics, both kernels where geometry is executed, analytic
@@ -714,6 +717,40 @@ closed until consumers are explicitly rebound. Trimming can invalidate attached
 constraints; offset topology can change; projected sources can be ambiguous.
 Coupled motion must never mutate derived joint state outside a transaction.
 New sampling, spline or kernel decisions require accepted scoped ADRs.
+
+### Flexible subassembly follow-up (ADR-059)
+
+**Purpose:** finish the original fixed assembly rubric's flexible-subassembly
+criterion. A posed copy alone does not satisfy parent-context flexibility or
+justify assembly 68 → 70. P13-010 is design only; P13-011 supplies the neutral
+scene/instance-state prerequisite; P13-012 completes the admitted parent-context
+constraint workflow. Keep P15 host verification independent when credentials
+are unavailable; rubric weights/targets and the approximate 50% goal do not change.
+
+**Dependencies:** existing rigid recursive assemblies (ADR-003), joint/coupling
+math (ADR-030/056), BOM provenance (ADR-047), exploded presentation (ADR-055),
+verified DesignPatch/history and the backend-only GUI contract (ADR-058).
+
+**Completion:** per-instance source ownership, shared world-space leaf identity,
+complete internal/external collision reporting and faithful consumer behavior;
+strict schema/reader migration and source preservation. Every implementation
+has Mock and OCCT evidence against independent analytic transforms/volume/bounds,
+a runnable nested example, guide/skill updates and an independently graded eval.
+Only merged full P13-012 evidence can justify the remaining assembly rubric
+points; design or articulated copies alone earn no such credit.
+
+**Tests:** two copies of one mechanism in different poses without child writes;
+nonidentity parent transforms; wrong/missing scoped IDs, units, ranges and
+coupled follower inputs; parent constraints move an internal link; unconstrained/
+conflicting scopes refuse rather than guess; collisions inside a child and
+between different copies; source snapshot/cache invalidation; deterministic
+history, schema round trips and old-reader refusal. See ADR-059's numeric oracles.
+
+**Risks:** repeated IDs mistaken for global IDs, child poses omitted from cache
+keys, stale external source revisions, duplicated DOF, top-level compound
+collision shortcuts hiding internal interference, and consumers silently
+flattening away mechanics. Existing bounded root-joint sampling must not be
+presented as complete hierarchical motion coverage; new sampling requires an ADR.
 
 ## Phase 14 — Backend-owned desktop editing
 
