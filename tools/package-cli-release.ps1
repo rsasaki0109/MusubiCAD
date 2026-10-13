@@ -44,6 +44,16 @@ Copy-Item -Recurse -LiteralPath (Join-Path $Root "examples\bracket.ocad.d") `
 Copy-Item -LiteralPath (Join-Path $Root "examples\agent\review_width_patch.json") `
     -Destination $ExampleAgent
 
+# Ship every input needed by the reproducible editing tutorial.
+Copy-Item -Recurse -LiteralPath (Join-Path $Root "examples\ellipse_plate.ocad.d") `
+    -Destination (Join-Path $Package "examples\ellipse_plate.ocad.d")
+Copy-Item -LiteralPath (Join-Path $Root "examples\agent\editing_tutorial.json") -Destination $ExampleAgent
+Copy-Item -LiteralPath (Join-Path $Root "docs\tutorials\editing.md") `
+    -Destination (Join-Path $Package "EDITING-TUTORIAL.md")
+$PackageTools = Join-Path $Package "tools"
+New-Item -ItemType Directory -Force -Path $PackageTools | Out-Null
+Copy-Item -LiteralPath (Join-Path $Root "tools\run_editing_tutorial.py") -Destination $PackageTools
+
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
 if ($Platform.StartsWith("windows-")) {
     $Archive = Join-Path $Output "$PackageName.zip"

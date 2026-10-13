@@ -177,3 +177,26 @@ general 46.95 → 49.20 (about 49%), agent operation 88 → 89. Before merge,
 the baseline remains about 47% / 88%. Phase 15 ecosystem evidence remains to
 reach the fixed approximate 50% target; do not infer external host verification
 from Linux Tauri or local MCP checks.
+
+
+P14-004 merged as PR #89 (`6fce031f`), after all applicable CI succeeded:
+GUI 45, general weighted 49.20 (about 49%), agent operation 89.
+
+P15-001: an executable editing tutorial discovers real MCP tools, reviews and
+applies typed sketch/feature commands, checks stale/unit refusals against
+byte-identical files, exercises opaque Undo/Redo through real Agent processes,
+and independently verifies native volume/dimensions and source identity. It
+leaves the original fixture unchanged. The guide, scenario and runner ship in
+CLI archives; release CI executes the tutorial from the extracted native
+archive before uploading it. A new independently graded eval covers the same
+source/volume contract. The current published latest is v0.1.1; these commands
+require current main or the next v0.2.0 release. This is protocol/native evidence,
+not actual Codex/Cursor/Gemini client integration. Windows/client sessions remain
+P15-003; actual release publication and downloaded verification remain P15-002.
+
+Upon P15-001's main merge, the reproducible tutorial, example/eval and packaged
+execution gate justify ecosystem 10 → 11 (+0.15 weighted), general 49.20 →
+49.35 (about 49%). Agent operation remains 89; no new CAD capability is claimed.
+Before merge the baseline remains general 49.20 / agent 89. No weights/targets,
+source schema, kernel operations, dependencies, golden files or desktop signing
+policy change.

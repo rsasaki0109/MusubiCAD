@@ -50,3 +50,10 @@ Metal on macOS.
 
 The archives are not yet code-signed. Windows SmartScreen or macOS Gatekeeper may therefore ask for
 confirmation. Inspect the checksum and repository source before choosing to run an unsigned build.
+
+Reproducible editing tutorial: `docs/tutorials/editing.md` (distributed as
+`EDITING-TUTORIAL.md` in CLI archives). Run `python tools/run_editing_tutorial.py`
+in a built checkout, or pass the packaged `--binary` and `--fixture` paths.
+The real MCP/Agent exercise checks reviews, stale/unit refusals, source identity,
+Undo/Redo and native analytic dimensions/volume; it is not actual client-host
+integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.

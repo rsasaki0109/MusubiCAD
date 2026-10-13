@@ -777,3 +777,40 @@ alone.
 | AI mutations | DesignPatch dry-run/apply, precondition, rollback, and semantic diff tests |
 | Regression | Committed examples, golden geometry/render/review artifacts |
 | Desktop/release | Platform build, install/open, command parity, checksum, and smoke tests |
+
+## Phase 15 — Tutorials, host evidence and releases
+
+**Objective:** make the merged CAD/editor workflows reproducible for users,
+expand independently checked examples/evals, verify real host integration and
+publish regular checksum-verified releases. Keep the fixed ecosystem rubric
+(target 15, weight 15%); credit only merged evidence, and distinguish tutorials,
+native packaging and actual Windows/Codex/Cursor/Gemini client sessions.
+
+**Dependencies:** Phase 14 complete, backend DesignPatch/history, native CLI/MCP
+and Tauri workflows, ADR-027 plugin distribution and ADR-005 desktop trust.
+
+| ID | Task | Acceptance | Status |
+|---|---|---|---|
+| MCAD-P15-001 | Reproducible editing tutorial | Unit-explicit walkthrough and runnable real-MCP exercise, independent volume/source/history/failure checks, example/eval and guide/skill; archive includes all inputs and executes the walkthrough on the packaged native binary; actual client-host validation is not inferred | Complete |
+| MCAD-P15-002 | Release the accumulated CAD capabilities | Version/tag/main agreement, merged release notes, all native build/smoke gates, official CLI release assets and independent downloaded checksum/runtime verification; desktop trust policy unchanged | Planned |
+| MCAD-P15-003 | Actual host integration evidence | Versioned Windows/Codex/Cursor/Gemini sessions exercising discovery, reviewed patch, source preservation/refusal and native regeneration; record each unavailable host explicitly | Planned |
+
+**Completion definition:** each task has a single main-target PR, applicable
+examples/evals/docs, all four pre-push checks and all applicable CI. Tutorials
+must execute against a real CLI/MCP backend. Release publication follows the
+existing tag/version/build contract; unsigned artifacts do not imply publisher
+signatures. Host evidence names the actual host/version/session and distinguishes
+successful, failed and unavailable checks. The approximate 50% goal does not
+justify assigning unearned points or changing rubric weights.
+
+**Tests:** real MCP stdio walkthrough with independently calculated dimensions/
+volume, read-only review and failed/stale source/history preservation; existing
+Mock/OCCT checks; checker mutation tests; release version/package policy,
+multiplatform native smoke and downloaded checksum verification; actual client
+sessions for host integration.
+
+**Risks:** stale installed releases missing new commands, source expressions or
+IDs lost in tutorial shortcuts, examples absent from installation, treating a
+protocol harness as a real client, missing host credentials/runtime, unverified
+archives and premature release publication. Continue independent tutorial/release
+work when a host is unavailable; record that gap rather than simulating success.
