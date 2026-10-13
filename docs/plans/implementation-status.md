@@ -222,3 +222,17 @@ justifies general 49.35 → 49.65 (about 50%), agent operation unchanged at 89.
 Before merge the baseline remains about 49% / 89%. The fixed ecosystem target
 15 remains pending further client/GUI host evidence; no unexecuted host check
 is credited and rubric weights/targets are unchanged.
+
+
+P15-003 partial evidence: `tools/run_codex_host_smoke.py` exercises actual Codex
+CLI 0.159.2 app-server dispatch with an ephemeral thread and zero model turns.
+Both the current native development binary and independently checksum-verified
+v0.2.0 Linux archive discover 35 tools and pass typed review/apply, byte-exact
+stale/unit refusal, authored source identity and independent native volume/
+dimension checks. Transport failure regression tests run in CI without a host
+or credentials. See [host evidence](host-integration-evidence.md). Windows
+desktop, Cursor and Gemini sessions remain unavailable; model-driven selection
+and persistent host-plugin installation are untested. P15-003 remains partial
+and earns no additional maturity credit: general 49.65 (about 50%), ecosystem
+13, agent operation 89. The existing Windows native archive/tutorial CI is
+packaging evidence, not a Windows client/desktop session.
