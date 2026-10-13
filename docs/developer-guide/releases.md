@@ -70,3 +70,16 @@ analytic volume/dimensions, review/refusal/source identity and Undo/Redo.
 It does not prove actual Codex/Cursor/Gemini client registration or interaction.
 
 Published v0.2.0: [exact source/gate/asset/downloaded verification and host scope](../plans/cli-release-v0.2.0-evidence.md).
+
+
+## Flexible assembly tutorial gate
+
+P15-006 additionally packages `ASSEMBLY-TUTORIAL.md`,
+`tools/run_assembly_tutorial.py`, its shared editing transport,
+`examples/agent/assembly_tutorial.json` and both complete parent-context
+mechanisms with nested part assets. The archive contract requires these inputs
+and executes both tutorials with the extracted native executable before upload.
+Release pull requests test Linux; future version tags test all four native
+platforms. The published v0.2.0 archive predates this gate; do not infer a new
+publication from local packaging or PR artifacts. No client-host evidence or
+maturity increment is assigned by this packaging task.

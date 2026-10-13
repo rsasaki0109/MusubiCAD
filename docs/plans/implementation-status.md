@@ -315,3 +315,21 @@ explicitly refuse; no nonlinear free-outer or continuous collision proof claimed
 Only after this PR merges, assembly 68 → 70, weighted general 49.80 → 50.10
 (about 50%), agent operation 89 → 90. Before merge the baseline remains 50%/89%.
 The fixed rubric weights and all other component scores remain unchanged.
+
+
+P15-006 packages the P13-011/012 flexible-assembly workflow with a runnable
+real-MCP/Agent tutorial, exact source/revision/connector inspection, read-only
+review, parent-only edits, canonical Undo/Redo, refused stale/unit/range/owner/
+missing-reference inputs and protected URDF/HTML outputs. Independent SI frames,
+native volumes/bounds/zero DOF and exported closed five-member STL volume/centre/
+bounds are checked; a changed internal pose retaining total volume/outer bounds
+fails the checker. Both complete mechanisms and every runner input are included
+and exercised from the extracted native archive before release artifact upload.
+
+Local actual PowerShell packaging and extracted-archive execution passed on
+current-main native debug CLI (0.2.0 development version, 36 discovered tools).
+This is local package evidence, not an official new release; published v0.2.0
+predates these APIs. Future tag execution remains required on all four platforms.
+Cursor/authenticated Gemini remain P15-003 gaps. No maturity increment: general
+50.10 (about 50%), assembly 70, ecosystem 14 and agent operation 90. Source
+schema, kernels, dependencies, lockfiles, versions and goldens are unchanged.

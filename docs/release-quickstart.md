@@ -57,3 +57,10 @@ in a built checkout, or pass the packaged `--binary` and `--fixture` paths.
 The real MCP/Agent exercise checks reviews, stale/unit refusals, source identity,
 Undo/Redo and native analytic dimensions/volume; it is not actual client-host
 integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.
+
+
+Future current-main archives also contain `ASSEMBLY-TUTORIAL.md` and
+`tools/run_assembly_tutorial.py`. Run the latter with `--binary ./musubicad`
+(or `.\musubicad.exe` on Windows) to exercise both parent-context mechanisms
+through actual MCP/Agent and independently check the exported geometry.
+Published v0.2.0 predates these APIs and does not contain those tutorial inputs.

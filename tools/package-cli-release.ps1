@@ -54,6 +54,16 @@ $PackageTools = Join-Path $Package "tools"
 New-Item -ItemType Directory -Force -Path $PackageTools | Out-Null
 Copy-Item -LiteralPath (Join-Path $Root "tools\run_editing_tutorial.py") -Destination $PackageTools
 
+# Ship both parent-context mechanisms and every input for their native tutorial.
+foreach ($fixture in @("parent_context_slider.ocad.d", "parent_context_hinge.ocad.d")) {
+    Copy-Item -Recurse -LiteralPath (Join-Path $Root "examples/$fixture") `
+        -Destination (Join-Path $Package "examples/$fixture")
+}
+Copy-Item -LiteralPath (Join-Path $Root "examples/agent/assembly_tutorial.json") -Destination $ExampleAgent
+Copy-Item -LiteralPath (Join-Path $Root "tools/run_assembly_tutorial.py") -Destination $PackageTools
+Copy-Item -LiteralPath (Join-Path $Root "docs/tutorials/assemblies.md") `
+    -Destination (Join-Path $Package "ASSEMBLY-TUTORIAL.md")
+
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
 if ($Platform.StartsWith("windows-")) {
     $Archive = Join-Path $Output "$PackageName.zip"

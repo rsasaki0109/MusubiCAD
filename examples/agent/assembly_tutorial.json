@@ -1,0 +1,6 @@
+{
+  "cases": [
+    {"fixture": "parent_context_slider.ocad.d", "relation": "signed_distance", "target": "0 mm"},
+    {"fixture": "parent_context_hinge.ocad.d", "relation": "signed_angle", "target": "90 deg"}
+  ]
+}
