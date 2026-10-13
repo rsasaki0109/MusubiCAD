@@ -1,7 +1,8 @@
 # P15-003 actual host integration evidence
 
-Observed on 2026-10-13, based on main
-`1e65a634c48f5d50b412161a8c9dc291c9db5141`. This task remains **partial**.
+Codex evidence observed on 2026-10-13, based on main
+`1e65a634c48f5d50b412161a8c9dc291c9db5141`; Gemini startup follow-up is based
+on `03fc404c04ddfacfca5d1979200b1f56c3a28b86`. P15-003 remains **partial**.
 No additional maturity points are assigned: general 49.65 (about 50%),
 ecosystem 13, agent operation 89. Fixed rubric targets and weights are unchanged.
 
@@ -10,11 +11,12 @@ ecosystem 13, agent operation 89. Fixed rubric targets and weights are unchanged
 | Codex | CLI 0.159.2, Linux x86_64 | Actual app-server MCP startup, 35-tool inventory, typed review/apply, refusal, source retention and native regeneration | Model-driven tool selection, persistent plugin installation and graphical client interaction untested |
 | Windows | Native CLI archive tests on Windows release runner | Packaging/tutorial evidence from P15-002 only | Actual Windows desktop/client session unavailable in this Linux environment |
 | Cursor | Executable unavailable | No actual session | Versioned client session required |
-| Gemini | Executable unavailable; no configured model credentials | No actual session | Versioned client session required |
+| Gemini | CLI 0.63.0, Linux x86_64 | Actual extension link/load, native MCP Connected, ACP initialize | ACP session/new refuses without API key; tools/list, host edits and authenticated model session untested |
 
 An absent credential binding does not establish that every possible host login
-is unavailable. No model/authentication attempt or simulated host success is
-claimed. Installing a CLI alone would not satisfy the missing session evidence.
+is unavailable. The Gemini ACP empty-session attempt below actually refused;
+no login, model turn or simulated host success is claimed. Installing a CLI
+alone would not satisfy the missing editing-session evidence.
 
 ## Reproduce the Codex evidence
 
@@ -77,3 +79,59 @@ Label any unavailable or failed check explicitly. A model-driven session and a
 direct host API session must be distinguished. Retain P15-003 as partial until
 its required host evidence is available; release-runner Windows execution is
 not sufficient to claim interactive Windows desktop validation.
+
+
+## P15-004 Gemini extension startup follow-up
+
+Official npm package `@google/gemini-cli@0.63.0` was installed outside the
+checkout with exact version, retained package-lock and `--ignore-scripts`.
+`npm ci --ignore-scripts` also succeeded. Node.js meets the package's `>=20`
+requirement. npm verified the registry package integrity:
+
+```text
+sha512-mmhqMmAdsoplCzrLQQC4yJBqr4uSKXghnrLspgUU6N9drmsaq7pi7oF09skRYzEq2dYK6eMT4UpFQP6rG2o/ew==
+```
+
+The actual Gemini executable loaded the checkout's `gemini-extension.json`,
+which declares the MusubiCAD skill as its context file, in a disposable profile. No manifest changes,
+global profile edits, disabled trust checks or model prompts were necessary.
+For a trusted checkout and native binary, reproduce the connection check:
+
+```bash
+musubi_gemini=/workspace/.musubicad-setup/gemini-host/node_modules/.bin/gemini
+musubi_session=$(mktemp -d)
+mkdir -p "$musubi_session/profile" "$musubi_session/work"
+(
+  cd "$musubi_session/work"
+  GEMINI_CLI_HOME="$musubi_session/profile" "$musubi_gemini" extensions link /workspace/MusubiCAD --consent
+  GEMINI_CLI_HOME="$musubi_session/profile" PATH=/workspace/MusubiCAD/target/debug:$PATH "$musubi_gemini" mcp list
+)
+# Delete only the disposable directory created above after examining the result.
+rm -r -- "$musubi_session"
+```
+
+Observed output included `Extension "musubicad" linked successfully and enabled`
+and `musubicad (from musubicad): musubicad mcp (stdio) - Connected`.
+**Check the reported state, not just the process exit code:** Gemini's list
+command can exit successfully for disconnected servers. This command tests
+extension loading and MCP initialization/connection; it does not list tools,
+review/apply CAD edits, or demonstrate a model choosing the correct tools.
+
+A separate actual `gemini --acp` process accepted JSON-RPC `initialize` with
+protocol version 1 and reported agent `gemini-cli` version `0.63.0`. Calling
+`session/new` with the disposable working directory and an empty `mcpServers`
+list returned error code `-32000`, reporting a missing Gemini API key. No
+`session/prompt` or `authenticate` request was sent; model turns remain zero.
+The owned process was terminated and its stderr was not published.
+
+The runtime has no configured GCP outbound connection or ready Gemini secret
+binding. Presence of `GOOGLE_APPLICATION_CREDENTIALS` was checked by name only;
+its contents were not read and its presence does not establish valid Vertex AI
+setup. No API key, login, auth workaround or extra model-service network access
+was invented. Actual tool discovery, editing/refusal and native regeneration
+through Gemini remain unverified. Windows desktop and Cursor remain unavailable.
+
+The cloud draft preserves existing Rust/OCCT/Mesa/Tauri setup and adds the pinned
+Gemini install/startup instructions. Saving the draft does not apply or publish
+it, and a new-task restore remains unverified. P15-004 is complete only for its
+bounded startup acceptance; P15-003 remains partial, with no new maturity credit.

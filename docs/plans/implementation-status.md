@@ -236,3 +236,15 @@ and persistent host-plugin installation are untested. P15-003 remains partial
 and earns no additional maturity credit: general 49.65 (about 50%), ecosystem
 13, agent operation 89. The existing Windows native archive/tutorial CI is
 packaging evidence, not a Windows client/desktop session.
+
+
+P15-004 is the bounded Gemini startup follow-up to P15-003: official pinned
+Gemini CLI 0.63.0 links/loads the distributed extension and reports the native
+MCP server Connected in a disposable profile. Actual ACP initialization passes,
+but session/new returns -32000 (missing API key); no model prompt/login occurs.
+The install/startup configuration draft retains prior CAD/GUI setup and adds
+verified Gemini steps; publication/restoration are not inferred from saving.
+See [host evidence](host-integration-evidence.md) for integrity and reproduction.
+Gemini discovery/edit/refusal/regeneration, Windows desktop and Cursor sessions
+remain P15-003 gaps. No additional maturity credit: general 49.65 (about 50%),
+ecosystem 13, agent operation 89. No source, schema, dependency or golden changes.
