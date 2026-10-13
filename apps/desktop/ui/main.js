@@ -658,6 +658,7 @@ async function loadDocument(path, options = {}) {
 
   const loadSequence = ++documentLoadSequence;
   cancelFeatureReview();
+  clearSketchDraft();
   currentPath = path;
   if (!options.keepParamHistory) {
     resetDocumentHistory();
@@ -666,7 +667,7 @@ async function loadDocument(path, options = {}) {
 
   // A document that no longer regenerates has no preview, but its info,
   // parameters, and regeneration inspection still load so it can be repaired.
-  const [inspectResult, previewResult, regenerationResult, parametersResult, featuresResult] =
+  const [inspectResult, previewResult, regenerationResult, parametersResult, featuresResult, sketchesResult] =
     await Promise.allSettled([
       invoke("inspect_document_cmd", { path }),
       invoke("preview_document_cmd", { path }),
@@ -675,8 +676,10 @@ async function loadDocument(path, options = {}) {
         ? Promise.resolve(null)
         : invoke("list_document_parameters_cmd", { path }),
       invoke("list_document_features_cmd", { path }),
+      invoke("inspect_sketches_cmd", { path }),
     ]);
   if (loadSequence !== documentLoadSequence || currentPath !== path) return;
+  renderSketchEditor(sketchesResult.status === "fulfilled" ? sketchesResult.value : null);
   renderFeatureTree(featuresResult.status === "fulfilled" ? featuresResult.value : null);
   if (inspectResult.status === "rejected") {
     throw inspectResult.reason;
@@ -873,6 +876,7 @@ function cancelFeatureReview() {
 async function reviewFeatureEdit(edit, selectionEdit = null) {
   if (featureBusy || documentMutationBusy || !featureTree || !currentPath) return;
   cancelFeatureReview();
+  clearSketchDraft(); drawSketch();
   featureBusy = true;
   const path = currentPath;
   const reviewSequence = featureReviewSequence;
@@ -990,3 +994,110 @@ document.getElementById("selection-edit").addEventListener("submit", event => {
   const edit = { source_revision: selectedFrame.source_revision, scene_revision: selectedFrame.scene_revision, target: selectedBinding.target, field: document.getElementById("selection-field").value, expr: document.getElementById("selection-expr").value.trim() };
   reviewFeatureEdit(null, edit);
 });
+
+// Disposable sketch presentation/drafts. All source changes go to typed backend forms.
+let sketchEditorState = null;
+let sketchDraft = null;
+let reviewedSketch = null;
+let sketchReviewSequence = 0;
+let sketchBusy = false;
+function drawLineDraft(start, end) {
+  const e=document.createElementNS("http://www.w3.org/2000/svg","line"); e.id="sketch-draft-line"; e.setAttribute("class","sketch-geometry construction");
+  const number=s=>Number(s.split(" ")[0]); for(const [k,v] of Object.entries({x1:number(start.x),y1:-number(start.y),x2:number(end.x),y2:-number(end.y)}))e.setAttribute(k,String(v));
+  document.getElementById("sketch-draft-line")?.remove(); sketchCanvas.append(e);
+}
+let lineStart = null;
+const sketchCanvas = document.getElementById("sketch-canvas");
+function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
+function clearSketchDraft() {
+  sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null;
+  document.getElementById("sketch-review").hidden = true;
+}
+function renderSketchEditor(state) {
+  sketchEditorState = state;
+  const select = document.getElementById("sketch-select"); const old = select.value; select.replaceChildren();
+  state?.sketches.forEach(row => { const o=document.createElement("option"); o.value=row.source.id; o.textContent=`${row.source.name} · ${row.source.workplane.plane}`; select.append(o); });
+  if ([...select.options].some(o=>o.value===old)) select.value=old;
+  drawSketch();
+}
+function drawSketch(row = sketchRow()) {
+  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted global-workplane sketch."; return; }
+  const span=Number(document.getElementById("sketch-span").value); if (!Number.isFinite(span)||span<=0) return;
+  sketchCanvas.setAttribute("viewBox", `${-span/2} ${-span/3} ${span} ${span*2/3}`);
+  const entities=row.solved.entities;
+  const points=new Map(entities.filter(e=>e.type==="point").map(e=>[e.id,e]));
+  const element=(tag,attrs,id=null)=> { const e=document.createElementNS("http://www.w3.org/2000/svg",tag); Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,String(v))); if(id)e.dataset.sourceId=id; sketchCanvas.append(e); return e; };
+  element("line",{x1:-span/2,y1:0,x2:span/2,y2:0,class:"sketch-axis"}); element("line",{x1:0,y1:-span/3,x2:0,y2:span/3,class:"sketch-axis"});
+  for(const e of entities) {
+    const style={class:e.construction?"sketch-geometry construction":"sketch-geometry"};
+    if(e.type==="line") { const a=points.get(e.start),b=points.get(e.end); if(a&&b) element("line",{...style,x1:a.x*1000,y1:-a.y*1000,x2:b.x*1000,y2:-b.y*1000},e.id); }
+    if(e.type==="circle"||e.type==="ellipse") { const p=points.get(e.center); if(!p)continue;
+      if(e.type==="circle") element("circle",{...style,cx:p.x*1000,cy:-p.y*1000,r:e.radius*1000},e.id);
+      else element("ellipse",{...style,cx:p.x*1000,cy:-p.y*1000,rx:e.major_radius*1000,ry:e.minor_radius*1000,transform:`rotate(${-e.axis_angle*180/Math.PI} ${p.x*1000} ${-p.y*1000})`},e.id);
+    }
+  }
+  const authored=new Set(row.source.entities.filter(e=>e.type==="point").map(e=>e.id));
+  for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:"sketch-point"},p.id);
+  document.getElementById("sketch-diagnostics").textContent=`${row.source.workplane.plane} · ${row.solved.solve_state.status} · ${row.solved.profiles.length} profiles · ${row.source.constraints.length} constraints. Arc/rectangle/cubic editing is outside this form scope.`;
+}
+function draftPoint(event) {
+  const p=sketchCanvas.createSVGPoint(); p.x=event.clientX;p.y=event.clientY;const local=p.matrixTransform(sketchCanvas.getScreenCTM().inverse());
+  // ViewBox coordinates explicitly labelled mm; the backend evaluates these unit-bearing form strings.
+  return {x:`${local.x.toFixed(3)} mm`,y:`${(-local.y).toFixed(3)} mm`};
+}
+sketchCanvas.addEventListener("click",event=> {
+  if(documentMutationBusy||sketchBusy||!sketchRow())return;
+  reviewedSketch=null; sketchReviewSequence++; document.getElementById("sketch-review").hidden=true;
+  const p=draftPoint(event),tool=document.getElementById("sketch-tool").value;
+  if(tool==="line") {
+    if(!lineStart){lineStart=p;setStatus("Choose line endpoint (local mm).");return;}
+    const source=sketchRow().source, used=new Set(source.entities.map(e=>e.id)); let n=1;while([`ent:line_${n}`,`ent:line_${n}_a`,`ent:line_${n}_b`].some(id=>used.has(id)))n++;
+    const id=`ent:line_${n}`; sketchDraft=[{operation:"point",id:id+"_a",...lineStart,create:true},{operation:"point",id:id+"_b",...p,create:true},{operation:"line",id,start:id+"_a",end:id+"_b",construction:document.getElementById("sketch-construction").checked}];lineStart=null;
+    drawLineDraft(sketchDraft[0], sketchDraft[1]);
+    document.getElementById("sketch-id").value=id;setStatus("Line drafted. Review before committing."); return;
+  }
+  const id=event.target.dataset.sourceId;
+  const source=sketchRow().source.entities.find(e=>e.id===id);
+  if(source?.type==="point") { document.getElementById("sketch-action").value="point";document.getElementById("sketch-id").value=id;document.getElementById("sketch-create").checked=false; }
+  else if(source?.type==="line") { document.getElementById("sketch-action").value="construction";document.getElementById("sketch-id").value=id;document.getElementById("sketch-a").value=id;document.getElementById("sketch-construction").checked=source.construction;sketchDraft=null;return; }
+  else if(source?.type==="circle"||source?.type==="ellipse") {
+    document.getElementById("sketch-action").value=source.type;document.getElementById("sketch-id").value=id;document.getElementById("sketch-a").value=source.center;document.getElementById("sketch-create").checked=false;
+    const expr=v=>typeof v==="number"?`${v*1000} mm`:v;
+    document.getElementById("sketch-x").value=expr(source.radius??source.major_radius);document.getElementById("sketch-y").value=expr(source.minor_radius??0);document.getElementById("sketch-angle").value=typeof source.axis_angle==="number"?`${source.axis_angle} rad`:source.axis_angle??"0 deg";document.getElementById("sketch-construction").checked=source.construction;sketchDraft=null;return;
+  }
+  if(document.getElementById("sketch-action").value==="point") {document.getElementById("sketch-x").value=p.x;document.getElementById("sketch-y").value=p.y;sketchDraft=null;}
+});
+sketchCanvas.addEventListener("pointermove", event=>{if(lineStart&&!sketchBusy&&!documentMutationBusy)drawLineDraft(lineStart,draftPoint(event));});
+function sketchForm() {
+  const value=id=>document.getElementById("sketch-"+id).value.trim(),operation=value("action"),id=value("id"),create=document.getElementById("sketch-create").checked,construction=document.getElementById("sketch-construction").checked;
+  switch(operation){
+    case "point":return {operation,id,x:value("x"),y:value("y"),create};
+    case "circle":return {operation,id,center:value("a"),radius:value("x"),construction,create};
+    case "ellipse":return {operation,id,center:value("a"),major_radius:value("x"),minor_radius:value("y"),axis_angle:value("angle"),construction,create};
+    case "construction":return {operation,id,construction};
+    case "horizontal":case "vertical":return {operation,id,line:value("a")};
+    case "coincident":return {operation,id,a:value("a"),b:value("b")};
+    case "distance":return {operation,id,a:value("a"),b:value("b"),expr:value("x")};
+    case "radius":return {operation,id,target:value("a"),expr:value("x")};
+    case "remove_constraint":return {operation,id};
+  }
+}
+document.getElementById("sketch-form").addEventListener("submit",async event=> {
+  event.preventDefault();if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
+  cancelFeatureReview();const seq=++sketchReviewSequence,path=currentPath;
+  const edit={revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations:sketchDraft??[sketchForm()]};sketchBusy=true;
+  try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
+    reviewedSketch={path,edit}; const row=plan.state.sketches.find(r=>r.source.id===edit.sketch_id);drawSketch(row);
+    document.getElementById("sketch-effect").textContent=`${row.solved.solve_state.status}. Verified volume: ${plan.evidence.volume_m3==null?"—":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}. ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
+  }catch(error){if(seq===sketchReviewSequence){clearSketchDraft();drawSketch();setStatus(`Sketch refused: ${error}`);}}finally{sketchBusy=false;}
+});
+document.getElementById("sketch-apply").addEventListener("click",async()=> {
+  if(sketchBusy||documentMutationBusy||!reviewedSketch)return;const reviewed=reviewedSketch;
+  if(reviewed.path!==currentPath||reviewed.edit.revision!==featureTree?.revision){clearSketchDraft();return;}
+  sketchBusy=true;documentMutationBusy=true;
+  try {const result=await invoke("apply_sketch_edit_cmd",{path:reviewed.path,edit:reviewed.edit,history:documentHistoryState?.history??null});acceptDocumentHistory(result.history);await loadDocument(reviewed.path,{keepParamHistory:true});setStatus("Applied verified sketch edit.");}
+  catch(error){setStatus(`Sketch refused: ${error}`);}finally{sketchBusy=false;documentMutationBusy=false;clearSketchDraft();drawSketch();}
+});
+["sketch-select","sketch-tool","sketch-span"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{clearSketchDraft();drawSketch();}));
+document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
+document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});

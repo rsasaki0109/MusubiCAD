@@ -194,6 +194,9 @@ pub fn handle_agent_request_with_plugins(
             handle_selection_editor(request)
         }
         "opencad.inspect_selection_frame" => handle_inspect_selection_frame(request),
+        "opencad.inspect_sketches" | "opencad.plan_sketch_edit" | "opencad.apply_sketch_edit" => {
+            handle_sketch_editor(request)
+        }
         "opencad.inspect" => handle_inspect(request),
         "opencad.validate" => handle_validate(request),
         "opencad.patch_dry_run_document" => handle_patch_dry_run_document(request),
@@ -1243,6 +1246,45 @@ fn handle_inspect_selection_frame(request: &JsonRpcRequest) -> JsonRpcResponse {
                 opencad_core::OpenCadError::validation("selection editing requires a part scene")
             })?;
         Ok(serde_json::to_value(frame)?)
+    })();
+    match result {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(error) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(error.to_string()),
+        ),
+    }
+}
+
+fn handle_sketch_editor(request: &JsonRpcRequest) -> JsonRpcResponse {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Params {
+        path: String,
+        edit: Option<opencad_desktop::sketch_editor::SketchEdit>,
+        history: Option<opencad_file::DocumentHistory>,
+    }
+    let result = (|| -> opencad_core::Result<Value> {
+        let p: Params = serde_json::from_value(request.params.clone())?;
+        if request.method == "opencad.inspect_sketches" {
+            return Ok(serde_json::to_value(
+                opencad_desktop::sketch_editor::inspect_document_sketches(&p.path)?,
+            )?);
+        }
+        let edit = p
+            .edit
+            .ok_or_else(|| opencad_core::OpenCadError::validation("edit is required"))?;
+        if request.method == "opencad.plan_sketch_edit" {
+            Ok(serde_json::to_value(
+                opencad_desktop::sketch_editor::plan_document_sketch_edit(&p.path, &edit)?,
+            )?)
+        } else {
+            Ok(serde_json::to_value(
+                opencad_desktop::sketch_editor::apply_document_sketch_edit(
+                    &p.path, &edit, p.history,
+                )?,
+            )?)
+        }
     })();
     match result {
         Ok(value) => JsonRpcResponse::success(request.id.clone(), value),

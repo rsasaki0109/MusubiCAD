@@ -1205,6 +1205,77 @@
           ]
         }
       ]
+    },
+    {
+      "id": "interactive_sketch_edit",
+      "source": "examples/ellipse_plate.ocad.d",
+      "document": "interactive_sketch_edit.ocad.d",
+      "prompt": "In {document}, use inspect_sketches then plan_sketch_edit and apply_sketch_edit to edit authored sketch:ellipse / ent:ellipse. Keep centre ent:center, change major_radius source expression to 40 mm, minor_radius to 15 mm, axis_angle to 0 deg. Preserve all original parameters, point coordinates, feature IDs and profile binding. Do not edit generated coordinates or bypass the shared sketch commands. Regenerate; exact volume pi*40*15*6 = 11309.733553 mm3. See examples/agent/interactive_sketch_edit.json.",
+      "expected_volume_mm3": 11309.733552923255,
+      "required_parameters": [
+        "major_radius",
+        "minor_radius",
+        "axis_angle_rad",
+        "thickness"
+      ],
+      "expected_ellipse_sources": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "entity_id": "ent:ellipse",
+          "center": "ent:center",
+          "major_radius": "40 mm",
+          "minor_radius": "15 mm",
+          "axis_angle": "0 deg"
+        }
+      ],
+      "expected_parameter_expressions": {
+        "major_radius": "0.03 m",
+        "minor_radius": "0.02 m",
+        "axis_angle_rad": "0.5235987755982989 rad",
+        "thickness": "6 mm"
+      },
+      "expected_sketch_points": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "point_id": "ent:center",
+          "position_m": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "sketch_id": "sketch:ellipse",
+          "point_id": "ent:anchor",
+          "position_m": [
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "expected_feature_editor": {
+        "order": [
+          "feature:ellipse_sketch",
+          "feature:ellipse_body"
+        ],
+        "nodes": {
+          "feature:ellipse_body": {
+            "suppressed": false,
+            "definition": {
+              "type": "extrude",
+              "sketch_feature": "feature:ellipse_sketch",
+              "profile_ref": "sketch:ellipse/profile:outer",
+              "operation": "new_body",
+              "length_expr": "thickness",
+              "extent": {
+                "type": "distance",
+                "length": {
+                  "value_si": 0.006
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

@@ -310,3 +310,12 @@ button:disabled:hover {
 .feature-row button { margin: 3px; }
 #feature-create, #feature-review { border: 1px solid #596574; padding: 10px; margin-bottom: 14px; }
 #feature-limit { font-size: 12px; }
+
+#sketch-editor { margin-top: 1rem; padding: 1rem; background: #182332; border-radius: 8px; }
+#sketch-canvas { width: 100%; height: 320px; background: #0e1722; cursor: crosshair; }
+.sketch-axis { stroke: #38485c; stroke-width: .15; }
+.sketch-geometry { fill: none; stroke: #63c4f4; stroke-width: .4; }
+.sketch-geometry.construction { stroke-dasharray: 1 1; stroke: #a0aab6; }
+.sketch-point { fill: #ffbe70; cursor: pointer; }
+#sketch-form { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; }
+#sketch-form label { display: grid; gap: .2rem; }

@@ -140,3 +140,10 @@ See [feature-editor.md](feature-editor.md) for admitted create/edit/reorder/supp
 ## Selection to reviewed dimension patch (MCAD-P14-003)
 
 Part previews/picks carry backend source/scene revisions and uniquely admitted source bindings. `plan_selection_edit_cmd` and `apply_selection_edit_cmd` rebind declared face refs or authored overlay IDs before the verified feature gateway. Read [selection-editing.md](selection-editing.md); name/role guesses remain display hints and do not authorize mutation.
+
+Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
+`apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
+and atomic history publication. Use explicit units, stable authored IDs and the
+current revision; review never writes. Existing global-workplane sketches only;
+unsupported/ambiguous/stale/failed-solve candidates refuse. See
+[sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.

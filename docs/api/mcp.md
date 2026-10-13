@@ -176,3 +176,10 @@ bracket's under-constrained sketch before editing it.
 ## Semantic selection tools
 
 `inspect_selection_frame`, `plan_selection_edit` and `apply_selection_edit` share the Tauri backend [selection contract](selection-editing.md). The native frame query does not rasterize or write. The GPU-free styled `preview_document` image remains a separate API and is not a selection token. Actual MCP stdio source/history parity and local Linux Tauri pointer-selection evidence are included; no external host or paid eval is claimed.
+
+Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
+`apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
+and atomic history publication. Use explicit units, stable authored IDs and the
+current revision; review never writes. Existing global-workplane sketches only;
+unsupported/ambiguous/stale/failed-solve candidates refuse. See
+[sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.

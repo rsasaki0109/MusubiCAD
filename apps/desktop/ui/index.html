@@ -39,6 +39,28 @@
         <p id="pick-hint" class="pick-hint">
           Click the preview or 3D viewport to inspect faces and sketch lines.
         </p>
+        <section id="sketch-editor">
+          <h2>Sketch editor</h2>
+          <p>Global workplane, local coordinates in mm. Select a point to move it, or click twice to draft a line. Review solves and verifies the draft before applying.</p>
+          <select id="sketch-select" aria-label="Authored sketch"></select>
+          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="line">Draw line</option></select>
+          <label>View span (mm) <input id="sketch-span" type="number" min="1" max="1000000" value="120" /></label>
+          <svg id="sketch-canvas" viewBox="-60 -40 120 80" aria-label="Sketch in local mm"></svg>
+          <p id="sketch-diagnostics"></p>
+          <form id="sketch-form">
+            <label>Action <select id="sketch-action"><option value="point">Point</option><option value="ellipse">Ellipse</option><option value="circle">Circle</option><option value="construction">Construction flag</option><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option><option value="coincident">Coincident points</option><option value="distance">Point distance</option><option value="radius">Radius</option><option value="remove_constraint">Remove constraint</option></select></label>
+            <label>Source entity / constraint ID <input id="sketch-id" value="ent:center" required /></label>
+            <label>X or major radius (explicit length) <input id="sketch-x" value="0 mm" /></label>
+            <label>Y or minor radius (explicit length) <input id="sketch-y" value="0 mm" /></label>
+            <label>Angle (explicit angle) <input id="sketch-angle" value="0 deg" /></label>
+            <label>Point A / centre / line ID <input id="sketch-a" value="ent:center" /></label>
+            <label>Point B ID <input id="sketch-b" value="ent:anchor" /></label>
+            <label><input id="sketch-construction" type="checkbox" /> Construction</label>
+            <label><input id="sketch-create" type="checkbox" /> Create new entity</label>
+            <button type="submit">Review sketch draft</button><button id="sketch-clear" type="button">Discard draft</button>
+          </form>
+          <div id="sketch-review" hidden><p id="sketch-effect"></p><button id="sketch-apply" type="button">Apply reviewed sketch</button></div>
+        </section>
         <p id="status" class="status">Loading…</p>
       </section>
       <aside class="info-panel">

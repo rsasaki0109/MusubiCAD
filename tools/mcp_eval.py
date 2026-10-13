@@ -971,6 +971,23 @@ def self_test() -> None:
         params["parameters"]["param:thickness"]["expr"] = "10 mm"
         params_file.write_text(json.dumps(params), encoding="utf-8")
         assert not check(selection_task, selection_doc, output)[0]
+    sketch_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "interactive_sketch_edit")
+    with tempfile.TemporaryDirectory() as sketch_tmp:
+        sketch_doc = Path(sketch_tmp) / "sketch.ocad.d"
+        shutil.copytree(ROOT / "examples/ellipse_plate.ocad.d", sketch_doc)
+        sketches_file = sketch_doc / "graph" / "sketches.json"
+        sketches = json.loads(sketches_file.read_text(encoding="utf-8"))
+        ellipse = next(e for e in sketches["sketches"][0]["entities"] if e["id"] == "ent:ellipse")
+        ellipse.update(major_radius="40 mm", minor_radius="15 mm", axis_angle="0 deg")
+        sketches_file.write_text(json.dumps(sketches), encoding="utf-8")
+        output = f"volume_m3: {sketch_task['expected_volume_mm3'] * 1e-9}\n"
+        assert check(sketch_task, sketch_doc, output)[0], check(sketch_task, sketch_doc, output)[1]
+        ellipse["center"] = "ent:anchor"
+        sketches_file.write_text(json.dumps(sketches), encoding="utf-8")
+        assert not check(sketch_task, sketch_doc, output)[0]
+        ellipse["center"] = "ent:center"
+        sketches_file.write_text(json.dumps(sketches), encoding="utf-8")
+        assert not check(sketch_task, sketch_doc, "volume_m3: 0.00001\n")[0]
     print("self-test passed")
 
 

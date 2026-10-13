@@ -217,6 +217,9 @@ fn tools() -> Vec<Tool> {
             handler: Handler::Agent("opencad.apply_feature_edit"),
             schema: feature_edit_schema,
         },
+        Tool { name: "inspect_sketches", description: "Read authored global-workplane sketches and backend solved SI entities, profiles and solve diagnostics without writing.", handler: Handler::Agent("opencad.inspect_sketches"), schema: path_schema },
+        Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, circle, ellipse, construction and basic constraints. Inputs require explicit units. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
+        Tool { name: "apply_sketch_edit", description: "Reverify and atomically apply the same sketch commands as Tauri; preserve source/history on stale, unit, solve, profile or geometry failure.", handler: Handler::Agent("opencad.apply_sketch_edit"), schema: sketch_edit_schema },
         Tool {
             name: "inspect_selection_frame",
             description: "Rebuild a native part scene and read source/scene revisions and uniquely admitted semantic selection bindings. Does not write or rasterize. This is the same geometry/source evidence used by the Tauri preview and pick queries.",
@@ -391,6 +394,38 @@ fn feature_edit_schema() -> Value {
 
 fn selection_edit_schema() -> Value {
     json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","required":["source_revision","scene_revision","target","field","expr"],"properties":{"source_revision":{"type":"string"},"scene_revision":{"type":"string"},"target":{"type":"object","description":"{kind:face_reference,ref_id} or {kind:sketch_entity,sketch_id,entity_id}, from selection_frame.bindings"},"field":{"type":"string"},"expr":{"type":"string"}},"additionalProperties":false},"history":{"type":"object"}},"required":["path","edit"],"additionalProperties":false})
+}
+
+fn sketch_edit_schema() -> Value {
+    let forms = [
+        ("point", vec!["id", "x", "y"], vec!["create"]),
+        ("line", vec!["id", "start", "end"], vec!["construction"]),
+        (
+            "circle",
+            vec!["id", "center", "radius"],
+            vec!["construction", "create"],
+        ),
+        (
+            "ellipse",
+            vec!["id", "center", "major_radius", "minor_radius", "axis_angle"],
+            vec!["construction", "create"],
+        ),
+        ("construction", vec!["id"], vec!["construction"]),
+        ("horizontal", vec!["id", "line"], vec![]),
+        ("vertical", vec!["id", "line"], vec![]),
+        ("coincident", vec!["id", "a", "b"], vec![]),
+        ("distance", vec!["id", "a", "b", "expr"], vec![]),
+        ("radius", vec!["id", "target", "expr"], vec![]),
+        ("remove_constraint", vec!["id"], vec![]),
+    ];
+    let operations: Vec<Value> = forms.into_iter().map(|(operation, strings, booleans)| {
+        let mut properties=serde_json::Map::new();properties.insert("operation".into(),json!({"const":operation}));
+        let mut required=vec!["operation"];
+        for field in strings { properties.insert(field.into(),json!({"type":"string"}));required.push(field); }
+        for field in booleans { properties.insert(field.into(),json!({"type":"boolean"}));required.push(field); }
+        json!({"type":"object","properties":properties,"required":required,"additionalProperties":false})
+    }).collect();
+    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","properties":{"revision":{"type":"string"},"sketch_id":{"type":"string"},"operations":{"type":"array","minItems":1,"maxItems":64,"items":{"oneOf":operations}}},"required":["revision","sketch_id","operations"],"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","edit"],"additionalProperties":false})
 }
 
 #[cfg(test)]
@@ -707,7 +742,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 32);
+        assert_eq!(tools.len(), 35);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

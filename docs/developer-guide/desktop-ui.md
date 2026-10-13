@@ -67,3 +67,17 @@ Windows or external agent-host verification; no paid evaluation is performed.
 ## Actual semantic selection interaction test
 
 Prepare a disposable ellipse_plate copy under `examples/bracket.ocad.d` using the verified `semantic_ref_patch` in `examples/agent/semantic_selection_edit.json`, then launch the actual Tauri app there with the same Xvfb/PRoot/loopback inspector setup. Run `node tools/test_tauri_selection_edit.mjs <inspector-http-endpoint> <disposable-part-path>`. The test dispatches a pointer click on the displayed image, exercises the selected-dimension product form and backend, checks analytic 18849.555922 mm³, preview/no-write, wrong name hints, delayed response refusal and canonical undo/redo. It uses the actual complete pick response; it does not fabricate a model or IPC harness. The resulting source is independently graded by `semantic_selection_edit`. Stop the test app/inspector afterward; external host checks remain separate.
+
+Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
+`apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
+and atomic history publication. Use explicit units, stable authored IDs and the
+current revision; review never writes. Existing global-workplane sketches only;
+unsupported/ambiguous/stale/failed-solve candidates refuse. See
+`docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.
+
+Actual Linux Tauri sketch evidence (disposable ellipse fixture, Inspector runtime
+as documented above):
+```text
+node tools/test_tauri_sketch_editor.mjs http://127.0.0.1:9223 /tmp/editor/examples/bracket.ocad.d
+```
+This drives the real WebView and backend, not an IPC replacement harness.
