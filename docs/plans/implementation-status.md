@@ -343,3 +343,12 @@ Local pre-push checks passed (1042 Rust tests, zero failures, 31 ignored). Actua
 PowerShell packaging with the native development v0.3.0 binary and both tutorials
 from its extracted Linux archive passed; these are local checks, not official
 release assets or validation of all four native tag builds.
+
+
+P15-008 recovers the failed v0.3.0 tag: exact-main gates passed and the annotated
+tag points to PR #99 main commit 75ac288fb97402433310d1d513041821deb7a434,
+but Windows failed while executing the extracted archive tutorial. No v0.3.0
+official release is claimed. Recovery exposes real failure diagnostics in Actions
+annotations and exercises Windows packaged tutorials in PRs. The v0.3.1 candidate
+keeps workspace/desktop/plugin/locks coherent; publication remains P15-009 after
+all gates. No capability, host, signing or maturity credit is assigned here.

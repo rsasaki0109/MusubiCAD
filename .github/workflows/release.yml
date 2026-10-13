@@ -54,7 +54,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
         run: |
-          # Pull requests build and smoke-test the Linux archive only; version
+          # Pull requests exercise Linux and Windows packaged tutorials; version
           # tags build every platform before publishing.  Non-Linux compile
           # breakage is still caught on main by the Desktop workflow, which
           # builds every platform on push.
@@ -63,7 +63,7 @@ jobs:
           mac_arm='{"runner":"macos-15","platform":"macos-aarch64","binary":"target/release/musubicad"}'
           mac_intel='{"runner":"macos-15-intel","platform":"macos-x86_64","binary":"target/release/musubicad"}'
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            include="[$linux]"
+            include="[$linux,$windows]"
           else
             include="[$linux,$windows,$mac_arm,$mac_intel]"
           fi

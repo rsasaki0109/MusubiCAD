@@ -13,7 +13,7 @@ import struct
 import subprocess
 import tempfile
 import shutil
-from run_editing_tutorial import MCP, agent, logical, snapshot
+from run_editing_tutorial import MCP, agent, logical, snapshot, report_action_error
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO = ROOT / 'examples/agent/assembly_tutorial.json'
@@ -177,4 +177,9 @@ def main():
     parser.add_argument('--scenario',type=Path,default=SCENARIO)
     args=parser.parse_args();print(json.dumps(run(args.binary.resolve(),args.fixtures.resolve(),args.scenario.resolve()),indent=2))
 
-if __name__=='__main__': main()
+if __name__=='__main__':
+    try:
+        main()
+    except Exception as error:
+        report_action_error(error, 'Packaged assembly tutorial')
+        raise

@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DESKTOP = ROOT / ".github" / "workflows" / "desktop.yml"
 SIGNED = ROOT / ".github" / "workflows" / "desktop-signed-release.yml"
 BUNDLE_CLEANUP = ROOT / "tools" / "clear-desktop-bundle.ps1"
+RELEASE = ROOT / ".github" / "workflows" / "release.yml"
 
 
 def require(text: str, needle: str, source: Path) -> None:
@@ -200,6 +201,26 @@ def test_windows_ui_is_a_required_real_app_gate() -> None:
         assert names.index(ui["name"]) < names.index("Package desktop artifacts and generate checksums")
 
 
+def test_release_pr_runs_windows_packaged_tutorial_before_upload() -> None:
+    text = RELEASE.read_text(encoding="utf-8")
+    require(text, 'include="[$linux,$windows]"', RELEASE)
+    require(text, 'include="[$linux,$windows,$mac_arm,$mac_intel]"', RELEASE)
+    parsed = parse_yaml_if_available(text, RELEASE)
+    if parsed is not None:
+        steps = parsed["jobs"]["build"]["steps"]
+        tutorial = next(step for step in steps if step.get("name") == "Execute tutorial from the packaged native archive")
+        assert not tutorial.get("if")
+        assert not tutorial.get("continue-on-error", False)
+        assert "run_editing_tutorial.py" in tutorial["run"]
+        assert "run_assembly_tutorial.py" in tutorial["run"]
+        names = [step.get("name") for step in steps]
+        assert names.index("Verify archive contract") < names.index(tutorial["name"])
+        assert names.index(tutorial["name"]) < names.index("Upload release archive")
+        publish = parsed["jobs"]["publish"]
+        assert publish["if"] == "${{ github.ref_type == 'tag' }}"
+        assert publish["needs"] == "build"
+
+
 def main() -> int:
     test_yaml_shape()
     test_unsigned_workflow_has_no_signing_boundary()
@@ -208,6 +229,7 @@ def main() -> int:
     test_signed_workflow_contract()
     test_signed_credentials_fail_before_expensive_setup()
     test_windows_ui_is_a_required_real_app_gate()
+    test_release_pr_runs_windows_packaged_tutorial_before_upload()
     print("desktop release policy contract: ok")
     return 0
 
