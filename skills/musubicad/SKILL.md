@@ -621,7 +621,7 @@ integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.
 
 ## Independent articulated subassembly copies (P13-011)
 
-Current main adds `inspect_articulation_source` (published v0.2.0 predates this
+CLI v0.3.1 adds `inspect_articulation_source` (published v0.2.0 predates this
 API). Inspect the child for its owning document, revision and independent joint
 IDs, and inspect the parent for the patch revision precondition. Author
 `set_instance_articulation` with a strict `articulation` object containing
@@ -675,6 +675,7 @@ and independently integrates the exported STL's volume/centre/bounds/closedness.
 It verifies child/other-copy preservation, stale/unit/range/owner/reference
 refusal, protected unsupported output and opaque Agent Undo/Redo. See the
 assembly tutorial in `docs/tutorials/assemblies.md` (`ASSEMBLY-TUTORIAL.md` in
-future CLI archives). This exercises actual MCP/Agent, without paid models;
+v0.3.1 CLI archives). This exercises actual MCP/Agent, without paid models;
 it supplies no Cursor/Gemini client-host evidence. Published v0.2.0 predates
-these APIs and archive inputs; current-main packaging gates cover future releases.
+these APIs and archive inputs; official v0.3.1 includes them and passed the native
+packaged tutorial gates. See the [v0.3.1 release evidence](../../docs/plans/cli-release-v0.3.1-evidence.md).

@@ -92,3 +92,9 @@ official publication. See [the failed gate evidence](../plans/cli-release-v0.3.0
 Do not replace the tag or upload local binaries to bypass its failed gate.
 The recovered v0.3.1 candidate still requires every tag gate and independent
 official download verification before publication can be reported.
+
+
+Published v0.3.1: [exact source, native gates, official assets and independently
+downloaded tutorial verification](../plans/cli-release-v0.3.1-evidence.md).
+Both archive tutorials passed on all four native tag platforms; this does not
+provide additional Cursor/authenticated Gemini evidence or desktop signatures.

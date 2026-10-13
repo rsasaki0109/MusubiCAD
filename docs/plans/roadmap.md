@@ -838,8 +838,8 @@ and Tauri workflows, ADR-027 plugin distribution and ADR-005 desktop trust.
 
 | MCAD-P15-007 | Prepare the flexible-assembly v0.3.0 release | Workspace/desktop/plugin/lock versions agree; reviewed release notes identify reader guards and bounded mechanics; native packaged tutorials pass before publication; release remains unpublished until tag matrix and asset verification | Complete upon preparation PR merge |
 
-| MCAD-P15-008 | Recover Windows packaged assembly tutorials | Record failed immutable v0.3.0 tag, expose real tutorial errors as safe check annotations, require native Windows archive tutorial in PRs, fix the proven portability failure and prepare coherent v0.3.1; no bypass or maturity credit | In progress |
-| MCAD-P15-009 | Publish and verify recovered v0.3.1 | P15-008 main gates, exact annotated tag, all four native extracted dual tutorials, official five-asset inventory and checksum-before-execution downloaded Linux verification; no invented host/signing evidence | Planned |
+| MCAD-P15-008 | Recover Windows packaged assembly tutorials | Record failed immutable v0.3.0 tag, expose real tutorial errors as safe check annotations, require native Windows archive tutorial in PRs, fix the proven portability failure and prepare coherent v0.3.1; no bypass or maturity credit | Complete: PR #100; Windows native archived tutorial passed |
+| MCAD-P15-009 | Publish and verify recovered v0.3.1 | P15-008 main gates, exact annotated tag, all four native extracted dual tutorials, official five-asset inventory and checksum-before-execution downloaded Linux verification; no invented host/signing evidence | Complete upon evidence PR merge |
 
 **Completion definition:** each task has a single main-target PR, applicable
 examples/evals/docs, all four pre-push checks and all applicable CI. Tutorials

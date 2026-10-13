@@ -359,3 +359,13 @@ STL attributes and a real core.autocrlf=true checkout regression preserve exact
 asset bytes; source hashes, fixtures, units and physical assertions are unchanged.
 Actual native Windows archive execution must still pass before this recovery
 is complete or v0.3.1 publication can proceed.
+
+
+P15-009 published official CLI v0.3.1 from PR #100 main commit `a9ec76f8616ecfce146f178c5b6d741b2d083825`
+at 2026-10-13T13:10:07Z. All exact-main and exact-tag native gate inventories
+passed; all four CLI archives execute both extracted tutorials before upload.
+The five official assets and their published hashes, independently downloaded/
+hashed Linux binary, both real-MCP/Agent tutorial successes and bounded host/
+trust scope are recorded in cli-release-v0.3.1-evidence.md. No maturity increment:
+general 50.10 (about 50%), ecosystem 14, agent operation 90. Actual Cursor and
+authenticated Gemini editing remain unverified; no signed desktop release claimed.
