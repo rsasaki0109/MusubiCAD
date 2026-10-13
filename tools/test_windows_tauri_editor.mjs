@@ -4,6 +4,12 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+// Also annotate failures during inspector discovery before the UI checks start.
+process.on('uncaughtExceptionMonitor', error => {
+  const detail = String(error.stack ?? error).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A');
+  console.log(`::error::Windows native UI: ${detail}`);
+});
+
 const [endpoint, partPath] = process.argv.slice(2);
 assert(endpoint && partPath, 'Inspector HTTP endpoint and disposable part path required');
 const address = new URL(endpoint);

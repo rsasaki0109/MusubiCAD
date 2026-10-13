@@ -47,6 +47,11 @@ try {
     if ((Get-SourceHashes $fixture) -cne $original) { throw 'Original fixture changed' }
     Write-Output "Windows native Tauri forms and source preservation: passed; OS=$([System.Environment]::OSVersion.VersionString)"
 }
+catch {
+    $detail = $_.Exception.Message.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+    Write-Output "::error::Windows native UI wrapper: $detail"
+    throw
+}
 finally {
     if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
     $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = $previousArguments
