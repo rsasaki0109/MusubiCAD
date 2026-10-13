@@ -1,0 +1,28 @@
+{
+  "source": "examples/ellipse_plate.ocad.d",
+  "sketch_operations": [
+    {
+      "operation": "ellipse",
+      "id": "ent:ellipse",
+      "center": "ent:center",
+      "major_radius": "40 mm",
+      "minor_radius": "15 mm",
+      "axis_angle": "0 deg",
+      "construction": false,
+      "create": false
+    }
+  ],
+  "feature_edit": {
+    "operation": "set_expression",
+    "id": "feature:ellipse_body",
+    "field": "length_expr",
+    "expr": "10 mm"
+  },
+  "expected_volume_mm3": 18849.55592153876,
+  "preserve": [
+    "document identity",
+    "source parameter expressions",
+    "centre and anchor points",
+    "sketch/entity/feature/profile IDs"
+  ]
+}

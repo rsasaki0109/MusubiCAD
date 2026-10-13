@@ -8,6 +8,10 @@ on:
       - Cargo.lock
       - Cargo.toml
       - modules/**
+      - tools/run_editing_tutorial.py
+      - docs/tutorials/editing.md
+      - examples/ellipse_plate.ocad.d/**
+      - examples/agent/editing_tutorial.json
       - tools/package-cli-release.ps1
       - docs/release-quickstart.md
       - docs/developer-guide/releases.md
@@ -190,6 +194,10 @@ jobs:
               "$root/LICENSE",
               "$root/README.md",
               "$root/QUICKSTART.md",
+              "$root/EDITING-TUTORIAL.md",
+              "$root/tools/run_editing_tutorial.py",
+              "$root/examples/ellipse_plate.ocad.d/manifest.ocad.json",
+              "$root/examples/agent/editing_tutorial.json",
               "$root/examples/bracket.ocad.d/manifest.ocad.json",
               "$root/examples/agent/review_width_patch.json"
           )
@@ -197,6 +205,26 @@ jobs:
               if ($entries -notcontains $path) {
                   throw "Release archive is missing $path"
               }
+          }
+
+      - name: Execute tutorial from the packaged native archive
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_PLATFORM: ${{ matrix.platform }}
+        run: |
+          $archive = Get-ChildItem dist -File | Where-Object { $_.Name -match '\.(zip|tar\.gz)$' }
+          $unpacked = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString("N"))
+          New-Item -ItemType Directory -Path $unpacked | Out-Null
+          try {
+              & tar -xf $archive.FullName -C $unpacked
+              if ($LASTEXITCODE -ne 0) { throw "Could not extract tutorial archive" }
+              $root = Join-Path $unpacked "musubicad-cli-v$env:RELEASE_VERSION-$env:RELEASE_PLATFORM"
+              $executable = if ($env:RELEASE_PLATFORM.StartsWith("windows-")) { "musubicad.exe" } else { "musubicad" }
+              & python (Join-Path $root "tools/run_editing_tutorial.py") --binary (Join-Path $root $executable) --fixture (Join-Path $root "examples/ellipse_plate.ocad.d")
+              if ($LASTEXITCODE -ne 0) { throw "Packaged tutorial failed" }
+          } finally {
+              Remove-Item -Recurse -Force -LiteralPath $unpacked
           }
 
       - name: Upload release archive

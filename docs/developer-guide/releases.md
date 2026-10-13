@@ -58,3 +58,13 @@ git push origin v0.2.0
 The CLI binaries remain unsigned. CLI signing is outside the desktop trust policy; the workflow
 must not imply that a CLI checksum is a publisher signature. Desktop trust scope and the required
 protected environment are documented in [desktop-releases.md](desktop-releases.md).
+
+## Reproducible editing tutorial gate
+
+Every native CLI archive includes `EDITING-TUTORIAL.md`,
+`tools/run_editing_tutorial.py`, `examples/ellipse_plate.ocad.d` and
+`examples/agent/editing_tutorial.json`. Release CI extracts the actual archive
+and runs the tutorial with its packaged executable before artifact upload.
+The tutorial uses real MCP/Agent, requires no model/GPU and checks native
+analytic volume/dimensions, review/refusal/source identity and Undo/Redo.
+It does not prove actual Codex/Cursor/Gemini client registration or interaction.

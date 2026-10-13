@@ -84,3 +84,6 @@ jobs:
 
       - name: Test
         run: cargo test --workspace
+
+      - name: Execute reproducible MCP editing tutorial
+        run: python tools/run_editing_tutorial.py

@@ -127,3 +127,10 @@ Plugin API contracts, and CAD reference/output quality.
 
 The desktop-specific setup remains in [desktop-ui.md](desktop-ui.md), with distribution details in
 [desktop-releases.md](desktop-releases.md).
+
+Reproducible editing tutorial: `docs/tutorials/editing.md` (distributed as
+`EDITING-TUTORIAL.md` in CLI archives). Run `python tools/run_editing_tutorial.py`
+in a built checkout, or pass the packaged `--binary` and `--fixture` paths.
+The real MCP/Agent exercise checks reviews, stale/unit refusals, source identity,
+Undo/Redo and native analytic dimensions/volume; it is not actual client-host
+integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.

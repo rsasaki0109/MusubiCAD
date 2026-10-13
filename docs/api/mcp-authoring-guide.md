@@ -1010,3 +1010,10 @@ and atomic history publication. Use explicit units, stable authored IDs and the
 current revision; review never writes. Existing global-workplane sketches only;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 [sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.
+
+Reproducible editing tutorial: `docs/tutorials/editing.md` (distributed as
+`EDITING-TUTORIAL.md` in CLI archives). Run `python tools/run_editing_tutorial.py`
+in a built checkout, or pass the packaged `--binary` and `--fixture` paths.
+The real MCP/Agent exercise checks reviews, stale/unit refusals, source identity,
+Undo/Redo and native analytic dimensions/volume; it is not actual client-host
+integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.

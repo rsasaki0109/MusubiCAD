@@ -1276,6 +1276,77 @@
           }
         }
       }
+    },
+    {
+      "id": "editing_tutorial",
+      "source": "examples/ellipse_plate.ocad.d",
+      "document": "editing_tutorial.ocad.d",
+      "prompt": "In {document}, follow examples/agent/editing_tutorial.json. Use inspect_sketches, plan_sketch_edit and apply_sketch_edit to change sketch:ellipse / ent:ellipse to major_radius 40 mm, minor_radius 15 mm, axis_angle 0 deg, keeping centre ent:center. Then use list_features, plan_feature_edit and apply_feature_edit to change feature:ellipse_body length_expr to 10 mm. Preserve all named parameters, original points, source IDs and sketch:ellipse/profile:outer. Review must not write; stale or unitless edits must refuse. Regenerate and independently verify dimensions 80x30x10 mm and volume pi*40*15*10 = 18849.555922 mm3. Do not invent MCP history tools; Undo/Redo is on Agent API or Tauri.",
+      "expected_volume_mm3": 18849.55592153876,
+      "required_parameters": [
+        "major_radius",
+        "minor_radius",
+        "axis_angle_rad",
+        "thickness"
+      ],
+      "expected_ellipse_sources": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "entity_id": "ent:ellipse",
+          "center": "ent:center",
+          "major_radius": "40 mm",
+          "minor_radius": "15 mm",
+          "axis_angle": "0 deg"
+        }
+      ],
+      "expected_parameter_expressions": {
+        "major_radius": "0.03 m",
+        "minor_radius": "0.02 m",
+        "axis_angle_rad": "0.5235987755982989 rad",
+        "thickness": "6 mm"
+      },
+      "expected_sketch_points": [
+        {
+          "sketch_id": "sketch:ellipse",
+          "point_id": "ent:center",
+          "position_m": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "sketch_id": "sketch:ellipse",
+          "point_id": "ent:anchor",
+          "position_m": [
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "expected_feature_editor": {
+        "order": [
+          "feature:ellipse_sketch",
+          "feature:ellipse_body"
+        ],
+        "nodes": {
+          "feature:ellipse_body": {
+            "suppressed": false,
+            "definition": {
+              "type": "extrude",
+              "sketch_feature": "feature:ellipse_sketch",
+              "profile_ref": "sketch:ellipse/profile:outer",
+              "operation": "new_body",
+              "length_expr": "10 mm",
+              "extent": {
+                "type": "distance",
+                "length": {
+                  "value_si": 0.006
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
