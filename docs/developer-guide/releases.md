@@ -6,7 +6,7 @@ binaries manually.
 The Tauri desktop shell has a separate [`Desktop` workflow](../../.github/workflows/desktop.yml).
 It builds and uploads unsigned, versioned installer/archive artifacts for Windows x86-64, Linux
 x86-64, macOS Apple Silicon, and macOS Intel on `main`, version tags, and manual dispatch. Pull
-requests build and smoke-test Linux only, to keep review feedback fast. The exact artifact names, bundle formats, and checksum verification are documented in
+requests build Linux and Windows, including actual Windows native UI validation. The exact artifact names, bundle formats, and checksum verification are documented in
 the [desktop distribution quick start](desktop-releases.md). Desktop artifacts are not published
 by the CLI `publish` job. Credential-gated Windows Authenticode, macOS signing/notarization, and
 desktop release publication are isolated in the separate
@@ -39,17 +39,19 @@ passes.
    configuration, both lockfiles, and intended tag agree:
 
 ```bash
-python tools/test_release_version.py --tag v0.2.0
+python tools/test_release_version.py --tag v0.3.0
 ```
 
-3. Wait for CI and the Release matrix to pass on `main`.
+3. Wait for CI and every Desktop platform build to pass on `main`.
+   Review the [v0.3.0 release notes](../releases/v0.3.0.md). The complete CLI
+   Release matrix runs after the tag; PR archive checks cover Linux only.
 4. Create and push an annotated version tag:
 
 ```bash
 git switch main
 git pull --ff-only
-git tag -a v0.2.0 -m "MusubiCAD CLI v0.2.0"
-git push origin v0.2.0
+git tag -a v0.3.0 -m "MusubiCAD CLI v0.3.0"
+git push origin v0.3.0
 ```
 
 5. Verify the GitHub Release has four platform archives and `SHA256SUMS`.
