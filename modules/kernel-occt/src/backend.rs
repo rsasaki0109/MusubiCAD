@@ -546,7 +546,12 @@ impl GeometryKernel for OcctGeometryKernel {
                 }
                 solids.remove(0)
             } else {
-                Solid::extrude(edges.iter(), direction).map_err(map_occt_error)?
+                let extruded = Solid::extrude(edges.iter(), direction).map_err(map_occt_error)?;
+                if matches!(extent, ExtrudeExtent::Symmetric { .. }) {
+                    extruded.translate(direction * -0.5)
+                } else {
+                    extruded
+                }
             };
 
             if let ExtrudeOperation::Cut = operation {

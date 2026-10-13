@@ -382,3 +382,18 @@ only the explicit Mock analytic infrastructure prerequisite; feature-specific
 source/schema/semantic/tessellation gates remain required before seat implementation.
 This documentation-only design task changes no source, schemas or CAD capability
 and awards no maturity increment. Future phases remain unregistered candidates.
+
+
+MCAD-P16-002 implements an explicitly selected bounded analytic Mock mode for
+right rectangular stock, exact circular extrusion and contained concentric
+subtraction. Ordered exact axial integration avoids overlapping removal twice;
+independent Mock/OCCT volume, first moments, surface area, bounds and rigid
+placement tests exercise reversed cut order, blind cuts and tilted/symmetric
+primitives. The native ordinary symmetric extrusion placement is corrected.
+Unsupported consumers and unknown/nonfinite/ambiguous inputs refuse without
+changing existing bodies; default Mock behavior is preserved. Runnable SDK
+example, API/architecture/ADR, MCP guide and skill identify the bounded scope.
+This is runtime kernel infrastructure, not a new document feature or MCP tool:
+no schema/migration/history changes or new MCP eval are applicable. Semantic
+faces/tessellation/source gates remain necessary for P16-003. No maturity credit:
+weighted general CAD 50.10, agent operation 90; fixed rubric unchanged.

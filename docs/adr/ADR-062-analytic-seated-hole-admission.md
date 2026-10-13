@@ -97,7 +97,7 @@ claims and subtracting the bore overlap twice. It does not turn Mock into a
 production CAD kernel. Broader stock/cut shapes require separate admission and
 analytic evidence. No new curve sampling algorithm or NURBS editing is accepted.
 
- ## Alternatives considered
+## Alternatives considered
 
 Keeping synthetic mass as evidence was rejected because it cannot detect a wrong
 hole radius, placement or overlapping seat removal. Silently converting all
@@ -106,3 +106,29 @@ fixtures exercise broader unsupported operations. Making Mock use OCCT was
 rejected because it removes independent analytic evidence and violates the
 kernel boundary. The explicit bounded mode preserves legacy tests and gives the
 new feature a genuine physical acceptance path.
+
+
+## MCAD-P16-002 implementation bounds
+
+Select `MockGeometryKernel::with_analytic_primitives()` explicitly; default Mock
+behavior is preserved. Store at most 100000 wires and 100000 bodies using a
+namespace distinct from the existing stores, and at most 64 cylindrical cuts
+per stock. Length/radius range is (1e-9, 1000] m and absolute world coordinates/
+bounds at most 1e6 m; only finite positive density and finite measurements pass.
+
+Use exact ordered axial cut endpoints, integrating the maximum removed radius
+between successive endpoints. This is an analytic decomposition, not a sampling
+method. Coalesce arithmetic roundoff only within
+`64 * f64::EPSILON * max(1, stock_height_m)`; reject near-but-distinct sub-1e-9 m
+axial/radial steps. This also bounds coaxial centre comparison. Strict radial
+clearance exceeds 1e-9 m; cuts outside axial stock bounds refuse. Surface area
+accounts for cylindrical walls, internal radius-step caps and removed stock
+end-face disks. Centre uses independently accumulated removed first moments.
+Stock outer bounds remain intact under strict radial containment.
+
+Tracked physical bodies support mass/area/centre/bounds and proper rigid
+transform/translation; topology, tessellation, imports/exports, inertia,
+compounds and all other shape edits explicitly refuse. Source/schema/semantic/
+tessellation gates for seated-hole features remain unchanged. Native ordinary
+symmetric extrusion is centered on the profile plane to honor the existing
+contract; independent circle/rectangle/tilted-placement tests prove the fix.

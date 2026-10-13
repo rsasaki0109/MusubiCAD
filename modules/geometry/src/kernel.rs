@@ -492,6 +492,7 @@ pub trait GeometryKernel {
 /// In-memory mock kernel for tests and headless pipelines without OCCT.
 #[derive(Debug, Default)]
 pub struct MockGeometryKernel {
+    analytic: Option<std::cell::RefCell<crate::analytic_mock::AnalyticMock>>,
     compounds: std::cell::RefCell<std::collections::BTreeMap<u64, Vec<KernelBody>>>,
     cubic_wires: std::cell::RefCell<std::collections::BTreeMap<u64, crate::CubicBezierFrame>>,
     cubic_bodies: std::cell::RefCell<std::collections::BTreeMap<u64, crate::CubicBezierPrism>>,
@@ -504,6 +505,17 @@ pub struct MockGeometryKernel {
 impl MockGeometryKernel {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Select ADR-062 bounded physical primitives/cuts. Unsupported operations
+    /// refuse; the default constructor retains legacy synthetic plumbing.
+    pub fn with_analytic_primitives() -> Self {
+        Self {
+            analytic: Some(std::cell::RefCell::new(
+                crate::analytic_mock::AnalyticMock::default(),
+            )),
+            ..Self::default()
+        }
     }
 
     fn store_mesh(&self, mesh: crate::TriangleSolid) -> KernelBody {
@@ -526,6 +538,10 @@ impl MockGeometryKernel {
         KernelBody::new(id)
     }
     fn refuse_ellipse_edit(&self, body: &KernelBody) -> Result<()> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
+
         if self.compounds.borrow().contains_key(&body.0) {
             return Err(OpenCadError::validation(
                 "Mock compound shape/topology/inertia operation unsupported",
@@ -558,6 +574,9 @@ impl MockGeometryKernel {
 
 impl GeometryKernel for MockGeometryKernel {
     fn has_exact_rigid_placement(&self, body: &KernelBody) -> bool {
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow().contains(body);
+        }
         self.imported_meshes.borrow().contains_key(&body.0)
             || self.cubic_bodies.borrow().contains_key(&body.0)
             || self.ellipse_bodies.borrow().contains_key(&body.0)
@@ -565,12 +584,18 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn import_triangle_solid(&self, solid: &crate::TriangleSolid) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         Ok(self.store_mesh(solid.clone()))
     }
     /// A deterministic stand-in body derived from the byte length, so
     /// imported-solid pipelines run without OCCT (ADR-016).  Mock export
     /// stays unsupported.
     fn import_step(&self, step: &[u8]) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         if step.is_empty() {
             return Err(OpenCadError::validation("STEP file contains no solids"));
         }
@@ -579,6 +604,9 @@ impl GeometryKernel for MockGeometryKernel {
 
     /// A deterministic stand-in body derived from the inputs (ADR-023).
     fn sweep(&self, profile: &SolvedSketch, path: &SolvedSketch) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         if path.cubic_bezier.is_some() || path.ellipse.is_some() {
             return Err(OpenCadError::validation(
                 "exact cubic/ellipse sweep paths are unsupported",
@@ -601,6 +629,9 @@ impl GeometryKernel for MockGeometryKernel {
 
     /// A deterministic stand-in body derived from the inputs (ADR-025).
     fn helix_sweep(&self, profile: &SolvedSketch, helix: &HelixSpec) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         if profile.ellipse.is_some() || profile.cubic_bezier.is_some() {
             return Err(OpenCadError::validation(
                 "ellipse/cubic profile supports normal extrusion only",
@@ -617,6 +648,9 @@ impl GeometryKernel for MockGeometryKernel {
     /// A deterministic stand-in body derived from the section count and
     /// point counts, so loft pipelines run without OCCT (ADR-022).
     fn loft(&self, sections: &[SolvedSketch]) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         if sections
             .iter()
             .any(|s| s.ellipse.is_some() || s.cubic_bezier.is_some())
@@ -690,6 +724,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn make_wire_from_sketch(&self, sketch: &SolvedSketch) -> Result<KernelWire> {
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow_mut().wire(sketch);
+        }
         if let Some(cubic) = sketch.cubic_bezier {
             if !sketch.closed
                 || sketch.circle.is_some()
@@ -740,6 +777,15 @@ impl GeometryKernel for MockGeometryKernel {
         _target: Option<KernelBody>,
         _direction_m: [f64; 3],
     ) -> Result<KernelBody> {
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow_mut().extrude(
+                profile,
+                extent,
+                _operation,
+                _target,
+                _direction_m,
+            );
+        }
         let length = match extent {
             ExtrudeExtent::Distance { length } => length.meters(),
             ExtrudeExtent::Symmetric { length } => length.meters() * 2.0,
@@ -793,6 +839,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn revolve(&self, input: &RevolveInput) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         if input.sketch.ellipse.is_some() || input.sketch.cubic_bezier.is_some() {
             return Err(OpenCadError::validation(
                 "ellipse/cubic profile supports normal extrusion only",
@@ -848,6 +897,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn boolean(&self, lhs: KernelBody, rhs: KernelBody, op: BooleanOp) -> Result<KernelBody> {
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow_mut().boolean(lhs, rhs, op);
+        }
         self.refuse_ellipse_edit(&lhs)?;
         self.refuse_ellipse_edit(&rhs)?;
 
@@ -878,6 +930,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         let members = self.compounds.borrow().get(&body.0).cloned();
         if let Some(members) = members {
             let meshes = members
@@ -903,6 +958,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn mass_properties(&self, body: &KernelBody, density_kg_per_m3: f64) -> Result<MassProperties> {
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow().mass(body, density_kg_per_m3);
+        }
         let members = self.compounds.borrow().get(&body.0).cloned();
         if let Some(members) = members {
             let properties = members
@@ -966,6 +1024,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn bounding_box(&self, body: &KernelBody) -> Result<BoundingBox> {
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow().bounds(body);
+        }
         let members = self.compounds.borrow().get(&body.0).cloned();
         if let Some(members) = members {
             let mut bounds: Option<BoundingBox> = None;
@@ -1018,6 +1079,9 @@ impl GeometryKernel for MockGeometryKernel {
         &self,
         body: &KernelBody,
     ) -> Result<Vec<crate::topo_sync::EdgeRefDiscovery>> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         if self.cubic_bodies.borrow().contains_key(&body.0) {
             return Err(OpenCadError::validation(
                 "Mock cubic edge discovery is unsupported",
@@ -1171,6 +1235,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return self.transform_body(body, RigidTransform::from_translation(translation_m));
+        }
         if self.compounds.borrow().contains_key(&body.0) {
             return self.transform_body(body, RigidTransform::from_translation(translation_m));
         }
@@ -1194,6 +1261,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn transform_body(&self, body: KernelBody, transform: RigidTransform) -> Result<KernelBody> {
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow_mut().transformed(body, transform);
+        }
         let members = self.compounds.borrow().get(&body.0).cloned();
         if let Some(members) = members {
             let moved = members
@@ -1223,6 +1293,9 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn make_compound(&self, bodies: &[KernelBody]) -> Result<KernelBody> {
+        if self.analytic.is_some() {
+            return Err(crate::analytic_mock::unsupported());
+        }
         if bodies.len() > 100000 {
             return Err(OpenCadError::validation(
                 "Mock compound member budget exceeded",
