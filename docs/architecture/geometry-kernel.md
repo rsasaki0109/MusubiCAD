@@ -223,3 +223,20 @@ legacy bounds and cache identities are unchanged. Solved control coordinates
 are transient, source point expressions survive warm regeneration, and actual
 resolved controls enter cubic-only cache identities. No NURBS type escapes the
 kernel or becomes editable by inference. See [the API limits](../api/cubic-spline.md).
+
+
+## Planned bounded analytic Mock admission
+
+[ADR-062](../adr/ADR-062-analytic-seated-hole-admission.md), registered by
+MCAD-P16-001, admits an explicit analytic-primitives Mock configuration for
+MCAD-P16-002. This is an accepted design, not implemented capability: current
+ordinary Mock IDs/mass remain synthetic, while existing tracked ellipse/cubic/
+mesh/compound paths retain their documented physical scope.
+
+The new mode must retain SI primitive/cut provenance, independently calculate
+contained concentric removal without overlap double-counting, and refuse
+unsupported operations/queries instead of synthesizing a cube. Default legacy
+Mock behavior and geometry-neutral OCCT boundaries stay intact. Runtime records
+are disposable; no kernel handle or new source representation is serialized.
+Seated-hole source/schema, semantic faces and usable tessellation require their
+feature-specific gate before MCAD-P16-003/004 implementation.

@@ -369,3 +369,16 @@ hashed Linux binary, both real-MCP/Agent tutorial successes and bounded host/
 trust scope are recorded in cli-release-v0.3.1-evidence.md. No maturity increment:
 general 50.10 (about 50%), ecosystem 14, agent operation 90. Actual Cursor and
 authenticated Gemini editing remain unverified; no signed desktop release claimed.
+
+
+MCAD-P16-001 registers the additional approximately 60% capability plan while
+preserving the fixed FreeCAD rubric, weights and original target. Actual baseline
+remains solid 55, sketch 60, assembly 70, drawing 50, I/O 60, GUI 45, ecosystem 14,
+weighted 50.10 and agent operation 90. The proposed 60.10 allocation is a planning
+estimate, not earned credit. Phase 16 prioritizes bounded analytic Mock support,
+seated standard holes, curved draft, tapered ribs, physical external threads and
+expanded fillets. Existing capabilities are not credited twice. ADR-062 admits
+only the explicit Mock analytic infrastructure prerequisite; feature-specific
+source/schema/semantic/tessellation gates remain required before seat implementation.
+This documentation-only design task changes no source, schemas or CAD capability
+and awards no maturity increment. Future phases remain unregistered candidates.
