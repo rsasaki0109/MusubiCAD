@@ -839,7 +839,7 @@ and Tauri workflows, ADR-027 plugin distribution and ADR-005 desktop trust.
 | MCAD-P15-007 | Prepare the flexible-assembly v0.3.0 release | Workspace/desktop/plugin/lock versions agree; reviewed release notes identify reader guards and bounded mechanics; native packaged tutorials pass before publication; release remains unpublished until tag matrix and asset verification | Complete upon preparation PR merge |
 
 | MCAD-P15-008 | Recover Windows packaged assembly tutorials | Record failed immutable v0.3.0 tag, expose real tutorial errors as safe check annotations, require native Windows archive tutorial in PRs, fix the proven portability failure and prepare coherent v0.3.1; no bypass or maturity credit | Complete: PR #100; Windows native archived tutorial passed |
-| MCAD-P15-009 | Publish and verify recovered v0.3.1 | P15-008 main gates, exact annotated tag, all four native extracted dual tutorials, official five-asset inventory and checksum-before-execution downloaded Linux verification; no invented host/signing evidence | Complete upon evidence PR merge |
+| MCAD-P15-009 | Publish and verify recovered v0.3.1 | P15-008 main gates, exact annotated tag, all four native extracted dual tutorials, official five-asset inventory and checksum-before-execution downloaded Linux verification; no invented host/signing evidence | Complete: PR #101; official v0.3.1 verified |
 
 **Completion definition:** each task has a single main-target PR, applicable
 examples/evals/docs, all four pre-push checks and all applicable CI. Tutorials
@@ -860,3 +860,49 @@ IDs lost in tutorial shortcuts, examples absent from installation, treating a
 protocol harness as a real client, missing host credentials/runtime, unverified
 archives and premature release publication. Continue independent tutorial/release
 work when a host is unavailable; record that gap rather than simulating success.
+
+## Phase 16 — Broader manufacturing modeling
+
+**Objective:** extend usable manufactured-solid modeling beyond the completed
+Phase 11 scope. This is the first stage of the additional approximately 60%
+objective; keep the original fixed rubric, weights and historical 50% target.
+Planning, kernel infrastructure and packaging do not earn feature credit.
+
+**Dependencies:** completed Phase 11 and P15-009 publication evidence, ADR-012
+feature admission, ADR-037 standard holes, existing DesignPatch/transaction/
+history and geometry-neutral interfaces. ADR-062 defines the initial analytic
+Mock admission; each later geometric extension requires its own accepted ADR.
+
+| ID | Task | Acceptance | Status |
+|---|---|---|---|
+| MCAD-P16-001 | Register the 60% capability plan and seated-hole admission | Fixed rubric preserved, real baseline/remaining gaps, ordered additional work, ADR-062 with explicit Mock/native admission and compatibility gates; planning only | Complete upon planning PR merge |
+| MCAD-P16-002 | Track bounded analytic stock and concentric cuts in Mock | Real rectangle/circle extrusion records and admitted concentric cuts; independently calculated volume/first moments/bounds and native parity; unknown/mixed/unsupported operations refuse, legacy synthetic paths remain explicit; no feature credit | Planned |
+| MCAD-P16-003 | Add explicit counterbored standard holes | Parametric bore/seat dimensions, contained bounded physical removal without overlap double-counting, source/face ownership, distinct serialized feature with old-reader refusal, both kernels and complete deliverables | Planned |
+| MCAD-P16-004 | Add explicit countersunk standard holes | SI seat diameter/included angle, derived frustum depth and volume/contact dimensions, accepted analytic/native admission, distinct closed seat form and protected failures/history | Planned |
+| MCAD-P16-005 | Extend draft to admitted curved faces | Accepted curved-face/neutral-plane contract; actual cylinder-to-frustum analytic cases in both kernels; no planar-only evidence used to claim general curved support | Planned |
+| MCAD-P16-006 | Add tapered rib profiles | Accepted thickness/height/draft/end contract and cross-section-integral tests in both kernels; explicit refusal of unsupported curved intersections | Planned |
+| MCAD-P16-007 | Model standard external thread geometry | Accepted standard/profile/handedness/end representation and actual geometry with independent pitch/crest/root/volume checks; existing generic helical sweep gets no repeat credit | Planned |
+| MCAD-P16-008 | Expand admitted variable fillet contours | Accepted radius-law/contour and semantic ownership, genuinely new supported cases with independent volume/contact tests in both kernels; no general curved-edge claim from another straight-edge case | Planned |
+
+**Completion definition:** every feature has real Mock and OCCT implementation,
+independent analytic dimension/volume tests, example, MCP authoring guide and
+skill updates, and an actual independently graded MCP eval where feasible.
+Serialized changes include schemas, migration/admission, deterministic expanded/
+packed round trips and older-reader refusal. Reviewed candidate edits, failure
+isolation and Undo/Redo go through DesignPatch/transactions. One main-target PR
+per task, no stacking, all four pre-push checks and all applicable native CI.
+Each feature's exact admission ADR is accepted before its implementation.
+
+**Tests:** SI dimensions, volume and first moments against independently derived
+formulae in both kernels; parametric edits and invalid ranges/units/references;
+source/semantic ownership, deterministic round trips, reader refusal, candidate
+rollback and canonical history; real MCP/Agent scenarios and supported native
+exports. Identify actual Mock physical data separately from synthetic IDs.
+
+**Risks:** double-counted coaxial cut overlap, synthetic Mock mass mislabeled as
+physical proof, optional fields ignored by older readers, partial lateral or
+oblique cut silently admitted, topology ownership lost after parameter edits,
+new sampling methods without an ADR, thread tolerance/production-readiness
+claims beyond the implemented standard, and awarding estimated points early.
+Unsupported geometry/query consumers must refuse rather than return a plausible
+synthetic cube or simplify a seat to a plain bore.
