@@ -59,7 +59,7 @@ Undo/Redo and native analytic dimensions/volume; it is not actual client-host
 integration evidence. The inputs are in `examples/agent/editing_tutorial.json`.
 
 
-Future current-main archives also contain `ASSEMBLY-TUTORIAL.md` and
+CLI v0.3.1 archives also contain `ASSEMBLY-TUTORIAL.md` and
 `tools/run_assembly_tutorial.py`. Run the latter with `--binary ./musubicad`
 (or `.\musubicad.exe` on Windows) to exercise both parent-context mechanisms
 through actual MCP/Agent and independently check the exported geometry.

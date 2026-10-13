@@ -1,7 +1,7 @@
 # Move one child mechanism with a parent constraint
 
-This walkthrough uses the current-main P13-011/012 APIs. Published CLI v0.2.0
-predates them. Build current main or use a future archive that contains this
+This walkthrough uses the P13-011/012 APIs in published CLI v0.3.1. Older v0.2.0
+predates them. Build current main or use a checksum-verified v0.3.1 archive with this
 `ASSEMBLY-TUTORIAL.md`, the runner and both mechanisms; a package filename or
 version string alone does not establish support.
 
@@ -19,7 +19,7 @@ cargo build -p opencad-cli
 python tools/run_assembly_tutorial.py --binary target/debug/musubicad
 ```
 
-From an extracted future Linux/macOS archive:
+From an extracted v0.3.1 Linux/macOS archive:
 
 ```sh
 python tools/run_assembly_tutorial.py --binary ./musubicad
