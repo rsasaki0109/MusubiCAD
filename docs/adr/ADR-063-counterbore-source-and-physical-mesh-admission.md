@@ -258,3 +258,18 @@ an unperforated box was rejected because it hides holes and produces invalid
 physical exports. General polygon triangulation/CSG mesh support is unnecessary
 for this bounded family. Heuristic nearest-face selection or silent quality
 relaxation would hide ambiguity; explicit refusal preserves authored intent.
+
+## P16-010 implementation evidence
+
+P16-010 implements the runtime mesh/witness gate in `analytic_mock/mesh.rs` and
+`RectangularStockGeometry`. Native uses a bounded private BREP bridge for exact
+plane/line types, wire/face/edge/vertex counts, cuboid corner correspondence and
+outward planar face frames; cadrum's existing public API cannot establish those
+exact type/topology predicates. Its TopExp_Explorer face enumeration matches
+cadrum/native mesh metadata, independently tested without changing native IDs.
+Mock duplicates triangle vertices for flat physical normals and validates welded
+geometric edge pairing using exact canonical f32 position bits; equality here
+identifies export topology, not approximate source geometry. Exact analytic
+measurements remain independent. SDK examples and both kernel mesh suites cover
+actual integration, ring contact, ownership and refusal. No seated-hole source,
+schema, feature, document eval or maturity credit is introduced in this task.

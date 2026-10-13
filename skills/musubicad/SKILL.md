@@ -690,5 +690,7 @@ See `docs/api/analytic-mock.md` and `examples/analytic-mock/`. No new MCP comman
 persisted setting or document seat feature is introduced. Counterbores and
 countersinks still require P16-003/004 admission; do not invent seat fields or
 substitute a plain bore. Use verified native DesignPatch for supported document
-edits. Analytic Mock topology/tessellation/inertia and unsupported geometry
-queries explicitly refuse; never count a synthetic fallback as physical evidence.
+edits. P16-010 admits actual closed bounded meshes and body-owned stock witnesses
+(ADR-063) in this explicit SDK mode; source/semantic ownership remains the
+feature layer's responsibility. Edge/inertia and unsupported geometry queries
+explicitly refuse; never count a synthetic fallback as physical evidence.

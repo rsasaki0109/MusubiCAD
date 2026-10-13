@@ -89,6 +89,15 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.tessellate(body, settings)
     }
 
+    fn rectangular_stock_geometry(
+        &self,
+        body: &KernelBody,
+        pick: crate::FacePick,
+    ) -> Result<crate::RectangularStockGeometry> {
+        self.record();
+        self.inner.rectangular_stock_geometry(body, pick)
+    }
+
     fn face_derivation_history(&self, body: &KernelBody) -> Vec<FaceDerivation> {
         self.record();
         self.inner.face_derivation_history(body)

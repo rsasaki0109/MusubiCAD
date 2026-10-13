@@ -34,11 +34,88 @@
 #include <gp_Elips.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <gp_Ax2.hxx>
+#include <algorithm>
+#include <vector>
+#include <array>
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 namespace musubicad {
+// ADR-063: exact OCCT type/topology admission, not mesh or bounding-box inference.
+rust::Vec<double> rectangular_stock_faces(rust::Slice<const std::uint8_t> brep) {
+    try {
+        constexpr double tol=1e-9;
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));
+        TopoDS_Shape shape; BRep_Builder builder; BRepTools::Read(shape,stream,builder);
+        if (shape.IsNull() || !BRepCheck_Analyzer(shape,true).IsValid()) throw std::runtime_error("invalid stock BREP");
+        NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> solids,faces,edges,vertices;
+        TopExp::MapShapes(shape,TopAbs_SOLID,solids); TopExp::MapShapes(shape,TopAbs_FACE,faces);
+        TopExp::MapShapes(shape,TopAbs_EDGE,edges); TopExp::MapShapes(shape,TopAbs_VERTEX,vertices);
+        if (solids.Extent()!=1 || faces.Extent()!=6 || edges.Extent()!=12 || vertices.Extent()!=8) throw std::runtime_error("stock is not a six-face cuboid");
+        for (int i=1;i<=edges.Extent();++i) {
+            BRepAdaptor_Curve curve(TopoDS::Edge(edges(i)));
+            if (curve.GetType()!=GeomAbs_Line) throw std::runtime_error("stock edge is not straight");
+        }
+        gp_XYZ center(0,0,0);
+        for (int i=1;i<=8;++i) center+=BRep_Tool::Pnt(TopoDS::Vertex(vertices(i))).XYZ()/8.;
+        const auto corner=BRep_Tool::Pnt(TopoDS::Vertex(vertices(1)));
+        std::vector<gp_Vec> directions;
+        for (int i=1;i<=12;++i) {
+            TopoDS_Vertex a,b;TopExp::Vertices(TopoDS::Edge(edges(i)),a,b);
+            auto p=BRep_Tool::Pnt(a),q=BRep_Tool::Pnt(b);
+            if (corner.Distance(p)<=tol) directions.emplace_back(p,q);
+            else if (corner.Distance(q)<=tol) directions.emplace_back(q,p);
+        }
+        if (directions.size()!=3) throw std::runtime_error("stock corner is not trivalent");
+        for (int i=0;i<3;++i) {
+            if (directions[i].Magnitude()<=tol) throw std::runtime_error("stock dimension is ambiguous");
+            for (int j=0;j<i;++j) if (std::abs(directions[i].Normalized().Dot(directions[j].Normalized()))>tol) throw std::runtime_error("stock dimensions are not orthogonal");
+        }
+        for (int mask=0;mask<8;++mask) {
+            auto point=corner;
+            for (int j=0;j<3;++j) if (mask&(1<<j)) point.Translate(directions[j]);
+            int count=0;for(int j=1;j<=8;++j) if (point.Distance(BRep_Tool::Pnt(TopoDS::Vertex(vertices(j))))<=tol) ++count;
+            if (count!=1) throw std::runtime_error("stock corners do not form a unique cuboid");
+        }
+        rust::Vec<double> result;
+        // Same TopExp_Explorer enumeration as cadrum::shape_faces and native mesh IDs.
+        for (TopExp_Explorer ex(shape,TopAbs_FACE);ex.More();ex.Next()) {
+            auto face=TopoDS::Face(ex.Current());BRepAdaptor_Surface surface(face);
+            if (surface.GetType()!=GeomAbs_Plane) throw std::runtime_error("stock face is not planar");
+            int wires=0;for(TopExp_Explorer w(face,TopAbs_WIRE);w.More();w.Next()) ++wires;
+            NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> fv,fe;
+            TopExp::MapShapes(face,TopAbs_VERTEX,fv);TopExp::MapShapes(face,TopAbs_EDGE,fe);
+            if(wires!=1 || fv.Extent()!=4 || fe.Extent()!=4) throw std::runtime_error("stock face has holes or nonrectangular boundary");
+            auto origin=BRep_Tool::Pnt(TopoDS::Vertex(fv(1)));std::vector<gp_Vec> axes;
+            for(int i=1;i<=4;++i) {
+                TopoDS_Vertex a,b;TopExp::Vertices(TopoDS::Edge(fe(i)),a,b);
+                auto p=BRep_Tool::Pnt(a),q=BRep_Tool::Pnt(b);
+                if(origin.Distance(p)<=tol) axes.emplace_back(p,q);
+                else if(origin.Distance(q)<=tol) axes.emplace_back(q,p);
+            }
+            if(axes.size()!=2 || axes[0].Magnitude()<=tol || axes[1].Magnitude()<=tol || std::abs(axes[0].Normalized().Dot(axes[1].Normalized()))>tol) throw std::runtime_error("stock face axes are ambiguous");
+            auto normal=gp_Vec(surface.Plane().Axis().Direction());
+            if(face.Orientation()==TopAbs_REVERSED) normal.Reverse();
+            else if(face.Orientation()!=TopAbs_FORWARD) throw std::runtime_error("stock face orientation unsupported");
+            if(normal.Dot(gp_Vec(gp_Pnt(center),origin))<=tol) throw std::runtime_error("stock face normal is not outward");
+            double thickness=0.;
+            for(int i=1;i<=8;++i) {
+                double depth=-normal.Dot(gp_Vec(origin,BRep_Tool::Pnt(TopoDS::Vertex(vertices(i)))));
+                if(depth < -tol) throw std::runtime_error("stock crosses outward face plane");
+                thickness=std::max(thickness,depth);
+            }
+            for(int i=1;i<=4;++i) if(std::abs(normal.Dot(gp_Vec(origin,BRep_Tool::Pnt(TopoDS::Vertex(fv(i))))))>tol) throw std::runtime_error("stock face plane disagreement");
+            const auto u=axes[0].Normalized(),v=axes[1].Normalized();
+            for(double value:{origin.X(),origin.Y(),origin.Z(),u.X(),u.Y(),u.Z(),v.X(),v.Y(),v.Z(),normal.X(),normal.Y(),normal.Z(),axes[0].Magnitude(),axes[1].Magnitude(),thickness}) {
+                if(!std::isfinite(value)) throw std::runtime_error("nonfinite stock witness");
+                result.push_back(value);
+            }
+        }
+        return result;
+    } catch (const Standard_Failure& failure) {throw std::runtime_error(failure.what());}
+}
+
 rust::Vec<double> tight_bounds(rust::Slice<const std::uint8_t> brep) {
     try {
         std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));

@@ -63,3 +63,6 @@ pub use ellipse::{EllipseFrame, SolvedEllipse};
 
 pub mod cubic_bezier;
 pub use cubic_bezier::{CubicBezierFrame, CubicBezierPrism, SolvedCubicBezier};
+
+pub mod stock;
+pub use stock::RectangularStockGeometry;

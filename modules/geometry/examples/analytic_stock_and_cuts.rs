@@ -1,8 +1,8 @@
 //! Developer kernel example; does not author or mutate a Design Graph document.
 use opencad_core::{Length, Result};
 use opencad_geometry::{
-    ExtrudeExtent, ExtrudeOperation, GeometryKernel, MockGeometryKernel, SketchPlacement,
-    SolvedCircle, SolvedSketch,
+    ExtrudeExtent, ExtrudeOperation, FacePick, GeometryKernel, MockGeometryKernel, SketchPlacement,
+    SolvedCircle, SolvedSketch, TessellationSettings,
 };
 
 fn main() -> Result<()> {
@@ -27,6 +27,16 @@ fn main() -> Result<()> {
         None,
         [0., 0., 1.],
     )?;
+    println!(
+        "entry_witness: {:?}",
+        kernel.rectangular_stock_geometry(
+            &body,
+            FacePick {
+                point_m: [0.012, 0.009, 0.010],
+                normal: [0., 0., 1.]
+            }
+        )?
+    );
     for (radius_m, depth_m) in [(0.0033, 0.010), (0.0055, 0.004)] {
         let profile = SolvedSketch {
             profile_ref: "cylindrical-tool".into(),
@@ -57,5 +67,23 @@ fn main() -> Result<()> {
     println!("mass_kg: {:.15}", mass.mass_kg);
     println!("center_m: {:?}", mass.center_of_mass);
     println!("bounds_m: {:?}", kernel.bounding_box(&body)?);
+    let mesh = kernel.tessellate(
+        &body,
+        &TessellationSettings {
+            linear_deflection: 1e-5,
+            angular_deflection_deg: 8.,
+        },
+    )?;
+    println!(
+        "closed_mesh: {} vertices, {} triangles",
+        mesh.positions.len(),
+        mesh.triangle_count()
+    );
+    println!(
+        "owned_faces: {:?}",
+        mesh.triangle_face_ids
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+    );
     Ok(())
 }

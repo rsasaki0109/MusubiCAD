@@ -819,6 +819,56 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn rectangular_stock_geometry(
+        &self,
+        body: &KernelBody,
+        pick: FacePick,
+    ) -> Result<opencad_geometry::RectangularStockGeometry> {
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("stock body {}", body.0)))?;
+            if store.compound_members.contains_key(&body.0) {
+                return Err(OpenCadError::validation("stock compounds unsupported"));
+            }
+            let mut bytes = Vec::new();
+            Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+            let data = crate::ffi::native::rectangular_stock_faces(&bytes)
+                .map_err(|e| OpenCadError::validation(format!("stock witness: {e}")))?;
+            if data.len() != 90 {
+                return Err(OpenCadError::validation("invalid native stock witness"));
+            }
+            let mut candidates = Vec::new();
+            for (index, p) in data.chunks_exact(15).enumerate() {
+                let witness = opencad_geometry::RectangularStockGeometry {
+                    entry_face_id: index as u64 + 1,
+                    origin_m: [p[0], p[1], p[2]],
+                    u_axis: [p[3], p[4], p[5]],
+                    v_axis: [p[6], p[7], p[8]],
+                    outward_normal: [p[9], p[10], p[11]],
+                    face_spans_m: [p[12], p[13]],
+                    inward_thickness_m: p[14],
+                };
+                if witness.matches_pick(pick)? {
+                    candidates.push(witness);
+                }
+            }
+            if candidates.len() != 1 {
+                return Err(OpenCadError::validation(
+                    "stock pick has no unique physical face",
+                ));
+            }
+            Ok(candidates[0])
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, pick);
+            Err(OpenCadError::validation("OCCT backend disabled"))
+        }
+    }
+
     fn tessellate(&self, body: &KernelBody, settings: &TessellationSettings) -> Result<MeshSet> {
         #[cfg(feature = "occt")]
         {
@@ -1031,6 +1081,8 @@ impl GeometryKernel for OcctGeometryKernel {
             if self.store.borrow().body(body.0).is_none() {
                 return Err(OpenCadError::not_found(format!("body {}", body.0)));
             }
+            let mesh = self.tessellate(body, &TessellationSettings::default())?;
+            opencad_geometry::validate_kernel_face_on_mesh(&mesh, kernel_face_id)?;
             self.store.borrow_mut().tag_face_ref(
                 body.0,
                 kernel_face_id,
