@@ -63,7 +63,7 @@ when implementing the feature. Older readers must refuse the tag rather than
 ignore an optional new field on StandardHole and regenerate a plain hole.
 Preserve legacy StandardHole documents. Schema, migration/admission checks,
 expanded/packed round trips and explicit old-reader refusal ship together.
-DesignPatch uses the existing add_feature/edit_feature commands; a seated hole
+DesignPatch uses the existing add_feature/replace_feature_definition commands; a seated hole
 retains owning target feature, profile reference, explicit standard selection,
 SI depth and an owned semantic face reference. No projection-coordinate or
 nearest-face fallback is admitted. Parameter expressions retain source text and
