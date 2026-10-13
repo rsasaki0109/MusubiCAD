@@ -248,3 +248,30 @@ See [host evidence](host-integration-evidence.md) for integrity and reproduction
 Gemini discovery/edit/refusal/regeneration, Windows desktop and Cursor sessions
 remain P15-003 gaps. No additional maturity credit: general 49.65 (about 50%),
 ecosystem 13, agent operation 89. No source, schema, dependency or golden changes.
+
+
+P15-005 adds an actual Windows native Tauri/WebView2 editing gate to desktop CI.
+An isolated fixture/profile and loopback CDP drive existing product forms through
+real Tauri IPC; create/length/reorder/suppress, independent 2400 mm³ preview,
+Undo/Redo canonical identity, byte-exact review/refusal and original fixture
+retention are checked. Desktop PR builds now include Windows and Linux; all
+four platforms remain on main/tags/manual runs. This is automated native GUI
+evidence, not a manual host session, installer or signed distribution claim.
+
+Only after the actual Windows CI gate succeeds and P15-005 merges main, its
+new Windows GUI evidence justifies ecosystem 13 → 14 (+0.15 weighted), general
+49.65 → 49.80 (about 50%); agent operation stays 89. Before that evidence/merge,
+the baseline remains 49.65 / ecosystem 13 / agent 89. Cursor and authenticated
+Gemini editing remain P15-003 gaps and no unavailable-host credit is assigned.
+No source schema, production UI/backend, kernel, dependencies or golden changes.
+
+
+P15-005 Windows native GUI passed at `a408e015` in Desktop run 38346081515,
+job 115127806676 (`Exercise actual Windows native Tauri forms`: success).
+The initial test-only Windows path representation mismatch was corrected using
+filesystem-resolved identity; all product form, native preview, source, refusal
+and history checks then passed. Failed runs were never merged or credited.
+PR #94's final-head applicable CI remains required before merge. After that
+merge, the current baseline is ecosystem 14, general 49.80 (about 50%), agent 89,
+based on this actual Windows evidence; P15-003 stays partial for Cursor and
+authenticated Gemini editing. Manual desktop interaction/signing is not claimed.

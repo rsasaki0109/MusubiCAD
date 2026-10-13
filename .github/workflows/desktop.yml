@@ -23,6 +23,8 @@ on:
       - docs/api/desktop.md
       - tools/package-desktop-release.ps1
       - tools/desktop-smoke.ps1
+      - tools/test_windows_desktop_ui.ps1
+      - tools/test_windows_tauri_editor.mjs
   push:
     branches: [main]
     tags:
@@ -54,15 +56,14 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
         run: |
-          # Pull requests build and smoke-test Linux only; main, tags, and manual
-          # runs build every platform, so packaging regressions still surface
-          # before a release.
+          # Pull requests exercise Linux packaging and actual Windows WebView2 UI;
+          # main, tags and manual runs also build both macOS targets.
           linux='{"runner":"ubuntu-24.04","platform":"linux-x86_64","target":"x86_64-unknown-linux-gnu","binary_path":"apps/desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/musubicad-desktop","bundles":"deb,appimage","bundle_directory":"apps/desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle"}'
           windows='{"runner":"windows-2022","platform":"windows-x86_64","target":"x86_64-pc-windows-msvc","binary_path":"apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/musubicad-desktop.exe","bundles":"msi,nsis","bundle_directory":"apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"}'
           mac_arm='{"runner":"macos-15","platform":"macos-aarch64","target":"aarch64-apple-darwin","binary_path":"apps/desktop/src-tauri/target/aarch64-apple-darwin/release/musubicad-desktop","bundles":"app,dmg","bundle_directory":"apps/desktop/src-tauri/target/aarch64-apple-darwin/release/bundle"}'
           mac_intel='{"runner":"macos-15-intel","platform":"macos-x86_64","target":"x86_64-apple-darwin","binary_path":"apps/desktop/src-tauri/target/x86_64-apple-darwin/release/musubicad-desktop","bundles":"app,dmg","bundle_directory":"apps/desktop/src-tauri/target/x86_64-apple-darwin/release/bundle"}'
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            include="[$linux]"
+            include="[$linux,$windows]"
           else
             include="[$windows,$linux,$mac_arm,$mac_intel]"
           fi
@@ -217,6 +218,17 @@ jobs:
         run: |
           test -f "$DESKTOP_BINARY"
           test -s "$DESKTOP_BINARY"
+
+      - name: Install Node for actual Windows WebView2 UI checks
+        if: ${{ matrix.platform == 'windows-x86_64' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Exercise actual Windows native Tauri forms
+        if: ${{ matrix.platform == 'windows-x86_64' }}
+        shell: pwsh
+        run: ./tools/test_windows_desktop_ui.ps1 -BinaryPath "${{ matrix.binary_path }}"
 
       - name: Verify build did not rewrite the lockfile
         shell: bash
