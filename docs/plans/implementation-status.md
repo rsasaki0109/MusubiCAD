@@ -397,3 +397,15 @@ This is runtime kernel infrastructure, not a new document feature or MCP tool:
 no schema/migration/history changes or new MCP eval are applicable. Semantic
 faces/tessellation/source gates remain necessary for P16-003. No maturity credit:
 weighted general CAD 50.10, agent operation 90; fixed rubric unchanged.
+
+
+MCAD-P16-009 registers ADR-063 and the explicit prerequisite order P16-009 →
+P16-010 → P16-003. The seated_standard_hole/closed counterbore seat wire, positive
+length expressions, mandatory owned entry reference, original rectangular-stock
+source/geometry proof, both-kernel closed mesh/face identities, bounded sampling
+and independent error/volume/history/reader tests are specified before coding.
+Current analytic Mock still refuses meshes/topology; the legacy box helper is
+not a closed box. No source, schema, feature or sampling implementation changes
+are included by this design task. New feature/seat fields remain unavailable
+until P16-003, and default Mock factories remain unchanged. Actual baseline stays
+weighted 50.10, agent operation 90; no planning/infrastructure maturity credit.

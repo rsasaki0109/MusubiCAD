@@ -249,3 +249,20 @@ produce physical centre and area. Bounds use stock corners or cylindrical suppor
 radii; proper rigid placement preserves source records. No mesh sampling, OCCT
 dependency, global state or serialized source DTO is introduced. Unsupported
 consumers refuse; see [the API contract](../api/analytic-mock.md).
+
+
+## Counterbore mesh and face gate (planned)
+
+[ADR-063](../adr/ADR-063-counterbore-source-and-physical-mesh-admission.md)
+registers P16-010 before P16-003. The legacy synthetic box helper is not a closed
+solid and cannot supply physical counterbore evidence. The accepted design uses
+actual analytic stock/cylinder/step records, a bounded deterministic circular
+grid with true rectangle-corner anchors, closed correctly wound caps/walls,
+owned face identities and independently integrated mesh/error evidence.
+
+A transient rectangular-stock query verifies actual geometry and one unique
+entry pick; the feature layer separately owns source-node/semantic bindings.
+Native checks stay private and IDs remain body scoped; no OCCT types or source
+ownership cross the interface. This is a planned gate: meshes and the new
+stock-face query are not implemented by P16-009, and analytic Mock continues to
+refuse them until P16-010. Default Mock factories remain unchanged.
