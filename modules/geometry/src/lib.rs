@@ -9,6 +9,8 @@ pub use draft::DraftInput;
 pub mod instrument;
 pub mod kernel;
 pub mod mass;
+pub mod metric_thread;
+pub use metric_thread::{MetricThreadSize, NominalMetricThread, ThreadHandedness};
 pub mod nurbs;
 pub mod provenance;
 pub mod refs;

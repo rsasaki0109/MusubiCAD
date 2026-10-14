@@ -153,3 +153,9 @@ independent both-kernel contact/integrals and source/schema/refusal/cache/histor
 actual MCP evidence. No arbitrary curved/multiple rib, existing constant-rib,
 P16-013 runtime, host, release or planning credit. Fixed rubric/weights and
 other scores stay unchanged; the approximately 60% objective remains active.
+
+PR #112 merged P16-006 to main as 2c8d8a8 after exact-head workflow/job success.
+Its conditional credit is earned: solid 63, weighted CAD 52.10, agent operation
+94. P16-014's nominal thread profile contract/calculation earns no increment;
+physical P16-007 construction and source deliverables remain pending. The
+original weights, comparison and additional approximately 60% goal are unchanged.

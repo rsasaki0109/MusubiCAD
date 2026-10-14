@@ -586,3 +586,20 @@ scores remain sketch 60, assembly 70, drawing 50, I/O 60, GUI 45, ecosystem 14.
 Weighted CAD 51.60→52.10 (about 52%), agent operation 93→94. Before that merge,
 actual earned baseline remains 51.60 / 93; additional approximately 60% goal
 continues and runtime/planning receives no feature credit.
+
+MCAD-P16-006 is complete in PR #112 (merge 2c8d8a8), after every exact-head
+workflow and applicable native/Windows/Desktop/packaged-smoke job passed.
+The conditional tapered-rib credit is now earned: solid 63, weighted CAD
+52.10 (about 52%), agent operation 94; other scores and all weights unchanged.
+No additional host/release or arbitrary rib-family claim. The 60% goal continues.
+
+MCAD-P16-014 registers ADR-067 before implementation and supplies only immutable
+nominal metric basic flat-root profile arithmetic: seven coarse size pairs,
+explicit right/left hand, square ends over 1–32 pitches, SI radius/diameters
+and ideal section/volume. Independent tests use meridional dimensions/slopes,
+handed pitch/phase, separately derived piece integrals and numerical angular
+sections, plus invalid count/nonfinite/outside-end refusal. Runnable SDK example,
+API/architecture/guide/skill state the arithmetic-only boundary. No body/mesh,
+new source/schema/patch or eval is claimed. Further physical construction/
+sampling admission and measured Mock/OCCT source evidence remain required for
+P16-007. This prerequisite earns no score: actual 52.10 / 94.

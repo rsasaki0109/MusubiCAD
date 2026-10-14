@@ -351,3 +351,11 @@ consumption or fake ancestry. Cached owners are rediscovered and host candidate
 verification is mandatory through existing DesignPatch/transactions. Only an
 explicit declared construction-line consumer admits a profile-free sketch;
 legacy/unconsumed profile validation remains unchanged.
+
+P16-014 / ADR-067 introduces immutable nominal metric basic-profile arithmetic
+in geometry, separate from physical kernel records and document source. Explicit
+coarse size/handedness/whole turns define a flat-root 60-degree meridional screw
+envelope, square clips, SI radii and ideal section/volume targets. The helper
+creates no body and proves no native sweep; sharing it cannot substitute for
+independent measurements in both kernels. Rounded-root production/tolerance
+claims and physical construction/sampling remain behind further admission.

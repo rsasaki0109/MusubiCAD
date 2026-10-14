@@ -1239,3 +1239,15 @@ with zero model calls. Both schemas/migration/roundtrips/old-reader refusal ship
 Default Mock is unsupported; explicit analytic Mock is SDK proof and CLI/MCP
 uses native OCCT. v0.3.1 predates the tag; no arbitrary curved/multiple-rib,
 generic picker named-end support, new host or release claim.
+
+### Nominal thread profile prerequisite (P16-014)
+
+ADR-067 and the geometry SDK now define nominal metric basic flat-root profile
+arithmetic: supported coarse designation, explicit hand, integer pitches and
+square end clips. See [SDK contract](nominal-metric-thread.md) and
+[calculation example](../../examples/nominal_metric_thread_profile.md).
+This creates no physical body, source tag or MCP operation. Continue to describe
+ADR-037 `tap_drill` as a drill cylinder. Do not author a supposed standard thread
+by renaming a generic helix or report calculated ideal volume as native evidence.
+P16-007 still requires independently measured Mock/OCCT construction, protected
+source/patch/history and actual eval. No production root or tolerance-class claim.
