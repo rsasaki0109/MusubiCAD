@@ -732,9 +732,22 @@ are tested; old counterbore-only readers reject countersinks. Real stdio uses
 zero model calls, with no additional host/release credit. v0.3.1 predates these
 source tags. Explicit analytic Mock is SDK evidence; CLI/MCP uses native OCCT.
 
-P16-012 / ADR-065 proves bounded cylinder-to-solid-frustum runtime draft, with
-an actual full-cylinder witness and explicit neutral plane/angle. It is not a
-curved .ocad/MCP feature yet. Refuse curved-side authoring via legacy planar
-`draft`; do not add optional fields an old reader ignores. P16-005 owns guarded
-source/semantic-side/patch/history/eval admission. SDK example:
-`analytic_cylindrical_draft`; independent tests run in geometry/kernel-occt.
+P16-005 / ADR-065 adds closed `cylindrical_draft` authoring over P16-012's
+physical cylinder-to-frustum runtime. Require original exact-circle distance/
+NewBody stock, owned full `cylindrical` side reference, SI signed Angle and explicit
+parallel/antiparallel neutral plane within the height. Never send curved sides
+to planar `draft`, use average normals or invent optional curved flags.
+
+Create/review/apply with DesignPatch. Use angle parameter `draft_angle_rad` and
+unit-bearing expressions such as `7 deg`; typed `draft_angle` edits angle_expr,
+`face_ref` edits the semantic side. Radius collapse/tiny taper, invalid units/
+planes, cap/foreign/missing/otherwise-consumed sides and altered stock refuse.
+The changed input side is consumed; endpoint neutral-cap ownership is preserved
+only with actual geometry proof. Mandatory native verification survives
+verify:false/--no-verify; failure preserves source/history and cache repeats
+physical ownership checks. Default Mock refuses; explicit analytic Mock is SDK
+proof. See `docs/api/cylindrical-draft.md`, `examples/cylindrical_draft.md`, the
+creation patch, `cylindrical_draft_angle` eval and real stdio regression
+`tools/test_cylindrical_draft_mcp.py`. Sign is independently graded because a
+centred-plane volume cannot distinguish opposite angles. v0.3.1 predates the tag;
+no general curved/NURBS draft, additional host or release credit is claimed.

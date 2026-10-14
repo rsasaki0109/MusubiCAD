@@ -504,6 +504,12 @@ impl PartModel {
                 };
 
                 if let Some(cached) = cache.get(&output_key) {
+                    let verified_faces =
+                        if matches!(node.definition, FeatureDefinition::CylindricalDraft(_)) {
+                            registry.discover_output_faces(node, &session, &cached.output)?
+                        } else {
+                            None
+                        };
                     if matches!(node.definition, FeatureDefinition::SeatedStandardHole(_)) {
                         let body = cached.output.body.as_ref().ok_or_else(|| {
                             OpenCadError::validation("cached seated hole has no physical body")
@@ -513,7 +519,8 @@ impl PartModel {
                         )?;
                     }
                     if cached.output.body.is_some() {
-                        face_discoveries = cached.face_discoveries.clone();
+                        face_discoveries =
+                            verified_faces.unwrap_or_else(|| cached.face_discoveries.clone());
                         edge_discoveries = cached.edge_discoveries.clone();
                     }
                     report.face_history.extend(cached.face_history.clone());

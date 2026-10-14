@@ -130,3 +130,15 @@ only after its main merge: real conical seat/bore union, typed parametric angle,
 independent contact/volume/COM/closed meshes in both kernels and protected
 source/MCP/history. No arbitrary-face machining, inferred head standard or
 additional host/release support is credited. Until then use 50.60 / 91.
+
+
+## P16-005 merge-conditioned evidence ledger
+
+Only after P16-005 merges to main: solid 59 → 61, weighted CAD 51.10 → 51.60
+(about 52%) and agent operation 92 → 93. Credit is partial for actual admitted
+full-cylinder curved draft with signed SI angle/neutral plane, owned source and
+physical output, independent Mock/native contact/integral evidence, closed
+schema/old-reader refusal and protected actual MCP/Agent history. No general
+curved/concave/NURBS, host, release or P16-012 infrastructure credit. The fixed
+rubric/weights and other scores remain unchanged; 60% remains an additional goal
+requiring further merged capabilities.

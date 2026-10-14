@@ -69,8 +69,10 @@ pub use standard_hole::{
 };
 pub use sweep::{SweepFeature, SweepFeatureExecutor};
 
+pub mod cylindrical_draft;
 pub mod datum;
 pub mod draft;
+pub use cylindrical_draft::{CylindricalDraftFeature, CylindricalDraftFeatureExecutor};
 pub use draft::{DraftFeature, DraftFeatureExecutor};
 
 pub mod body_boolean;

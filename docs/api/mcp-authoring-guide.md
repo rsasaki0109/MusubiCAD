@@ -1173,10 +1173,35 @@ native volume plus unchanged explicit feature/standard/sketch/ref/order source.
 calls. Counterbore-only readers reject the seat discriminant; both schemas and
 additive migration/roundtrip tests ship. Released v0.3.1 predates these tags.
 
-P16-012 / ADR-065 supplies real cylinder witnessing and neutral-plane solid
-frustum geometry in both kernels. It does not add a curved document draft or
-MCP tool yet. Do not send a curved side to the legacy planar `draft` feature
-or invent ignored optional fields. P16-005 supplies a distinct guarded source,
-owned lateral ref, neutral-plane and verified DesignPatch/history contract.
-The SDK example is `analytic_cylindrical_draft`; actual geometric tests are
-`cylindrical_draft` in both geometry/kernel-occt crates, with zero model calls.
+### Cylindrical neutral-plane draft (P16-005, ADR-065)
+
+Use the distinct closed `cylindrical_draft` tag with original exact-circle
+Distance/NewBody `target_feature`, owned full-side `face_ref`, SI `angle`, optional
+`angle_expr` and explicit `neutral_plane`. The reference is created by the target
+with `kind: face`, `role: cylindrical`, and optional `cylinder` fingerprint.
+Do not route curved sides through legacy planar `draft` or invent ignored fields.
+
+Positive angle narrows toward the neutral normal; r(z)=R-sign(dot(normal,axis))*
+tan(angle)*(z-z0). Plane normal is parallel/antiparallel to the actual cylinder
+axis and z0 is within its height. Reject collapsed/tiny taper, invalid units,
+non-unit planes, missing/foreign/ambiguous/cap/otherwise-consumed refs, imports,
+booleans, patterns and already-tapered stock. Actual witness identity proves the
+side; average normals or nearest-face matching cannot admit it.
+
+Create/replace through DesignPatch. `set_feature_expr` field `draft_angle` edits
+`angle_expr`; `set_feature_ref` field `face_ref` edits ownership. Angle parameters
+use names such as `draft_angle_rad` and explicit expressions like `7 deg`.
+Mandatory native verification applies even with `verify:false`/`--no-verify`;
+reviews remain read-only and failures preserve files/history/outputs.
+The changed source side is consumed. Actual changed caps/conical side belong to
+the draft, with an unchanged endpoint neutral cap retained only by physical proof.
+Cache hits revalidate source/output ownership and measurements.
+
+See [source admission](cylindrical-draft.md), [the runnable example](../../examples/cylindrical_draft.md)
+and `examples/agent/create_cylindrical_draft_patch.json`. Independent eval
+`cylindrical_draft_angle` checks fresh volume, signed expression and unchanged
+source; centred-plane volume alone cannot grade sign. Real stdio regression
+`tools/test_cylindrical_draft_mcp.py` verifies preview/review/refusal and Agent
+history with zero model calls. Both schemas, additive migration/round trips and
+old-reader refusal ship. v0.3.1 predates the tag; default Mock is unsupported,
+explicit analytic Mock is SDK evidence, and CLI/MCP uses native OCCT.

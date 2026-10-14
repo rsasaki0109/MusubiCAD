@@ -498,3 +498,34 @@ no .ocad/MCP curved draft, source ownership or new host/release credit is claime
 P16-005 owns guarded source/semantic/history/schemas/example/eval afterward.
 Infrastructure earns no score: solid 59, sketch 60, assembly 70, drawing 50,
 I/O 60, GUI 45, ecosystem 14 (weighted 51.10, about 51%; agent operation 92).
+
+
+MCAD-P16-012 is complete in PR #109 (merge 98b2f8e), with all four exact-head
+workflows and applicable Windows/native/desktop jobs passing. Runtime-only
+geometry earns no score; earned baseline remains weighted CAD 51.10 / agent 92.
+
+MCAD-P16-005 implements ADR-065's closed `cylindrical_draft` source over that
+runtime. Original authored exact-circle/distance/NewBody stock must agree with
+the physical witness; an owned full cylindrical side, signed strict SI angle
+and explicit neutral plane drive actual solid frustum geometry. Changed side
+consumption, physically proved cap/conical producers, cache revalidation and
+mandatory native CLI/MCP candidate verification protect source/history/output.
+Both schemas, additive no-inference migration, canonical expanded/packed
+round trips and genuine planar-draft reader refusal accompany the tag.
+Independent Mock/native source cases integrate radial slices and exported closed
+triangles, with contact/COM, signed/reversed planes, oblique source placement,
+cap ownership, corrupted cache and protected range/unit/reference refusal.
+The patch-authored example, API/guide/skill and source-aware signed-angle eval
+ship. Actual stdio makes 11 MCP and two Agent history requests, zero model calls;
+review/preview is read-only, verify:false/no-verify cannot bypass native checks,
+and refused edits plus canonical Undo/Redo preserve source/history.
+
+Only after the P16-005 main merge, solid 59 → 61 earns partial credit for the
+full-cylinder curved-face family with neutral-plane semantics and protected
+parametric authoring. Generic curved/concave/NURBS draft gets no credit.
+Other scores remain sketch 60, assembly 70, drawing 50, I/O 60, GUI 45,
+ecosystem 14. Weighted CAD 51.10 → 51.60 (about 52%); agent operation 92 → 93
+for the verified signed draft/source/history workflow. Infrastructure P16-012,
+new planning, host and release work receive no additional credit. Until merge,
+actual maturity remains 51.10 / 92; the additional approximately 60% goal remains
+in progress.

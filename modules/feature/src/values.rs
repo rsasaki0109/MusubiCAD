@@ -232,6 +232,10 @@ impl FeatureDefinition {
                 }
                 Ok(())
             }
+            Self::CylindricalDraft(def) => {
+                let mut copy = def.clone();
+                copy.resolve_expressions(scope)
+            }
             Self::Draft(def) => {
                 def.validate()?;
                 let angle = match &def.angle_expr {

@@ -55,7 +55,9 @@ pub fn patch_document_with_options(args: &PatchArgs) -> Result<()> {
     let report = dry_run_patch_document(&before, &patch);
     ensure_patch_valid(&report)?;
 
-    if args.options.dry_run && crate::review::requires_seated_hole_verification(&before, &patch) {
+    if args.options.dry_run
+        && crate::review::requires_physical_feature_verification(&before, &patch)
+    {
         let verification = verification_report(&args.doc_path, &before, &patch);
         if !verification.passed {
             return Err(opencad_core::OpenCadError::validation(format!(
@@ -106,7 +108,7 @@ pub fn patch_document_with_options(args: &PatchArgs) -> Result<()> {
     if !args.options.no_verify
         || point_effect
         || dependencies.is_some()
-        || crate::review::requires_seated_hole_verification(&before, &patch)
+        || crate::review::requires_physical_feature_verification(&before, &patch)
     {
         let verification = verification_report(&args.doc_path, &before, &patch);
         if !verification.passed {

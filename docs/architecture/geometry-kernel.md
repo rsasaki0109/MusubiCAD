@@ -320,3 +320,12 @@ closed conical disk/wall meshes. No synthetic IDs establish physical proof;
 new face identities have no fabricated reconstruction ancestry. Default Mock
 and legacy planar draft stay unchanged. P16-005 adds source ownership, consumed
 side/retained neutral-cap semantics, patches/schemas/history and MCP evidence.
+
+P16-005 exposes ADR-065's physical family through the distinct closed
+`cylindrical_draft` source tag. Feature admission compares authored circle/
+placement/distance with the exact body-owned witness and requires its owned full
+side. Geometry stays transient; SI angle/neutral plane stay graph source.
+Changed side consumption and physically classified cap/conical producers replace
+fabricated ancestry. Native hosts force candidate verification through existing
+DesignPatch/transaction gateways; cached outputs repeat source/physical proof
+and rediscover owners. General curved or already-modified stock still refuses.

@@ -36,6 +36,7 @@ pub enum FeatureExprField {
     SeatDiameter,
     SeatDepth,
     SeatIncludedAngle,
+    DraftAngle,
 }
 
 /// Supported semantic ref fields for patch operations.
@@ -78,6 +79,7 @@ impl FeatureExprField {
             Self::SeatDiameter => "seat_diameter",
             Self::SeatDepth => "seat_depth",
             Self::SeatIncludedAngle => "seat_included_angle",
+            Self::DraftAngle => "draft_angle",
         }
     }
 
@@ -93,8 +95,9 @@ impl FeatureExprField {
             "seat_diameter" => Ok(Self::SeatDiameter),
             "seat_depth" => Ok(Self::SeatDepth),
             "seat_included_angle" => Ok(Self::SeatIncludedAngle),
+            "draft_angle" => Ok(Self::DraftAngle),
             _ => Err(OpenCadError::validation(format!(
-                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', 'thickness_expr', 'bore_depth', 'seat_diameter', 'seat_depth', or 'seat_included_angle'"
+                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', 'thickness_expr', 'bore_depth', 'seat_diameter', 'seat_depth', 'seat_included_angle', or 'draft_angle'"
             ))),
         }
     }
@@ -477,11 +480,12 @@ pub(crate) fn validate_feature_values(
     state: &DesignState,
     scope: &indexmap::IndexMap<String, f64>,
 ) -> Result<()> {
-    let strict_scope = if state
-        .feature_nodes
-        .iter()
-        .any(|n| matches!(n.definition, FeatureDefinition::SeatedStandardHole(_)))
-    {
+    let strict_scope = if state.feature_nodes.iter().any(|n| {
+        matches!(
+            n.definition,
+            FeatureDefinition::SeatedStandardHole(_) | FeatureDefinition::CylindricalDraft(_)
+        )
+    }) {
         Some(opencad_graph::evaluate_param_graph_strict(
             &state.parameters,
         )?)
@@ -489,7 +493,7 @@ pub(crate) fn validate_feature_values(
         None
     };
     let scope = strict_scope.as_ref().unwrap_or(scope);
-    let failures: BTreeSet<String> = state
+    let mut failures: BTreeSet<String> = state
         .feature_nodes
         .iter()
         .filter(|node| !node.suppressed)
@@ -500,6 +504,11 @@ pub(crate) fn validate_feature_values(
                 .map(|error| format!("feature '{}': {error}", node.id))
         })
         .collect();
+    for node in &state.feature_nodes {
+        if !node.suppressed && matches!(node.definition, FeatureDefinition::CylindricalDraft(_)) {
+            crate::feature_patch::check_feature_inputs(node, state, &mut failures);
+        }
+    }
     if failures.is_empty() {
         Ok(())
     } else {
@@ -1400,6 +1409,10 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
             pattern.plane_face_ref = Some(ref_id.to_string());
             Ok(())
         }
+        (FeatureDefinition::CylindricalDraft(def), FeatureRefField::FaceRef) => {
+            def.face_ref = ref_id.to_string();
+            Ok(())
+        }
         (FeatureDefinition::SeatedStandardHole(def), FeatureRefField::FaceRef) => {
             def.face_ref = ref_id.to_string();
             Ok(())
@@ -1423,6 +1436,10 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
 
 fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &str) -> Result<()> {
     match (&mut node.definition, field) {
+        (FeatureDefinition::CylindricalDraft(def), FeatureExprField::DraftAngle) => {
+            def.angle_expr = Some(expr.to_string());
+            Ok(())
+        }
         (FeatureDefinition::SeatedStandardHole(def), FeatureExprField::BoreDepth) => {
             def.bore_depth_expr = Some(expr.to_string());
             Ok(())
