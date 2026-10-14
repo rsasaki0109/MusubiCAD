@@ -339,6 +339,11 @@ It is reference arithmetic, not a mesh, native fit, body or MCP operation. A sma
 positional bound does not prove closure, tangent continuity, native fidelity or
 supported circular variable-fillet authoring; P16-008 remains unsupported.
 
+P16-023 / ADR-076 supplies bounded bicubic reference poles, measured on actual
+OCCT surfaces in a separate diagnostic. It adds no MCP operation or physical
+Mock/native solid; positional bounds/shared edge curves cannot authorize curved
+variable-fillet creation, support trimming or tangent-continuity claims.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

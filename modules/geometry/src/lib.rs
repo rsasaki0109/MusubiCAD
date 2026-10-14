@@ -88,3 +88,6 @@ pub use circular_fillet_volume::CircularFilletVolumeBounds;
 mod circular_fillet_patch;
 mod interval;
 pub use circular_fillet_patch::CircularFilletPatchBounds;
+
+mod circular_fillet_bezier;
+pub use circular_fillet_bezier::CircularFilletBezierPatch;

@@ -796,3 +796,19 @@ numerical derivative oracles, interpolation, refinement/scales and boundary
 refusals check the implementation. No mesh, actual Mock/native fit or body,
 source/schema/MCP operation or editable NURBS is supplied. Position error alone
 cannot admit geometry; P16-008 remains planned, actual52.60 / 95.
+
+
+P16-022 is complete in PR #122 (merge b22abb0), after all mandatory local checks
+(1154 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. The PR publisher was
+intentionally skipped. No score: actual52.60 / 95.
+
+MCAD-P16-023 / ADR-076 constructs transient bicubic reference poles from corner
+positions/derivatives and bounds position error via the bilinear reference bound
+plus a degree-elevated Bernstein control-net deviation. Rounded shared boundary
+controls are identical, including quarter-chart wraparound. Independent geometry
+tests and a live pinned OCCT diagnostic compare actual poles/degrees, positions
+and derivatives across forty constant/nonconstant/contact/interior/seam cases.
+Negative report controls reject displaced surfaces and corrupt measurements.
+No native or Mock solid, support trimming, normal/G1/volume certificate, source,
+schema or MCP operation is supplied. P16-008 remains planned; actual52.60 / 95.

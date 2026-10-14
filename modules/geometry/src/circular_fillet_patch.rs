@@ -209,13 +209,34 @@ fn evaluate(
     }
     Ok((point, normal))
 }
-fn norm_upper(values: [I; 3]) -> f64 {
+pub(super) fn norm_upper(values: [I; 3]) -> f64 {
     let mut squared = values.into_iter().fold(I::exact(0.), |sum, v| {
         sum + I::exact(v.lo.abs().max(v.hi.abs())).square()
     });
     // A sum of real squares is nonnegative, even at the subnormal floor.
     squared.lo = squared.lo.max(0.);
     squared.sqrt().hi
+}
+
+/// Canonical corner derivatives, expressed in the caller's original chart.
+pub(super) fn corner_derivatives(
+    reference: CircularFilletReference,
+    chart: u8,
+    u: f64,
+    v: f64,
+) -> Result<[[I; 3]; 3]> {
+    let seam = u >= 1.; // Declared parameter endpoint, not geometric equality.
+    let chart = if seam { (chart + 1) % 4 } else { chart };
+    let u = if seam || u <= 0. { 0. } else { u };
+    let v = if v <= 0. { 0. } else { v };
+    let (point, _) = evaluate(reference, chart, I::exact(u), I::exact(v))?;
+    // d(u_next)/d(u_original)=1/2 at the quarter-circle seam.
+    let scale = I::exact(if seam { 0.5 } else { 1. });
+    Ok([
+        point.map(|p| p.gradient[0] * scale),
+        point.map(|p| p.gradient[1]),
+        point.map(|p| p.hessian[0][1] * scale),
+    ])
 }
 
 fn corner(
