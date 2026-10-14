@@ -1249,14 +1249,41 @@ square end clips. See [SDK contract](nominal-metric-thread.md) and
 This creates no physical body, source tag or MCP operation. Continue to describe
 ADR-037 `tap_drill` as a drill cylinder. Do not author a supposed standard thread
 by renaming a generic helix or report calculated ideal volume as native evidence.
-P16-007 still requires independently measured Mock/OCCT construction, protected
-source/patch/history and actual eval. No production root or tolerance-class claim.
+P16-015 subsequently supplied physical construction; P16-007 supplies the guarded
+source/patch/history and eval below. No production root or tolerance-class claim.
 
 P16-015 now implements physical nominal geometry in explicit analytic Mock and
 OCCT through the kernel SDK, with body-owned cylinder/phase admission, independent
 measurements and protected refusal. See [runtime contract](physical-nominal-thread.md)
 and [both-kernel example](../../examples/physical_nominal_thread.md). This adds
-no `.ocad` source tag or MCP command: do not invent a `create_thread` operation,
+no `.ocad` source tag itself; P16-007 supplies source below. Do not invent a `create_thread` operation,
 rename generic helix/tap-drill sources, or equate a valid-solid flag with profile
-proof. P16-007's source/schema/semantic/history/mandatory native candidate/eval
-deliverables remain required. No manufactured-fit or release/host credit.
+proof. P16-007 supplies source/schema/semantic/history/mandatory native candidate/eval
+deliverables below. No manufactured-fit or release/host credit.
+
+### Authored nominal metric threads (P16-007, ADR-069)
+
+Use closed `nominal_metric_thread` with required `target_feature`, owned full-side
+`face_ref`, `representation: nominal_metric_basic_flat_root`, coarse `size`
+(m3/m4/m5/m6/m8/m10/m12), explicit `handedness: right|left`, integer `turns` 1–32
+and `ends: square`. Add through `add_feature`; edit hand/size/turns through
+`replace_feature_definition` (field `id`, not `feature_id`). `set_feature_ref`
+supports `face_ref`; no new expression fields or `create_thread` command exist.
+
+Source is the original authored exact-circle/distance/NewBody stock and checked
+sketch phase frame. Diameter/entire length must match the size/whole pitches;
+coordinate stock edits in the same patch. Stale optional fingerprints, wrong
+units/static fallbacks, competing aliases, imports and approximated sources
+refuse. All output faces are thread-owned, including noncircular ends. Surface
+roles do not select transient native subfaces; unique current owned end geometry
+is required for end refs. Cached body/producer data is revalidated physically.
+
+CLI/MCP still require native verification with `verify:false` / `--no-verify`.
+See [source API](nominal-metric-thread-source.md),
+[example](../../examples/nominal_metric_thread.md), creation/left-hand patches and
+`tools/test_nominal_thread_mcp.py`. Real eval `nominal_thread_handedness` protects
+exact source/hand/stock/ref/order against volume-matching decoys; Rust tests
+measure the actual screw phase. Left/right mass alone cannot grade hand.
+Preview/review are read-only and failed batches preserve canonical history and
+artifacts. Production fits, rounded roots, partial/internal/multi-start threads,
+runout and general downstream thread-face editing remain unsupported.

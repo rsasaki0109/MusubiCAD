@@ -69,6 +69,56 @@ pub fn resolve_topo_ref_id_with_history(
         .map(|id| id.as_str().to_string())
 }
 
+/// ADR-069: thread surface roles cannot select a transient native subface.
+/// End roles resolve only through one current, owned physical discovery.
+pub(crate) fn guarded_thread_face(
+    topo_ref: &TopoRef,
+    discoveries: Option<&[FaceRefDiscovery]>,
+    policy: TopoRefTolerancePolicy,
+) -> Option<Option<u64>> {
+    let role = topo_ref.semantic.role.as_deref().unwrap_or("");
+    if !["thread_start", "thread_end", "thread_surface"].contains(&role) {
+        // Omission/renaming of a role cannot bypass current thread ownership.
+        return discoveries
+            .is_some_and(|faces| {
+                faces.iter().any(|d| {
+                    ["thread_start", "thread_end", "thread_surface"].contains(&d.role.as_str())
+                        && (d.feature_id.as_deref() == Some(topo_ref.semantic.created_by.as_str())
+                            || topo_ref.kernel_face_id() == Some(d.kernel_face_id))
+                })
+            })
+            .then_some(None);
+    }
+    if topo_ref.kind != crate::refs::TopoRefKind::Face {
+        return Some(None);
+    }
+    let Some(discoveries) = discoveries else {
+        return Some(None);
+    };
+    if role == "thread_surface" {
+        return Some(None);
+    }
+    let mut candidates = discoveries.iter().filter(|d| {
+        d.role == role && d.feature_id.as_deref() == Some(topo_ref.semantic.created_by.as_str())
+    });
+    let Some(first) = candidates.next() else {
+        return Some(None);
+    };
+    if candidates.next().is_some()
+        || first.kernel_face_id == 0
+        || !discovery_matches_topo_ref(topo_ref, first, policy)
+    {
+        return Some(None);
+    }
+    if let Some(stored) = topo_ref.kernel_face_id() {
+        if stored != first.kernel_face_id && discoveries.iter().any(|d| d.kernel_face_id == stored)
+        {
+            return Some(None);
+        }
+    }
+    Some(Some(first.kernel_face_id))
+}
+
 /// Resolve a persisted `ref:face:...` id to the current kernel face id for regeneration.
 pub fn resolve_kernel_face_id_for_topo_ref(
     semantic_refs: &[TopoRef],
@@ -107,6 +157,10 @@ pub fn resolve_kernel_face_id_for_topo_ref_with_discoveries_and_policy(
         .iter()
         .find(|topo_ref| topo_ref.ref_id.as_str() == ref_id)
         .ok_or_else(|| OpenCadError::not_found(format!("topo ref '{ref_id}'")))?;
+
+    if let Some(result) = guarded_thread_face(topo_ref, discoveries, policy) {
+        return result.ok_or_else(||OpenCadError::validation(format!("thread reference '{ref_id}' requires unique current owned end geometry; subface selection is unsupported")));
+    }
 
     // Stored IDs are final-body enumeration indices (ADR-018): they are
     // matched directly and verified by role, never remapped through the
@@ -383,6 +437,9 @@ pub fn match_face_discovery_for_topo_ref_with_policy(
 ) -> Option<u64> {
     if policy.validate().is_err() {
         return None;
+    }
+    if let Some(result) = guarded_thread_face(topo_ref, Some(discoveries), policy) {
+        return result;
     }
     discoveries
         .iter()

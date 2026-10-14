@@ -1248,6 +1248,7 @@ pub(crate) fn requires_physical_feature_verification(
             d,
             FeatureDefinition::SeatedStandardHole(_)
                 | FeatureDefinition::CylindricalDraft(_)
+                | FeatureDefinition::NominalMetricThread(_)
                 | FeatureDefinition::TaperedRib(_)
         )
     };

@@ -348,6 +348,19 @@ pub(crate) fn check_feature_inputs(
     state: &DesignState,
     failures: &mut BTreeSet<String>,
 ) {
+    if let FeatureDefinition::NominalMetricThread(def) = &node.definition {
+        let result =
+            opencad_graph::evaluate_param_graph_strict(&state.parameters).and_then(|scope| {
+                def.validate_source(
+                    &state.feature_nodes.iter().collect::<Vec<_>>(),
+                    &state.sketches.iter().collect::<Vec<_>>(),
+                    &scope,
+                )
+            });
+        if let Err(e) = result {
+            failures.insert(format!("feature '{}' invalid: {e}", node.id));
+        }
+    }
     if let FeatureDefinition::TaperedRib(def) = &node.definition {
         let sketch = state
             .feature_nodes

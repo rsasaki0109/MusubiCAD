@@ -537,6 +537,61 @@
       },
       "additionalProperties": false
     },
+    "nominal_metric_thread": {
+      "type": "object",
+      "required": [
+        "type",
+        "target_feature",
+        "face_ref",
+        "representation",
+        "size",
+        "handedness",
+        "turns",
+        "ends"
+      ],
+      "properties": {
+        "type": {
+          "const": "nominal_metric_thread"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "face_ref": {
+          "type": "string",
+          "pattern": "^ref:face:.+"
+        },
+        "representation": {
+          "const": "nominal_metric_basic_flat_root"
+        },
+        "size": {
+          "enum": [
+            "m3",
+            "m4",
+            "m5",
+            "m6",
+            "m8",
+            "m10",
+            "m12"
+          ]
+        },
+        "handedness": {
+          "enum": [
+            "right",
+            "left"
+          ]
+        },
+        "turns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "ends": {
+          "const": "square"
+        }
+      },
+      "additionalProperties": false
+    },
     "cylindrical_draft": {
       "type": "object",
       "required": [
@@ -2610,6 +2665,21 @@
           "if": {
             "properties": {
               "type": {
+                "const": "nominal_metric_thread"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/nominal_metric_thread"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
                 "const": "cylindrical_draft"
               }
             },
@@ -2794,6 +2864,7 @@
             "datum_axis",
             "draft",
             "cylindrical_draft",
+            "nominal_metric_thread",
             "rib",
             "tapered_rib",
             "body_boolean",

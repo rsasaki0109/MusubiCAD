@@ -1,0 +1,18 @@
+{
+  "operations": [
+    {
+      "type": "replace_feature_definition",
+      "id": "feature:thread",
+      "definition": {
+        "type": "nominal_metric_thread",
+        "target_feature": "feature:stock",
+        "face_ref": "ref:face:stock_side",
+        "representation": "nominal_metric_basic_flat_root",
+        "size": "m6",
+        "handedness": "left",
+        "turns": 8,
+        "ends": "square"
+      }
+    }
+  ]
+}

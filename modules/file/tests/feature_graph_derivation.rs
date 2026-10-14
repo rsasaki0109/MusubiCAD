@@ -74,5 +74,6 @@ fn every_example_feature_graph_is_derivable() {
         }
         checked += 1;
     }
-    assert_eq!(checked, 31, "every part example must be checked");
+    // The nominal thread is included in graph derivation and exact edge checks.
+    assert_eq!(checked, 32, "every part example must be checked");
 }

@@ -1,6 +1,6 @@
 # ADR-068: Physical nominal metric threads and bounded screw meshes
 
-Status: Accepted for MCAD-P16-015 runtime; source P16-007 remains pending.
+Status: Accepted for MCAD-P16-015 runtime; source P16-007 implements ADR-069 separately.
 Date: 2026-10-14.
 
 P16-016 / [ADR-069](ADR-069-guarded-nominal-thread-source.md) now defines the

@@ -71,6 +71,11 @@ pub use standard_hole::{
 };
 pub use sweep::{SweepFeature, SweepFeatureExecutor};
 
+pub mod nominal_metric_thread;
+pub use nominal_metric_thread::{
+    NominalMetricThreadFeature, NominalMetricThreadFeatureExecutor, NominalThreadEnds,
+    NominalThreadRepresentation,
+};
 pub mod cylindrical_draft;
 pub mod datum;
 pub mod draft;

@@ -274,6 +274,24 @@ pub fn resolve_face_ref_with_provenance(
         .map(|discoveries| face_match_candidates(topo_ref, discoveries, policy))
         .unwrap_or_default();
 
+    if let Some(resolved) = crate::topo_sync::guarded_thread_face(topo_ref, discoveries, policy) {
+        let status = if resolved.is_some() {
+            ReferenceStatus::Fingerprint
+        } else if candidates.len() > 1 {
+            ReferenceStatus::Ambiguous
+        } else {
+            ReferenceStatus::Missing
+        };
+        let provenance=provenance_from(topo_ref,status,resolved,&candidates,"thread roles require one current owned end; native subface numbering cannot select a surface",required);
+        return finish(
+            ReferenceResolution {
+                provenance,
+                resolved_kernel_id: resolved,
+            },
+            required,
+        );
+    }
+
     if let Some(stored_id) = topo_ref.kernel_face_id() {
         // Stored IDs are final-body indices (ADR-018) and are not remapped
         // through per-operation history, so nothing is reported as derived.

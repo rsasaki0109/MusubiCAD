@@ -1,0 +1,20 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:face:stock_side",
+      "kind": "face",
+      "semantic": {
+        "created_by": "feature:stock",
+        "role": "cylindrical",
+        "normal_hint": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "geometric_fingerprint": {
+        "surface_type": "cylinder"
+      }
+    }
+  ]
+}

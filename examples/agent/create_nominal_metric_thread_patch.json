@@ -1,0 +1,113 @@
+{
+  "operations": [
+    {
+      "type": "add_sketch",
+      "id": "sketch:stock",
+      "name": "Exact cylinder",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:stock",
+      "entity": {
+        "type": "point",
+        "id": "ent:center",
+        "construction": false,
+        "x": 0.012,
+        "y": 0.009
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:stock",
+      "entity": {
+        "type": "circle",
+        "id": "ent:circle",
+        "construction": false,
+        "center": "ent:center",
+        "radius": 0.003
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_stock",
+        "name": "Cylinder sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:stock"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:stock",
+        "name": "Original cylinder",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_stock",
+          "profile_ref": "sketch:stock/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.008
+            }
+          },
+          "operation": "new_body"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:thread",
+        "name": "Nominal M6x1 thread",
+        "definition": {
+          "type": "nominal_metric_thread",
+          "target_feature": "feature:stock",
+          "face_ref": "ref:face:stock_side",
+          "representation": "nominal_metric_basic_flat_root",
+          "size": "m6",
+          "handedness": "right",
+          "turns": 8,
+          "ends": "square"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_semantic_ref",
+      "topo_ref": {
+        "ref_id": "ref:face:stock_side",
+        "kind": "face",
+        "semantic": {
+          "created_by": "feature:stock",
+          "role": "cylindrical",
+          "normal_hint": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        "geometric_fingerprint": {
+          "surface_type": "cylinder"
+        }
+      }
+    }
+  ]
+}

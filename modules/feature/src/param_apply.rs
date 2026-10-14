@@ -12,12 +12,36 @@ use crate::feature::{FeatureDefinition, FeatureNode};
 use crate::regenerate::PartModel;
 
 pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Result<()> {
+    let thread_scope =
+        if model.nodes.values().any(|n| {
+            !n.suppressed && matches!(n.definition, FeatureDefinition::NominalMetricThread(_))
+        }) {
+            opencad_graph::evaluate_param_graph_strict(parameters)?
+        } else {
+            IndexMap::new()
+        };
+    let nodes: Vec<_> = model.nodes.values().collect();
+    let sketches: Vec<_> = model.sketches.values().collect();
+    for node in &nodes {
+        if !node.suppressed {
+            if let FeatureDefinition::NominalMetricThread(def) = &node.definition {
+                def.validate_source(&nodes, &sketches, &thread_scope)?;
+            }
+        }
+    }
+
     let contains_cubic = model.sketches.values().any(|s| {
         s.entities
             .iter()
             .any(|e| matches!(e, opencad_sketch::SketchEntity::CubicBezier(_)))
     });
-    if parameters.evaluation_order()?.is_empty() && !contains_cubic {
+    if parameters.evaluation_order()?.is_empty()
+        && !contains_cubic
+        && !model
+            .nodes
+            .values()
+            .any(|n| matches!(n.definition, FeatureDefinition::NominalMetricThread(_)))
+    {
         for node in model.nodes.values_mut() {
             if matches!(
                 node.definition,
@@ -25,6 +49,7 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
                     | FeatureDefinition::DatumAxis(_)
                     | FeatureDefinition::Draft(_)
                     | FeatureDefinition::CylindricalDraft(_)
+                    | FeatureDefinition::NominalMetricThread(_)
                     | FeatureDefinition::TaperedRib(_)
                     | FeatureDefinition::Rib(_)
                     | FeatureDefinition::SeatedStandardHole(_)
@@ -39,6 +64,7 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
             n.definition,
             FeatureDefinition::SeatedStandardHole(_)
                 | FeatureDefinition::CylindricalDraft(_)
+                | FeatureDefinition::NominalMetricThread(_)
                 | FeatureDefinition::TaperedRib(_)
         )
     }) || model.sketches.values().any(|s| {
@@ -178,6 +204,9 @@ fn resolve_feature_node(
                 let meters = eval_length_expr(expr, values)?;
                 chamfer.distance = Length::from_meters(meters);
             }
+        }
+        FeatureDefinition::NominalMetricThread(def) => {
+            def.validate()?;
         }
         FeatureDefinition::CylindricalDraft(def) => {
             def.resolve_expressions(values)?;

@@ -126,6 +126,9 @@ impl FeatureDefinition {
             ],
             Self::Fillet(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
+            Self::NominalMetricThread(def) => {
+                [("target_feature", Some(&def.target_feature)), ("", None)]
+            }
             Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Draft(_) | Self::CylindricalDraft(_) => [("", None), ("", None)],
             Self::Rib(_) => [("", None), ("", None)],
@@ -162,6 +165,9 @@ impl FeatureDefinition {
                 Workplane::FaceRef { face_ref } => vec![("base.face_ref", face_ref.as_str())],
                 _ => vec![],
             };
+        }
+        if let Self::NominalMetricThread(def) = self {
+            return vec![("face_ref", def.face_ref.as_str())];
         }
         if let Self::CylindricalDraft(def) = self {
             let mut refs = vec![("face_ref", def.face_ref.as_str())];
@@ -217,6 +223,7 @@ impl FeatureDefinition {
             | Self::Shell(_)
             | Self::Draft(_)
             | Self::CylindricalDraft(_)
+            | Self::NominalMetricThread(_)
             | Self::BodyBoolean(_)
             | Self::Rib(_)
             | Self::Loft(_)
@@ -265,6 +272,7 @@ impl FeatureDefinition {
         match self {
             Self::Shell(def) => def.open_face_refs.iter().map(String::as_str).collect(),
             Self::CylindricalDraft(def) => vec![def.face_ref.as_str()],
+            Self::NominalMetricThread(def) => vec![def.face_ref.as_str()],
             _ => Vec::new(),
         }
     }
@@ -371,6 +379,7 @@ impl FeatureDefinition {
             | Self::BodyBoolean(_)
             | Self::Rib(_)
             | Self::TaperedRib(_)
+            | Self::NominalMetricThread(_)
             | Self::Loft(_)
             | Self::Sweep(_)
             | Self::HelixSweep(_) => return Vec::new(),

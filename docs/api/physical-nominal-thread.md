@@ -49,9 +49,8 @@ to synthetic measurements. Native has actual OCCT surfaces/face IDs, which need
 not have Mock's cardinality. Neither record owns document/source semantics.
 See the runnable [both-kernel example](../../examples/physical_nominal_thread.md).
 
-P16-015 is runtime only: no `.ocad` tag/schema, MCP command, staged AI authoring
-or eval yet. P16-007 separately proves original authored source/owned side,
+P16-015 is runtime only. P16-007 now provides the separate
+[source feature](nominal-metric-thread-source.md), proving original authored source/owned side,
 semantic/cache ownership, mandatory DesignPatch verification, schema/migration/
 old-reader refusal/roundtrips, history and actual source-aware MCP eval. Runtime
-work earns no maturity credit and does not make standard threads a released API
-feature. v0.3.1 predates this runtime.
+work earns no maturity credit. The source feature is unreleased. v0.3.1 predates this runtime.

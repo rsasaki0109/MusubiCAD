@@ -7,7 +7,8 @@ use std::f64::consts::{PI, TAU};
 use opencad_core::{Angle, Length, OpenCadError, Result};
 
 /// Supported nominal coarse designation; no arbitrary pitch overrides.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum MetricThreadSize {
     M3,
     M4,
@@ -38,7 +39,8 @@ impl MetricThreadSize {
 }
 
 /// Increasing angle follows increasing axial position for right-handed crests.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ThreadHandedness {
     Right,
     Left,

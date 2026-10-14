@@ -48,6 +48,7 @@ impl FeatureRegistry {
         registry.register(Box::new(crate::TaperedRibFeatureExecutor));
         registry.register(Box::new(crate::draft::DraftFeatureExecutor));
         registry.register(Box::new(crate::CylindricalDraftFeatureExecutor));
+        registry.register(Box::new(crate::NominalMetricThreadFeatureExecutor));
         registry.register(Box::new(crate::rib::RibFeatureExecutor));
         registry.register(Box::new(crate::body_boolean::BodyBooleanExecutor));
         registry.register(Box::new(crate::loft::LoftFeatureExecutor));

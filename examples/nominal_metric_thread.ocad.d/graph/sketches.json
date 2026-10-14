@@ -1,0 +1,43 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:stock",
+      "name": "Exact cylinder",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:center",
+          "construction": false,
+          "x": 0.012,
+          "y": 0.009
+        },
+        {
+          "type": "circle",
+          "id": "ent:circle",
+          "construction": false,
+          "center": "ent:center",
+          "radius": 0.003
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:circle",
+          "entity_ids": [
+            "ent:circle"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:stock/profile:outer"
+        }
+      ]
+    }
+  ]
+}
