@@ -721,3 +721,22 @@ queries. Independent centre/plane/radius/circumference, mass/area/COM, closed me
 proper placement, reversed hints, equal-volume different stocks and protected
 refusal are checked in both kernels. No new feature/schema/MCP command or fillet
 solid/sampling is admitted. P16-008 remains planned; no score, actual52.60 / 95.
+
+P16-018 is complete in PR #118 (merge 21e35bd), after all four mandatory local
+checks (1134 passed, 0 failed, 36 ignored, plugin passed) and all applicable
+exact-head CI/Design Review/Desktop/Release jobs succeeded; the PR release
+publisher was intentionally skipped. The optional OCCT-disabled build probe
+failed at unchanged pre-existing ungated conversion imports; no such configuration
+readiness is claimed. This read-only prerequisite earns no score: actual52.60 / 95.
+
+MCAD-P16-019 implements ADR-072's pure CircularFilletReference: explicit SI lengths
+and angles, ideal cosine sphere-envelope points/normals and analytic parameter
+derivatives, deterministic seam, exact constant-limit volume and a conservative
+global exposure factor for r_max<=R/4, H>=4*r_max. The trigonometric-polynomial
+factorization proves exposure/injectivity and regularity over all angles in real
+arithmetic; finite identity, tangent, contact and independent volume tests check
+its implementation. This is not a floating-point interval certificate, numerical
+quadrature bound or native approximation admission. Nonconstant volume requests
+refuse, including one-ULP positive amplitudes. No kernel solid/mesh/source tag,
+schema, sampling or MCP operation is supplied. P16-008 remains planned; reference
+arithmetic earns no feature credit, actual52.60 / 95.

@@ -315,6 +315,12 @@ It introduces no source tag or MCP operation; do not create a circular variable
 fillet through the legacy `fillet` fields. Authored phase and actual fillet
 construction remain P16-008 acceptance work.
 
+P16-019 / [ADR-072](../adr/ADR-072-bounded-periodic-fillet-reference.md) supplies
+an ideal periodic surface reference and all-angle exposure/regularity proof for
+a bounded radius ratio. It is arithmetic, not a body, MCP operation or accepted
+native approximation; nonconstant reference volume explicitly refuses. Continue
+to reject circular variable fillet authoring until P16-008's complete admission.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:
