@@ -66,3 +66,24 @@ Tests use several frustum depths, independent area/first moments, both entry
 ends, blind/through bores and actual closed conical meshes. This runtime API
 is not a document feature or MCP command; authoring countersinks requires
 P16-004's strict source/schema/patch implementation.
+
+## Physical circular-stock draft (P16-012, ADR-065)
+
+```sh
+cargo run -p opencad-geometry --example analytic_cylindrical_draft
+cargo test -p opencad-geometry --test cylindrical_draft
+cargo test -p opencad-kernel-occt --test cylindrical_draft
+```
+
+A 20 mm radius, 30 mm high actual cylinder is drafted by +7° about the neutral
+plane at 15 mm, keeping the neutral circle fixed. The affine law is
+`r(z) = 20 - tan(7°)*(z-15)` mm. The resulting solid has conical walls and circular
+disk ends, not a faceted set of planar half-space drafts. Independent tests
+integrate this law, then verify volume/area/COM/bounds, actual contact rings,
+closed triangles/face membership, sign/plane/axis reversals, rigid placements
+and protected failure. Native checks exact cylinder topology/types privately;
+Mock uses explicit tracked records. Default Mock refuses this runtime API.
+
+This example changes no .ocad document. P16-005 supplies the guarded curved-draft
+source, side-reference ownership, DesignPatch/history and MCP eval afterward.
+No feature/host maturity credit is awarded for P16-012 infrastructure.

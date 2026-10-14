@@ -1,6 +1,8 @@
 #pragma once
 #include "rust/cxx.h"
 namespace musubicad {
+rust::Vec<std::uint8_t> cylindrical_frustum(rust::Slice<const double> frame);
+rust::Vec<double> cylindrical_stock(rust::Slice<const std::uint8_t> brep);
 rust::Vec<double> rectangular_stock_faces(rust::Slice<const std::uint8_t> brep);
 rust::Vec<double> tight_bounds(rust::Slice<const std::uint8_t> brep);
 rust::Vec<std::uint8_t> cubic_prism(rust::Slice<const double> controls, rust::Slice<const double> delta);

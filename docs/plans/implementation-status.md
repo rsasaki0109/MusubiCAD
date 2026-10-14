@@ -481,3 +481,20 @@ are not claimed. Other rubric scores remain sketch 60, assembly 70, drawing 50,
 I/O 60, GUI 45, ecosystem 14. Weighted general CAD 50.60 → 51.10 (about 51%),
 agent operation 91 → 92 for the verified typed angle-bearing manufacturing
 workflow. Before that merge, the earned baseline remains 50.60 / 91.
+
+MCAD-P16-004 is complete in PR #108 (merge 1d84151): its conditional partial
+countersink credit is earned, solid 59, weighted CAD 51.10 and agent operation
+92. MCAD-P16-012 supplies ADR-065's physical cylindrical-stock witness and
+neutral-plane solid draft before P16-005. Native checks exact full cylinder/
+circle/cap/seam topology, outward analytic derivatives and positive volume;
+Mock queries tracked Cylinder records. Signed plane/angle radial law produces
+actual standalone Frustum measurements/closed conical meshes, with no fake
+reconstruction ancestry. A private exception-catching BREP bridge protects
+native constructor failures. Independent Mock/native tests cover signed angles,
+endpoint/interior planes, axis reversals, rigid source/output placements,
+contact/volume/area/COM/bounds/face membership and protected invalid/unsupported
+inputs. Runtime API/ADR/architecture, SDK example, guide/skill boundary ship;
+no .ocad/MCP curved draft, source ownership or new host/release credit is claimed.
+P16-005 owns guarded source/semantic/history/schemas/example/eval afterward.
+Infrastructure earns no score: solid 59, sketch 60, assembly 70, drawing 50,
+I/O 60, GUI 45, ecosystem 14 (weighted 51.10, about 51%; agent operation 92).

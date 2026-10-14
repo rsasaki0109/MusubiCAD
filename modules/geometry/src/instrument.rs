@@ -89,6 +89,23 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.tessellate(body, settings)
     }
 
+    fn cylindrical_stock_geometry(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalStockGeometry> {
+        self.record();
+        self.inner.cylindrical_stock_geometry(body, axis_hint)
+    }
+    fn draft_cylindrical_stock(
+        &self,
+        body: KernelBody,
+        input: &crate::CylindricalDraftInput,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.draft_cylindrical_stock(body, input)
+    }
+
     fn cut_countersunk_stock(
         &self,
         body: KernelBody,

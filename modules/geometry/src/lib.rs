@@ -66,3 +66,6 @@ pub use cubic_bezier::{CubicBezierFrame, CubicBezierPrism, SolvedCubicBezier};
 
 pub mod stock;
 pub use stock::{CountersinkCut, RectangularStockGeometry};
+
+pub mod cylindrical_stock;
+pub use cylindrical_stock::{CylindricalDraftInput, CylindricalStockGeometry};

@@ -10,6 +10,7 @@ pub(super) enum FaceKey {
     Cone(u64, u64, u64, u64),
     Cap(u64, u64, u64),
     Cylinder(usize),
+    Frustum(usize),
 }
 fn wall(a: f64, b: f64, r: f64, end_radius: f64) -> FaceKey {
     if (r - end_radius).abs() <= roundoff(r.max(end_radius)) {
@@ -34,6 +35,7 @@ fn validate_frame(frame: Frame) -> Result<()> {
 pub(super) fn keys(body: &Body) -> Result<Vec<FaceKey>> {
     match body {
         Body::Cylinder { .. } => Ok((0..3).map(FaceKey::Cylinder).collect()),
+        Body::Frustum { .. } => Ok((0..3).map(FaceKey::Frustum).collect()),
         Body::Stock {
             dimensions, cuts, ..
         } => {
@@ -139,6 +141,9 @@ impl AnalyticMock {
                 .map(|c| c.radius.max(c.end_radius))
                 .fold(0., f64::max),
             Body::Cylinder { radius, .. } => *radius,
+            Body::Frustum {
+                radius, end_radius, ..
+            } => radius.max(*end_radius),
         };
         let bound = if radius > 0. {
             angular.min(2. * (1. - (linear / radius).min(2.)).acos())
@@ -347,7 +352,25 @@ impl AnalyticMock {
                 axis,
                 radius,
                 length,
+            }
+            | Body::Frustum {
+                origin,
+                axis,
+                radius,
+                length,
+                ..
             } => {
+                let (end_radius, frustum) = match body_record {
+                    Body::Frustum { end_radius, .. } => (*end_radius, true),
+                    _ => (*radius, false),
+                };
+                let key = |i| {
+                    if frustum {
+                        FaceKey::Frustum(i)
+                    } else {
+                        FaceKey::Cylinder(i)
+                    }
+                };
                 let original = *axis;
                 let axis = unit(original)?;
                 if (dot(original, original) - 1.).abs() > ROTATION_TOLERANCE {
@@ -365,6 +388,7 @@ impl AnalyticMock {
                     axes: [u, v, axis],
                 };
                 let points = ring(&angles, [0., 0.], *radius);
+                let end_points = ring(&angles, [0., 0.], end_radius);
                 let center = vec![[0., 0.]; angles.len()];
                 builder.annulus(
                     &points,
@@ -372,15 +396,15 @@ impl AnalyticMock {
                     0.,
                     frame,
                     scale(axis, -1.),
-                    face_ids[&FaceKey::Cylinder(0)],
+                    face_ids[&key(0)],
                 )?;
                 builder.annulus(
-                    &points,
+                    &end_points,
                     &center,
                     *length,
                     frame,
                     axis,
-                    face_ids[&FaceKey::Cylinder(1)],
+                    face_ids[&key(1)],
                 )?;
                 for i in 0..angles.len() {
                     let j = (i + 1) % angles.len();
@@ -389,14 +413,17 @@ impl AnalyticMock {
                         [
                             at(points[i], 0.),
                             at(points[j], 0.),
-                            at(points[j], *length),
-                            at(points[i], *length),
+                            at(end_points[j], *length),
+                            at(end_points[i], *length),
                         ],
                         add(
-                            scale(u, (angles[i] + gap(&angles, i) / 2.).cos()),
-                            scale(v, (angles[i] + gap(&angles, i) / 2.).sin()),
+                            add(
+                                scale(u, (angles[i] + gap(&angles, i) / 2.).cos()),
+                                scale(v, (angles[i] + gap(&angles, i) / 2.).sin()),
+                            ),
+                            scale(axis, -(end_radius - radius) / length),
                         ),
-                        face_ids[&FaceKey::Cylinder(2)],
+                        face_ids[&key(2)],
                     )?;
                 }
             }

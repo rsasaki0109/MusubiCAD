@@ -270,6 +270,13 @@ enum Body {
         radius: f64,
         length: f64,
     },
+    Frustum {
+        origin: [f64; 3],
+        axis: [f64; 3],
+        radius: f64,
+        end_radius: f64,
+        length: f64,
+    },
 }
 // Exact axial decomposition, not geometric sampling.
 fn intervals(cuts: &[Cut], height: f64) -> Result<Vec<[f64; 4]>> {
@@ -412,6 +419,27 @@ impl Body {
                 2. * PI * radius * (length + radius),
                 add(*origin, scale(*axis, length / 2.)),
             ),
+            Self::Frustum {
+                origin,
+                axis,
+                radius: a,
+                end_radius: b,
+                length: h,
+            } => {
+                if axis.iter().any(|v| !v.is_finite())
+                    || (dot(*axis, *axis) - 1.).abs() > ROTATION_TOLERANCE
+                {
+                    return Err(invalid("accumulated frustum axis drift"));
+                }
+                let sum = a * a + a * b + b * b;
+                let v = PI * h * sum / 3.;
+                let z = h * (a * a + 2. * a * b + 3. * b * b) / (4. * sum);
+                (
+                    v,
+                    PI * (a * a + b * b) + PI * (a + b) * h.hypot(b - a),
+                    add(*origin, scale(*axis, z)),
+                )
+            }
             Self::Stock {
                 frame,
                 dimensions: [x, y, z],
@@ -486,6 +514,24 @@ impl Body {
                     max: std::array::from_fn(|i| origin[i].max(end[i]) + radial[i]),
                 }
             }
+            Self::Frustum {
+                origin,
+                axis,
+                radius,
+                end_radius,
+                length,
+            } => {
+                let end = add(*origin, scale(*axis, *length));
+                let radial = axis.map(|v| (1. - v * v).max(0.).sqrt());
+                BoundingBox {
+                    min: std::array::from_fn(|i| {
+                        (origin[i] - radius * radial[i]).min(end[i] - end_radius * radial[i])
+                    }),
+                    max: std::array::from_fn(|i| {
+                        (origin[i] + radius * radial[i]).max(end[i] + end_radius * radial[i])
+                    }),
+                }
+            }
             Self::Stock {
                 frame, dimensions, ..
             } => {
@@ -533,6 +579,19 @@ impl Body {
                 frame: frame.transformed(transform),
                 dimensions: *dimensions,
                 cuts: cuts.clone(),
+            },
+            Self::Frustum {
+                origin,
+                axis,
+                radius,
+                end_radius,
+                length,
+            } => Self::Frustum {
+                origin: transform.transform_point(*origin),
+                axis: rows.map(|row| dot(row, *axis)),
+                radius: *radius,
+                end_radius: *end_radius,
+                length: *length,
             },
             Self::Cylinder {
                 origin,
@@ -670,6 +729,52 @@ impl AnalyticMock {
         let output = self.body(&lhs)?.subtract(self.body(&rhs)?)?;
         self.store(output, Some(lhs), true)
     }
+    pub(crate) fn cylinder_geometry(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalStockGeometry> {
+        let Body::Cylinder {
+            origin,
+            axis,
+            radius,
+            length,
+        } = self.body(body)?
+        else {
+            return Err(unsupported());
+        };
+        let ids = &self.faces[&body.0];
+        crate::CylindricalStockGeometry {
+            origin_m: *origin,
+            axis: *axis,
+            radius_m: *radius,
+            height_m: *length,
+            start_face_id: ids[&mesh::FaceKey::Cylinder(0)],
+            end_face_id: ids[&mesh::FaceKey::Cylinder(1)],
+            lateral_face_id: ids[&mesh::FaceKey::Cylinder(2)],
+        }
+        .oriented(axis_hint)
+    }
+    pub(crate) fn cylindrical_draft(
+        &mut self,
+        body: KernelBody,
+        input: &crate::CylindricalDraftInput,
+    ) -> Result<KernelBody> {
+        let stock = self.cylinder_geometry(&body, input.axis_hint)?;
+        let [radius, end_radius] = input.endpoint_radii(&stock)?;
+        self.store(
+            Body::Frustum {
+                origin: stock.origin_m,
+                axis: stock.axis,
+                radius,
+                end_radius,
+                length: stock.height_m,
+            },
+            None,
+            false,
+        )
+    }
+
     pub(crate) fn countersink(
         &mut self,
         body: KernelBody,

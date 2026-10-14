@@ -117,3 +117,29 @@ shoulder at the continuous bore join. Rigid transforms preserve physical data.
 Run `analytic_countersink` and the independent `countersink` integration tests
 in both geometry and kernel-occt crates. The runtime prerequisite itself exposes no .ocad or MCP command; P16-004
 supplies the angle-bearing document contract through existing patch commands.
+
+## Cylindrical stock and solid draft (P16-012, ADR-065)
+
+`cylindrical_stock_geometry(&body, axis_hint)` obtains an actual full cylinder:
+origin in metres, oriented unit axis, radius/height in metres and distinct
+body-owned start/end/lateral face IDs. Native checks exact complete cylinder,
+circle/cap/seam topology and actual outward analytic normals privately, including
+indirect surface frames; Mock queries only its tracked Cylinder record. Axis
+hint must be finite, unit and parallel/antiparallel within 1e-9. It selects
+orientation, not shape. Box, cut/partial/tapered/compound/untracked stock refuses.
+
+`draft_cylindrical_stock(body, &CylindricalDraftInput)` takes axis hint, neutral
+origin in metres, unit neutral normal and signed radians. Plane is parallel to
+caps, within stock height (only arithmetic endpoint roundoff). Angle magnitude
+is 1e-8..45 degrees; endpoints must have radii in (1 nm,1000 m], differing by
+more than 1 nm. World bound is 1e6 m. Positive narrows toward neutral normal;
+negative widens. Neutral circle radius is unchanged. Unsupported/tiny/collapsed
+or out-of-bound inputs refuse; no clamping or silent cylinder substitute.
+
+Native constructs a real cone through an exception-catching BREP bridge. Mock
+tracks an actual solid Frustum with exact polynomial volume/area/COM and endpoint
+circle support bounds; closed outward conical meshes use ADR-063 quality/error/
+budget gates. Reconstruction publishes new body-owned faces with no invented
+history. Actual rigid transforms preserve physical measurements. Generic Mock
+Booleans/shape edits on frustums refuse. This introduces no .ocad or MCP source
+command; P16-005 owns the closed source/semantic/patch/old-reader contract.

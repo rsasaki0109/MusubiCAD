@@ -316,6 +316,26 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// ADR-065: actual full circular stock, never bounds/average-normal inference.
+    fn cylindrical_stock_geometry(
+        &self,
+        _body: &KernelBody,
+        _axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalStockGeometry> {
+        Err(OpenCadError::validation(
+            "cylindrical stock witness unsupported",
+        ))
+    }
+    fn draft_cylindrical_stock(
+        &self,
+        _body: KernelBody,
+        _input: &crate::CylindricalDraftInput,
+    ) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "cylindrical stock draft unsupported",
+        ))
+    }
+
     /// ADR-064: actual cone/bore union on uncut rectangular stock, no approximation.
     fn cut_countersunk_stock(
         &self,
@@ -985,6 +1005,29 @@ impl GeometryKernel for MockGeometryKernel {
             .ok_or_else(crate::analytic_mock::unsupported)?
             .borrow()
             .stock_geometry(body, entry_pick)
+    }
+
+    fn cylindrical_stock_geometry(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalStockGeometry> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow()
+            .cylinder_geometry(body, axis_hint)
+    }
+    fn draft_cylindrical_stock(
+        &self,
+        body: KernelBody,
+        input: &crate::CylindricalDraftInput,
+    ) -> Result<KernelBody> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow_mut()
+            .cylindrical_draft(body, input)
     }
 
     fn cut_countersunk_stock(
