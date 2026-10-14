@@ -305,6 +305,10 @@ all-angle geometric exposure/regularity proof in a bounded domain. It creates no
 Mock/OCCT solid or MCP operation and supplies no nonconstant volume quadrature.
 Do not use reference arithmetic as backend mass or claim circular fillet support.
 
+P16-020 / ADR-073 adds bounded nonconstant ideal volume with explicit m³ width
+and a work budget. Unmet precision refuses; it does not certify native geometry
+or introduce a source/MCP operation. Keep actual kernel mass distinct.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

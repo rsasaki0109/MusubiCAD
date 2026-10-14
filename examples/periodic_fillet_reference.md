@@ -38,3 +38,21 @@ The [API](../docs/api/periodic-fillet-reference.md) and
 the all-angle mathematical proof from floating-point/numerical approximation
 and actual Mock/OCCT solids. No source tag, native sampling, mesh, MCP command
 or fillet construction is enabled by this example.
+
+P16-020 additionally supplies ideal volume bounds with an explicit work budget:
+
+```rust
+let bounds = reference.volume_bounds_m3(1e-12, 262_144)?;
+assert!(bounds.body_upper_m3 - bounds.body_lower_m3 <= 1e-12);
+// Width is at most 0.001 mm³. Bounds are ideal reference values, not OCCT mass.
+// A tiny budget explicitly refuses this requested precision.
+assert!(reference.volume_bounds_m3(1e-12, 4).is_err());
+```
+
+The [volume tests](../modules/geometry/tests/circular_fillet_volume.rs) independently
+integrate the original two-parameter surface using its analytic tangents, exercise
+constant limits/scales, determinism, refinement and budget/precision refusal.
+Run `cargo test -p opencad-geometry --test circular_fillet_volume`.
+The existing constant-only method still refuses nonconstant radii; bounded volume
+uses a separately named method under
+[ADR-073](../docs/adr/ADR-073-periodic-reference-volume-bounds.md).

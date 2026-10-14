@@ -130,3 +130,8 @@ Accept the actual construction and any quantified approximation/sampling in a
 further ADR before implementing kernel bodies. Never insert ideal reference mass
 into native output, silently change authored phase or claim constant-only curved
 geometry completes P16-008.
+
+
+P16-020 / [ADR-073](ADR-073-periodic-reference-volume-bounds.md) subsequently
+accepts a separate bounded nonconstant volume API. The constant-only method's
+refusal semantics and this ADR's no-solid/native-admission boundary are unchanged.

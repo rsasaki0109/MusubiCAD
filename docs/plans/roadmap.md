@@ -893,7 +893,8 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-016 | Define guarded nominal thread source admission | P16-007 prerequisite; ADR-069 fixes the closed source and authored phase, consumed side, all-new physical output ownership, cache/reader/patch/history gates and independent MCP acceptance; design only, no feature or score | Complete: PR #115 |
 | MCAD-P16-017 | Define closed circular variable-fillet acceptance | ADR-070 / P16-008 prerequisite; distinguish periodic radius and authored phase from BREP seam, specify rolling-sphere reference/contact and constant-limit volume, ownership/reader/cache gates; native law/physical Mock/sampling remain proof obligations, design only, no score | Complete: PR #117 |
 | MCAD-P16-018 | Supply body-owned complete cylinder rims | ADR-071 / P16-008 prerequisite; actual full-cylinder stock and cap/side incidence including Location in Mock/OCCT, current physical rim IDs and exact circle queries, independent dimensions/volume/placement and protected refusal; read-only runtime witness, no fillet construction or score | Complete: PR #118 |
-| MCAD-P16-019 | Prove the bounded periodic fillet reference | ADR-072 / P16-008 prerequisite; analytic sphere-envelope/contact/derivative reference, explicit global exposure and regularity proof for a bounded cosine law, independent identities and constant-limit volume; no kernel solid, sampling or feature credit | Implemented; complete upon P16-019 PR merge |
+| MCAD-P16-019 | Prove the bounded periodic fillet reference | ADR-072 / P16-008 prerequisite; analytic sphere-envelope/contact/derivative reference, explicit global exposure and regularity proof for a bounded cosine law, independent identities and constant-limit volume; no kernel solid, sampling or feature credit | Complete: PR #119 |
+| MCAD-P16-020 | Bound the periodic reference volume | ADR-073 / P16-008 prerequisite; exact characteristic-arc reduction and outward-rounded rational-chart interval integration with explicit SI width and work-budget refusal, independent surface/constant-limit tests; no kernel solid or native fidelity credit | Implemented; complete upon P16-020 PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -933,8 +934,9 @@ further proof obligations before P16-008's guarded source feature.
 P16-019 / ADR-072 supplies the ideal reference's all-angle exposure/regularity
 proof and analytic point/normal/tangents for r_max<=R/4 and H>=4*r_max. This does
 not establish native fidelity, admit sampling or construct a physical body.
-Nonconstant reference-volume quadrature and actual Mock/native fillet construction
-remain further accepted prerequisites before the source feature.
+P16-020 / ADR-073 supplies the bounded nonconstant reference-volume integral.
+Actual Mock/native construction, contact/phase/periodicity fidelity and bounded
+meshes remain further accepted prerequisites before the source feature.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;
