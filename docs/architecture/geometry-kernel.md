@@ -103,6 +103,13 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-021 / [ADR-074](../adr/ADR-074-native-periodic-fillet-counterexamples.md)
+adds an isolated diagnostic executable under `modules/kernel-occt/diagnostics`.
+Its concrete OCCT types stay inside the native module; only SI measurements leave
+it. The Python runner invokes the actual Rust reference-volume example and
+checks controls/counterexamples, not product admission. No production bridge,
+GeometryKernel operation, body construction or source tag is enabled.
+
 P16-020 / [ADR-073](../adr/ADR-073-periodic-reference-volume-bounds.md) adds a
 bounded ideal reference volume method. An analytic characteristic-circle reduction
 leaves one integral; private outward-rounded rational-chart intervals enclose it

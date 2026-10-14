@@ -56,3 +56,12 @@ Run `cargo test -p opencad-geometry --test circular_fillet_volume`.
 The existing constant-only method still refuses nonconstant radii; bounded volume
 uses a separately named method under
 [ADR-073](../docs/adr/ADR-073-periodic-reference-volume-bounds.md).
+
+
+For P16-021's separate native counterexample experiment, see the
+[Linux diagnostic instructions](../docs/api/native-periodic-fillet-diagnostic.md).
+It compiles an isolated actual OCCT fixture, invokes the
+[reference-volume example](../modules/geometry/examples/periodic_fillet_volume_bounds.rs)
+and records contact/interior/volume measurements plus a wrong-phase control.
+Passing the diagnostic keeps curved authoring unsupported; it does not create an
+`.ocad` feature or replace native mass with the ideal interval.

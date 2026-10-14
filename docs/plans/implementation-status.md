@@ -757,3 +757,22 @@ original surface integrals, constant meridional integration, scales, refinement,
 determinism and protected refusals check the implementation. No Mock/OCCT solid,
 native approximation, mesh/source/schema/MCP operation or feature credit is
 introduced. P16-008 remains planned; actual52.60 / 95.
+
+
+P16-020 is complete in PR #120 (merge d1a77ef), after all four mandatory local
+checks (1147 passed, 0 failed, 36 ignored, plugin passed) and all applicable
+exact-head CI/Design Review/Desktop/Release jobs succeeded; the PR release
+publisher was intentionally skipped. No score: actual52.60 / 95.
+
+MCAD-P16-021 / ADR-074 supplies a standalone pinned-Linux native diagnostic,
+separate from product binaries. It measures actual single-solid BREP contacts,
+interior inferred sphere support/radius and native volume estimates, then invokes
+the actual Rust bounded ideal reference. Constant, dense-law, tighter-tolerance,
+C2 and properly rotated wrong-phase controls distinguish native fidelity from
+stored-law or scalar-volume agreement. Live measurements reproduce approximately
+1µm top-contact discrepancy and a native volume estimate outside the ideal
+interval for the tested variable recipes. Finite failure witnesses reject these
+recipes; finite agreement would not establish full admission. Report-contract
+negative tests and a live CI diagnostic preserve the evidence; no GeometryKernel
+operation, supported source/schema/MCP feature, production sampling or score is
+introduced. P16-008 remains planned; actual52.60 / 95.

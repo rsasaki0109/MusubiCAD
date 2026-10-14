@@ -62,3 +62,9 @@ and roundoff bounds. Identical authored radii use the enclosed constant formula
 with `cells=0`; an explicit positive amplitude retains the nonconstant path even
 when tiny. The returned enclosure need not have the same width at different
 scales, and the API promises no native fidelity or approximation admission.
+
+
+P16-021 uses this actual Rust API in the
+[native fidelity diagnostic](native-periodic-fillet-diagnostic.md). Native mass
+estimates and contact failures remain separate from the ideal volume enclosure;
+passing that diagnostic confirms counterexamples, not supported geometry.

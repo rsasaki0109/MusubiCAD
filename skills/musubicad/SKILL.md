@@ -309,6 +309,11 @@ P16-020 / ADR-073 adds bounded nonconstant ideal volume with explicit m³ width
 and a work budget. Unmet precision refuses; it does not certify native geometry
 or introduce a source/MCP operation. Keep actual kernel mass distinct.
 
+P16-021 / ADR-074 reproduces native contact/volume counterexamples with a constant
+control and a rotated equal-volume wrong-phase body. Diagnostic success means
+rejection evidence, not feature admission. A valid BREP or stored radius law
+cannot enable circular variable-fillet authoring.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`
