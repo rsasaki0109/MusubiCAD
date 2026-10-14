@@ -491,6 +491,7 @@ pub(crate) fn validate_feature_values(
             n.definition,
             FeatureDefinition::SeatedStandardHole(_)
                 | FeatureDefinition::CylindricalDraft(_)
+                | FeatureDefinition::NominalMetricThread(_)
                 | FeatureDefinition::TaperedRib(_)
         )
     }) {
@@ -516,7 +517,9 @@ pub(crate) fn validate_feature_values(
         if !node.suppressed
             && matches!(
                 node.definition,
-                FeatureDefinition::CylindricalDraft(_) | FeatureDefinition::TaperedRib(_)
+                FeatureDefinition::CylindricalDraft(_)
+                    | FeatureDefinition::TaperedRib(_)
+                    | FeatureDefinition::NominalMetricThread(_)
             )
         {
             crate::feature_patch::check_feature_inputs(node, state, &mut failures);
@@ -1423,6 +1426,10 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
             Ok(())
         }
         (FeatureDefinition::TaperedRib(def), FeatureRefField::FaceRef) => {
+            def.face_ref = ref_id.to_string();
+            Ok(())
+        }
+        (FeatureDefinition::NominalMetricThread(def), FeatureRefField::FaceRef) => {
             def.face_ref = ref_id.to_string();
             Ok(())
         }

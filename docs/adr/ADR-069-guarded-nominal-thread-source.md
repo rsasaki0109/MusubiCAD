@@ -1,6 +1,6 @@
 # ADR-069: Guarded nominal metric external-thread source
 
-Status: Accepted for MCAD-P16-016 design; P16-007 implementation remains planned.
+Status: Accepted for MCAD-P16-016 design; implemented by MCAD-P16-007 (merge-gated).
 Date: 2026-10-14.
 
 ## Context and decision
@@ -18,13 +18,14 @@ not a tolerance-class production thread, rounded external root, tap-drill hole,
 cosmetic annotation or generic helical sweep. No new sampling method is accepted
 here; retain ADR-068's bounded physical construction and mesh quality contract.
 
-This decision is design only. None of the proposed wire tags, fields, output
-roles, source checks or MCP capabilities below exists until P16-007 implements
-and validates them. Existing runtime APIs and persisted files are unchanged.
+P16-016 supplied this decision before implementation. P16-007 now implements the
+closed source, roles and verification contract, with both-kernel source tests,
+round trips and actual MCP/Agent stdio evidence. Existing files and the ADR-068
+runtime admission retain their meaning; feature credit waits for the main merge.
 
 ## Closed source and typed edits
 
-The planned definition contains these required fields and no implicit defaults:
+The closed definition contains these required fields and no implicit defaults:
 
 | Field | Closed meaning |
 |---|---|
@@ -133,7 +134,7 @@ Runtime tests independently validate boundary phase, so this is a source/output
 consistency gate rather than a proof for arbitrary untrusted surfaces.
 Insufficient precision or a face that mixes end and lateral surfaces refuses.
 
-Proposed discovery roles are `thread_start`, `thread_end`, `thread_surface`.
+Discovery roles are `thread_start`, `thread_end`, `thread_surface`.
 These describe physical groups and do not promise stable subface numbering or
 individual flank identity. Mock's six physical classes and OCCT's split faces
 need not have equal cardinality. Preserve every actual face ID once, with the

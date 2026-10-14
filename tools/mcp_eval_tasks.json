@@ -2045,6 +2045,16 @@
       ],
       "expected_tapered_rib": "feature:rib",
       "expected_rib_height_expr": "12 mm"
+    },
+    {
+      "id": "nominal_thread_handedness",
+      "source": "examples/nominal_metric_thread.ocad.d",
+      "document": "nominal_metric_thread.ocad.d",
+      "prompt": "Change only the nominal M6x1 basic flat-root external thread in {document} from right to left hand using replace_feature_definition through reviewed DesignPatch. Preserve representation nominal_metric_basic_flat_root, size m6, 8 whole pitches, square ends, original exact-circle Distance/NewBody stock (6 mm diameter, 8 mm height), authored phase frame, owned full side and feature order. Verify fresh native regeneration. Volume alone cannot distinguish the requested hand; do not substitute cosmetic, cylinder or generic helix geometry.",
+      "expected_volume_mm3": 183.65763238463487,
+      "required_parameters": [],
+      "expected_nominal_thread": "feature:thread",
+      "expected_thread_hand": "left"
     }
   ]
 }

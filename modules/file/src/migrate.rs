@@ -1,3 +1,8 @@
+// MCAD-P16-007 / ADR-069: nominal_metric_thread is a distinct closed feature
+// tag requiring representation/size/hand/whole-turn/square-end intent. Genuine
+// old readers reject it. Never infer a thread from a cylinder, standard-hole
+// designation or helix. Existing files/version policy remain unchanged; strict
+// schemas and packed/expanded/source-authoring round trips cover admission.
 // MCAD-P16-006 / ADR-066: tapered_rib is a distinct closed source tag.
 // No taper/end/stock ownership is inferred for legacy rib; old readers refuse
 // the unknown tag. Current schema-version migration remains additive.

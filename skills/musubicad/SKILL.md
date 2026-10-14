@@ -785,15 +785,35 @@ See docs/api/nominal-metric-thread.md and examples/nominal_metric_thread_profile
 It creates no physical body, serialized feature or MCP operation. ADR-037
 tap_drill remains a cylinder; a generic helix is not independently verified
 standard thread geometry. Ideal volume is only a later measurement target.
-Do not claim rounded production roots, tolerance-class fit or completed P16-007.
-Physical construction/sampling admission, Mock/OCCT evidence and protected
-source/schema/patch/history/eval remain required before feature credit.
+Do not claim rounded production roots or tolerance-class fit. P16-015 supplies
+physical construction; P16-007 supplies protected source/schema/patch/history/eval
+below. Feature credit is conditional on its complete main merge.
 
 P16-015 / ADR-068 now supplies actual nominal basic-flat-root runtime in explicit
 analytic Mock and OCCT, with independent physical checks. See
 docs/api/physical-nominal-thread.md and examples/physical_nominal_thread.md.
 The SDK consumes a proved full cylinder, explicit phase/hand and whole pitches;
-unsupported geometry/quality/precision refuses. No `.ocad` feature or MCP command
-ships yet: never invent create_thread or relabel a generic helix/tap-drill.
-P16-007 still requires protected source/semantic/cache/schema/patch/history/eval.
+unsupported geometry/quality/precision refuses. Runtime alone exposes no `.ocad`
+feature: P16-007 supplies source below. Never invent create_thread or relabel a
+generic helix/tap-drill.
 Runtime infrastructure earns no maturity increment or manufactured-fit claim.
+
+P16-007 / ADR-069 now exposes guarded `nominal_metric_thread` source through
+existing typed DesignPatch. Require original authored circle/Distance/NewBody
+stock, owned cylindrical face_ref and checked sketch phase; required fields
+representation=nominal_metric_basic_flat_root, size=m3/m4/m5/m6/m8/m10/m12,
+handedness=right|left, turns=integer1..32, ends=square. Add with add_feature;
+use replace_feature_definition's `id` for categorical edits, set_feature_ref for
+face_ref. Coordinate stock diameter/length changes explicitly; no new expression
+fields, auto-resize, missing-intent inference or create_thread MCP operation.
+All output producers are thread-owned, not original circular caps/full side.
+Never select a thread surface by transient native subface index; end refs need
+unique current owned geometry. Strict source/cache/physical phase checks and
+mandatory native candidate verification apply even with verify:false/no-verify.
+See docs/api/nominal-metric-thread-source.md, examples/nominal_metric_thread.md,
+creation/left-hand patches and tools/test_nominal_thread_mcp.py. Source-aware
+nominal_thread_handedness eval rejects wrong-hand/cylinder/helix decoys despite
+equal claimed volume. Physical phase is independently measured in Rust tests;
+no model host was impersonated. Preview/review/failure and canonical history
+use the existing shared backend. No rounded production root, fit class,
+partial/internal/multi-start/runout or general thread-face refinement claim.

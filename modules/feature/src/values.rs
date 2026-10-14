@@ -232,6 +232,7 @@ impl FeatureDefinition {
                 }
                 Ok(())
             }
+            Self::NominalMetricThread(def) => def.validate(),
             Self::CylindricalDraft(def) => {
                 let mut copy = def.clone();
                 copy.resolve_expressions(scope)

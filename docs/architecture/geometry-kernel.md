@@ -370,15 +370,32 @@ is a validated local shape reflection; global placements remain proper rotations
 Native properties measure the BREP with adaptive epsilon1e-9 and tight bounds;
 transient metadata selects query/quality/placement guards, never analytic mass
 substitution or document ownership. New output IDs have no fabricated ancestry.
-P16-007 still needs authored source, semantic/cache/schema/patch/history/eval.
+P16-007 supplies the authored source, semantic/cache/schema/patch/history/eval
+contract below.
 
 P16-016 / [ADR-069](../adr/ADR-069-guarded-nominal-thread-source.md) defines that
-future source admission before implementation. Phase comes from the checked
+source admission before implementation. Phase comes from the checked
 authored sketch placement, with original exact-circle/distance/NewBody stock
 and its owned full side. All actual output faces are newly produced by the
 thread; noncircular ends and native split surfaces cannot retain cylinder
 producers or use cylindrical draft's three-face classifier. Proposed discovery
 roles describe physical ends/surfaces, with ambiguity refusal and no stable
 native subface numbering. Cached outputs must undergo current source and
-physical discovery checks. This accepted design changes no runtime or source
-API; schema/patch/history/MCP evidence belongs to P16-007.
+physical discovery checks. P16-016 was design only; P16-007 now supplies the implementation below.
+
+P16-007 implements that boundary as closed `nominal_metric_thread`. Source values
+and raw fallbacks/strict expressions validate before parameter resolution,
+including empty/absent parameter graphs. The original authored circle extrusion
+and owned full side must agree with the actual body witness; authored positive
+sketch X fixes phase. Coordinated stock/thread edits use existing DesignPatch.
+All physical output faces have the thread producer, with current start/end/surface
+roles and actual backend IDs. Thread-only reference admission requires unique
+owned current ends and refuses transient surface indexing, including stored IDs.
+The shared matcher, resolver and provenance paths apply the same restriction;
+legacy roles retain their existing behavior. No output edge discoveries or fake
+ancestry are retained. Cache hits redo source/phase/mesh/producer admission.
+Both schemas and no-inference migration preserve intent via a distinct tag that
+old readers refuse. CLI/MCP force native candidate validation; Tauri retains its
+verified shared backend path. Independent physical source tests, file/history
+round trips and actual stdio evaluation protect failures and canonical Undo/Redo.
+No sampling scheme, OCCT type leakage or legacy golden change is introduced.

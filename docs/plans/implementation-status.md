@@ -647,3 +647,40 @@ requirements. Ambiguous thread-surface roles refuse; no native subface stability
 or general downstream thread editing is promised. This documentation-only task
 does not add the proposed wire tag, source feature, patch capability or eval.
 P16-007 remains planned. No feature credit: weighted CAD52.10 / agent94 unchanged.
+
+MCAD-P16-016 is complete in PR #115 (merge edfb059), after its documentation-path
+applicable CI and Design Review workflows and every job succeeded. Desktop and
+Release PR workflows were inapplicable by their declared path filters. All four
+mandatory local checks passed (1120 passed, 0 failed, 35 ignored, plugin passed).
+Design receives no feature credit; actual weighted CAD52.10 / agent94 unchanged.
+
+MCAD-P16-007 implements ADR-069 through the distinct closed nominal_metric_thread
+source. Required basic-flat-root representation/coarse size/explicit hand/whole
+turns/square ends retain authored manufacturing intent; current circle/distance/
+NewBody stock, checked sketch phase and owned full cylindrical side are mandatory.
+Raw fallbacks and strict dimensional expressions validate before parameter
+application, including empty/absent scopes. Competing stock/side aliases and stale
+optional annotations refuse. No implicit stock resizing or ref weakening occurs.
+All real output faces belong to the thread, including noncircular caps/native
+split faces. Current unique end discovery is required; shared matching/resolution/
+provenance refuses transient thread-surface subface indexing. No edge/ancestry
+claim is fabricated. Actual cached outputs recheck source, mass/area/COM, closed
+face mesh and requested boundary phase; an opposite-hand cache body fails despite
+equal scalar properties. Both kernels retain the original stock on failures.
+Strict schemas, no-inference migration, genuine older-reader refusal, deterministic
+packed/expanded/source-authoring round trips and canonical transaction history
+accompany the tag. CLI/MCP native candidate verification is mandatory even with
+verify:false/no-verify; actual stdio tests exercise creation, reviewed hand edit,
+independently graded eval, failed-batch/artifact protection and Agent Undo/Redo.
+The runnable source example, creation/left edit patches, API, architecture,
+authoring guide and skill distinguish nominal geometry from production threads.
+
+Only after P16-007 merges to main, solid63→65 earns partial fixed-rubric credit
+for usable source-authored nominal metric external threads in both kernels,
+independent physical pitch/radius/hand/volume/area/COM checks, protected source/
+ref/cache/history and native verified MCP edits. Weighted CAD52.10→52.60 (about
+53%), agent94→95 for the new independently graded source-aware authoring task.
+Other scores/weights remain unchanged. Before that merge actual52.10 / 94.
+No extra credit for ADR-067/068/069 planning/runtime, legacy generic helix or
+nominal calculations alone; no production fit, rounded-root, partial/internal/
+multi-start/runout, general downstream thread-face editing or host/release claim.

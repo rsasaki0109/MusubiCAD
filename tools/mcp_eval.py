@@ -400,6 +400,26 @@ def check_countersink_source(task: dict, document: Path) -> list[str]:
 
 
 
+def check_nominal_thread_source(task: dict, document: Path) -> list[str]:
+    """Source intent/ownership guard; physical phase is graded by kernel tests."""
+    try:
+        baseline = ROOT / task["source"]
+        for filename in ["sketches.json", "parameters.json", "semantic_refs.json"]:
+            if json.loads((baseline / "graph" / filename).read_text()) != json.loads((document / "graph" / filename).read_text()):
+                return ["nominal thread authored stock, parameters or side ownership changed"]
+        before = json.loads((baseline / "graph/features.json").read_text())
+        expected = next(n for n in before["feature_nodes"] if n["id"] == task["expected_nominal_thread"])["definition"]
+        if expected["type"] != "nominal_metric_thread" or expected["representation"] != "nominal_metric_basic_flat_root":
+            return ["invalid nominal thread baseline"]
+        expected["handedness"] = task["expected_thread_hand"]
+        after = json.loads((document / "graph/features.json").read_text())
+        if after != before:
+            return ["nominal thread representation, hand, turns, source or order differs"]
+        return []
+    except (OSError, ValueError, KeyError, TypeError, StopIteration):
+        return ["nominal thread source evidence absent or malformed"]
+
+
 def check_cylindrical_draft_source(task: dict, document: Path) -> list[str]:
     """Sign cannot be graded by volume alone for a centred neutral plane."""
     try:
@@ -473,6 +493,8 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_nominal_thread" in task:
+        problems.extend(check_nominal_thread_source(task, document))
     if "expected_tapered_rib" in task:
         problems.extend(check_tapered_rib_source(task, document))
     if "expected_cylindrical_draft" in task:
@@ -926,6 +948,22 @@ def self_test() -> None:
         path.write_text(json.dumps(data), encoding="utf-8")
         passed, problems = check(countersink_task, candidate, f"volume_m3: {countersink_task['expected_volume_mm3']/1e9}\n")
         assert not passed and problems  # A claimed mass cannot substitute a different seat.
+    thread_task = next(t for t in json.loads(TASKS.read_text())["tasks"] if t["id"] == "nominal_thread_handedness")
+    with tempfile.TemporaryDirectory() as folder:
+        candidate = Path(folder) / "thread.ocad.d"
+        shutil.copytree(ROOT / thread_task["source"], candidate)
+        path = candidate / "graph/features.json"
+        data = json.loads(path.read_text())
+        definition = next(n for n in data["feature_nodes"] if n["id"] == "feature:thread")["definition"]
+        definition["handedness"] = "left"
+        path.write_text(json.dumps(data))
+        assert check_nominal_thread_source(thread_task, candidate) == []
+        for field, wrong in [("handedness", "right"), ("type", "helix_sweep"), ("type", "extrude"), ("representation", "cosmetic"), ("turns", 4), ("face_ref", "ref:face:foreign")]:
+            old = definition[field]
+            definition[field] = wrong
+            path.write_text(json.dumps(data))
+            assert not check(thread_task, candidate, f"volume_m3: {thread_task['expected_volume_mm3']/1e9}\n")[0]
+            definition[field] = old
     draft_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "cylindrical_draft_angle")
     with tempfile.TemporaryDirectory() as folder:
         candidate = Path(folder) / "draft.ocad.d"
