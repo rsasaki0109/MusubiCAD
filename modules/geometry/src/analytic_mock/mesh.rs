@@ -12,6 +12,7 @@ pub(super) enum FaceKey {
     Cylinder(usize),
     Frustum(usize),
     Rib(usize),
+    Thread(usize),
 }
 fn wall(a: f64, b: f64, r: f64, end_radius: f64) -> FaceKey {
     if (r - end_radius).abs() <= roundoff(r.max(end_radius)) {
@@ -35,6 +36,7 @@ pub(super) fn validate_frame(frame: Frame) -> Result<()> {
 }
 pub(super) fn keys(body: &Body) -> Result<Vec<FaceKey>> {
     match body {
+        Body::Thread(_) => Ok((0..6).map(FaceKey::Thread).collect()),
         Body::RibbedStock { .. } => Ok((0..3)
             .flat_map(|i| [FaceKey::Outer(i, false), FaceKey::Outer(i, true)])
             .chain((0..5).map(FaceKey::Rib))
@@ -140,6 +142,9 @@ impl AnalyticMock {
         }
         let body_record = self.body(body)?;
         let face_ids = &self.faces[&body.0];
+        if let Body::Thread(g) = body_record {
+            return super::thread::mesh(*g, face_ids, quality);
+        }
         if let Body::RibbedStock {
             frame,
             dimensions,
@@ -149,6 +154,7 @@ impl AnalyticMock {
             return ribbed_mesh(*frame, *dimensions, rib, face_ids, linear);
         }
         let radius = match body_record {
+            Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock { .. } => 0.,
             Body::Stock { cuts, .. } => cuts
                 .iter()
@@ -173,6 +179,7 @@ impl AnalyticMock {
             .collect();
         let mut builder = Builder::new();
         match body_record {
+            Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock {
                 frame,
                 dimensions,
@@ -560,12 +567,12 @@ fn ring(angles: &[f64], center: [f64; 2], r: f64) -> Vec<[f64; 2]> {
         .map(|a| [center[0] + r * a.cos(), center[1] + r * a.sin()])
         .collect()
 }
-struct Builder {
+pub(super) struct Builder {
     mesh: MeshSet,
-    error: f64,
+    pub(super) error: f64,
 }
 impl Builder {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             mesh: MeshSet {
                 positions: Vec::new(),
@@ -576,7 +583,12 @@ impl Builder {
             error: 0.,
         }
     }
-    fn triangle(&mut self, mut p: [[f64; 3]; 3], normal: [f64; 3], face: u64) -> Result<()> {
+    pub(super) fn triangle(
+        &mut self,
+        mut p: [[f64; 3]; 3],
+        normal: [f64; 3],
+        face: u64,
+    ) -> Result<()> {
         if self.mesh.positions.len() + 3 > 100_000 || self.mesh.triangle_count() + 1 > 200_000 {
             return Err(invalid("mesh output budget exceeded"));
         }
@@ -633,7 +645,7 @@ impl Builder {
         }
         Ok(())
     }
-    fn finish(self) -> Result<MeshSet> {
+    pub(super) fn finish(self) -> Result<MeshSet> {
         let mut edges: BTreeMap<([u32; 3], [u32; 3]), (usize, i32)> = BTreeMap::new();
         let mut faces = BTreeSet::new();
         let origin = self.mesh.positions[0].map(f64::from);

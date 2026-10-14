@@ -11,6 +11,7 @@ use crate::{
 
 mod mesh;
 mod rib;
+mod thread;
 use rib::Rib;
 
 const RECORD_BUDGET: usize = 100_000;
@@ -261,6 +262,7 @@ impl Cut {
 }
 #[derive(Clone, Debug)]
 enum Body {
+    Thread(crate::NominalThreadGeometry),
     RibbedStock {
         frame: Frame,
         dimensions: [f64; 3],
@@ -416,6 +418,10 @@ impl Body {
             return Err(invalid("density must be finite and positive in kg/m^3"));
         }
         let (volume, area, center) = match self {
+            Self::Thread(g) => {
+                let m = g.mass_properties(density)?;
+                (m.volume_m3, m.area_m2, m.center_of_mass)
+            }
             Self::RibbedStock {
                 frame,
                 dimensions,
@@ -513,6 +519,7 @@ impl Body {
     }
     pub(crate) fn bounds(&self) -> BoundingBox {
         match self {
+            Self::Thread(g) => g.bounding_box(),
             Self::RibbedStock {
                 frame,
                 dimensions,
@@ -602,6 +609,7 @@ impl Body {
             return Err(invalid("transform must be a finite proper rigid rotation"));
         }
         Ok(match self {
+            Self::Thread(g) => Self::Thread(g.transformed(transform)?),
             Self::RibbedStock {
                 frame,
                 dimensions,
@@ -794,6 +802,15 @@ impl AnalyticMock {
             lateral_face_id: ids[&mesh::FaceKey::Cylinder(2)],
         }
         .oriented(axis_hint)
+    }
+    pub(crate) fn nominal_thread(
+        &mut self,
+        body: KernelBody,
+        input: &crate::NominalThreadInput,
+    ) -> Result<KernelBody> {
+        let witness = self.cylinder_geometry(&body, input.axis_hint)?;
+        let geometry = input.admit(&witness)?;
+        self.store(Body::Thread(geometry), None, false)
     }
     pub(crate) fn cylindrical_draft(
         &mut self,

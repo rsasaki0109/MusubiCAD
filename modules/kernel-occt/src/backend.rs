@@ -800,6 +800,49 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn cut_nominal_metric_thread(
+        &self,
+        body: KernelBody,
+        input: &opencad_geometry::NominalThreadInput,
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let witness = self.cylindrical_stock_geometry(&body, input.axis_hint)?;
+            let g = input.admit(&witness)?;
+            let profile = g.profile();
+            let mut frame = Vec::new();
+            frame.extend(g.origin_m());
+            for axis in g.axes() {
+                frame.extend(axis);
+            }
+            let output = crate::ffi::native::nominal_metric_thread(
+                &frame,
+                profile.major_diameter().meters() / 2.,
+                profile.pitch().meters(),
+                profile.turns(),
+                profile.handedness() == opencad_geometry::ThreadHandedness::Left,
+            )
+            .map_err(|e| OpenCadError::validation(format!("nominal metric thread: {e}")))?;
+            let mut solids =
+                Solid::read_brep_text(&mut std::io::Cursor::new(output)).map_err(map_occt_error)?;
+            if solids.len() != 1 {
+                return Err(OpenCadError::validation("nominal thread must be one solid"));
+            }
+            let solid = solids
+                .pop()
+                .ok_or_else(|| OpenCadError::validation("missing nominal thread"))?;
+            let mut store = self.store.borrow_mut();
+            let id = store.insert_body(solid);
+            store.nominal_threads.insert(id, g);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, input);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn add_tapered_rib_stock(
         &self,
         body: KernelBody,
@@ -1041,6 +1084,13 @@ impl GeometryKernel for OcctGeometryKernel {
         {
             let store = self.store.borrow();
             let solids = collect_body_solids(&store, body.0)?;
+            let mut thread = false;
+            for id in collect_body_member_ids(&store, body.0)? {
+                if let Some(g) = store.nominal_threads.get(&id) {
+                    g.mesh_plan(settings)?;
+                    thread = true;
+                }
+            }
             drop(store);
             let mut index_of = std::collections::HashMap::new();
             let mut offset = 0;
@@ -1050,18 +1100,76 @@ impl GeometryKernel for OcctGeometryKernel {
             }
 
             let tessellation = cadrum::Tessellation {
-                deflection_linear: settings.linear_deflection,
-                deflection_angular: settings.angular_deflection_deg.to_radians(),
+                deflection_linear: if thread {
+                    settings.linear_deflection / 2.
+                } else {
+                    settings.linear_deflection
+                },
+                deflection_angular: settings.angular_deflection_deg.to_radians()
+                    / if thread { 2. } else { 1. },
                 relative_linear: false,
             };
             let mesh = Solid::mesh(solids.iter(), tessellation).map_err(map_occt_error)?;
 
+            if thread && (mesh.vertices.len() > 100_000 || mesh.indices.len() / 3 > 200_000) {
+                return Err(OpenCadError::validation(
+                    "native thread mesh budget exceeded",
+                ));
+            }
             let positions: Vec<[f32; 3]> = mesh
                 .vertices
                 .iter()
                 .map(|p| [p.x as f32, p.y as f32, p.z as f32])
                 .collect();
-            let normals = vec![[0.0, 0.0, 1.0]; positions.len()];
+            if thread
+                && mesh.vertices.iter().zip(&positions).any(|(a, b)| {
+                    !a.is_finite()
+                        || (*a - DVec3::from_array(b.map(f64::from))).length()
+                            > settings.linear_deflection / 2.
+                })
+            {
+                return Err(OpenCadError::validation(
+                    "native thread mesh below f32 coordinate precision",
+                ));
+            }
+            let mut normals = vec![[0.0, 0.0, 1.0]; positions.len()];
+            if thread {
+                let mut accumulated = vec![DVec3::ZERO; positions.len()];
+                for tri in mesh.indices.chunks_exact(3) {
+                    let p = tri
+                        .iter()
+                        .map(|i| DVec3::from_array(positions[*i].map(f64::from)))
+                        .collect::<Vec<_>>();
+                    let n = (p[1] - p[0]).cross(p[2] - p[0]);
+                    let original = tri.iter().map(|i| mesh.vertices[*i]).collect::<Vec<_>>();
+                    let source_normal =
+                        (original[1] - original[0]).cross(original[2] - original[0]);
+                    let denominator = n.length() * source_normal.length();
+                    if !denominator.is_finite()
+                        || denominator <= 0.
+                        || n.dot(source_normal) / denominator
+                            < (settings.angular_deflection_deg.to_radians() / 2.).cos()
+                    {
+                        return Err(OpenCadError::validation(
+                            "native thread angular precision below f32 resolution",
+                        ));
+                    }
+                    if !n.is_finite() || n.length_squared() <= 0. {
+                        return Err(OpenCadError::validation(
+                            "native thread has degenerate f32 triangles",
+                        ));
+                    }
+                    for i in tri {
+                        accumulated[*i] += n;
+                    }
+                }
+                for (out, n) in normals.iter_mut().zip(accumulated) {
+                    if n.length_squared() <= 0. {
+                        return Err(OpenCadError::validation("undefined native thread normal"));
+                    }
+                    *out = n.normalize().to_array().map(|v| v as f32);
+                }
+            }
             let indices: Vec<u32> = mesh.indices.iter().map(|&i| i as u32).collect();
             let triangle_face_ids = mesh
                 .face_ids
@@ -1075,6 +1183,36 @@ impl GeometryKernel for OcctGeometryKernel {
                 })
                 .collect::<Result<Vec<u64>>>()?;
 
+            if thread && solids.len() == 1 {
+                let mut edges =
+                    std::collections::HashMap::<([u32; 3], [u32; 3]), (u32, i32)>::new();
+                for tri in indices.chunks_exact(3) {
+                    for j in 0..3 {
+                        let a =
+                            positions[tri[j] as usize]
+                                .map(|v| if v == 0. { 0 } else { v.to_bits() });
+                        let b = positions[tri[(j + 1) % 3] as usize].map(|v| {
+                            if v == 0. {
+                                0
+                            } else {
+                                v.to_bits()
+                            }
+                        });
+                        let (key, sign) = if a < b { ((a, b), 1) } else { ((b, a), -1) };
+                        let pair = edges.entry(key).or_default();
+                        pair.0 += 1;
+                        pair.1 += sign;
+                    }
+                }
+                if edges
+                    .values()
+                    .any(|&(count, balance)| count != 2 || balance != 0)
+                {
+                    return Err(OpenCadError::validation(
+                        "native thread f32 mesh is not a closed manifold",
+                    ));
+                }
+            }
             Ok(MeshSet {
                 positions,
                 normals,
@@ -1152,6 +1290,45 @@ impl GeometryKernel for OcctGeometryKernel {
         {
             let store = self.store.borrow();
             let solids = collect_body_solids(&store, body.0)?;
+            let thread = collect_body_member_ids(&store, body.0)?
+                .iter()
+                .any(|id| store.nominal_threads.contains_key(id));
+            if thread {
+                if !density_kg_per_m3.is_finite() || density_kg_per_m3 <= 0. {
+                    return Err(OpenCadError::validation(
+                        "thread density must be finite and positive",
+                    ));
+                }
+                let mut volume = 0.;
+                let mut area = 0.;
+                let mut first = [0.; 3];
+                for solid in &solids {
+                    let mut bytes = Vec::new();
+                    Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+                    let values = crate::ffi::native::nominal_thread_properties(&bytes)
+                        .map_err(|e| OpenCadError::validation(e.to_string()))?;
+                    if values.len() != 5 {
+                        return Err(OpenCadError::validation(
+                            "invalid measured thread properties",
+                        ));
+                    }
+                    volume += values[0];
+                    area += values[1];
+                    for i in 0..3 {
+                        first[i] += values[0] * values[i + 2];
+                    }
+                }
+                let mass = volume * density_kg_per_m3;
+                if !mass.is_finite() {
+                    return Err(OpenCadError::validation("thread mass overflow"));
+                }
+                return Ok(MassProperties {
+                    volume_m3: volume,
+                    area_m2: area,
+                    mass_kg: mass,
+                    center_of_mass: first.map(|v| v / volume),
+                });
+            }
 
             let mut total_volume = 0.0;
             let mut total_area = 0.0;
@@ -1203,7 +1380,10 @@ impl GeometryKernel for OcctGeometryKernel {
 
             let mut merged: Option<BoundingBox> = None;
             for solid in solids {
-                let next = if store.cubic_bodies.contains(&body.0) {
+                let thread = collect_body_member_ids(&store, body.0)?
+                    .iter()
+                    .any(|id| store.nominal_threads.contains_key(id));
+                let next = if store.cubic_bodies.contains(&body.0) || thread {
                     let mut bytes = Vec::new();
                     Solid::write_brep_text([&solid], &mut bytes).map_err(map_occt_error)?;
                     let values = crate::ffi::native::tight_bounds(&bytes)
@@ -1578,6 +1758,14 @@ impl GeometryKernel for OcctGeometryKernel {
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
+            let thread = self
+                .store
+                .borrow()
+                .nominal_threads
+                .get(&body.0)
+                .copied()
+                .map(|g| g.transformed(RigidTransform::from_translation(translation_m)))
+                .transpose()?;
             if self.store.borrow().cubic_bodies.contains(&body.0) {
                 opencad_geometry::cubic_bezier::validate_rigid_transform(
                     RigidTransform::from_translation(translation_m),
@@ -1598,6 +1786,9 @@ impl GeometryKernel for OcctGeometryKernel {
             if self.store.borrow().cubic_bodies.contains(&body.0) {
                 self.store.borrow_mut().cubic_bodies.insert(id);
             }
+            if let Some(g) = thread {
+                self.store.borrow_mut().nominal_threads.insert(id, g);
+            }
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -1614,8 +1805,21 @@ impl GeometryKernel for OcctGeometryKernel {
                 opencad_geometry::cubic_bezier::validate_rigid_transform(transform)?;
             }
             let solids = collect_body_solids(&self.store.borrow(), body.0)?;
+            let source_ids = collect_body_member_ids(&self.store.borrow(), body.0)?;
+            let threads: Vec<_> = source_ids
+                .iter()
+                .map(|id| {
+                    self.store
+                        .borrow()
+                        .nominal_threads
+                        .get(id)
+                        .copied()
+                        .map(|g| g.transformed(transform))
+                        .transpose()
+                })
+                .collect::<Result<_>>()?;
             let mut members = Vec::with_capacity(solids.len());
-            for mut transformed in solids {
+            for (mut transformed, thread) in solids.into_iter().zip(threads) {
                 if !transform.is_identity_rotation() {
                     let (axis, angle) = rotation_matrix_to_axis_angle(transform.rotation);
                     if angle.abs() > 1e-12 {
@@ -1633,6 +1837,9 @@ impl GeometryKernel for OcctGeometryKernel {
                 let id = self.store.borrow_mut().insert_body(transformed);
                 if cubic {
                     self.store.borrow_mut().cubic_bodies.insert(id);
+                }
+                if let Some(g) = thread {
+                    self.store.borrow_mut().nominal_threads.insert(id, g);
                 }
                 members.push(KernelBody::new(id));
             }
@@ -1926,6 +2133,11 @@ impl GeometryKernel for OcctGeometryKernel {
     ) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
+            if self.store.borrow().nominal_threads.contains_key(&body.0) {
+                return Err(OpenCadError::validation(
+                    "nominal threads require the proper transform_body gateway",
+                ));
+            }
             let solid = self
                 .store
                 .borrow()
@@ -1960,6 +2172,11 @@ impl GeometryKernel for OcctGeometryKernel {
     ) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
+            if self.store.borrow().nominal_threads.contains_key(&body.0) {
+                return Err(OpenCadError::validation(
+                    "nominal threads require the proper transform_body gateway",
+                ));
+            }
             let solid = self
                 .store
                 .borrow()

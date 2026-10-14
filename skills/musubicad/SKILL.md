@@ -788,3 +788,12 @@ standard thread geometry. Ideal volume is only a later measurement target.
 Do not claim rounded production roots, tolerance-class fit or completed P16-007.
 Physical construction/sampling admission, Mock/OCCT evidence and protected
 source/schema/patch/history/eval remain required before feature credit.
+
+P16-015 / ADR-068 now supplies actual nominal basic-flat-root runtime in explicit
+analytic Mock and OCCT, with independent physical checks. See
+docs/api/physical-nominal-thread.md and examples/physical_nominal_thread.md.
+The SDK consumes a proved full cylinder, explicit phase/hand and whole pitches;
+unsupported geometry/quality/precision refuses. No `.ocad` feature or MCP command
+ships yet: never invent create_thread or relabel a generic helix/tap-drill.
+P16-007 still requires protected source/semantic/cache/schema/patch/history/eval.
+Runtime infrastructure earns no maturity increment or manufactured-fit claim.

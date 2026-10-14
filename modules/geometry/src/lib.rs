@@ -11,6 +11,8 @@ pub mod kernel;
 pub mod mass;
 pub mod metric_thread;
 pub use metric_thread::{MetricThreadSize, NominalMetricThread, ThreadHandedness};
+pub mod nominal_thread;
+pub use nominal_thread::{NominalThreadGeometry, NominalThreadInput, NominalThreadMeshPlan};
 pub mod nurbs;
 pub mod provenance;
 pub mod refs;

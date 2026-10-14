@@ -5,6 +5,15 @@
 pub(crate) mod native {
     unsafe extern "C++" {
         include!("cpp/variable_fillet.h");
+        include!("cpp/nominal_thread.h");
+        fn nominal_metric_thread(
+            frame: &[f64],
+            major: f64,
+            pitch: f64,
+            turns: u32,
+            left: bool,
+        ) -> Result<Vec<u8>>;
+        fn nominal_thread_properties(brep: &[u8]) -> Result<Vec<f64>>;
         fn tapered_rib_stock(brep: &[u8], frame: &[f64]) -> Result<Vec<u8>>;
         fn cylindrical_frustum(frame: &[f64]) -> Result<Vec<u8>>;
         fn cylindrical_stock(brep: &[u8]) -> Result<Vec<f64>>;

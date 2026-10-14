@@ -603,3 +603,29 @@ API/architecture/guide/skill state the arithmetic-only boundary. No body/mesh,
 new source/schema/patch or eval is claimed. Further physical construction/
 sampling admission and measured Mock/OCCT source evidence remain required for
 P16-007. This prerequisite earns no score: actual 52.10 / 94.
+
+MCAD-P16-014 is complete in PR #113 (merge 0109be9), after all exact-head
+workflow/job checks pass. Profile arithmetic receives no maturity increment.
+
+MCAD-P16-015 implements ADR-068's physical nominal metric thread prerequisite.
+A body-owned full-cylinder witness, coarse dimensional agreement, explicit hand,
+whole pitches and radial phase axis admit a proper immutable screw envelope.
+Analytic Mock stores actual thread data with exact ideal volume/area/COM/support
+bounds and integer screw-band clipping to closed square-ended physical meshes.
+Canonical exact keys, quality/error/normal/f32/budget checks and unsupported
+consumer refusal prevent synthetic fallback or proximity-welded seams.
+Native builds per-revolution Frenet valley cuts in local mm with explicit
+precision and deterministic non-destructive clipping, validates one oriented
+solid, reflects proved right geometry for left hand and places back in SI.
+Actual BREP volume/area/COM use adaptive epsilon1e-9; default quadrature's
+32-pitch COM error was corrected without loosening acceptance or substituting
+ideal values. Proper output transforms retain transient metadata/tight queries;
+legacy direct rotate/mirror and improper placements refuse for these records.
+Independent tests grade coarse sizes, both hands/whole-pitch extrema, analytic
+piece/surface/triangle integrals, actual phase/radii, closed edges, tilted bounds,
+source/output rotations, owned face IDs, protected stock and invalid quality/
+precision/unit/source/consumer failures. Both-kernel shared SDK example,
+API/architecture/authoring guide/skill document actual runtime scope.
+No source tag/schema/patch/MCP operation or eval yet: P16-007 must supply these,
+authored original-source/semantic/cache admission and protected canonical history.
+No feature/host/release increment: solid63, weighted CAD52.10 / agent94 unchanged.

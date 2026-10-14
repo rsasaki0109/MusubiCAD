@@ -1251,3 +1251,12 @@ ADR-037 `tap_drill` as a drill cylinder. Do not author a supposed standard threa
 by renaming a generic helix or report calculated ideal volume as native evidence.
 P16-007 still requires independently measured Mock/OCCT construction, protected
 source/patch/history and actual eval. No production root or tolerance-class claim.
+
+P16-015 now implements physical nominal geometry in explicit analytic Mock and
+OCCT through the kernel SDK, with body-owned cylinder/phase admission, independent
+measurements and protected refusal. See [runtime contract](physical-nominal-thread.md)
+and [both-kernel example](../../examples/physical_nominal_thread.md). This adds
+no `.ocad` source tag or MCP command: do not invent a `create_thread` operation,
+rename generic helix/tap-drill sources, or equate a valid-solid flag with profile
+proof. P16-007's source/schema/semantic/history/mandatory native candidate/eval
+deliverables remain required. No manufactured-fit or release/host credit.
