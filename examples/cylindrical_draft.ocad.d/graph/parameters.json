@@ -1,0 +1,11 @@
+{
+  "parameters": {
+    "param:draft_angle": {
+      "id": "param:draft_angle",
+      "name": "draft_angle_rad",
+      "expr": "7 deg",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

@@ -399,6 +399,39 @@ def check_countersink_source(task: dict, document: Path) -> list[str]:
         return ["countersink source evidence absent or malformed"]
 
 
+
+def check_cylindrical_draft_source(task: dict, document: Path) -> list[str]:
+    """Sign cannot be graded by volume alone for a centred neutral plane."""
+    try:
+        baseline = ROOT / task["source"]
+        for filename in ["features.json", "sketches.json", "semantic_refs.json"]:
+            before = json.loads((baseline / "graph" / filename).read_text(encoding="utf-8"))
+            after = json.loads((document / "graph" / filename).read_text(encoding="utf-8"))
+            if before != after:
+                return ["cylindrical draft source, neutral plane, ownership or order changed"]
+        features = json.loads((document / "graph/features.json").read_text(encoding="utf-8"))["feature_nodes"]
+        definition = next(n for n in features if n["id"] == task["expected_cylindrical_draft"])["definition"]
+        if definition["type"] != "cylindrical_draft":
+            return ["explicit cylindrical draft source is missing"]
+        old = json.loads((baseline / "graph/parameters.json").read_text(encoding="utf-8"))
+        new = json.loads((document / "graph/parameters.json").read_text(encoding="utf-8"))
+        expected = old["parameters"]["param:draft_angle"]
+        actual = new["parameters"]["param:draft_angle"]
+        if actual["expr"] != task["expected_draft_angle_expr"]:
+            return ["signed draft angle expression differs"]
+        for field in ["id", "name"]:
+            if actual[field] != expected[field]:
+                return ["draft parameter identity changed"]
+        # Only the requested expression and its disposable dirty flag may differ.
+        normalized = json.loads(json.dumps(new))
+        normalized["parameters"]["param:draft_angle"] = expected
+        if normalized != old:
+            return ["another draft parameter source was changed"]
+        return []
+    except (OSError, ValueError, KeyError, TypeError, StopIteration):
+        return ["cylindrical draft source evidence absent or malformed"]
+
+
 def check(
     task: dict,
     document: Path,
@@ -408,6 +441,8 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_cylindrical_draft" in task:
+        problems.extend(check_cylindrical_draft_source(task, document))
     if "expected_counterbore" in task:
         problems.extend(check_counterbore_source(task, document))
     if "expected_countersink" in task:
@@ -857,6 +892,25 @@ def self_test() -> None:
         path.write_text(json.dumps(data), encoding="utf-8")
         passed, problems = check(countersink_task, candidate, f"volume_m3: {countersink_task['expected_volume_mm3']/1e9}\n")
         assert not passed and problems  # A claimed mass cannot substitute a different seat.
+    draft_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "cylindrical_draft_angle")
+    with tempfile.TemporaryDirectory() as folder:
+        candidate = Path(folder) / "draft.ocad.d"
+        shutil.copytree(ROOT / draft_task["source"], candidate)
+        path = candidate / "graph/parameters.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["parameters"]["param:draft_angle"]["expr"] = "-5 deg"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        assert check_cylindrical_draft_source(draft_task, candidate) == []
+        data["parameters"]["param:draft_angle"]["expr"] = "5 deg"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        assert not check(draft_task, candidate, f"volume_m3: {draft_task['expected_volume_mm3']/1e9}\n")[0]
+        data["parameters"]["param:draft_angle"]["expr"] = "-5 deg"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        path = candidate / "graph/features.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        next(n for n in data["feature_nodes"] if n["id"] == "feature:draft")["definition"]["type"] = "draft"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        assert not check(draft_task, candidate, f"volume_m3: {draft_task['expected_volume_mm3']/1e9}\n")[0]
     output = "regenerated: 3 features\nvolume_m3: 0.0000053684999999\nmass_kg: 1\n"
     assert abs(regenerated_volume_mm3(output) - 5368.5) < 1e-6
     assert regenerated_volume_mm3("no volume here") is None

@@ -39,6 +39,13 @@ impl FeatureDefinition {
                 _ => vec![],
             };
         }
+        if let Self::CylindricalDraft(def) = self {
+            let mut inputs = vec![("target_feature", def.target_feature.as_str())];
+            if let Workplane::DatumPlane { feature_id } = &def.neutral_plane {
+                inputs.push(("neutral_plane.feature_id", feature_id.as_str()));
+            }
+            return inputs;
+        }
         if let Self::Draft(def) = self {
             let mut inputs = vec![("target_feature", def.target_feature.as_str())];
             if let Workplane::DatumPlane { feature_id } = &def.neutral_plane {
@@ -116,7 +123,7 @@ impl FeatureDefinition {
             Self::Fillet(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Shell(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
-            Self::Draft(_) => [("", None), ("", None)],
+            Self::Draft(_) | Self::CylindricalDraft(_) => [("", None), ("", None)],
             Self::Rib(_) => [("", None), ("", None)],
             Self::Loft(_) => [("", None), ("", None)],
             Self::Sweep(_) => [("", None), ("", None)],
@@ -151,6 +158,13 @@ impl FeatureDefinition {
                 Workplane::FaceRef { face_ref } => vec![("base.face_ref", face_ref.as_str())],
                 _ => vec![],
             };
+        }
+        if let Self::CylindricalDraft(def) = self {
+            let mut refs = vec![("face_ref", def.face_ref.as_str())];
+            if let Workplane::FaceRef { face_ref } = &def.neutral_plane {
+                refs.push(("neutral_plane.face_ref", face_ref.as_str()));
+            }
+            return refs;
         }
         if let Self::Draft(def) = self {
             let mut refs: Vec<_> = def
@@ -197,6 +211,7 @@ impl FeatureDefinition {
             | Self::ImportedMesh(_)
             | Self::Shell(_)
             | Self::Draft(_)
+            | Self::CylindricalDraft(_)
             | Self::BodyBoolean(_)
             | Self::Rib(_)
             | Self::Loft(_)
@@ -244,6 +259,7 @@ impl FeatureDefinition {
     pub fn consumed_face_refs(&self) -> Vec<&str> {
         match self {
             Self::Shell(def) => def.open_face_refs.iter().map(String::as_str).collect(),
+            Self::CylindricalDraft(def) => vec![def.face_ref.as_str()],
             _ => Vec::new(),
         }
     }
@@ -329,6 +345,7 @@ impl FeatureDefinition {
             Self::Chamfer(def) => ("distance_expr", def.distance_expr.as_ref()),
             Self::Shell(def) => ("thickness_expr", def.thickness_expr.as_ref()),
             Self::Draft(def) => ("angle_expr", def.angle_expr.as_ref()),
+            Self::CylindricalDraft(def) => ("angle_expr", def.angle_expr.as_ref()),
             Self::LinearPattern(def) => ("spacing_expr", def.spacing_expr.as_ref()),
             Self::SeatedStandardHole(_)
             | Self::DatumPlane(_)

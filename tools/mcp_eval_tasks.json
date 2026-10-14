@@ -2019,6 +2019,18 @@
         "bore_depth"
       ],
       "expected_countersink": "feature:seat"
+    },
+    {
+      "id": "cylindrical_draft_angle",
+      "source": "examples/cylindrical_draft.ocad.d",
+      "document": "cylindrical_draft.ocad.d",
+      "prompt": "Change only draft_angle_rad in {document} from 7 deg to -5 deg. Preserve the explicit cylindrical_draft source, original exact-circle Distance/NewBody stock, 20 mm radius, 30 mm height, owned full cylindrical side reference, 15 mm neutral plane and feature order. Review then apply through DesignPatch; verify fresh native regeneration and the radial slice integral. Do not substitute planar draft or change the angle sign.",
+      "expected_volume_mm3": 37753.21666294023,
+      "required_parameters": [
+        "draft_angle_rad"
+      ],
+      "expected_cylindrical_draft": "feature:draft",
+      "expected_draft_angle_expr": "-5 deg"
     }
   ]
 }

@@ -24,6 +24,7 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
                 FeatureDefinition::DatumPlane(_)
                     | FeatureDefinition::DatumAxis(_)
                     | FeatureDefinition::Draft(_)
+                    | FeatureDefinition::CylindricalDraft(_)
                     | FeatureDefinition::Rib(_)
                     | FeatureDefinition::SeatedStandardHole(_)
             ) {
@@ -32,19 +33,20 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
         }
         return Ok(());
     }
-    let values = if model
-        .nodes
-        .values()
-        .any(|n| matches!(n.definition, FeatureDefinition::SeatedStandardHole(_)))
-        || model.sketches.values().any(|s| {
-            s.entities.iter().any(|e| {
-                matches!(
-                    e,
-                    opencad_sketch::SketchEntity::Ellipse(_)
-                        | opencad_sketch::SketchEntity::CubicBezier(_)
-                )
-            })
-        }) {
+    let values = if model.nodes.values().any(|n| {
+        matches!(
+            n.definition,
+            FeatureDefinition::SeatedStandardHole(_) | FeatureDefinition::CylindricalDraft(_)
+        )
+    }) || model.sketches.values().any(|s| {
+        s.entities.iter().any(|e| {
+            matches!(
+                e,
+                opencad_sketch::SketchEntity::Ellipse(_)
+                    | opencad_sketch::SketchEntity::CubicBezier(_)
+            )
+        })
+    }) {
         opencad_graph::evaluate_param_graph_strict(parameters)?
     } else {
         evaluate_param_graph(parameters)?
@@ -173,6 +175,9 @@ fn resolve_feature_node(
                 let meters = eval_length_expr(expr, values)?;
                 chamfer.distance = Length::from_meters(meters);
             }
+        }
+        FeatureDefinition::CylindricalDraft(def) => {
+            def.resolve_expressions(values)?;
         }
         FeatureDefinition::Draft(def) => {
             if let Some(expr) = &def.angle_expr {

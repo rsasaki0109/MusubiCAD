@@ -1,3 +1,6 @@
+// MCAD-P16-005 / ADR-065: cylindrical_draft is a distinct closed source tag.
+// No angle, lateral ownership or neutral plane is inferred for legacy draft;
+// genuine old enums refuse it. Existing schema-version migration stays additive.
 // MCAD-P16-004 / ADR-064: countersink is a strict seat discriminant with explicit
 // SI included angle; counterbore-only readers refuse it. Never infer an angle,
 // seat diameter, face ownership or frustum depth in legacy hole/counterbore data.

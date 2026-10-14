@@ -411,7 +411,7 @@ fn handle_patch_dry_run_document(request: &JsonRpcRequest) -> JsonRpcResponse {
     });
     let verification = ((params.verify
         || point_effect
-        || crate::review::requires_seated_hole_verification(&doc, &params.patch))
+        || crate::review::requires_physical_feature_verification(&doc, &params.patch))
         && !report.validation.has_errors())
     .then(|| verification_report(&params.path, &doc, &params.patch));
     match serde_json::to_value(report) {
@@ -477,7 +477,7 @@ fn handle_patch_apply_document(request: &JsonRpcRequest) -> JsonRpcResponse {
     let verification = if params.verify
         || point_effect
         || dependencies.is_some()
-        || crate::review::requires_seated_hole_verification(&doc, &params.patch)
+        || crate::review::requires_physical_feature_verification(&doc, &params.patch)
     {
         let verification = verification_report(&params.path, &doc, &params.patch);
         if !verification.passed {

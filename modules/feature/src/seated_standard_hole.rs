@@ -678,7 +678,7 @@ fn require_physical_output(kernel: &dyn GeometryKernel, body: &KernelBody) -> Re
     validate_closed_mesh(&mesh)?;
     Ok(())
 }
-fn validate_closed_mesh(mesh: &MeshSet) -> Result<()> {
+pub(crate) fn validate_closed_mesh(mesh: &MeshSet) -> Result<()> {
     let mut edges = std::collections::BTreeMap::new();
     let mut volume = 0.;
     let origin = mesh

@@ -1,0 +1,104 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_stock",
+      "feature:stock",
+      "feature:draft"
+    ],
+    "features": {
+      "feature:sketch_stock": {
+        "id": "feature:sketch_stock",
+        "name": "Cylinder sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:stock": {
+        "id": "feature:stock",
+        "name": "Original cylinder",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:draft": {
+        "id": "feature:draft",
+        "name": "Cylindrical draft",
+        "feature_type": "cylindrical_draft",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_stock",
+        "target": "feature:stock",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:stock",
+        "target": "feature:draft",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:draft",
+      "name": "Cylindrical draft",
+      "definition": {
+        "type": "cylindrical_draft",
+        "target_feature": "feature:stock",
+        "face_ref": "ref:face:stock_side",
+        "angle": {
+          "value_si": 0.12217304763960307
+        },
+        "angle_expr": "draft_angle_rad",
+        "neutral_plane": {
+          "type": "custom",
+          "origin": [
+            0.0,
+            0.0,
+            0.015
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "x_axis": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_stock",
+      "name": "Cylinder sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:stock"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:stock",
+      "name": "Original cylinder",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_stock",
+        "profile_ref": "sketch:stock/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.03
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    }
+  ]
+}

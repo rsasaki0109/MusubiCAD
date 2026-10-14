@@ -537,6 +537,151 @@
       },
       "additionalProperties": false
     },
+    "cylindrical_draft": {
+      "type": "object",
+      "required": [
+        "type",
+        "target_feature",
+        "face_ref",
+        "angle",
+        "neutral_plane"
+      ],
+      "properties": {
+        "type": {
+          "const": "cylindrical_draft"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "angle": {
+          "type": "object",
+          "required": [
+            "value_si"
+          ],
+          "properties": {
+            "value_si": {
+              "type": "number",
+              "minimum": -0.7853981633974483,
+              "maximum": 0.7853981633974483,
+              "not": {
+                "exclusiveMinimum": -1e-08,
+                "exclusiveMaximum": 1e-08
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "angle_expr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "neutral_plane": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "plane"
+              ],
+              "properties": {
+                "type": {
+                  "const": "global"
+                },
+                "plane": {
+                  "enum": [
+                    "XY",
+                    "XZ",
+                    "YZ"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "feature_id"
+              ],
+              "properties": {
+                "type": {
+                  "const": "datum_plane"
+                },
+                "feature_id": {
+                  "type": "string",
+                  "pattern": "^feature:"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "face_ref"
+              ],
+              "properties": {
+                "type": {
+                  "const": "face_ref"
+                },
+                "face_ref": {
+                  "type": "string",
+                  "pattern": "^ref:face:"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "origin",
+                "normal",
+                "x_axis"
+              ],
+              "properties": {
+                "type": {
+                  "const": "custom"
+                },
+                "origin": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "normal": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "x_axis": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "face_ref": {
+          "type": "string",
+          "pattern": "^ref:face:.+"
+        }
+      },
+      "additionalProperties": false
+    },
     "draft": {
       "type": "object",
       "required": [
@@ -2362,6 +2507,21 @@
           "if": {
             "properties": {
               "type": {
+                "const": "cylindrical_draft"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/cylindrical_draft"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
                 "const": "draft"
               }
             },
@@ -2515,6 +2675,7 @@
             "datum_plane",
             "datum_axis",
             "draft",
+            "cylindrical_draft",
             "rib",
             "body_boolean",
             "projected_sketch"

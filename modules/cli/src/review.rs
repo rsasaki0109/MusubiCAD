@@ -1237,10 +1237,18 @@ fn io_error(action: &'static str) -> impl FnOnce(std::io::Error) -> OpenCadError
     move |err| OpenCadError::Other(format!("failed to {action}: {err}"))
 }
 
-/// ADR-063: geometry cannot be bypassed for introduced or existing seated holes.
-pub(crate) fn requires_seated_hole_verification(doc: &OcadDocument, patch: &DesignPatch) -> bool {
+/// ADR-063/065: guarded physical source features require geometry verification.
+pub(crate) fn requires_physical_feature_verification(
+    doc: &OcadDocument,
+    patch: &DesignPatch,
+) -> bool {
     use opencad_feature::FeatureDefinition;
-    let seated = |d: &FeatureDefinition| matches!(d, FeatureDefinition::SeatedStandardHole(_));
+    let seated = |d: &FeatureDefinition| {
+        matches!(
+            d,
+            FeatureDefinition::SeatedStandardHole(_) | FeatureDefinition::CylindricalDraft(_)
+        )
+    };
     doc.feature_nodes.iter().any(|n| seated(&n.definition))
         || patch.operations.iter().any(|op| match op {
             opencad_ai::PatchOperation::AddFeature { node, .. } => seated(&node.definition),
