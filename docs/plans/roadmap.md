@@ -881,7 +881,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-004 | Add explicit countersunk standard holes | SI seat diameter/included angle, derived frustum depth and volume/contact dimensions, accepted analytic/native admission, distinct closed seat form and protected failures/history; P16-011 complete in PR #107 | Complete: PR #108 |
 | MCAD-P16-005 | Extend draft to admitted curved faces | ADR-065 closed cylindrical_draft; original exact-circle source and owned full side, signed SI angle/neutral plane, physical ownership/cache, strict schema/patch/history and independent Mock/native/MCP evidence | Complete: PR #110 |
 | MCAD-P16-006 | Add tapered rib profiles | ADR-066 closed tapered_rib; original stock/end/line ownership, strict SI thickness/height/signed angle/square ends, source/cache/transaction/history and independent Mock/native/MCP evidence; runtime P16-013 complete in PR #111 | Complete: PR #112 |
-| MCAD-P16-007 | Model standard external thread geometry | Accepted standard/profile/handedness/end representation and actual geometry with independent pitch/crest/root/volume checks; existing generic helical sweep gets no repeat credit | Planned |
+| MCAD-P16-007 | Model standard external thread geometry | After P16-016 / ADR-069: guarded authored cylinder, strict nominal source, physical output ownership/cache admission, schemas/old-reader refusal, transactional patches/history and independently graded actual MCP eval; existing generic helical sweep gets no repeat credit | Planned |
 | MCAD-P16-008 | Expand admitted variable fillet contours | Accepted radius-law/contour and semantic ownership, genuinely new supported cases with independent volume/contact tests in both kernels; no general curved-edge claim from another straight-edge case | Planned |
 | MCAD-P16-009 | Admit counterbore source and physical mesh prerequisites | ADR-063 specifies strict seated-hole source, owned rectangular-stock entry witness, bounded closed-mesh sampling/identity/error rules, schema/patch/old-reader refusal and independently graded acceptance; design only, no score | Complete (PR #104) |
 | MCAD-P16-010 | Supply physical analytic meshes and stock-face witnesses | After P16-009, actual closed rectangle/cylinder/concentric-cut meshes with bounded quality/error/IDs and a unique body-owned rectangular-stock query in Mock/OCCT; independent mesh and face/refusal evidence, default Mock isolation; no source feature or score | Complete: PR #105 |
@@ -889,7 +889,8 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-012 | Supply physical cylindrical-stock draft geometry | P16-005 prerequisite; ADR-065, actual body-owned full-cylinder witness and neutral-plane cylinder-to-frustum transformation in Mock/OCCT; independent radii/volume/area/first moments/bounds/closed meshes and protected refusal; runtime only, no feature score | Complete: PR #109 |
 | MCAD-P16-013 | Supply bounded tapered-rib stock geometry | P16-006 prerequisite; ADR-066, real rectangle-stock/trapezoid-prism union in Mock/OCCT, exact contact/interface-free planar meshes and independent cross-section/volume/area/COM/bounds/refusal evidence; runtime only, no feature score | Complete: PR #111 |
 | MCAD-P16-014 | Define the nominal metric thread contract | P16-007 prerequisite; ADR-067 distinguishes nominal flat-root basic profile from rounded-root/tolerance-class production threads; SI coarse dimensions, handed screw phase, square integer-turn ends and independent flank/pitch/slice/volume tests; no kernel solid or feature credit | Complete: PR #113 |
-| MCAD-P16-015 | Supply physical nominal metric thread geometry | P16-007 prerequisite; ADR-068, real cylinder witness and explicit phase frame, analytic thread record/closed bounded Mock mesh and native per-turn valley cut; independent pitch/hand/radius/volume/area/COM/bounds/placement/refusal tests; runtime only, no feature credit | Implemented; complete upon P16-015 PR merge |
+| MCAD-P16-015 | Supply physical nominal metric thread geometry | P16-007 prerequisite; ADR-068, real cylinder witness and explicit phase frame, analytic thread record/closed bounded Mock mesh and native per-turn valley cut; independent pitch/hand/radius/volume/area/COM/bounds/placement/refusal tests; runtime only, no feature credit | Complete: PR #114 |
+| MCAD-P16-016 | Define guarded nominal thread source admission | P16-007 prerequisite; ADR-069 fixes the closed source and authored phase, consumed side, all-new physical output ownership, cache/reader/patch/history gates and independent MCP acceptance; design only, no feature or score | Implemented; complete upon P16-016 PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -912,6 +913,9 @@ For external threads, P16-014 defines the nominal profile and independent
 measurement contract before P16-007. Physical construction and any approximation
 or sampling require a further accepted admission decision and measured Mock/OCCT
 evidence before source implementation; a profile calculation is not a solid.
+P16-015 supplies that runtime in PR #114. P16-016 / ADR-069 defines the separate
+source/face/cache contract before P16-007; the cylinder draft's three-face
+classification cannot describe noncircular thread caps or native split faces.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;

@@ -371,3 +371,14 @@ Native properties measure the BREP with adaptive epsilon1e-9 and tight bounds;
 transient metadata selects query/quality/placement guards, never analytic mass
 substitution or document ownership. New output IDs have no fabricated ancestry.
 P16-007 still needs authored source, semantic/cache/schema/patch/history/eval.
+
+P16-016 / [ADR-069](../adr/ADR-069-guarded-nominal-thread-source.md) defines that
+future source admission before implementation. Phase comes from the checked
+authored sketch placement, with original exact-circle/distance/NewBody stock
+and its owned full side. All actual output faces are newly produced by the
+thread; noncircular ends and native split surfaces cannot retain cylinder
+producers or use cylindrical draft's three-face classifier. Proposed discovery
+roles describe physical ends/surfaces, with ambiguity refusal and no stable
+native subface numbering. Cached outputs must undergo current source and
+physical discovery checks. This accepted design changes no runtime or source
+API; schema/patch/history/MCP evidence belongs to P16-007.

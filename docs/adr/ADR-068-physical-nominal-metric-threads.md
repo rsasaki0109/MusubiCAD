@@ -3,6 +3,10 @@
 Status: Accepted for MCAD-P16-015 runtime; source P16-007 remains pending.
 Date: 2026-10-14.
 
+P16-016 / [ADR-069](ADR-069-guarded-nominal-thread-source.md) now defines the
+separate source admission before implementation. It does not expose a source
+feature or expand this runtime's physical admission.
+
 ## Admission and representation
 
 Implement ADR-067's nominal metric basic flat-root screw envelope, not rounded
