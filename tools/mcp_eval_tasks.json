@@ -2031,6 +2031,20 @@
       ],
       "expected_cylindrical_draft": "feature:draft",
       "expected_draft_angle_expr": "-5 deg"
+    },
+    {
+      "id": "tapered_rib_height",
+      "source": "examples/tapered_rib_plate.ocad.d",
+      "document": "tapered_rib_plate.ocad.d",
+      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm\u00b3. Do not substitute a constant-width rib or change source sketches/order.",
+      "expected_volume_mm3": 13224,
+      "required_parameters": [
+        "rib_height",
+        "rib_thickness",
+        "rib_angle_rad"
+      ],
+      "expected_tapered_rib": "feature:rib",
+      "expected_rib_height_expr": "12 mm"
     }
   ]
 }

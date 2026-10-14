@@ -342,7 +342,9 @@ impl PartModel {
     pub fn prepare_sketches(&mut self) -> Result<()> {
         for sketch in self.sketches.values_mut() {
             prepare_sketch(sketch)?;
-            validate_sketch(sketch)?;
+            if !crate::tapered_rib::admits_profile_free_sketch(sketch, &self.nodes) {
+                validate_sketch(sketch)?;
+            }
         }
         Ok(())
     }
@@ -410,7 +412,9 @@ impl PartModel {
         for sketch in self.sketches.values_mut() {
             progress.enter(RegenerationStage::Sketch, Some(sketch.id.as_str()));
             prepare_sketch(sketch)?;
-            validate_sketch(sketch)?;
+            if !crate::tapered_rib::admits_profile_free_sketch(sketch, &self.nodes) {
+                validate_sketch(sketch)?;
+            }
         }
 
         self.outputs.clear();
@@ -504,12 +508,14 @@ impl PartModel {
                 };
 
                 if let Some(cached) = cache.get(&output_key) {
-                    let verified_faces =
-                        if matches!(node.definition, FeatureDefinition::CylindricalDraft(_)) {
-                            registry.discover_output_faces(node, &session, &cached.output)?
-                        } else {
-                            None
-                        };
+                    let verified_faces = if matches!(
+                        node.definition,
+                        FeatureDefinition::CylindricalDraft(_) | FeatureDefinition::TaperedRib(_)
+                    ) {
+                        registry.discover_output_faces(node, &session, &cached.output)?
+                    } else {
+                        None
+                    };
                     if matches!(node.definition, FeatureDefinition::SeatedStandardHole(_)) {
                         let body = cached.output.body.as_ref().ok_or_else(|| {
                             OpenCadError::validation("cached seated hole has no physical body")

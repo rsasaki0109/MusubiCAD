@@ -37,6 +37,8 @@ pub enum FeatureExprField {
     SeatDepth,
     SeatIncludedAngle,
     DraftAngle,
+    BaseThickness,
+    RibHeight,
 }
 
 /// Supported semantic ref fields for patch operations.
@@ -80,6 +82,8 @@ impl FeatureExprField {
             Self::SeatDepth => "seat_depth",
             Self::SeatIncludedAngle => "seat_included_angle",
             Self::DraftAngle => "draft_angle",
+            Self::BaseThickness => "base_thickness",
+            Self::RibHeight => "rib_height",
         }
     }
 
@@ -96,8 +100,10 @@ impl FeatureExprField {
             "seat_depth" => Ok(Self::SeatDepth),
             "seat_included_angle" => Ok(Self::SeatIncludedAngle),
             "draft_angle" => Ok(Self::DraftAngle),
+            "base_thickness" => Ok(Self::BaseThickness),
+            "rib_height" => Ok(Self::RibHeight),
             _ => Err(OpenCadError::validation(format!(
-                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', 'thickness_expr', 'bore_depth', 'seat_diameter', 'seat_depth', 'seat_included_angle', or 'draft_angle'"
+                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', 'thickness_expr', 'bore_depth', 'seat_diameter', 'seat_depth', 'seat_included_angle', 'draft_angle', 'base_thickness', or 'rib_height'"
             ))),
         }
     }
@@ -483,7 +489,9 @@ pub(crate) fn validate_feature_values(
     let strict_scope = if state.feature_nodes.iter().any(|n| {
         matches!(
             n.definition,
-            FeatureDefinition::SeatedStandardHole(_) | FeatureDefinition::CylindricalDraft(_)
+            FeatureDefinition::SeatedStandardHole(_)
+                | FeatureDefinition::CylindricalDraft(_)
+                | FeatureDefinition::TaperedRib(_)
         )
     }) {
         Some(opencad_graph::evaluate_param_graph_strict(
@@ -505,7 +513,12 @@ pub(crate) fn validate_feature_values(
         })
         .collect();
     for node in &state.feature_nodes {
-        if !node.suppressed && matches!(node.definition, FeatureDefinition::CylindricalDraft(_)) {
+        if !node.suppressed
+            && matches!(
+                node.definition,
+                FeatureDefinition::CylindricalDraft(_) | FeatureDefinition::TaperedRib(_)
+            )
+        {
             crate::feature_patch::check_feature_inputs(node, state, &mut failures);
         }
     }
@@ -1409,6 +1422,10 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
             pattern.plane_face_ref = Some(ref_id.to_string());
             Ok(())
         }
+        (FeatureDefinition::TaperedRib(def), FeatureRefField::FaceRef) => {
+            def.face_ref = ref_id.to_string();
+            Ok(())
+        }
         (FeatureDefinition::CylindricalDraft(def), FeatureRefField::FaceRef) => {
             def.face_ref = ref_id.to_string();
             Ok(())
@@ -1436,6 +1453,18 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
 
 fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &str) -> Result<()> {
     match (&mut node.definition, field) {
+        (FeatureDefinition::TaperedRib(def), FeatureExprField::DraftAngle) => {
+            def.angle_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::TaperedRib(def), FeatureExprField::BaseThickness) => {
+            def.base_thickness_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::TaperedRib(def), FeatureExprField::RibHeight) => {
+            def.height_expr = Some(expr.to_string());
+            Ok(())
+        }
         (FeatureDefinition::CylindricalDraft(def), FeatureExprField::DraftAngle) => {
             def.angle_expr = Some(expr.to_string());
             Ok(())

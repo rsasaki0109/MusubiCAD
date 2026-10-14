@@ -1237,7 +1237,7 @@ fn io_error(action: &'static str) -> impl FnOnce(std::io::Error) -> OpenCadError
     move |err| OpenCadError::Other(format!("failed to {action}: {err}"))
 }
 
-/// ADR-063/065: guarded physical source features require geometry verification.
+/// ADR-063/065/066: guarded physical source features require geometry verification.
 pub(crate) fn requires_physical_feature_verification(
     doc: &OcadDocument,
     patch: &DesignPatch,
@@ -1246,7 +1246,9 @@ pub(crate) fn requires_physical_feature_verification(
     let seated = |d: &FeatureDefinition| {
         matches!(
             d,
-            FeatureDefinition::SeatedStandardHole(_) | FeatureDefinition::CylindricalDraft(_)
+            FeatureDefinition::SeatedStandardHole(_)
+                | FeatureDefinition::CylindricalDraft(_)
+                | FeatureDefinition::TaperedRib(_)
         )
     };
     doc.feature_nodes.iter().any(|n| seated(&n.definition))

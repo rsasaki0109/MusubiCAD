@@ -1,0 +1,17 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:face:rib_base",
+      "kind": "face",
+      "semantic": {
+        "created_by": "feature:extrude_base",
+        "role": "extrusion_end",
+        "normal_hint": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    }
+  ]
+}

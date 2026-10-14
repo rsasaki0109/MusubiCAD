@@ -99,3 +99,38 @@ adds feature source/schema/history/example/guide/skill and independently graded
 actual MCP eval, then earns partial fixed-rubric credit only after main merge.
 Existing constant-width rib, generic loft/helix/planar draft and infrastructure
 get no repeated credit; general curved-intersection rib remains unsupported.
+
+
+## P16-006 source refinements accepted before implementation
+
+The closed `tapered_rib` source requires original authored rectangle/distance/
+NewBody target, original complete straight Line entity in an authored Sketch,
+mandatory end `face_ref`, SI `base_thickness: Length`, `height: Length`, signed
+`angle: Angle`, optional expressions and explicit `ends: square`. A centreline
+may be construction geometry; no closed profile is inferred from that line.
+Only a complete noncollapsed construction Line explicitly consumed by a declared
+tapered_rib may bypass the otherwise-required material-profile sketch check.
+Suppression keeps this declared source valid while omitting rib geometry.
+Legacy/unconsumed empty-profile sketches retain their existing refusal.
+Stored fallback units/static ranges must be valid independently of expressions;
+current expressions are then resolved strictly before derived geometry admission.
+Legacy feature fallback semantics are unchanged.
+
+Use stable end roles `extrusion_start` / `extrusion_end`, created by the target,
+matching the original source axis/plane. These survive rigid rotations without
+ambiguous global top/bottom roles. Source/world corners, original extent/axis,
+line plane and actual stock witness prove the unique end. Normal/bbox/area are
+checked annotations, not admission through nearest/mean faces. Present opposite
+bindings refuse; absent IDs rebind only through this owned typed source proof.
+The line workplane must resolve through existing backend, then independently
+match an actual original extrusion end; no generic-picker named-role claim.
+
+The stock entry plane survives around the contact rectangle, so the whole end
+reference is not consumed. Physically classify all six surviving stock planes
+and five rib surfaces, retain target/end ownership on the annular entry plane,
+and give new rib surfaces explicit producers/roles. Cached outputs repeat
+source/reference/measurement/closed-contact checks and rediscover actual owners.
+Mandatory native CLI/MCP candidate verification, strict source schemas,
+no-inference migration, genuine old-reader refusal, source/history/failure
+isolation and independently graded actual MCP creation/edit/history ship with
+P16-006; runtime witnessing alone earns no such source claim.

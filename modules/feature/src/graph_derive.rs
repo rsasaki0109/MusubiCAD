@@ -104,6 +104,10 @@ impl FeatureDefinition {
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", def.target_feature.as_ref()),
             ],
+            Self::TaperedRib(def) => [
+                ("sketch_feature", Some(&def.sketch_feature)),
+                ("target_feature", Some(&def.target_feature)),
+            ],
             Self::SeatedStandardHole(def) => [
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", Some(&def.target_feature)),
@@ -185,6 +189,7 @@ impl FeatureDefinition {
                 .collect();
         }
         let candidates: [(&'static str, Option<&String>); 2] = match self {
+            Self::TaperedRib(def) => [("face_ref", Some(&def.face_ref)), ("", None)],
             Self::SeatedStandardHole(def) => [("face_ref", Some(&def.face_ref)), ("", None)],
             Self::StandardHole(def) => [("face_ref", def.hole.face_ref.as_ref()), ("", None)],
             Self::Hole(def) => [("face_ref", def.face_ref.as_ref()), ("", None)],
@@ -266,6 +271,13 @@ impl FeatureDefinition {
 
     /// Parametric expressions this definition evaluates, as `(field, expr)`.
     pub fn expressions(&self) -> Vec<(&'static str, &str)> {
+        if let Self::TaperedRib(def) = self {
+            return present([
+                ("base_thickness_expr", def.base_thickness_expr.as_ref()),
+                ("height_expr", def.height_expr.as_ref()),
+                ("angle_expr", def.angle_expr.as_ref()),
+            ]);
+        }
         if let Self::SeatedStandardHole(def) = self {
             let (diameter_expr, depth_field, depth_expr) = match &def.seat {
                 crate::StandardHoleSeat::Counterbore {
@@ -358,6 +370,7 @@ impl FeatureDefinition {
             | Self::ImportedMesh(_)
             | Self::BodyBoolean(_)
             | Self::Rib(_)
+            | Self::TaperedRib(_)
             | Self::Loft(_)
             | Self::Sweep(_)
             | Self::HelixSweep(_) => return Vec::new(),

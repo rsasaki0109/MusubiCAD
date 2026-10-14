@@ -142,3 +142,14 @@ schema/old-reader refusal and protected actual MCP/Agent history. No general
 curved/concave/NURBS, host, release or P16-012 infrastructure credit. The fixed
 rubric/weights and other scores remain unchanged; 60% remains an additional goal
 requiring further merged capabilities.
+
+
+## P16-006 merge-conditioned evidence ledger
+
+After P16-006 main merge only: solid 61→63, weighted CAD 51.60→52.10
+(about 52%) and agent operation 93→94. Partial credit for square-ended true tapered
+stock addition, owned original source/end/line, strict parametric SI dimensions,
+independent both-kernel contact/integrals and source/schema/refusal/cache/history/
+actual MCP evidence. No arbitrary curved/multiple rib, existing constant-rib,
+P16-013 runtime, host, release or planning credit. Fixed rubric/weights and
+other scores stay unchanged; the approximately 60% objective remains active.

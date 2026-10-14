@@ -245,6 +245,10 @@ impl FeatureDefinition {
                 crate::draft::validate_angle(angle)
             }
             Self::BodyBoolean(def) => def.validate(),
+            Self::TaperedRib(def) => {
+                let mut copy = def.clone();
+                copy.resolve_expressions(scope)
+            }
             Self::Rib(def) => {
                 def.validate()?;
                 length(

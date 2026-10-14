@@ -19,6 +19,8 @@ pub mod regenerate;
 pub mod registry;
 pub mod revolve;
 pub mod rib;
+pub mod tapered_rib;
+pub use tapered_rib::{TaperedRibEnds, TaperedRibFeature, TaperedRibFeatureExecutor};
 pub mod shell;
 pub mod sketch_bridge;
 pub mod sketch_feature;

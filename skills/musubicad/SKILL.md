@@ -752,13 +752,27 @@ creation patch, `cylindrical_draft_angle` eval and real stdio regression
 centred-plane volume cannot distinguish opposite angles. v0.3.1 predates the tag;
 no general curved/NURBS draft, additional host or release credit is claimed.
 
-P16-013 / ADR-066 supplies physical tapered-rib runtime only: actual connected
-stock/trapezoid-prism union, exact SI contact/volume/area/COM and closed exterior
-mesh in explicit analytic Mock and native OCCT. No .ocad `tapered_rib` or MCP
-creation tool ships yet. Do not invent optional angle/end fields on legacy
-`rib`, substitute synthetic mass or retain the shared internal interface.
-Runtime cannot infer original extrusion-end source from an arbitrary physical
-box. P16-006 owns guarded authored stock/end/open-line, semantic ownership,
-closed source/schema/patch/history/eval admission. SDK example:
-`analytic_tapered_rib`; independent runtime tests: `tapered_rib`. No maturity,
-new host or release credit for this prerequisite.
+P16-006 / ADR-066 adds closed `tapered_rib` authoring over P16-013 physical
+runtime. Require original rectangle/distance/NewBody target, authored complete
+straight centreline (construction allowed), matching original end plane and
+owned named `extrusion_start`/`extrusion_end` face. Require SI base_thickness,
+height, signed Angle and explicit ends:square, with strict optional expressions.
+T(z)=T0-2*z*tan(angle), neutral base, square ends; reject invalid units/static
+fallbacks, missing/foreign/ambiguous/stale/consumed refs, collapse/tiny additions,
+curved/oblique/modified/intersecting families. Never invent optional angle/end
+fields on old `rib` or infer source provenance from physical box geometry.
+
+Create/review/apply via DesignPatch. Typed base_thickness/rib_height/draft_angle
+edit expressions; face_ref edits ownership. Mandatory native verification
+survives verify:false/--no-verify, previews remain read-only, failed edits preserve
+source/history. Six surviving stock planes retain source/end identity, five rib
+surfaces have the rib producer; shared interface is absent and the whole entry
+ref is not consumed. Cache repeats physical/source ownership checks. Default
+Mock refuses, explicit analytic Mock is SDK evidence; CLI/MCP uses native OCCT.
+
+See docs/api/tapered-rib.md, examples/tapered_rib_plate.md, creation patch,
+source-aware tapered_rib_height eval and tools/test_tapered_rib_mcp.py. Real stdio
+creation/edit/typed previews/refusal and canonical Agent history use zero model
+calls. Both schemas, additive migration/roundtrips and old-reader refusal ship;
+v0.3.1 predates the tag. No generic picker named-end, arbitrary curved/multiple
+rib, additional host or release capability is claimed.
