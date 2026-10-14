@@ -1134,3 +1134,9 @@ See [the full source/admission contract](seated-hole-admission.md) and
 `counterbore_seat_depth` eval rejects a plain bore or changed source even if mass
 matches. Runtime Mock proof requires explicit analytic mode for the entire
 history session; default Mock remains synthetic/unsupported for this feature.
+
+P16-011 / ADR-064 supplies a physical countersink **runtime kernel** prerequisite,
+with independent Mock/native cone/bore union and closed-mesh evidence. It adds no
+MCP tool, document seat variant or authoring shortcut. Continue to refuse requests
+for a `countersink` seat until P16-004's source/schema/patch gates are implemented;
+do not substitute the existing counterbore or plain `standard_hole` tag.

@@ -717,6 +717,44 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn cut_countersunk_stock(
+        &self,
+        body: KernelBody,
+        cut: &opencad_geometry::CountersinkCut,
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let witness = self.rectangular_stock_geometry(&body, cut.entry)?;
+            cut.validate(&witness)?;
+            let stock = self
+                .store
+                .borrow()
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("body {}", body.0)))?
+                .clone();
+            let input_faces = face_indices(&stock, 0)?;
+            let center = DVec3::from_array(cut.entry.point_m);
+            let inward = -DVec3::from_array(cut.entry.normal);
+            let bore =
+                Solid::cylinder(cut.bore_radius_m, inward * cut.bore_depth_m).translate(center);
+            let seat = Solid::cone(
+                cut.seat_radius_m,
+                cut.bore_radius_m,
+                inward * cut.seat_depth_m,
+            )
+            .translate(center);
+            let bored = (stock - bore).build().map_err(map_occt_error)?;
+            let result = (bored - seat).build().map_err(map_occt_error)?;
+            let id = self.store.borrow_mut().insert_derived(result, &input_faces);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, cut);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn boolean(&self, lhs: KernelBody, rhs: KernelBody, op: BooleanOp) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
