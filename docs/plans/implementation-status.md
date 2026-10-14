@@ -629,3 +629,21 @@ API/architecture/authoring guide/skill document actual runtime scope.
 No source tag/schema/patch/MCP operation or eval yet: P16-007 must supply these,
 authored original-source/semantic/cache admission and protected canonical history.
 No feature/host/release increment: solid63, weighted CAD52.10 / agent94 unchanged.
+
+MCAD-P16-015 is complete in PR #114 (merge 82e88a7), after all four exact-head
+workflows and applicable jobs succeeded. Local mandatory checks passed with
+1120 tests successful, 0 failed and 35 ignored, plus the agent-plugin checks.
+Runtime infrastructure receives no maturity increment.
+
+MCAD-P16-016 accepts [ADR-069](../adr/ADR-069-guarded-nominal-thread-source.md)
+before P16-007 source implementation. It defines the required nominal source
+discriminants, original authored circle/cylinder and phase frame, mandatory owned
+consumed side, explicit coordinated stock/thread edits, and all-new output
+producers for noncircular caps and actual native split faces. Closed schemas,
+no-inference migration/genuine old-reader refusal, warm-cache re-admission,
+mandatory native candidate verification, canonical history/failure protection
+and a source-aware independently graded real MCP eval remain implementation
+requirements. Ambiguous thread-surface roles refuse; no native subface stability
+or general downstream thread editing is promised. This documentation-only task
+does not add the proposed wire tag, source feature, patch capability or eval.
+P16-007 remains planned. No feature credit: weighted CAD52.10 / agent94 unchanged.
