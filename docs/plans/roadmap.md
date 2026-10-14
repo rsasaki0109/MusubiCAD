@@ -880,7 +880,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-003 | Add explicit counterbored standard holes | P16-009/010 prerequisites; parametric bore/seat dimensions, contained bounded physical removal without overlap double-counting, source/face ownership, distinct serialized feature with old-reader refusal, both kernels and complete deliverables | Complete: PR #106 |
 | MCAD-P16-004 | Add explicit countersunk standard holes | SI seat diameter/included angle, derived frustum depth and volume/contact dimensions, accepted analytic/native admission, distinct closed seat form and protected failures/history; P16-011 complete in PR #107 | Complete: PR #108 |
 | MCAD-P16-005 | Extend draft to admitted curved faces | ADR-065 closed cylindrical_draft; original exact-circle source and owned full side, signed SI angle/neutral plane, physical ownership/cache, strict schema/patch/history and independent Mock/native/MCP evidence | Complete: PR #110 |
-| MCAD-P16-006 | Add tapered rib profiles | ADR-066 closed tapered_rib; original stock/end/line ownership, strict SI thickness/height/signed angle/square ends, source/cache/transaction/history and independent Mock/native/MCP evidence; runtime P16-013 complete in PR #111 | Implemented; complete upon P16-006 PR merge |
+| MCAD-P16-006 | Add tapered rib profiles | ADR-066 closed tapered_rib; original stock/end/line ownership, strict SI thickness/height/signed angle/square ends, source/cache/transaction/history and independent Mock/native/MCP evidence; runtime P16-013 complete in PR #111 | Complete: PR #112 |
 | MCAD-P16-007 | Model standard external thread geometry | Accepted standard/profile/handedness/end representation and actual geometry with independent pitch/crest/root/volume checks; existing generic helical sweep gets no repeat credit | Planned |
 | MCAD-P16-008 | Expand admitted variable fillet contours | Accepted radius-law/contour and semantic ownership, genuinely new supported cases with independent volume/contact tests in both kernels; no general curved-edge claim from another straight-edge case | Planned |
 | MCAD-P16-009 | Admit counterbore source and physical mesh prerequisites | ADR-063 specifies strict seated-hole source, owned rectangular-stock entry witness, bounded closed-mesh sampling/identity/error rules, schema/patch/old-reader refusal and independently graded acceptance; design only, no score | Complete (PR #104) |
@@ -888,6 +888,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-011 | Supply bounded physical countersink cuts | P16-004 prerequisite; ADR-064, real conical-frustum/bore union removal on original rectangular stock in both kernels, exact volume/area/first moments and closed face-bearing bounded meshes, independent parity/refusal tests; runtime geometry only, no feature score | Complete: PR #107 |
 | MCAD-P16-012 | Supply physical cylindrical-stock draft geometry | P16-005 prerequisite; ADR-065, actual body-owned full-cylinder witness and neutral-plane cylinder-to-frustum transformation in Mock/OCCT; independent radii/volume/area/first moments/bounds/closed meshes and protected refusal; runtime only, no feature score | Complete: PR #109 |
 | MCAD-P16-013 | Supply bounded tapered-rib stock geometry | P16-006 prerequisite; ADR-066, real rectangle-stock/trapezoid-prism union in Mock/OCCT, exact contact/interface-free planar meshes and independent cross-section/volume/area/COM/bounds/refusal evidence; runtime only, no feature score | Complete: PR #111 |
+| MCAD-P16-014 | Define the nominal metric thread contract | P16-007 prerequisite; ADR-067 distinguishes nominal flat-root basic profile from rounded-root/tolerance-class production threads; SI coarse dimensions, handed screw phase, square integer-turn ends and independent flank/pitch/slice/volume tests; no kernel solid or feature credit | Implemented; complete upon P16-014 PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -906,6 +907,10 @@ For tapered ribs, P16-013 supplies the actual stock/prism union and exact planar
 contact mesh before P16-006 adds guarded source/patch/schema/history/eval.
 For curved draft, P16-012 supplies the full-cylinder witness and actual solid
 frustum runtime before P16-005 adds its guarded source/semantic/patch contract.
+For external threads, P16-014 defines the nominal profile and independent
+measurement contract before P16-007. Physical construction and any approximation
+or sampling require a further accepted admission decision and measured Mock/OCCT
+evidence before source implementation; a profile calculation is not a solid.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;

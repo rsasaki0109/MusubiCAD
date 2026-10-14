@@ -776,3 +776,15 @@ creation/edit/typed previews/refusal and canonical Agent history use zero model
 calls. Both schemas, additive migration/roundtrips and old-reader refusal ship;
 v0.3.1 predates the tag. No generic picker named-end, arbitrary curved/multiple
 rib, additional host or release capability is claimed.
+
+### Nominal metric thread profile boundary (P16-014)
+
+ADR-067 supplies geometry SDK arithmetic for coarse nominal metric flat-root
+basic profiles, explicit right/left hand, whole pitches and square clips.
+See docs/api/nominal-metric-thread.md and examples/nominal_metric_thread_profile.md.
+It creates no physical body, serialized feature or MCP operation. ADR-037
+tap_drill remains a cylinder; a generic helix is not independently verified
+standard thread geometry. Ideal volume is only a later measurement target.
+Do not claim rounded production roots, tolerance-class fit or completed P16-007.
+Physical construction/sampling admission, Mock/OCCT evidence and protected
+source/schema/patch/history/eval remain required before feature credit.
