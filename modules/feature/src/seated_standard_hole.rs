@@ -1,7 +1,7 @@
-//! ADR-063: explicit contained counterbores with source and physical ownership.
+//! ADR-063/064: explicit contained seats with source and physical ownership.
 use crate::sketch_bridge::profile_to_solved_with_context;
 use crate::{Feature, FeatureDefinition, FeatureNode, FeatureOutput, HoleStandard, RegenContext};
-use opencad_core::{Length, OpenCadError, Result};
+use opencad_core::{Angle, Length, OpenCadError, Result};
 use opencad_geometry::{
     ExtrudeExtent, ExtrudeOperation, FacePick, GeometryKernel, KernelBody, MeshSet,
     SketchPlacement, TessellationSettings, TopoRefKind,
@@ -26,6 +26,26 @@ fn strict_length<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<
         value_si: f64,
     }
     Ok(Length::from_meters(Wire::deserialize(d)?.value_si))
+}
+
+fn strict_angle<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Angle, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Wire {
+        value_si: f64,
+    }
+    Ok(Angle::from_radians(Wire::deserialize(d)?.value_si))
+}
+pub(crate) fn evaluate_angle(expr: &str, scope: &indexmap::IndexMap<String, f64>) -> Result<f64> {
+    if opencad_graph::parameter_names_in_expr(expr)
+        .iter()
+        .any(|name| !opencad_graph::param_eval::is_angle_parameter(name))
+    {
+        return Err(invalid(
+            "angle expression cannot reference a length parameter",
+        ));
+    }
+    opencad_graph::eval_angle_expr_strict(expr, scope)
 }
 
 fn invalid(message: &str) -> OpenCadError {
@@ -77,15 +97,74 @@ pub enum StandardHoleSeat {
         #[serde(skip_serializing_if = "Option::is_none")]
         depth_expr: Option<String>,
     },
+    Countersink {
+        #[serde(deserialize_with = "strict_length")]
+        diameter: Length,
+        #[serde(deserialize_with = "strict_angle")]
+        included_angle: Angle,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        diameter_expr: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        included_angle_expr: Option<String>,
+    },
 }
 impl StandardHoleSeat {
-    pub fn dimensions(&self) -> (Length, Length) {
-        let Self::Counterbore {
-            diameter, depth, ..
-        } = self;
-        (*diameter, *depth)
+    /// Seat diameter and physical depth; countersink depth depends on the bore.
+    pub fn dimensions(&self, bore_diameter: Length) -> Result<(Length, Length)> {
+        match self {
+            Self::Counterbore {
+                diameter, depth, ..
+            } => Ok((*diameter, *depth)),
+            Self::Countersink {
+                diameter,
+                included_angle,
+                ..
+            } => {
+                let angle = included_angle.radians();
+                if !angle.is_finite() || angle <= 0. || angle >= std::f64::consts::PI {
+                    return Err(invalid("included angle must be finite in (0,pi) radians"));
+                }
+                let depth = (diameter.meters() - bore_diameter.meters()) / 2. / (angle / 2.).tan();
+                Ok((*diameter, Length::from_meters(depth)))
+            }
+        }
+    }
+    pub(crate) fn resolve_expressions(
+        &mut self,
+        scope: &indexmap::IndexMap<String, f64>,
+    ) -> Result<()> {
+        match self {
+            Self::Counterbore {
+                diameter,
+                depth,
+                diameter_expr,
+                depth_expr,
+            } => {
+                if let Some(expr) = diameter_expr {
+                    *diameter = Length::from_meters(evaluate_length(expr, scope)?);
+                }
+                if let Some(expr) = depth_expr {
+                    *depth = Length::from_meters(evaluate_length(expr, scope)?);
+                }
+            }
+            Self::Countersink {
+                diameter,
+                included_angle,
+                diameter_expr,
+                included_angle_expr,
+            } => {
+                if let Some(expr) = diameter_expr {
+                    *diameter = Length::from_meters(evaluate_length(expr, scope)?);
+                }
+                if let Some(expr) = included_angle_expr {
+                    *included_angle = Angle::from_radians(evaluate_angle(expr, scope)?);
+                }
+            }
+        }
+        Ok(())
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SeatedStandardHoleFeature {
@@ -102,7 +181,9 @@ pub struct SeatedStandardHoleFeature {
 }
 impl SeatedStandardHoleFeature {
     pub fn validate_dimensions(&self) -> Result<()> {
-        let (diameter, depth) = self.seat.dimensions();
+        let (diameter, depth) = self
+            .seat
+            .dimensions(self.standard.dimensions().cut_diameter)?;
         let bore = self.standard.dimensions().cut_diameter.meters();
         for v in [self.bore_depth.meters(), diameter.meters(), depth.meters()] {
             if !v.is_finite() || v <= EPS || v > 1000. {
@@ -113,6 +194,11 @@ impl SeatedStandardHoleFeature {
             return Err(invalid(
                 "seat diameter must exceed bore and seat depth must be smaller than bore depth",
             ));
+        }
+        if matches!(self.seat, StandardHoleSeat::Countersink { .. })
+            && diameter.meters() - bore <= 2. * EPS
+        {
+            return Err(invalid("countersink radial margin must exceed 1e-9 m"));
         }
         if [
             &self.sketch_feature,
@@ -145,26 +231,49 @@ impl Feature for SeatedStandardHoleFeatureExecutor {
         let circle = profile
             .circle
             .ok_or_else(|| invalid("missing admitted circle"))?;
-        let (seat_diameter, seat_depth) = def.seat.dimensions();
+        let (seat_diameter, seat_depth) = def
+            .seat
+            .dimensions(def.standard.dimensions().cut_diameter)?;
         let radius = seat_diameter.meters() / 2.;
-        let mut body = target.clone();
-        for (r, depth) in [
-            (circle.radius_m, def.bore_depth.meters()),
-            (radius, seat_depth.meters()),
-        ] {
-            if let Some(c) = &mut profile.circle {
-                c.radius_m = r;
-            }
-            body = kernel.extrude(
-                kernel.make_wire_from_sketch(&profile)?,
-                ExtrudeExtent::Distance {
-                    length: Length::from_meters(depth),
+        let body = match def.seat {
+            StandardHoleSeat::Countersink { .. } => kernel.cut_countersunk_stock(
+                target.clone(),
+                &opencad_geometry::CountersinkCut {
+                    entry: FacePick {
+                        point_m: profile
+                            .placement
+                            .ok_or_else(|| invalid("missing admitted frame"))?
+                            .map_point(circle.center_m[0], circle.center_m[1]),
+                        normal: direction.map(|v| -v),
+                    },
+                    bore_radius_m: circle.radius_m,
+                    seat_radius_m: radius,
+                    bore_depth_m: def.bore_depth.meters(),
+                    seat_depth_m: seat_depth.meters(),
                 },
-                ExtrudeOperation::Cut,
-                Some(body),
-                direction,
-            )?;
-        }
+            )?,
+            StandardHoleSeat::Counterbore { .. } => {
+                let mut body = target.clone();
+                for (r, depth) in [
+                    (circle.radius_m, def.bore_depth.meters()),
+                    (radius, seat_depth.meters()),
+                ] {
+                    if let Some(c) = &mut profile.circle {
+                        c.radius_m = r;
+                    }
+                    body = kernel.extrude(
+                        kernel.make_wire_from_sketch(&profile)?,
+                        ExtrudeExtent::Distance {
+                            length: Length::from_meters(depth),
+                        },
+                        ExtrudeOperation::Cut,
+                        Some(body),
+                        direction,
+                    )?;
+                }
+                body
+            }
+        };
         require_output(kernel, &target, &body, &profile, def, direction)?;
         Ok(FeatureOutput {
             body: Some(body),
@@ -410,7 +519,9 @@ fn admit_inputs(
             return Err(invalid("actual stock corners disagree with source"));
         }
     }
-    let (seat_diameter, _) = def.seat.dimensions();
+    let (seat_diameter, _) = def
+        .seat
+        .dimensions(def.standard.dimensions().cut_diameter)?;
     let radius = seat_diameter.meters() / 2.;
     let local = sub(center, witness.origin_m);
     for (c, size) in [dot(local, witness.u_axis), dot(local, witness.v_axis)]
@@ -505,11 +616,29 @@ fn require_output(
     let before = kernel.mass_properties(target, 1.)?;
     let after = kernel.mass_properties(body, 1.)?;
     let bore_radius = def.standard.dimensions().cut_diameter.meters() / 2.;
-    let (diameter, depth) = def.seat.dimensions();
+    let (diameter, depth) = def
+        .seat
+        .dimensions(def.standard.dimensions().cut_diameter)?;
     let bore = std::f64::consts::PI * bore_radius.powi(2) * def.bore_depth.meters();
-    let annulus = std::f64::consts::PI
-        * ((diameter.meters() / 2.).powi(2) - bore_radius.powi(2))
-        * depth.meters();
+    let seat_radius = diameter.meters() / 2.;
+    let d = depth.meters();
+    let (annulus, seat_first) = match def.seat {
+        StandardHoleSeat::Counterbore { .. } => {
+            let volume = std::f64::consts::PI * (seat_radius.powi(2) - bore_radius.powi(2)) * d;
+            (volume, volume * d / 2.)
+        }
+        StandardHoleSeat::Countersink { .. } => (
+            std::f64::consts::PI
+                * d
+                * (seat_radius.powi(2) + seat_radius * bore_radius - 2. * bore_radius.powi(2))
+                / 3.,
+            std::f64::consts::PI
+                * d
+                * d
+                * (seat_radius.powi(2) + 2. * seat_radius * bore_radius - 3. * bore_radius.powi(2))
+                / 12.,
+        ),
+    };
     let expected = before.volume_m3 - bore - annulus;
     if !after.volume_m3.is_finite()
         || !expected.is_finite()
@@ -518,7 +647,7 @@ fn require_output(
         || (after.volume_m3 - expected).abs() > expected * 1e-8
     {
         return Err(invalid(
-            "physical removed volume disagrees with contained counterbore",
+            "physical removed volume disagrees with contained seat",
         ));
     }
     let plane = profile
@@ -531,11 +660,12 @@ fn require_output(
     for i in 0..3 {
         let first = before.volume_m3 * before.center_of_mass[i]
             - bore * (center[i] + direction[i] * def.bore_depth.meters() / 2.)
-            - annulus * (center[i] + direction[i] * depth.meters() / 2.);
+            - annulus * center[i]
+            - direction[i] * seat_first;
         if !after.center_of_mass[i].is_finite()
             || (after.center_of_mass[i] - first / expected).abs() > 1e-9
         {
-            return Err(invalid("physical first moments disagree with counterbore"));
+            return Err(invalid("physical first moments disagree with seat"));
         }
     }
     require_physical_output(kernel, body)

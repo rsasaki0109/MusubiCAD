@@ -132,14 +132,7 @@ impl FeatureDefinition {
                 };
                 let mut copy = def.clone();
                 copy.bore_depth = resolve(def.bore_depth_expr.as_ref(), def.bore_depth)?;
-                let crate::StandardHoleSeat::Counterbore {
-                    diameter,
-                    depth,
-                    diameter_expr,
-                    depth_expr,
-                } = &mut copy.seat;
-                *diameter = resolve(diameter_expr.as_ref(), *diameter)?;
-                *depth = resolve(depth_expr.as_ref(), *depth)?;
+                copy.seat.resolve_expressions(scope)?;
                 copy.validate_dimensions()
             }
             Self::StandardHole(def) => extent(

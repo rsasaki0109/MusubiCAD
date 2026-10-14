@@ -74,7 +74,7 @@ runtime observations, never globally unique source identities.
 
 This is infrastructure, not a document-level seated-hole feature. Schema,
 DesignPatch/source/semantic ownership is implemented separately for counterbores
-in [MCAD-P16-003](seated-hole-admission.md); countersinks remain MCAD-P16-004. Existing CLI/MCP Mock selection is not switched to this
+in [MCAD-P16-003](seated-hole-admission.md); countersinks use MCAD-P16-004 on P16-011. Existing CLI/MCP Mock selection is not switched to this
 mode. No document MCP eval is claimed for this SDK query or mesh infrastructure.
 Native authoring remains through verified DesignPatch/transactions.
 
@@ -115,5 +115,5 @@ COM uses exact first moments. Meshes retain ADR-063 quality/budgets/closed
 winding and body-owned face IDs, with distinct conical walls and no fictitious
 shoulder at the continuous bore join. Rigid transforms preserve physical data.
 Run `analytic_countersink` and the independent `countersink` integration tests
-in both geometry and kernel-occt crates. No .ocad or MCP countersink is exposed
-by this runtime prerequisite; P16-004 supplies that contract.
+in both geometry and kernel-occt crates. The runtime prerequisite itself exposes no .ocad or MCP command; P16-004
+supplies the angle-bearing document contract through existing patch commands.

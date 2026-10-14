@@ -71,3 +71,21 @@ invalid dimensions/ownership/quality/unsupported stock. Existing cylindrical
 chains retain their tests. It changes no .ocad schema and earns no feature or
 host score. P16-004 supplies the complete source/feature, example, guide, skill
 and independently graded MCP eval before countersink feature credit.
+
+## Implementation evidence
+
+P16-011 is merged in PR #107. P16-004 implements the closed countersink seat,
+strict nested Angle decoding and length/angle expression/reference kinds,
+fallible derived depth, typed angle-only edits and dependency/cache gates.
+Original-stock/source/owned-entry checks precede physical union removal and
+independent volume/first-moment/closed-output checks. Counterbore code retains
+explicit depth; schema oneOf preserves that wire and rejects mixed seat fields.
+Successful in-memory regeneration resolves numerical fallback fields while
+retaining expressions; document verification uses a candidate model and
+preserves authored files. Geometry comparisons retain explicit tolerances.
+Independent tests include non-axis-aligned original stock/entry, multiple
+angles/contact rings, protected warm-cache refusal, packed/expanded source,
+old-reader refusal and canonical local history. Real MCP and Agent stdio
+verify creation/review/angle edits, source-aware eval, forced verification,
+wrong reference/range/unit refusal and opaque canonical Undo/Redo with zero
+model calls. P16-004 earns credit only after its own main merge.

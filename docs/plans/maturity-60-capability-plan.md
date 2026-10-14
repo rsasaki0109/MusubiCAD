@@ -123,3 +123,10 @@ scope gets partial credit; no general arbitrary-face hole, host or release claim
 P16-001/002/009/010 infrastructure receives no feature credit. Before the feature
 merge the actual baseline remains 50.10/90; the 60.10 working allocation is still
 an estimate that must be justified by later merged capabilities.
+
+P16-011 is merged in PR #107 with no additional score. P16-004's countersink
+implementation may earn solid 57 → 59 (weighted 50.60 → 51.10), agent 91 → 92
+only after its main merge: real conical seat/bore union, typed parametric angle,
+independent contact/volume/COM/closed meshes in both kernels and protected
+source/MCP/history. No arbitrary-face machining, inferred head standard or
+additional host/release support is credited. Until then use 50.60 / 91.

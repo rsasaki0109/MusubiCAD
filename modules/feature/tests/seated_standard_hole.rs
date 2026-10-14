@@ -149,7 +149,10 @@ fn invalid_entries<K: GeometryKernel>(kernel: &K) {
             "seat_depth" => {
                 let StandardHoleSeat::Counterbore {
                     depth, depth_expr, ..
-                } = &mut def.seat;
+                } = &mut def.seat
+                else {
+                    panic!("expected counterbore")
+                };
                 *depth = Length::from_meters(0.01);
                 *depth_expr = None;
             }
@@ -163,7 +166,10 @@ fn invalid_entries<K: GeometryKernel>(kernel: &K) {
                     diameter,
                     diameter_expr,
                     ..
-                } = &mut def.seat;
+                } = &mut def.seat
+                else {
+                    panic!("expected counterbore")
+                };
                 *diameter = Length::from_meters(0.04);
                 *diameter_expr = None;
             }

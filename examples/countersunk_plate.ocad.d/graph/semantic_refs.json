@@ -1,0 +1,32 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:face:plate_entry",
+      "kind": "face",
+      "semantic": {
+        "created_by": "feature:extrude_base",
+        "role": "top",
+        "normal_hint": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "geometric_fingerprint": {
+        "surface_type": "plane",
+        "bbox_hint": [
+          [
+            0.0,
+            0.0,
+            0.01
+          ],
+          [
+            0.04,
+            0.03,
+            0.01
+          ]
+        ]
+      }
+    }
+  ]
+}

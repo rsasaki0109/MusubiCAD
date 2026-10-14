@@ -15,7 +15,7 @@ fn every_example_is_a_valid_design_state() {
         .filter(|path| path.extension().is_some_and(|ext| ext == "d"))
         .collect();
     paths.sort();
-    assert_eq!(paths.len(), 46);
+    assert_eq!(paths.len(), 47);
     for path in paths {
         let doc = read_ocad(&path).expect("read");
         validate_design_state(&document_design_state(&doc))

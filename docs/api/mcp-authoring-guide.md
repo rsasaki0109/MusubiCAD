@@ -1098,8 +1098,7 @@ for bounded physical rectangle/circle/concentric-cut evidence. The default Mock
 ordinary IDs remain synthetic; their cube measurements do not prove hole volume
 or placement. See the [analytic Mock API](analytic-mock.md) and runnable example
 in `examples/analytic-mock/`. This adds no MCP command or persisted setting and
-does not switch CLI/MCP Mock mode. Counterbores use the P16-003 source/ownership gate described below; countersinks
-remain P16-004; do not invent seat fields or author a plain bore as a seat.
+does not switch CLI/MCP Mock mode. Counterbores use the P16-003 source/ownership gate described below; countersinks use P16-004 below; do not invent seat fields or author a plain bore as a seat.
 Use the existing verified native DesignPatch path for supported document edits.
 P16-010 admits bounded actual closed meshes and body-owned planar stock witnesses
 in this explicit SDK mode (ADR-063); it does not add source-node or semantic
@@ -1137,6 +1136,39 @@ history session; default Mock remains synthetic/unsupported for this feature.
 
 P16-011 / ADR-064 supplies a physical countersink **runtime kernel** prerequisite,
 with independent Mock/native cone/bore union and closed-mesh evidence. It adds no
-MCP tool, document seat variant or authoring shortcut. Continue to refuse requests
-for a `countersink` seat until P16-004's source/schema/patch gates are implemented;
-do not substitute the existing counterbore or plain `standard_hole` tag.
+MCP tool, document seat variant or authoring shortcut. P16-004 adds the strict countersink source described below; do not substitute
+a counterbore or plain `standard_hole` tag.
+
+
+### Explicit countersunk standard holes (P16-004, ADR-064)
+
+Use `seated_standard_hole` with the same mandatory original-stock sketch,
+standard, target and owned end-face fields as counterbores, and this closed seat:
+
+```json
+{"type":"countersink","diameter":{"value_si":0.012},
+ "included_angle":{"value_si":1.5707963267948966},
+ "diameter_expr":"seat_diameter","included_angle_expr":"seat_angle_rad"}
+```
+
+Diameter is metres; angle is radians. Angle parameters use the existing
+`_rad`/`_deg`/`angle` naming convention and may have expressions such as
+`90 deg`; `seat_angle_rad` stores radians after evaluation. Length expressions
+refuse angle units/references and angle expressions refuse length units/references.
+Depth is derived as (seat radius - standard bore radius)/tan(included angle/2),
+strictly between 1 nm and bore depth minus 1 nm. Angle must be finite in (0, pi),
+and radial/lateral material margins exceed 1 nm. No clamping or inferred head size.
+
+Create/replace via DesignPatch. Typed `set_feature_expr` field
+`seat_included_angle` writes `seat.included_angle_expr`; `seat_diameter` and
+`bore_depth` remain available. `seat_depth` is counterbore-only, and
+`seat_included_angle` is countersink-only. Parameter edits enter dependencies and
+cache invalidation. Mandatory native host verification, read-only reviews,
+failed-candidate/history preservation and owned source gates stay in force.
+
+See [the patch-authored example](../../examples/countersunk_plate.md).
+Eval `countersink_angle` changes only 90 to 60 degrees and independently checks
+native volume plus unchanged explicit feature/standard/sketch/ref/order source.
+`tools/test_countersink_mcp.py` exercises actual MCP/Agent stdio with zero model
+calls. Counterbore-only readers reject the seat discriminant; both schemas and
+additive migration/roundtrip tests ship. Released v0.3.1 predates these tags.

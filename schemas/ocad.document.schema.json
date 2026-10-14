@@ -344,58 +344,116 @@
           ]
         },
         "seat": {
-          "type": "object",
-          "required": [
-            "type",
-            "diameter",
-            "depth"
-          ],
-          "properties": {
-            "type": {
-              "const": "counterbore"
-            },
-            "diameter": {
+          "oneOf": [
+            {
               "type": "object",
               "required": [
-                "value_si"
+                "type",
+                "diameter",
+                "depth"
               ],
               "properties": {
-                "value_si": {
-                  "type": "number",
-                  "exclusiveMinimum": 1e-09,
-                  "maximum": 1000
+                "type": {
+                  "const": "counterbore"
+                },
+                "diameter": {
+                  "type": "object",
+                  "required": [
+                    "value_si"
+                  ],
+                  "properties": {
+                    "value_si": {
+                      "type": "number",
+                      "exclusiveMinimum": 1e-09,
+                      "maximum": 1000
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "depth": {
+                  "type": "object",
+                  "required": [
+                    "value_si"
+                  ],
+                  "properties": {
+                    "value_si": {
+                      "type": "number",
+                      "exclusiveMinimum": 1e-09,
+                      "maximum": 1000
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "diameter_expr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "depth_expr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               },
               "additionalProperties": false
             },
-            "depth": {
+            {
               "type": "object",
               "required": [
-                "value_si"
+                "type",
+                "diameter",
+                "included_angle"
               ],
               "properties": {
-                "value_si": {
-                  "type": "number",
-                  "exclusiveMinimum": 1e-09,
-                  "maximum": 1000
+                "type": {
+                  "const": "countersink"
+                },
+                "diameter": {
+                  "type": "object",
+                  "required": [
+                    "value_si"
+                  ],
+                  "properties": {
+                    "value_si": {
+                      "type": "number",
+                      "exclusiveMinimum": 1e-09,
+                      "maximum": 1000
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "diameter_expr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "included_angle": {
+                  "type": "object",
+                  "required": [
+                    "value_si"
+                  ],
+                  "properties": {
+                    "value_si": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "exclusiveMaximum": 3.141592653589793
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "included_angle_expr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               },
               "additionalProperties": false
-            },
-            "diameter_expr": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "depth_expr": {
-              "type": [
-                "string",
-                "null"
-              ]
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "additionalProperties": false
