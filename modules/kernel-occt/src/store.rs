@@ -21,6 +21,8 @@ pub struct KernelStore {
     #[cfg(feature = "occt")]
     pub cubic_bodies: std::collections::HashSet<u64>,
     #[cfg(feature = "occt")]
+    pub nominal_threads: HashMap<u64, opencad_geometry::NominalThreadGeometry>,
+    #[cfg(feature = "occt")]
     pub bodies: HashMap<u64, Solid>,
     #[cfg(feature = "occt")]
     pub compound_members: HashMap<u64, Vec<u64>>,

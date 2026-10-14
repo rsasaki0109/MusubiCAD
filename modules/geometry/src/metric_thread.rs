@@ -122,16 +122,20 @@ impl NominalMetricThread {
         let phase = ((z / self.pitch().meters()).rem_euclid(1.0)
             - sign * theta.rem_euclid(TAU) / TAU)
             .rem_euclid(1.0);
+        Ok(Length::from_meters(self.radius_for_phase(phase)))
+    }
+
+    pub(crate) fn radius_for_phase(self, phase: f64) -> f64 {
+        let phase = phase.rem_euclid(1.0);
         let distance = phase.min(1.0 - phase);
         let major = self.major_diameter().meters() / 2.0;
-        let radius = if distance <= 1.0 / 16.0 {
+        if distance <= 1.0 / 16.0 {
             major
         } else if distance >= 3.0 / 8.0 {
             self.basic_minor_diameter().meters() / 2.0
         } else {
             major - 3.0_f64.sqrt() * self.pitch().meters() * (distance - 1.0 / 16.0)
-        };
-        Ok(Length::from_meters(radius))
+        }
     }
 
     /// Exact ideal envelope section area in m²; not a measured kernel property.
@@ -144,5 +148,20 @@ impl NominalMetricThread {
     /// Exact ideal envelope volume in m³; no claim that a kernel body exists.
     pub fn ideal_volume_m3(self) -> f64 {
         self.ideal_section_area_m2() * self.length().meters()
+    }
+
+    /// Exact ideal exterior area, including the two noncircular square ends.
+    pub fn ideal_surface_area_m2(self) -> f64 {
+        let p = self.pitch().meters();
+        let r = self.basic_minor_diameter().meters() / 2.0;
+        let major = self.major_diameter().meters() / 2.0;
+        let a = p / TAU;
+        let integral = |x: f64| {
+            x * (4.0 * x * x + 3.0 * a * a).sqrt() / 2.0
+                + 3.0 * a * a / 4.0 * (2.0 * x / (3.0_f64.sqrt() * a)).asinh()
+        };
+        TAU * self.length().meters() / p
+            * (p * (r / 4.0 + major / 8.0) + 2.0 / 3.0_f64.sqrt() * (integral(major) - integral(r)))
+            + 2.0 * self.ideal_section_area_m2()
     }
 }

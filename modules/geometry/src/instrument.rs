@@ -115,6 +115,15 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.add_tapered_rib_stock(body, input)
     }
 
+    fn cut_nominal_metric_thread(
+        &self,
+        body: KernelBody,
+        input: &crate::NominalThreadInput,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.cut_nominal_metric_thread(body, input)
+    }
+
     fn cut_countersunk_stock(
         &self,
         body: KernelBody,

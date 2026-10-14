@@ -359,3 +359,15 @@ envelope, square clips, SI radii and ideal section/volume targets. The helper
 creates no body and proves no native sweep; sharing it cannot substitute for
 independent measurements in both kernels. Rounded-root production/tolerance
 claims and physical construction/sampling remain behind further admission.
+
+P16-015 / ADR-068 supplies actual nominal basic-flat-root thread runtime.
+The operation uses a real full-cylinder witness, explicit phase axis and coarse
+whole-pitch profile. Mock stores an immutable analytic screw envelope with exact
+ideal properties/support bounds and bounded integer-partition closed triangles;
+unsupported consumers refuse. Native builds a precision-controlled per-turn
+valley cut in local mm, square clips and converts/places back in SI. Left hand
+is a validated local shape reflection; global placements remain proper rotations.
+Native properties measure the BREP with adaptive epsilon1e-9 and tight bounds;
+transient metadata selects query/quality/placement guards, never analytic mass
+substitution or document ownership. New output IDs have no fabricated ancestry.
+P16-007 still needs authored source, semantic/cache/schema/patch/history/eval.

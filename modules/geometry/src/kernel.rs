@@ -336,6 +336,17 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// ADR-068: physical nominal basic-flat-root thread on actual circular stock.
+    fn cut_nominal_metric_thread(
+        &self,
+        _body: KernelBody,
+        _input: &crate::NominalThreadInput,
+    ) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "physical nominal metric threads unsupported",
+        ))
+    }
+
     /// ADR-066: a connected physical stock/trapezoidal-prism union.
     fn add_tapered_rib_stock(
         &self,
@@ -1037,6 +1048,18 @@ impl GeometryKernel for MockGeometryKernel {
             .ok_or_else(crate::analytic_mock::unsupported)?
             .borrow_mut()
             .cylindrical_draft(body, input)
+    }
+
+    fn cut_nominal_metric_thread(
+        &self,
+        body: KernelBody,
+        input: &crate::NominalThreadInput,
+    ) -> Result<KernelBody> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow_mut()
+            .nominal_thread(body, input)
     }
 
     fn add_tapered_rib_stock(
