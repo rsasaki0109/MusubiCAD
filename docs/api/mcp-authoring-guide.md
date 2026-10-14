@@ -333,6 +333,12 @@ controls. Its successful diagnostic explicitly keeps the candidate unsupported.
 Do not treat a valid BREP, stored radius law or ideal reference mass as curved
 variable-fillet authoring support.
 
+P16-022 / [bounded reference patches](periodic-fillet-reference.md) supplies
+position/normal/derivative enclosures and a positional interpolation error bound.
+It is reference arithmetic, not a mesh, native fit, body or MCP operation. A small
+positional bound does not prove closure, tangent continuity, native fidelity or
+supported circular variable-fillet authoring; P16-008 remains unsupported.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:
