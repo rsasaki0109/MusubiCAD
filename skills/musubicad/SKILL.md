@@ -319,6 +319,11 @@ rounded shared corners. It creates no mesh, native surface or source/MCP operati
 Never infer closure, tangent continuity, native fidelity or feature support from
 that positional bound; curved variable authoring remains unsupported.
 
+P16-023 / ADR-076 measures bounded bicubic reference patches on actual native
+surfaces. These are transient reference data, with no MCP operation, physical
+Mock/native solid or editable NURBS. Shared boundary poles and positional error
+bounds do not establish tangent continuity or admit a curved variable fillet.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

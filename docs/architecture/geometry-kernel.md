@@ -103,6 +103,13 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-023 / [ADR-076](../adr/ADR-076-bounded-bezier-reference-patches.md) constructs
+kernel-neutral bicubic reference poles and a Bernstein convex-hull positional
+error bound. An isolated pinned-SDK diagnostic creates actual native surfaces
+from those metre-valued poles; OCCT types stay inside the native module. Shared
+boundary curves do not imply a tangent-continuous solid. No GeometryKernel body,
+source feature or cached mass is supplied; physical construction remains pending.
+
 P16-022 / [ADR-075](../adr/ADR-075-bounded-periodic-reference-patches.md) supplies
 rational-chart patch bounds as a prerequisite for investigating direct controlled
 reference approximation. Private outward interval jets enclose position, normal,

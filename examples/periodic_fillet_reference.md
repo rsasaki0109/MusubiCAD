@@ -85,3 +85,23 @@ Run `cargo test -p opencad-geometry --test circular_fillet_patch`.
 error inequality; a finite sampling grid is only a test oracle. Actual native
 fitting, closed mesh construction, normal/volume error and source admission
 remain separate work.
+
+
+P16-023 constructs an explicit bounded bicubic reference surface:
+
+```rust
+let patch = reference.bezier_patch(0, 0.25, 0.255, 0.30, 0.305)?;
+assert!(patch.position_error_upper_m < 1e-6);
+// control_points_m[u][v][xyz]: 4x4 poles in metres, local surface domain [0,1]².
+// Use the returned poles unchanged; their certificate does not survive editing.
+```
+
+Run `cargo run -p opencad-geometry --example periodic_fillet_bezier_patches`
+for forty actual fixtures, and
+`cargo test -p opencad-geometry --test circular_fillet_bezier`
+for independent contact derivatives, Bernstein/reference comparisons, refinement,
+scale, domain refusal and shared control-net edges. The
+[native diagnostic](../docs/api/periodic-fillet-reference.md#bounded-native-bezier-reference-patches-p16-023)
+constructs and measures those surfaces in OCCT; it does not create a closed
+fillet body. Position error, native sampled agreement and shared curves alone
+cannot establish tangent continuity, support trimming, mass or feature support.

@@ -106,3 +106,51 @@ can sharpen the bound, with a precision floor from rounded corners.
 
 See the [reference example](../../examples/periodic_fillet_reference.md) and
 [independent tests](../../modules/geometry/tests/circular_fillet_patch.rs).
+
+
+## Bounded native Bezier reference patches (P16-023)
+
+[ADR-076](../adr/ADR-076-bounded-bezier-reference-patches.md) adds
+`bezier_patch(chart, u_min, u_max, v_min, v_max)` with the same domain as
+`patch_bounds`. `CircularFilletBezierPatch.control_points_m` is a 4x4 bicubic
+control net indexed [u][v][xyz], in metres. The resulting mathematical surface
+uses normalized local coordinates in [0,1]², rather than the caller's original
+chart rectangle. This API constructs fixed-size transient reference data.
+
+`position_error_upper_m` bounds position and parameter-corresponding Hausdorff
+error throughout the patch. It adds `reference_to_bilinear_error_upper_m` to
+`control_net_deviation_upper_m`, using outward rounding. The first contribution
+is ADR-075's Taylor/corner bound, also valid for bilinear corner weights; the
+second bounds the difference between actual returned poles and the degree-elevated
+bilinear net using Bernstein's convex hull. Derivative enclosures help construct
+the poles; no exact Hermite interpolation or tangent-continuity claim follows
+from choosing rounded representatives. Editing poles invalidates their bound.
+
+Shared edges with identical along-edge intervals have bit-identical control
+coordinates, including all four quarter-chart seams. This establishes shared
+positional curves, not normal error, regularity, G1 continuity or closure of a
+solid. No mesh, BREP, mass, manufacturing tolerance/default layout, source feature
+or editable NURBS is supplied. Invalid domains/nonfinite arithmetic refuse.
+
+Run the actual pinned Linux SDK surface diagnostic:
+
+```sh
+python tools/run_reference_bezier_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/reference-bezier-diagnostic.json
+```
+
+It invokes the actual Rust example, passes its metre-valued poles into
+`Geom_BezierSurface`, then checks native degrees/poles, points and first
+local derivatives against an independent Bernstein evaluator. Forty constant and
+nonconstant cases cover all charts, side/top contacts, interiors and full-cycle
+shared seams. One thousand sampled native positions are also compared to the
+angular reference. The explicit 1e-14 m evaluation allowance is a numerical test
+allowance, not an all-parameter native floating-point error certificate. The
+all-patch certificate applies to the mathematical surface of the returned poles.
+A uniformly displaced surface is a negative report control; successful diagnostics
+always retain `candidate_admitted: false`. CI saves both native diagnostic reports.
+
+See the [runnable fixture](../../modules/geometry/examples/periodic_fillet_bezier_patches.rs),
+[independent geometry tests](../../modules/geometry/tests/circular_fillet_bezier.rs),
+and [example](../../examples/periodic_fillet_reference.md).
