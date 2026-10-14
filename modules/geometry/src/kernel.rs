@@ -316,6 +316,17 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// ADR-064: actual cone/bore union on uncut rectangular stock, no approximation.
+    fn cut_countersunk_stock(
+        &self,
+        _body: KernelBody,
+        _cut: &crate::CountersinkCut,
+    ) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "bounded countersink cuts unsupported",
+        ))
+    }
+
     /// Face derivation pairs `(post_id, src_id)` from the kernel's last modifying op.
     fn face_derivation_history(&self, body: &KernelBody) -> Vec<(u64, u64)>;
 
@@ -974,6 +985,18 @@ impl GeometryKernel for MockGeometryKernel {
             .ok_or_else(crate::analytic_mock::unsupported)?
             .borrow()
             .stock_geometry(body, entry_pick)
+    }
+
+    fn cut_countersunk_stock(
+        &self,
+        body: KernelBody,
+        cut: &crate::CountersinkCut,
+    ) -> Result<KernelBody> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow_mut()
+            .countersink(body, cut)
     }
 
     fn face_derivation_history(&self, body: &KernelBody) -> Vec<(u64, u64)> {

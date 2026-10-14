@@ -270,7 +270,7 @@ bridge is necessary because cadrum does not expose exact surface/curve types or
 complete cuboid topology admission. It exchanges BREP bytes and finite SI face
 frames only. Native face enumeration follows the existing TopExp_Explorer order,
 verified against actual tessellation metadata. Source/seat/schema and document
-ownership gates are still P16-003 work. See the [runtime API](../api/analytic-mock.md)
+ownership gates are implemented by P16-003 (PR #106), described below. See the [runtime API](../api/analytic-mock.md)
 for quality, budgets, history and unsupported query boundaries.
 
 
@@ -292,3 +292,15 @@ not classified as the source stock's entry. Other feature discovery defaults
 remain unchanged. Geometry kernels contain no Design Graph ownership; concrete
 OCCT data stays private. CLI/Agent gates cannot disable verification for these
 source tags; default Mock factories and document version policy stay unchanged.
+
+## Bounded countersink geometry (P16-011)
+
+ADR-064 adds a transient SI countersink cut operation. The kernel validates an
+actual uncut cuboid and contained entry disk. Native privately constructs a
+cylinder plus cadrum conical frustum and derives the final result from original
+stock faces. Analytic Mock records the bore and linear-radius frustum, computes
+their exact union envelope/volume/first moments/area and meshes the real cone
+with paired endpoint rings. Existing cylindrical chains retain their admission;
+general cuts on tapered stock refuse. No source graph/schema/standard sizing
+moves into the kernel. P16-004 separately implements the closed angle-bearing
+seat source, semantic ownership, DesignPatch/transaction and history gates.

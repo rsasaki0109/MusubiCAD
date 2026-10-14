@@ -2,6 +2,66 @@
 use crate::{FacePick, POSITION_TOLERANCE_M, ROTATION_TOLERANCE};
 use opencad_core::{OpenCadError, Result};
 
+/// Transient physical cut input; dimensions are metres, entry normal is outward.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CountersinkCut {
+    pub entry: FacePick,
+    pub bore_radius_m: f64,
+    pub seat_radius_m: f64,
+    pub bore_depth_m: f64,
+    pub seat_depth_m: f64,
+}
+impl CountersinkCut {
+    /// Admit only a bounded, strictly contained cone/bore union on actual stock.
+    pub fn validate(&self, stock: &RectangularStockGeometry) -> Result<()> {
+        let invalid = || OpenCadError::validation("invalid bounded countersink cut");
+        if !stock.matches_pick(self.entry)?
+            || [
+                self.bore_radius_m,
+                self.seat_radius_m,
+                self.bore_depth_m,
+                self.seat_depth_m,
+            ]
+            .iter()
+            .any(|v| !v.is_finite() || *v <= POSITION_TOLERANCE_M || *v > 1000.)
+            || self.seat_radius_m - self.bore_radius_m <= POSITION_TOLERANCE_M
+            || self.bore_depth_m - self.seat_depth_m <= POSITION_TOLERANCE_M
+            || self.bore_depth_m
+                > stock.inward_thickness_m + 64. * f64::EPSILON * stock.inward_thickness_m.max(1.)
+        {
+            return Err(invalid());
+        }
+        let p: [f64; 3] = std::array::from_fn(|i| self.entry.point_m[i] - stock.origin_m[i]);
+        let plane_offset: f64 = p
+            .into_iter()
+            .zip(stock.outward_normal)
+            .map(|(a, b)| a * b)
+            .sum();
+        let coordinate_scale = self
+            .entry
+            .point_m
+            .into_iter()
+            .chain(stock.origin_m)
+            .map(f64::abs)
+            .fold(1., f64::max);
+        if plane_offset.abs() > 64. * f64::EPSILON * coordinate_scale {
+            return Err(invalid());
+        }
+        for (axis, span) in [stock.u_axis, stock.v_axis]
+            .into_iter()
+            .zip(stock.face_spans_m)
+        {
+            let coordinate: f64 = p.into_iter().zip(axis).map(|(a, b)| a * b).sum();
+            if coordinate - self.seat_radius_m <= POSITION_TOLERANCE_M
+                || span - coordinate - self.seat_radius_m <= POSITION_TOLERANCE_M
+            {
+                return Err(invalid());
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RectangularStockGeometry {
     pub entry_face_id: u64,

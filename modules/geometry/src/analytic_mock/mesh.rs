@@ -7,11 +7,16 @@ use std::collections::BTreeSet;
 pub(super) enum FaceKey {
     Outer(usize, bool),
     Wall(u64, u64, u64),
+    Cone(u64, u64, u64, u64),
     Cap(u64, u64, u64),
     Cylinder(usize),
 }
-fn wall(a: f64, b: f64, r: f64) -> FaceKey {
-    FaceKey::Wall(a.to_bits(), b.to_bits(), r.to_bits())
+fn wall(a: f64, b: f64, r: f64, end_radius: f64) -> FaceKey {
+    if (r - end_radius).abs() <= roundoff(r.max(end_radius)) {
+        FaceKey::Wall(a.to_bits(), b.to_bits(), r.to_bits())
+    } else {
+        FaceKey::Cone(a.to_bits(), b.to_bits(), r.to_bits(), end_radius.to_bits())
+    }
 }
 fn cap(z: f64, a: f64, b: f64) -> FaceKey {
     FaceKey::Cap(z.to_bits(), a.min(b).to_bits(), a.max(b).to_bits())
@@ -36,14 +41,14 @@ pub(super) fn keys(body: &Body) -> Result<Vec<FaceKey>> {
                 .flat_map(|i| [FaceKey::Outer(i, false), FaceKey::Outer(i, true)])
                 .collect();
             let rows = intervals(cuts, dimensions[2])?;
-            for &[a, b, r] in &rows {
+            for &[a, b, r, end_radius] in &rows {
                 if r > 0. {
-                    result.push(wall(a, b, r));
+                    result.push(wall(a, b, r, end_radius));
                 }
             }
             for pair in rows.windows(2) {
-                if (pair[0][2] - pair[1][2]).abs() > roundoff(dimensions[2]) {
-                    result.push(cap(pair[0][1], pair[0][2], pair[1][2]));
+                if (pair[0][3] - pair[1][2]).abs() > roundoff(dimensions[2]) {
+                    result.push(cap(pair[0][1], pair[0][3], pair[1][2]));
                 }
             }
             Ok(result)
@@ -129,7 +134,10 @@ impl AnalyticMock {
         let body_record = self.body(body)?;
         let face_ids = &self.faces[&body.0];
         let radius = match body_record {
-            Body::Stock { cuts, .. } => cuts.iter().map(|c| c.radius).fold(0., f64::max),
+            Body::Stock { cuts, .. } => cuts
+                .iter()
+                .map(|c| c.radius.max(c.end_radius))
+                .fold(0., f64::max),
             Body::Cylinder { radius, .. } => *radius,
         };
         let bound = if radius > 0. {
@@ -201,12 +209,12 @@ impl AnalyticMock {
                     let cap_triangles = |r: f64| if r > 0. { 2 } else { 1 };
                     let triangles_per_ray = 2
                         + cap_triangles(rings[0][2])
-                        + cap_triangles(rings[rings.len() - 1][2])
+                        + cap_triangles(rings[rings.len() - 1][3])
                         + 2 * rings.iter().filter(|r| r[2] > 0.).count()
                         + rings
                             .windows(2)
-                            .filter(|p| (p[0][2] - p[1][2]).abs() > roundoff(h))
-                            .map(|p| cap_triangles(p[0][2].min(p[1][2])))
+                            .filter(|p| (p[0][3] - p[1][2]).abs() > roundoff(h))
+                            .map(|p| cap_triangles(p[0][3].min(p[1][2])))
                             .sum::<usize>();
                     if angles.len() * triangles_per_ray > 100_000 / 3 {
                         return Err(invalid("mesh vertex budget exceeded"));
@@ -280,7 +288,7 @@ impl AnalyticMock {
                     }
                     for (z, r, high) in [
                         (0., rings[0][2], false),
-                        (h, rings[rings.len() - 1][2], true),
+                        (h, rings[rings.len() - 1][3], true),
                     ] {
                         let inner = ring(&angles, center, r);
                         builder.annulus(
@@ -292,9 +300,10 @@ impl AnalyticMock {
                             face_ids[&FaceKey::Outer(2, high)],
                         )?;
                     }
-                    for &[a, b, r] in &rings {
+                    for &[a, b, r, end_radius] in &rings {
                         if r > 0. {
                             let points = ring(&angles, center, r);
+                            let end_points = ring(&angles, center, end_radius);
                             for i in 0..points.len() {
                                 let j = (i + 1) % points.len();
                                 let radial = add(
@@ -305,17 +314,20 @@ impl AnalyticMock {
                                     [
                                         at(points[i], a),
                                         at(points[j], a),
-                                        at(points[j], b),
-                                        at(points[i], b),
+                                        at(end_points[j], b),
+                                        at(end_points[i], b),
                                     ],
-                                    scale(radial, -1.),
-                                    face_ids[&wall(a, b, r)],
+                                    add(
+                                        scale(radial, -1.),
+                                        scale(frame.axes[2], (end_radius - r) / (b - a)),
+                                    ),
+                                    face_ids[&wall(a, b, r, end_radius)],
                                 )?;
                             }
                         }
                     }
                     for pair in rings.windows(2) {
-                        let a = pair[0][2];
+                        let a = pair[0][3];
                         let b = pair[1][2];
                         if (a - b).abs() > roundoff(h) {
                             builder.annulus(

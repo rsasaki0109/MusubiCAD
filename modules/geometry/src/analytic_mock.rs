@@ -244,6 +244,18 @@ struct Cut {
     start: f64,
     end: f64,
     radius: f64,
+    end_radius: f64,
+}
+impl Cut {
+    fn radius_at(&self, z: f64) -> f64 {
+        if (z - self.start).abs() <= roundoff(self.end) {
+            return self.radius;
+        }
+        if (z - self.end).abs() <= roundoff(self.end) {
+            return self.end_radius;
+        }
+        self.radius + (self.end_radius - self.radius) * ((z - self.start) / (self.end - self.start))
+    }
 }
 #[derive(Clone, Debug)]
 enum Body {
@@ -260,7 +272,7 @@ enum Body {
     },
 }
 // Exact axial decomposition, not geometric sampling.
-fn intervals(cuts: &[Cut], height: f64) -> Result<Vec<[f64; 3]>> {
+fn intervals(cuts: &[Cut], height: f64) -> Result<Vec<[f64; 4]>> {
     let epsilon = roundoff(height);
     let mut endpoints = vec![0., height];
     endpoints.extend(cuts.iter().flat_map(|cut| [cut.start, cut.end]));
@@ -282,12 +294,16 @@ fn intervals(cuts: &[Cut], height: f64) -> Result<Vec<[f64; 3]>> {
         .windows(2)
         .map(|pair| {
             let middle = (pair[0] + pair[1]) / 2.;
-            let radius = cuts
+            // Cylindrical chains have constant envelopes. ADR-064 admits only
+            // one taper with its matching bore, whose join is an exact endpoint.
+            let active = cuts
                 .iter()
                 .filter(|cut| middle >= cut.start - epsilon && middle <= cut.end + epsilon)
-                .map(|cut| cut.radius)
-                .fold(0., f64::max);
-            [pair[0], pair[1], radius]
+                .max_by(|a, b| a.radius_at(middle).total_cmp(&b.radius_at(middle)));
+            let (r0, r1) = active
+                .map(|cut| (cut.radius_at(pair[0]), cut.radius_at(pair[1])))
+                .unwrap_or((0., 0.));
+            [pair[0], pair[1], r0, r1]
         })
         .collect())
 }
@@ -311,6 +327,12 @@ impl Body {
                 "subtraction requires rectangular stock and a cylinder",
             ));
         };
+        if cuts
+            .iter()
+            .any(|c| (c.radius - c.end_radius).abs() > roundoff(c.radius.max(c.end_radius)))
+        {
+            return Err(invalid("generic cuts on tapered stock are unsupported"));
+        }
         if cuts.len() >= CUT_BUDGET {
             return Err(invalid("64-cut budget exceeded"));
         }
@@ -366,6 +388,7 @@ impl Body {
             start: ends[0],
             end: ends[1],
             radius: *radius,
+            end_radius: *radius,
         });
         intervals(&cuts, dimensions[2])?;
         Ok(Self::Stock {
@@ -404,25 +427,27 @@ impl Body {
                 let mut area = 2. * (x * y + x * z + y * z);
                 let mut previous_radius_squared = 0.;
                 let epsilon = roundoff(*z);
-                for [start, end, radius] in intervals(cuts, *z)? {
-                    let squared = radius * radius;
-                    let removed = PI * squared * (end - start);
+                for [start, end, r0, r1] in intervals(cuts, *z)? {
+                    let length = end - start;
+                    let squared = r0 * r0;
+                    let removed = PI * length * (r0 * r0 + r0 * r1 + r1 * r1) / 3.;
                     volume -= removed;
                     if let Some(cut) = cuts.first() {
                         first[0] -= removed * cut.center[0];
                         first[1] -= removed * cut.center[1];
                     }
-                    first[2] -= removed * (start + end) / 2.;
-                    area += 2. * PI * radius * (end - start);
+                    first[2] -= removed * start
+                        + PI * length * length * (r0 * r0 + 2. * r0 * r1 + 3. * r1 * r1) / 12.;
+                    area += PI * (r0 + r1) * length.hypot(r1 - r0);
                     if start <= epsilon {
                         area -= PI * squared;
                     } else {
                         area += PI * (previous_radius_squared - squared).abs();
                     }
                     if (*z - end).abs() <= epsilon {
-                        area -= PI * squared;
+                        area -= PI * r1 * r1;
                     }
-                    previous_radius_squared = squared;
+                    previous_radius_squared = r1 * r1;
                 }
                 if !volume.is_finite() || volume <= 0. {
                     return Err(invalid("invalid remaining volume"));
@@ -645,6 +670,76 @@ impl AnalyticMock {
         let output = self.body(&lhs)?.subtract(self.body(&rhs)?)?;
         self.store(output, Some(lhs), true)
     }
+    pub(crate) fn countersink(
+        &mut self,
+        body: KernelBody,
+        input: &crate::CountersinkCut,
+    ) -> Result<KernelBody> {
+        let witness = self.stock_geometry(&body, input.entry)?;
+        input.validate(&witness)?;
+        let Body::Stock {
+            frame, dimensions, ..
+        } = self.body(&body)?
+        else {
+            return Err(unsupported());
+        };
+        let frame = *frame;
+        let dimensions = *dimensions;
+        let local = frame.local(input.entry.point_m);
+        let sign = -dot(input.entry.normal, frame.axes[2]);
+        // This analytic representation admits either extrusion end only.
+        if (sign.abs() - 1.).abs() > ROTATION_TOLERANCE
+            || dot(input.entry.normal, frame.axes[0]).abs() > ROTATION_TOLERANCE
+            || dot(input.entry.normal, frame.axes[1]).abs() > ROTATION_TOLERANCE
+        {
+            return Err(invalid("analytic countersink requires stock extrusion end"));
+        }
+        let endpoint = |depth: f64| {
+            let z = local[2] + sign * depth;
+            if z.abs() <= roundoff(dimensions[2]) {
+                0.
+            } else if (z - dimensions[2]).abs() <= roundoff(dimensions[2]) {
+                dimensions[2]
+            } else {
+                z
+            }
+        };
+        let bore_end = endpoint(input.bore_depth_m);
+        let seat_end = endpoint(input.seat_depth_m);
+        let center = [local[0], local[1]];
+        let bore = Cut {
+            center,
+            start: local[2].min(bore_end),
+            end: local[2].max(bore_end),
+            radius: input.bore_radius_m,
+            end_radius: input.bore_radius_m,
+        };
+        let taper = Cut {
+            center,
+            start: local[2].min(seat_end),
+            end: local[2].max(seat_end),
+            radius: if sign > 0. {
+                input.seat_radius_m
+            } else {
+                input.bore_radius_m
+            },
+            end_radius: if sign > 0. {
+                input.bore_radius_m
+            } else {
+                input.seat_radius_m
+            },
+        };
+        self.store(
+            Body::Stock {
+                frame,
+                dimensions,
+                cuts: vec![bore, taper],
+            },
+            Some(body),
+            true,
+        )
+    }
+
     pub(crate) fn transformed(
         &mut self,
         body: KernelBody,

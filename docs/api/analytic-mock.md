@@ -92,3 +92,28 @@ synthetic ID result is counted as physical evidence.
 Independent mesh/witness evidence: `cargo test -p opencad-geometry --test physical_mesh`
 and `cargo test -p opencad-kernel-occt --test physical_mesh`. Native keeps its
 existing tessellation contract; no Mock sampling budget is imposed on arbitrary OCCT shapes.
+
+## Bounded countersink cut (P16-011, ADR-064)
+
+`GeometryKernel::cut_countersunk_stock(body, &CountersinkCut)` cuts the actual
+cylinder/frustum union on original rectangular stock. The transient input has
+`entry: FacePick` (outward normal), `bore_radius_m`, `seat_radius_m`,
+`bore_depth_m`, `seat_depth_m`; all dimensions are metres. It does not carry
+Design Graph ownership, an angle expression or persisted source. An actual
+unique cuboid witness is mandatory. Entry plane offset allows arithmetic
+roundoff only; radii/depths and lateral material use strict 1 nm margins.
+
+Explicit analytic Mock admits either tracked extrusion end; Native also admits
+other physical cuboid faces. The future source feature uses only the common
+extrusion-end admission. Default Mock and unknown stock refuse. Already-cut,
+compound and curved targets refuse. New generic cylindrical cuts on tapered
+Mock stock refuse; arbitrary variable-radius intersections are not admitted.
+
+Mass integrates the piecewise linear radial envelope exactly: a frustum and
+its bore overlap once. Area includes conical lateral area and actual openings;
+COM uses exact first moments. Meshes retain ADR-063 quality/budgets/closed
+winding and body-owned face IDs, with distinct conical walls and no fictitious
+shoulder at the continuous bore join. Rigid transforms preserve physical data.
+Run `analytic_countersink` and the independent `countersink` integration tests
+in both geometry and kernel-occt crates. No .ocad or MCP countersink is exposed
+by this runtime prerequisite; P16-004 supplies that contract.

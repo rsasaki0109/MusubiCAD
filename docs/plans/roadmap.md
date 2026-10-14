@@ -877,7 +877,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 |---|---|---|---|
 | MCAD-P16-001 | Register the 60% capability plan and seated-hole admission | Fixed rubric preserved, real baseline/remaining gaps, ordered additional work, ADR-062 with explicit Mock/native admission and compatibility gates; planning only | Complete: PR #102 |
 | MCAD-P16-002 | Track bounded analytic stock and concentric cuts in Mock | Real rectangle/circle extrusion records and admitted concentric cuts; independently calculated volume/first moments/bounds and native parity; unknown/mixed/unsupported operations refuse, legacy synthetic paths remain explicit; no feature credit | Complete: PR #103 |
-| MCAD-P16-003 | Add explicit counterbored standard holes | P16-009/010 prerequisites; parametric bore/seat dimensions, contained bounded physical removal without overlap double-counting, source/face ownership, distinct serialized feature with old-reader refusal, both kernels and complete deliverables | Implemented; complete upon P16-003 PR merge |
+| MCAD-P16-003 | Add explicit counterbored standard holes | P16-009/010 prerequisites; parametric bore/seat dimensions, contained bounded physical removal without overlap double-counting, source/face ownership, distinct serialized feature with old-reader refusal, both kernels and complete deliverables | Complete: PR #106 |
 | MCAD-P16-004 | Add explicit countersunk standard holes | SI seat diameter/included angle, derived frustum depth and volume/contact dimensions, accepted analytic/native admission, distinct closed seat form and protected failures/history | Planned |
 | MCAD-P16-005 | Extend draft to admitted curved faces | Accepted curved-face/neutral-plane contract; actual cylinder-to-frustum analytic cases in both kernels; no planar-only evidence used to claim general curved support | Planned |
 | MCAD-P16-006 | Add tapered rib profiles | Accepted thickness/height/draft/end contract and cross-section-integral tests in both kernels; explicit refusal of unsupported curved intersections | Planned |
@@ -885,6 +885,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-008 | Expand admitted variable fillet contours | Accepted radius-law/contour and semantic ownership, genuinely new supported cases with independent volume/contact tests in both kernels; no general curved-edge claim from another straight-edge case | Planned |
 | MCAD-P16-009 | Admit counterbore source and physical mesh prerequisites | ADR-063 specifies strict seated-hole source, owned rectangular-stock entry witness, bounded closed-mesh sampling/identity/error rules, schema/patch/old-reader refusal and independently graded acceptance; design only, no score | Complete (PR #104) |
 | MCAD-P16-010 | Supply physical analytic meshes and stock-face witnesses | After P16-009, actual closed rectangle/cylinder/concentric-cut meshes with bounded quality/error/IDs and a unique body-owned rectangular-stock query in Mock/OCCT; independent mesh and face/refusal evidence, default Mock isolation; no source feature or score | Complete: PR #105 |
+| MCAD-P16-011 | Supply bounded physical countersink cuts | P16-004 prerequisite; ADR-064, real conical-frustum/bore union removal on original rectangular stock in both kernels, exact volume/area/first moments and closed face-bearing bounded meshes, independent parity/refusal tests; runtime geometry only, no feature score | Implemented; complete upon P16-011 PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -897,6 +898,8 @@ Each feature's exact admission ADR is accepted before its implementation.
 For counterbores the order is P16-009 (design) → P16-010 (physical mesh/face
 prerequisite) → P16-003 (source/feature/patch/schema/eval). The new prerequisite
 IDs do not reorder later manufacturing features or award infrastructure credit.
+For countersinks, P16-011 supplies the missing variable-radius physical cut
+before P16-004 adds the strict angle-bearing source, patches, schemas and eval.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;

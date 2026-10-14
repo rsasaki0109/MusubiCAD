@@ -30,9 +30,10 @@ Analytic mode also supports physical meshes and face membership/history. It
 refuses through-all, oblique/laterally intersecting/out-of-stock cuts,
 nonconcentric chains, unions/intersections, edge/circular-edge discovery, STEP,
 compounds, inertia, other shape edits and unrepresentable/out-of-budget meshes.
-The cuboid witness refuses cut stock and unsupported picks. This remains kernel
-infrastructure: MCAD-P16-003 needs its source/schema/semantic and DesignPatch gate
-before document counterbores; do not substitute a plain hole or invent seat fields.
+The cuboid witness refuses cut stock and unsupported picks. MCAD-P16-003
+implements document counterbores with source/schema/semantic and DesignPatch
+gates (PR #106); see `examples/counterbored_plate.md`. Countersink authoring
+remains P16-004; do not substitute a plain hole or invent seat fields.
 
 Independent evidence:
 
@@ -47,3 +48,21 @@ Tests integrate the exported triangles independently, check closed opposite-edge
 pairing, winding, volume, centre, true ring contact/radii, actual gap/deflection,
 face coverage, owned picks and failure preservation. Native and Mock are checked
 against physical expectations; matching each other's output is not the oracle.
+
+## Physical countersink runtime example (P16-011)
+
+```sh
+cargo run -p opencad-geometry --example analytic_countersink
+cargo test -p opencad-geometry --test countersink
+cargo test -p opencad-kernel-occt --test countersink
+```
+
+This developer example cuts the union of a 6.6 mm bore, 10 mm deep, and a
+12 mm entry diameter frustum, 2.7 mm deep (90 degree included angle), on the
+same 40 × 30 × 10 mm original stock. The frustum meets the bore continuously;
+there is no annular flat shoulder. Volume is
+`12000 - pi*(3.3^2*10 + 2.7*(6^2+6*3.3-2*3.3^2)/3)` mm³.
+Tests use several frustum depths, independent area/first moments, both entry
+ends, blind/through bores and actual closed conical meshes. This runtime API
+is not a document feature or MCP command; authoring countersinks requires
+P16-004's strict source/schema/patch implementation.

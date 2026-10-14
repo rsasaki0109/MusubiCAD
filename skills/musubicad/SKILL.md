@@ -713,3 +713,9 @@ unit/range/source/refusal preserves previous files/history/artifacts. Default
 Mock is unsupported; explicit analytic Mock is SDK evidence, native is the
 CLI/MCP path. Check `counterbore_seat_depth` eval / actual stdio regression;
 source and geometry both matter. This adds no new MCP tool or host validation.
+
+P16-011 adds bounded physical countersink cuts to the runtime kernel (ADR-064),
+not to .ocad/DesignPatch/MCP authoring. Until P16-004 supplies the strict
+angle-bearing seat variant, refuse countersink authoring rather than substituting
+a bore or counterbore. The SDK example is `analytic_countersink`; physical
+integration/refusal tests run in geometry and kernel-occt, with no model calls.

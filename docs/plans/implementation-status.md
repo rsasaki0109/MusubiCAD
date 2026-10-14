@@ -445,3 +445,17 @@ drawing 50, I/O 60, GUI 45, ecosystem 14. Weighted general CAD 50.10 → 50.60
 (about 51%), agent operation 90 → 91 for the actual typed source/verified MCP
 manufacturing workflow. The bounded original-stock scope earns partial credit,
 not general arbitrary-face hole support. Before merge the baseline stays 50.10/90.
+
+MCAD-P16-003 is complete in PR #106 (merge 35a053b): the preceding conditional
+counterbore credit is now earned, weighted general CAD 50.60 and agent operation
+91. MCAD-P16-011 supplies ADR-064's missing runtime countersink geometry before
+P16-004: actual cylinder/frustum union in OCCT, linear-radius analytic Mock
+cuts, exact volume/area/first moments, conical closed face-bearing meshes,
+retained stock face identities and protected admission failures. Independent
+integration tests cover multiple taper depths, blind/through bores, both entry
+ends and rigid placements. Default Mock and generic cuts on tapered Mock stock
+refuse. Runtime API/docs/SDK example are provided; no .ocad source, MCP tool or
+model call is introduced. P16-004 still owns angle-bearing source/patch/schema/
+roundtrip/history/eval deliverables. Infrastructure earns no score: all rubric
+scores remain solid 57, sketch 60, assembly 70, drawing 50, I/O 60, GUI 45,
+ecosystem 14 (weighted 50.60, about 51%; agent operation 91).

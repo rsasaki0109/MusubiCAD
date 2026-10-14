@@ -89,6 +89,15 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.tessellate(body, settings)
     }
 
+    fn cut_countersunk_stock(
+        &self,
+        body: KernelBody,
+        cut: &crate::CountersinkCut,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.cut_countersunk_stock(body, cut)
+    }
+
     fn rectangular_stock_geometry(
         &self,
         body: &KernelBody,

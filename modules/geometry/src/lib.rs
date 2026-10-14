@@ -65,4 +65,4 @@ pub mod cubic_bezier;
 pub use cubic_bezier::{CubicBezierFrame, CubicBezierPrism, SolvedCubicBezier};
 
 pub mod stock;
-pub use stock::RectangularStockGeometry;
+pub use stock::{CountersinkCut, RectangularStockGeometry};
