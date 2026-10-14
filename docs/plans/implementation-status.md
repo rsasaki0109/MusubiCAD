@@ -776,3 +776,23 @@ recipes; finite agreement would not establish full admission. Report-contract
 negative tests and a live CI diagnostic preserve the evidence; no GeometryKernel
 operation, supported source/schema/MCP feature, production sampling or score is
 introduced. P16-008 remains planned; actual52.60 / 95.
+
+P16-021 is complete in PR #121 (merge 04c5251), after all four mandatory local
+checks (1147 passed, 0 failed, 36 ignored, plugin passed), six Python report tests,
+local live diagnostic/workflow policy and all applicable exact-head CI jobs
+succeeded. CI also ran the actual native diagnostic successfully and saved its
+JSON artifact; optional artifact download from this cloud was access-restricted,
+so its body was not independently inspected locally. The PR publisher was
+intentionally skipped. No score: actual52.60 / 95.
+
+MCAD-P16-022 / ADR-075 supplies bounded rational-chart reference patches before
+investigating direct controlled approximation. Private second-order interval jets
+enclose ideal positions/normals/chart derivatives and Hessian norms; an all-patch
+Taylor/barycentric bound plus rounded-corner uncertainty encloses positional
+linear interpolation error. Exact declared seams and shared corners produce
+identical representative vertex bits. Shared interval primitives preserve the
+existing volume algorithm. Independent constant-limit derivatives, angular and
+numerical derivative oracles, interpolation, refinement/scales and boundary
+refusals check the implementation. No mesh, actual Mock/native fit or body,
+source/schema/MCP operation or editable NURBS is supplied. Position error alone
+cannot admit geometry; P16-008 remains planned, actual52.60 / 95.

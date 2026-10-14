@@ -103,6 +103,14 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-022 / [ADR-075](../adr/ADR-075-bounded-periodic-reference-patches.md) supplies
+rational-chart patch bounds as a prerequisite for investigating direct controlled
+reference approximation. Private outward interval jets enclose position, normal,
+first derivatives and second-derivative norms. A Taylor/barycentric inequality
+bounds positional triangle-interpolation error including rounded shared corners.
+The shared numerical helper is private, preserving ADR-073 volume semantics.
+This does not admit a mesh, tangent native surface, solid, source or editable NURBS.
+
 P16-021 / [ADR-074](../adr/ADR-074-native-periodic-fillet-counterexamples.md)
 adds an isolated diagnostic executable under `modules/kernel-occt/diagnostics`.
 Its concrete OCCT types stay inside the native module; only SI measurements leave

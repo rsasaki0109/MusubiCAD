@@ -65,3 +65,23 @@ It compiles an isolated actual OCCT fixture, invokes the
 and records contact/interior/volume measurements plus a wrong-phase control.
 Passing the diagnostic keeps curved authoring unsupported; it does not create an
 `.ocad` feature or replace native mass with the ideal interval.
+
+
+P16-022 supplies a positional error bound for a reference rectangle:
+
+```rust
+// Dimensionless rational chart coordinates; this covers a small ideal patch.
+let patch = reference.patch_bounds(0, 0.25, 0.255, 0.30, 0.305)?;
+assert!(patch.linear_interpolation_error_upper_m < 1e-6);
+// The two triangles use corner indices (0,1,2) and (0,2,3).
+// The bound includes corner rounding, and does not admit a mesh or native solid.
+```
+
+The [patch tests](../modules/geometry/tests/circular_fillet_patch.rs) compare
+analytic constant-limit derivatives, independent angular derivatives/numerical
+Hessians, barycentric interpolation, refinement/scales and all shared seams.
+Run `cargo test -p opencad-geometry --test circular_fillet_patch`.
+[ADR-075](../docs/adr/ADR-075-bounded-periodic-reference-patches.md) proves the
+error inequality; a finite sampling grid is only a test oracle. Actual native
+fitting, closed mesh construction, normal/volume error and source admission
+remain separate work.

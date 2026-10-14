@@ -314,6 +314,11 @@ control and a rotated equal-volume wrong-phase body. Diagnostic success means
 rejection evidence, not feature admission. A valid BREP or stored radius law
 cannot enable circular variable-fillet authoring.
 
+P16-022 / ADR-075 adds ideal patch and positional interpolation bounds with
+rounded shared corners. It creates no mesh, native surface or source/MCP operation.
+Never infer closure, tangent continuity, native fidelity or feature support from
+that positional bound; curved variable authoring remains unsupported.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

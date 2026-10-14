@@ -68,3 +68,41 @@ P16-021 uses this actual Rust API in the
 [native fidelity diagnostic](native-periodic-fillet-diagnostic.md). Native mass
 estimates and contact failures remain separate from the ideal volume enclosure;
 passing that diagnostic confirms counterexamples, not supported geometry.
+
+## Bounded reference patches (P16-022)
+
+[ADR-075](../adr/ADR-075-bounded-periodic-reference-patches.md) adds
+`patch_bounds(chart, u_min, u_max, v_min, v_max)`. Chart is 0..3; the finite,
+nonempty coordinate intervals must lie in [0,1]. These coordinates are explicitly
+dimensionless, with theta=chart*pi/2+2*atan(u) and alpha=2*atan(v). Rational circle
+coordinates evaluate the reference without trigonometric libm calls.
+
+`CircularFilletPatchBounds` returns ideal position bounds in metres, dimensionless
+ideal normal component bounds, `du_*_m`/`dv_*_m` chart-derivative component bounds,
+and upper Euclidean norms of F_uu,F_uv,F_vv in metres. These derivatives are with
+respect to chart coordinates, not radians. Wide boxes can be conservative or
+refuse if arithmetic cannot establish the required domains. The same IEEE-754
+rounding/sqrt assumptions as ADR-073 apply. Shared interval primitives remain
+private; a second-order jet encloses chain rules, not numerical differences.
+
+Four `corner_points_m` are ordered (u_min,v_min), (u_max,v_min), (u_max,v_max),
+(u_min,v_max). `corner_rounding_error_upper_m` bounds their displacement from the
+exact ideal corners. Declared u=1 seams canonicalize to the next chart's u=0,
+including chart3 to chart0, for bit-identical shared corner positions. Nearby
+inputs do not snap. The patch derivatives remain in the original chart, whose
+endpoint parameter scale differs from that of its neighbour. Ideal position
+boxes describe the reference; use the separate rounding bound when reasoning
+about representative vertices.
+
+For triangle indices (0,1,2),(0,2,3), the returned
+`linear_interpolation_error_upper_m` encloses parameter-corresponding positional
+deviation from the ideal patch, including corner rounding. Its exact-corner term
+is `(Muu*hu²+2*Muv*hu*hv+Mvv*hv²)/8`, using whole-patch derivative norm bounds.
+This establishes a positional Hausdorff bound for those two triangles; it does
+not establish normal error, closure/embedding, mass, native spline fitting or
+feature admission. No mesh is returned, and no grid/quality/budget default is
+chosen. Invalid rectangles or nonfinite enclosure arithmetic refuse. Subdivision
+can sharpen the bound, with a precision floor from rounded corners.
+
+See the [reference example](../../examples/periodic_fillet_reference.md) and
+[independent tests](../../modules/geometry/tests/circular_fillet_patch.rs).
