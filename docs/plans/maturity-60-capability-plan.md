@@ -109,3 +109,17 @@ until real additional host evidence warrants an increment. Cursor and authentica
 Gemini sessions remain unavailable/unverified; do not simulate success or weaken
 protected desktop signing/publication policies. No maturity increment for plans,
 packaging alone or unavailable hosts.
+
+
+## P16-003 merge-conditioned evidence ledger
+
+After the P16-003 implementation main merge: solid 55 → 57; fixed weights and
+all other scores stay unchanged. Weighted general CAD 50.10 → 50.60 (about 51%);
+agent operation 90 → 91. Credit is for the distinct parametric counterbore source,
+original-stock/end-face ownership, both-kernel physical measurements and closed
+output faces, strict schema/reader admission, source/history/refusal isolation,
+example/guide/skill and actual source-aware MCP workflow. The constrained stock
+scope gets partial credit; no general arbitrary-face hole, host or release claim.
+P16-001/002/009/010 infrastructure receives no feature credit. Before the feature
+merge the actual baseline remains 50.10/90; the 60.10 working allocation is still
+an estimate that must be justified by later merged capabilities.

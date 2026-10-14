@@ -1,12 +1,13 @@
 # Seated standard-hole admission sketch
 
 MCAD-P16-009 / [ADR-063](../adr/ADR-063-counterbore-source-and-physical-mesh-admission.md)
-is a design gate. **This source tag is not implemented or accepted by current
-readers.** P16-010 supplies physical meshes/stock-face witnesses first; P16-003
-then implements the document feature and its schema, patches, examples and eval.
-Do not paste this design sketch into a current document as a working feature.
+defines the source and physical gate. MCAD-P16-003 implements the initial
+`seated_standard_hole` / `counterbore` form on the P16-010 physical mesh/stock
+prerequisite. Source readers support this tag after the implementation merge;
+released v0.3.1 predates it. This is bounded original-stock machining, not a
+claim of general face-based hole support.
 
-Proposed feature definition (all `value_si` lengths are metres):
+Feature definition (all `value_si` lengths are metres):
 
 ```json
 {
@@ -44,10 +45,11 @@ already-cut/imported/patterned/fused/nonrectangular targets and ambiguous/stale/
 foreign/consumed references refuse. No nearest-face or current-body fallback.
 
 Source uses the existing Length wire (`value_si`); expression strings remain
-canonical source and their evaluated values are transient. Proposed patch
+canonical source and their evaluated values are transient. Patch
 authoring uses existing `add_feature` / `replace_feature_definition` operations,
 with `set_feature_expr` support for `bore_depth`, `seat_diameter`, `seat_depth`
-added by P16-003. These new fields are not valid operations on current readers.
+implemented by P16-003. They address `bore_depth_expr`, `seat.diameter_expr`
+and `seat.depth_expr` respectively; legacy hole field names stay unchanged.
 Normal unit-bearing parameter edits dirty/rebuild the feature. Shared backend
 review/apply/Undo/Redo and revision guards protect files, history and artifacts.
 
@@ -57,7 +59,7 @@ Old readers reject the unknown feature. Future seat variants must be rejected
 by counterbore-only readers. Legacy `hole`/`standard_hole` wire meanings stay
 unchanged and migration does not infer new data.
 
-P16-010's proposed transient kernel query takes a body and `FacePick`, returning
+P16-010's transient kernel query takes a body and `FacePick`, returning
 actual selected rectangular-stock face ID, entry origin/unit axes/outward normal,
 spans and inward thickness. It proves a unique complete rectangular solid;
 the feature layer additionally proves source/semantic ownership and the end-face
@@ -71,7 +73,53 @@ analytic mass measurements in both kernels.
 
 Default Mock selection remains unchanged. Complete bounded document tests
 explicitly use analytic Mock throughout their history session; default/no-OCCT
-callers lacking a real stock witness refuse this feature. Native CLI/MCP will
-exercise actual document authoring when P16-003 is implemented. No new MCP tool,
-source kernel setting, host validation or maturity increment is introduced by
-this design task.
+callers lacking a real stock witness refuse this feature. Native CLI/MCP exercises actual document authoring through the P16-003 gateway. No new MCP tool, source kernel setting or host validation is introduced;
+feature maturity credit requires the implementation main merge.
+
+## Implemented execution and evidence
+
+Regeneration contexts must expose read-only source nodes; default unsupported
+contexts refuse. Require a distance/NewBody original right-rectangle extrusion,
+actual cuboid witness and source corner/dimension agreement, an exact circle
+matching the existing ISO table within 1e-9 m in diameter, and unique owned entry
+reference. The bore and full seat disk must remain in stock; side/oblique entry,
+cut/imported/fused targets, missing/foreign/consumed/ambiguous/stale references
+and numeric/quality failures refuse. Source/sketch/kernel normal and plane
+checks retain 1e-9 dimensionless / 1e-9 m tolerance. Optional semantic normal
+annotations may originate in f32 picking and use 1e-6 dimensionless agreement;
+actual geometric admission is not relaxed. Planar fingerprint bounds are checked
+by their midpoint with a projected f32 coordinate-error allowance, including
+rotated bounds whose min/max corners are not on the plane.
+
+Strict length expressions reject angle literals and angle-parameter references;
+parts containing seated holes use the existing strict parameter evaluator.
+Lengths are finite in (1e-9, 1000] m, with seat/bore separation above 1e-9.
+Bore depth cannot exceed stock height except arithmetic roundoff. Two inward
+cuts remove the union once. Runtime volume/first-moment checks use the analytic
+bore-plus-annulus formula (1e-8 relative volume, 1e-9 m centroid tolerance), and
+refuse removal below measurable f64 resolution. Actual output requires nonzero
+face IDs, nondegenerate closed oppositely paired triangles and positive volume.
+
+New output face ownership is supplied by the feature's optional read-only
+`discover_output_faces` query. Match actual triangle planes/outward normals to
+the already admitted source-stock frame, with projected f32 rounding bounds;
+retained outer faces belong to the stock producer, new walls/step/blind caps to
+the seated-hole producer. Ambiguous ownership refuses. No nearest-face or AABB
+shape inference is used. Discovery failures propagate for this feature, and
+warm-cache reuse rechecks source/entry/kernel ownership and physical output.
+This prevents the internal annular floor being confused with the outer entry.
+
+CLI/Agent/MCP review/apply cannot bypass geometry for introduced or existing
+seated holes using `verify=false` or `--no-verify`. Review is read-only; candidate
+failures preserve files/history/artifacts. Opaque history follows the existing
+canonical JSON-value/array-order contract; JSON object member order may change
+through transport, while imported bytes remain exact. No default Mock factory
+is switched; default/no-OCCT callers without a stock witness refuse.
+
+See [the patch-authored example](../../examples/counterbored_plate.md),
+`cargo test -p opencad-feature --test seated_standard_hole`,
+`cargo test -p opencad-file --test seated_standard_hole`, and
+`python tools/test_counterbore_mcp.py --musubicad target/debug/musubicad`.
+`counterbore_seat_depth` has an independent MCP eval checker that checks actual
+fresh native volume and preserved explicit source/standard/seat/sketch/reference
+records. The stdio regression makes zero model calls; no paid-host result is claimed.

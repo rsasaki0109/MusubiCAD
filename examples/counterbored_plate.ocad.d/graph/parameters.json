@@ -1,0 +1,23 @@
+{
+  "parameters": {
+    "param:bore_depth": {
+      "id": "param:bore_depth",
+      "name": "bore_depth",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:seat_diameter": {
+      "id": "param:seat_diameter",
+      "name": "seat_diameter",
+      "expr": "11 mm",
+      "dirty": false
+    },
+    "param:seat_depth": {
+      "id": "param:seat_depth",
+      "name": "seat_depth",
+      "expr": "4 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

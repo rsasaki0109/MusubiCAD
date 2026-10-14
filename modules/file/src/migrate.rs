@@ -1,3 +1,8 @@
+// MCAD-P16-003 / ADR-063: seated_standard_hole is an additive strict feature
+// tag with a closed counterbore seat. Old readers refuse the new tag. No seat,
+// face, standard or depth is inferred for legacy hole/standard_hole records.
+// Existing source version policy needs no numeric version branch; packed/
+// expanded round trips and genuine old-form decoding cover this admission.
 // MCAD-P13-011 / ADR-059: absent instance.articulation remains None. The
 // mandatory articulated_assembly source-kind guard rejects old readers; missing
 // or orphan guards refuse on decoding. No coordinates or child motion inferred.

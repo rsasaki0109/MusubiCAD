@@ -273,3 +273,28 @@ identifies export topology, not approximate source geometry. Exact analytic
 measurements remain independent. SDK examples and both kernel mesh suites cover
 actual integration, ring contact, ownership and refusal. No seated-hole source,
 schema, feature, document eval or maturity credit is introduced in this task.
+
+## P16-003 implementation boundary
+
+P16-003 introduces the explicit strict feature/seat wire, metre lengths and
+strict length expressions, both schemas and additive no-inference migration
+policy. Read-only source-node access defaults unsupported. Cache reuse repeats
+source/reference/physical checks. Exact stock witness plus source corner/span
+agreement establishes source geometry before either cut; actual volume/first
+moments and closed owned output faces are mandatory.
+
+An optional stateless `Feature::discover_output_faces` query supplies physical
+producer metadata via the registry, without source or serialized output changes.
+Retained source planes/outward normals are checked against the admitted stock
+frame using projected f32 rounding bounds; new walls/step/blind caps belong to
+the new feature. Ambiguous ownership and discovery failure refuse. The old
+coarse producer heuristic confused the annular floor with the stock top, so it
+cannot establish this new feature's output ownership. Semantic f32 normal hints
+use 1e-6 annotation agreement; exact sketch/source/kernel normal and plane picks
+stay at 1e-9. Planar hint bounds use their midpoint, including rotated frames.
+
+Removal/centroid checks use independent analytic union integration (1e-8
+relative remaining-volume / 1e-9 m centroid tolerance) and refuse unmeasurable
+f64 removal. CLI/Agent review/apply forces verification; canonical history keeps
+JSON values/array order and imported bytes while object member order may change
+through opaque transport, as the existing history contract specifies.

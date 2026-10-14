@@ -229,6 +229,9 @@ fn feature_output_key(
 }
 
 impl<K: GeometryKernel> RegenContext for RegenSession<'_, K> {
+    fn source_feature_nodes(&self) -> Result<Vec<&FeatureNode>> {
+        Ok(self.nodes.values().collect())
+    }
     fn kernel(&self) -> &dyn GeometryKernel {
         self.kernel
     }
@@ -488,7 +491,27 @@ impl PartModel {
                     cache.backend_tag(),
                 )?;
 
+                let session = RegenSession {
+                    kernel: &counted_kernel,
+                    nodes: &self.nodes,
+                    sketches: &self.sketches,
+                    outputs: &self.outputs,
+                    semantic_refs: refs,
+                    face_history: &report.face_history,
+                    face_discoveries: &face_discoveries,
+                    edge_discoveries: &edge_discoveries,
+                    attachments: &self.attachments,
+                };
+
                 if let Some(cached) = cache.get(&output_key) {
+                    if matches!(node.definition, FeatureDefinition::SeatedStandardHole(_)) {
+                        let body = cached.output.body.as_ref().ok_or_else(|| {
+                            OpenCadError::validation("cached seated hole has no physical body")
+                        })?;
+                        crate::seated_standard_hole::validate_cached_seated_hole(
+                            node, &session, body,
+                        )?;
+                    }
                     if cached.output.body.is_some() {
                         face_discoveries = cached.face_discoveries.clone();
                         edge_discoveries = cached.edge_discoveries.clone();
@@ -502,29 +525,20 @@ impl PartModel {
                     continue;
                 }
 
-                let session = RegenSession {
-                    kernel: &counted_kernel,
-                    nodes: &self.nodes,
-                    sketches: &self.sketches,
-                    outputs: &self.outputs,
-                    semantic_refs: refs,
-                    face_history: &report.face_history,
-                    face_discoveries: &face_discoveries,
-                    edge_discoveries: &edge_discoveries,
-                    attachments: &self.attachments,
-                };
-
                 let output = registry
                     .execute(node, &session)
                     .map_err(|error| error.with_context(format!("feature '{feature_id}'")))?;
+                let owned_faces = registry.discover_output_faces(node, &session, &output)?;
                 let mut face_history_delta = Vec::new();
                 if let Some(ref body) = output.body {
                     face_history_delta = counted_kernel.face_derivation_history(body);
                     report.face_history.extend(face_history_delta.clone());
                     if !refs.is_empty() {
-                        face_discoveries =
-                            discover_face_refs_from_body(&counted_kernel, body, &node_list)
-                                .unwrap_or_default();
+                        face_discoveries = match owned_faces {
+                            Some(faces) => faces,
+                            None => discover_face_refs_from_body(&counted_kernel, body, &node_list)
+                                .unwrap_or_default(),
+                        };
                         edge_discoveries =
                             discover_edge_refs_from_body(&counted_kernel, body, &node_list)
                                 .unwrap_or_default();

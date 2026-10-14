@@ -25,21 +25,26 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
                     | FeatureDefinition::DatumAxis(_)
                     | FeatureDefinition::Draft(_)
                     | FeatureDefinition::Rib(_)
+                    | FeatureDefinition::SeatedStandardHole(_)
             ) {
                 resolve_feature_node(node, &IndexMap::new())?;
             }
         }
         return Ok(());
     }
-    let values = if model.sketches.values().any(|s| {
-        s.entities.iter().any(|e| {
-            matches!(
-                e,
-                opencad_sketch::SketchEntity::Ellipse(_)
-                    | opencad_sketch::SketchEntity::CubicBezier(_)
-            )
-        })
-    }) {
+    let values = if model
+        .nodes
+        .values()
+        .any(|n| matches!(n.definition, FeatureDefinition::SeatedStandardHole(_)))
+        || model.sketches.values().any(|s| {
+            s.entities.iter().any(|e| {
+                matches!(
+                    e,
+                    opencad_sketch::SketchEntity::Ellipse(_)
+                        | opencad_sketch::SketchEntity::CubicBezier(_)
+                )
+            })
+        }) {
         opencad_graph::evaluate_param_graph_strict(parameters)?
     } else {
         evaluate_param_graph(parameters)?
@@ -124,6 +129,30 @@ fn resolve_feature_node(
                     length: Length::from_meters(meters),
                 };
             }
+        }
+        FeatureDefinition::SeatedStandardHole(def) => {
+            if let Some(expr) = &def.bore_depth_expr {
+                def.bore_depth = Length::from_meters(crate::seated_standard_hole::evaluate_length(
+                    expr, values,
+                )?);
+            }
+            let crate::StandardHoleSeat::Counterbore {
+                diameter,
+                depth,
+                diameter_expr,
+                depth_expr,
+            } = &mut def.seat;
+            if let Some(expr) = diameter_expr {
+                *diameter = Length::from_meters(crate::seated_standard_hole::evaluate_length(
+                    expr, values,
+                )?);
+            }
+            if let Some(expr) = depth_expr {
+                *depth = Length::from_meters(crate::seated_standard_hole::evaluate_length(
+                    expr, values,
+                )?);
+            }
+            def.validate_dimensions()?;
         }
         FeatureDefinition::StandardHole(def) => {
             if let Some(expr) = &def.hole.depth_expr {

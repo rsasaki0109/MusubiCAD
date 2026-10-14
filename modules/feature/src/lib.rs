@@ -78,3 +78,8 @@ pub use body_boolean::BodyBooleanFeature;
 
 pub mod projected_sketch;
 pub use projected_sketch::{CurveProjection, ProjectedSketchFeature};
+
+pub mod seated_standard_hole;
+pub use seated_standard_hole::{
+    SeatedStandardHoleFeature, SeatedStandardHoleFeatureExecutor, StandardHoleSeat,
+};

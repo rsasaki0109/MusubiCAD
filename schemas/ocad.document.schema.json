@@ -146,6 +146,21 @@
                 "if": {
                   "properties": {
                     "type": {
+                      "const": "seated_standard_hole"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                "then": {
+                  "$ref": "#/$defs/seated_standard_hole"
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
                       "const": "datum_plane"
                     }
                   },
@@ -212,6 +227,179 @@
     }
   },
   "$defs": {
+    "seated_standard_hole": {
+      "type": "object",
+      "required": [
+        "type",
+        "sketch_feature",
+        "profile_ref",
+        "target_feature",
+        "face_ref",
+        "bore_depth",
+        "standard",
+        "seat"
+      ],
+      "properties": {
+        "type": {
+          "const": "seated_standard_hole"
+        },
+        "sketch_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "profile_ref": {
+          "type": "string"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "face_ref": {
+          "type": "string",
+          "pattern": "^ref:face:",
+          "minLength": 10
+        },
+        "standard": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "size",
+                "fit"
+              ],
+              "properties": {
+                "type": {
+                  "const": "iso273"
+                },
+                "size": {
+                  "enum": [
+                    "M3",
+                    "M4",
+                    "M5",
+                    "M6",
+                    "M8",
+                    "M10",
+                    "M12"
+                  ]
+                },
+                "fit": {
+                  "enum": [
+                    "close",
+                    "normal",
+                    "loose"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "size",
+                "representation"
+              ],
+              "properties": {
+                "type": {
+                  "const": "iso_metric_coarse"
+                },
+                "size": {
+                  "enum": [
+                    "M3",
+                    "M4",
+                    "M5",
+                    "M6",
+                    "M8",
+                    "M10",
+                    "M12"
+                  ]
+                },
+                "representation": {
+                  "const": "tap_drill"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "bore_depth": {
+          "type": "object",
+          "required": [
+            "value_si"
+          ],
+          "properties": {
+            "value_si": {
+              "type": "number",
+              "exclusiveMinimum": 1e-09,
+              "maximum": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "bore_depth_expr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "seat": {
+          "type": "object",
+          "required": [
+            "type",
+            "diameter",
+            "depth"
+          ],
+          "properties": {
+            "type": {
+              "const": "counterbore"
+            },
+            "diameter": {
+              "type": "object",
+              "required": [
+                "value_si"
+              ],
+              "properties": {
+                "value_si": {
+                  "type": "number",
+                  "exclusiveMinimum": 1e-09,
+                  "maximum": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "depth": {
+              "type": "object",
+              "required": [
+                "value_si"
+              ],
+              "properties": {
+                "value_si": {
+                  "type": "number",
+                  "exclusiveMinimum": 1e-09,
+                  "maximum": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "diameter_expr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "depth_expr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "projected_sketch": {
       "type": "object",
       "required": [

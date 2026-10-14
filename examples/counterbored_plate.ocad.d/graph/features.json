@@ -1,0 +1,126 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_base",
+      "feature:extrude_base",
+      "feature:sketch_seat",
+      "feature:seat"
+    ],
+    "features": {
+      "feature:sketch_base": {
+        "id": "feature:sketch_base",
+        "name": "Base Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude_base": {
+        "id": "feature:extrude_base",
+        "name": "Extrude Base",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_seat": {
+        "id": "feature:sketch_seat",
+        "name": "M6 bore sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:seat": {
+        "id": "feature:seat",
+        "name": "M6 counterbore",
+        "feature_type": "seated_standard_hole",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_base",
+        "target": "feature:extrude_base",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_seat",
+        "target": "feature:seat",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:extrude_base",
+        "target": "feature:seat",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:extrude_base",
+      "name": "Extrude Base",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_base",
+        "profile_ref": "sketch:base/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:seat",
+      "name": "M6 counterbore",
+      "definition": {
+        "type": "seated_standard_hole",
+        "sketch_feature": "feature:sketch_seat",
+        "profile_ref": "sketch:seat/profile:outer",
+        "target_feature": "feature:extrude_base",
+        "face_ref": "ref:face:plate_entry",
+        "bore_depth": {
+          "value_si": 0.01
+        },
+        "bore_depth_expr": "bore_depth",
+        "standard": {
+          "type": "iso273",
+          "size": "M6",
+          "fit": "normal"
+        },
+        "seat": {
+          "type": "counterbore",
+          "diameter": {
+            "value_si": 0.011
+          },
+          "depth": {
+            "value_si": 0.004
+          },
+          "diameter_expr": "seat_diameter",
+          "depth_expr": "seat_depth"
+        }
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_base",
+      "name": "Base Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:base"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_seat",
+      "name": "M6 bore sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:seat"
+      },
+      "suppressed": false
+    }
+  ]
+}
