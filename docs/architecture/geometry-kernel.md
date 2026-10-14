@@ -103,6 +103,15 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-017's [ADR-070](../adr/ADR-070-closed-circular-variable-fillet-acceptance.md)
+defines a future closed circular candidate and independent sphere-envelope,
+contact and constant-radius volume reference. It does not enable a curved-edge
+runtime. Existing Mock variable fillets change handles rather than construct
+physical bodies. Native radius coordinates/periodicity, regularity/exposure and
+physical Mock construction/mesh sampling require separate evidence and a further
+ADR before P16-008. A meridional quarter-circle revolution is insufficient when
+the radius derivative is nonzero; authored phase must not follow a BREP seam.
+
 MCAD-P11-005 adds `GeometryKernel::variable_fillet_edge`, a bounded linear-radius
 operation on one semantic straight edge. Mock validates the contract; OCCT uses
 a private cxx bridge sharing cadrum's pinned OCCT 8.0 installation. The bridge

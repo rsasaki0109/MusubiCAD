@@ -303,6 +303,12 @@ Use verified dry-run/apply and review its provenance after changes. See
 `examples/agent/create_variable_fillet_plate_patch.json` and
 [ADR-038](../adr/ADR-038-linear-variable-fillets.md).
 
+P16-017's [ADR-070](../adr/ADR-070-closed-circular-variable-fillet-acceptance.md)
+is a design contract for a future circular periodic law, not a runnable feature
+or accepted patch form. Existing Mock variable fillets change IDs and supply no
+physical curved-contour proof. P16-008 remains planned pending native law/contact
+evidence and physical Mock construction; keep rejecting curved variable requests.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:
