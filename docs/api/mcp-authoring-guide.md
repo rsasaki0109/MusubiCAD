@@ -1098,10 +1098,39 @@ for bounded physical rectangle/circle/concentric-cut evidence. The default Mock
 ordinary IDs remain synthetic; their cube measurements do not prove hole volume
 or placement. See the [analytic Mock API](analytic-mock.md) and runnable example
 in `examples/analytic-mock/`. This adds no MCP command or persisted setting and
-does not switch CLI/MCP Mock mode. Document counterbores/countersinks are still
-P16-003/004 gates; do not invent seat fields or author a plain bore as a seat.
+does not switch CLI/MCP Mock mode. Counterbores use the P16-003 source/ownership gate described below; countersinks
+remain P16-004; do not invent seat fields or author a plain bore as a seat.
 Use the existing verified native DesignPatch path for supported document edits.
 P16-010 admits bounded actual closed meshes and body-owned planar stock witnesses
 in this explicit SDK mode (ADR-063); it does not add source-node or semantic
 ownership to the kernel. Unsupported Mock edge/inertia/Boolean consumers refuse;
 this infrastructure has no document-level MCP eval until the feature is admitted.
+
+
+## Counterbored standard holes (P16-003 / ADR-063)
+
+Use `add_feature` with the distinct `seated_standard_hole` definition and closed
+`seat: {type: "counterbore", diameter: {value_si: ...}, depth: {value_si: ...}}`.
+Required inputs: `sketch_feature`, `profile_ref`, `target_feature`, `face_ref`,
+`bore_depth: {value_si: ...}`, and an existing explicit `standard`. The source
+circle must match its standard bore diameter. Lengths are metres. Do not put a
+seat on legacy `hole`/`standard_hole` tags; old readers must reject the new tag.
+
+Admit only an original right-rectangle distance/NewBody extrusion, its uniquely
+owned end face, and an exact outward circle. Both inward depths are bounded by
+stock; seat diameter exceeds bore diameter and seat depth is strictly smaller
+than bore depth. No side/oblique entry, already-cut/imported/fused target,
+through-all, implicit fastener head size or countersink/thread helix.
+
+`set_feature_expr` fields `bore_depth`, `seat_diameter`, `seat_depth` address the
+corresponding explicit length expression; ordinary `set_parameter` edits work.
+Preserve the stock/circle and entry reference. Dry-run and review first, then
+apply through the backend; geometry verification remains mandatory even with
+`verify=false`. Wrong units/ownership/depth/containment preserve previous source,
+history and artifacts. Returned history is opaque and supports Agent Undo/Redo.
+
+See [the full source/admission contract](seated-hole-admission.md) and
+[the runnable example](../../examples/counterbored_plate.md). The independent
+`counterbore_seat_depth` eval rejects a plain bore or changed source even if mass
+matches. Runtime Mock proof requires explicit analytic mode for the entire
+history session; default Mock remains synthetic/unsupported for this feature.

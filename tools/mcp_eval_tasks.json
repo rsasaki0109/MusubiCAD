@@ -1993,6 +1993,19 @@
           ]
         }
       ]
+    },
+    {
+      "id": "counterbore_seat_depth",
+      "source": "examples/counterbored_plate.ocad.d",
+      "document": "counterbore.ocad.d",
+      "prompt": "Change only the seat_depth parameter in {document} from 4 mm to 6 mm. Preserve the explicit seated_standard_hole / counterbore source, ISO273 M6 normal standard, 6.6 mm bore, 11 mm seat diameter, 10 mm bore depth, original stock/circle sketches, owned entry reference and feature order. Review then apply through DesignPatch and verify fresh regeneration and stepped removal volume. Do not replace the seat with a plain hole.",
+      "expected_volume_mm3": 11292.95315738308,
+      "required_parameters": [
+        "seat_depth",
+        "seat_diameter",
+        "bore_depth"
+      ],
+      "expected_counterbore": "feature:seat"
     }
   ]
 }

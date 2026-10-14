@@ -272,3 +272,23 @@ frames only. Native face enumeration follows the existing TopExp_Explorer order,
 verified against actual tessellation metadata. Source/seat/schema and document
 ownership gates are still P16-003 work. See the [runtime API](../api/analytic-mock.md)
 for quality, budgets, history and unsupported query boundaries.
+
+
+## Seated-hole source and output ownership (P16-003)
+
+ADR-063's feature executor obtains source nodes through a default-refusing
+read-only `RegenContext` method, independently compares the original rectangle
+and distance extent with the kernel's physical stock witness, then performs two
+inward cuts. Exact physical volume/first moments and actual closed output mesh
+are mandatory; cached outputs repeat admission instead of trusting prior refs.
+
+`Feature::discover_output_faces` optionally supplies transient owned discoveries
+through the registry, without changing serialized `FeatureOutput` or model
+source. The seated-hole implementation tests actual triangle planes and outward
+normals against the admitted stock frame with projected f32 coordinate bounds.
+Original outer faces retain their producer; new cylinder/step/blind faces name
+the seat feature. Ambiguity/discovery errors propagate, so an annular floor is
+not classified as the source stock's entry. Other feature discovery defaults
+remain unchanged. Geometry kernels contain no Design Graph ownership; concrete
+OCCT data stays private. CLI/Agent gates cannot disable verification for these
+source tags; default Mock factories and document version policy stay unchanged.

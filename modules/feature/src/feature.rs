@@ -32,6 +32,7 @@ pub enum FeatureDefinition {
     Revolve(RevolveFeature),
     Hole(HoleFeature),
     StandardHole(crate::standard_hole::StandardHoleFeature),
+    SeatedStandardHole(crate::seated_standard_hole::SeatedStandardHoleFeature),
     Fillet(FilletFeature),
     Chamfer(ChamferFeature),
     LinearPattern(LinearPatternFeature),
@@ -75,6 +76,7 @@ impl FeatureDefinition {
             Self::Revolve(_) => "revolve",
             Self::Hole(_) => "hole",
             Self::StandardHole(_) => "standard_hole",
+            Self::SeatedStandardHole(_) => "seated_standard_hole",
             Self::Fillet(_) => "fillet",
             Self::Chamfer(_) => "chamfer",
             Self::LinearPattern(_) => "linear_pattern",
@@ -134,6 +136,13 @@ pub struct FeatureOutput {
 pub trait RegenContext {
     fn kernel(&self) -> &dyn GeometryKernel;
 
+    /// Read-only source definitions; contexts without ownership evidence refuse.
+    fn source_feature_nodes(&self) -> Result<Vec<&FeatureNode>> {
+        Err(opencad_core::OpenCadError::validation(
+            "source-node access unsupported",
+        ))
+    }
+
     fn sketch_for_feature(&self, sketch_feature_id: &str) -> Result<&Sketch>;
 
     fn body_for_feature(&self, feature_id: &str) -> Result<KernelBody>;
@@ -184,4 +193,14 @@ pub trait Feature: Send + Sync {
     fn feature_type(&self) -> &'static str;
 
     fn execute(&self, node: &FeatureNode, ctx: &dyn RegenContext) -> Result<FeatureOutput>;
+
+    /// Optional physical ownership evidence for output faces, never source data.
+    fn discover_output_faces(
+        &self,
+        _node: &FeatureNode,
+        _ctx: &dyn RegenContext,
+        _output: &FeatureOutput,
+    ) -> Result<Option<Vec<opencad_geometry::FaceRefDiscovery>>> {
+        Ok(None)
+    }
 }

@@ -32,6 +32,9 @@ pub enum FeatureExprField {
     DistanceExpr,
     SpacingExpr,
     ThicknessExpr,
+    BoreDepth,
+    SeatDiameter,
+    SeatDepth,
 }
 
 /// Supported semantic ref fields for patch operations.
@@ -70,6 +73,9 @@ impl FeatureExprField {
             Self::DistanceExpr => "distance_expr",
             Self::SpacingExpr => "spacing_expr",
             Self::ThicknessExpr => "thickness_expr",
+            Self::BoreDepth => "bore_depth",
+            Self::SeatDiameter => "seat_diameter",
+            Self::SeatDepth => "seat_depth",
         }
     }
 
@@ -81,8 +87,11 @@ impl FeatureExprField {
             "distance_expr" => Ok(Self::DistanceExpr),
             "spacing_expr" => Ok(Self::SpacingExpr),
             "thickness_expr" => Ok(Self::ThicknessExpr),
+            "bore_depth" => Ok(Self::BoreDepth),
+            "seat_diameter" => Ok(Self::SeatDiameter),
+            "seat_depth" => Ok(Self::SeatDepth),
             _ => Err(OpenCadError::validation(format!(
-                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', or 'thickness_expr'"
+                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', 'thickness_expr', 'bore_depth', 'seat_diameter', or 'seat_depth'"
             ))),
         }
     }
@@ -465,6 +474,18 @@ pub(crate) fn validate_feature_values(
     state: &DesignState,
     scope: &indexmap::IndexMap<String, f64>,
 ) -> Result<()> {
+    let strict_scope = if state
+        .feature_nodes
+        .iter()
+        .any(|n| matches!(n.definition, FeatureDefinition::SeatedStandardHole(_)))
+    {
+        Some(opencad_graph::evaluate_param_graph_strict(
+            &state.parameters,
+        )?)
+    } else {
+        None
+    };
+    let scope = strict_scope.as_ref().unwrap_or(scope);
     let failures: BTreeSet<String> = state
         .feature_nodes
         .iter()
@@ -1376,6 +1397,10 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
             pattern.plane_face_ref = Some(ref_id.to_string());
             Ok(())
         }
+        (FeatureDefinition::SeatedStandardHole(def), FeatureRefField::FaceRef) => {
+            def.face_ref = ref_id.to_string();
+            Ok(())
+        }
         (FeatureDefinition::StandardHole(def), FeatureRefField::FaceRef) => {
             def.hole.face_ref = Some(ref_id.to_string());
             Ok(())
@@ -1395,6 +1420,21 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
 
 fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &str) -> Result<()> {
     match (&mut node.definition, field) {
+        (FeatureDefinition::SeatedStandardHole(def), FeatureExprField::BoreDepth) => {
+            def.bore_depth_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::SeatedStandardHole(def), FeatureExprField::SeatDiameter) => {
+            let opencad_feature::StandardHoleSeat::Counterbore { diameter_expr, .. } =
+                &mut def.seat;
+            *diameter_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::SeatedStandardHole(def), FeatureExprField::SeatDepth) => {
+            let opencad_feature::StandardHoleSeat::Counterbore { depth_expr, .. } = &mut def.seat;
+            *depth_expr = Some(expr.to_string());
+            Ok(())
+        }
         (FeatureDefinition::Extrude(extrude), FeatureExprField::LengthExpr) => {
             extrude.length_expr = Some(expr.to_string());
             Ok(())

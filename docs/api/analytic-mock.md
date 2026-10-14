@@ -73,8 +73,8 @@ its stock witness ID corresponds to actual triangle metadata. Numeric IDs are
 runtime observations, never globally unique source identities.
 
 This is infrastructure, not a document-level seated-hole feature. Schema,
-DesignPatch, source/semantic ownership and feature acceptance remain required
-before MCAD-P16-003/004. Existing CLI/MCP Mock selection is not switched to this
+DesignPatch/source/semantic ownership is implemented separately for counterbores
+in [MCAD-P16-003](seated-hole-admission.md); countersinks remain MCAD-P16-004. Existing CLI/MCP Mock selection is not switched to this
 mode. No document MCP eval is claimed for this SDK query or mesh infrastructure.
 Native authoring remains through verified DesignPatch/transactions.
 

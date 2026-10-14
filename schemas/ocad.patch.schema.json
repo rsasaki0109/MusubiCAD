@@ -24,6 +24,179 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "seated_standard_hole": {
+      "type": "object",
+      "required": [
+        "type",
+        "sketch_feature",
+        "profile_ref",
+        "target_feature",
+        "face_ref",
+        "bore_depth",
+        "standard",
+        "seat"
+      ],
+      "properties": {
+        "type": {
+          "const": "seated_standard_hole"
+        },
+        "sketch_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "profile_ref": {
+          "type": "string"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:"
+        },
+        "face_ref": {
+          "type": "string",
+          "pattern": "^ref:face:",
+          "minLength": 10
+        },
+        "standard": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "size",
+                "fit"
+              ],
+              "properties": {
+                "type": {
+                  "const": "iso273"
+                },
+                "size": {
+                  "enum": [
+                    "M3",
+                    "M4",
+                    "M5",
+                    "M6",
+                    "M8",
+                    "M10",
+                    "M12"
+                  ]
+                },
+                "fit": {
+                  "enum": [
+                    "close",
+                    "normal",
+                    "loose"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "size",
+                "representation"
+              ],
+              "properties": {
+                "type": {
+                  "const": "iso_metric_coarse"
+                },
+                "size": {
+                  "enum": [
+                    "M3",
+                    "M4",
+                    "M5",
+                    "M6",
+                    "M8",
+                    "M10",
+                    "M12"
+                  ]
+                },
+                "representation": {
+                  "const": "tap_drill"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "bore_depth": {
+          "type": "object",
+          "required": [
+            "value_si"
+          ],
+          "properties": {
+            "value_si": {
+              "type": "number",
+              "exclusiveMinimum": 1e-09,
+              "maximum": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "bore_depth_expr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "seat": {
+          "type": "object",
+          "required": [
+            "type",
+            "diameter",
+            "depth"
+          ],
+          "properties": {
+            "type": {
+              "const": "counterbore"
+            },
+            "diameter": {
+              "type": "object",
+              "required": [
+                "value_si"
+              ],
+              "properties": {
+                "value_si": {
+                  "type": "number",
+                  "exclusiveMinimum": 1e-09,
+                  "maximum": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "depth": {
+              "type": "object",
+              "required": [
+                "value_si"
+              ],
+              "properties": {
+                "value_si": {
+                  "type": "number",
+                  "exclusiveMinimum": 1e-09,
+                  "maximum": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "diameter_expr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "depth_expr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "instance_articulation": {"type": "object", "required": ["source_doc", "source_revision", "positions"], "properties": {"source_doc": {"type": "string", "pattern": "^doc:[a-zA-Z0-9_-]+$"}, "source_revision": {"type": "string", "minLength": 1, "maxLength": 256}, "positions": {"type": "array", "maxItems": 64, "items": {"type": "object", "required": ["joint_id", "position"], "properties": {"joint_id": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "position": {"type": "string", "maxLength": 128}}, "additionalProperties": false}}, "context_constraints": {"type": "array", "maxItems": 64, "items": {"type": "object", "required": ["id", "joint_id", "moving", "target", "relation"], "properties": {"id": {"type": "string", "pattern": "^mate:[a-zA-Z0-9_:/-]+$"}, "joint_id": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "moving": {"type": "object", "required": ["instance_path", "source_doc", "connector_id"], "properties": {"instance_path": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"type": "string", "pattern": "^instance:[a-zA-Z0-9_:/-]+$"}}, "source_doc": {"type": "string", "pattern": "^doc:[a-zA-Z0-9_-]+$"}, "connector_id": {"type": "string", "pattern": "^connector:[a-zA-Z0-9_:/-]+$"}}, "additionalProperties": false}, "target": {"type": "object", "required": ["instance_path", "source_doc", "connector_id"], "properties": {"instance_path": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"type": "string", "pattern": "^instance:[a-zA-Z0-9_:/-]+$"}}, "source_doc": {"type": "string", "pattern": "^doc:[a-zA-Z0-9_-]+$"}, "connector_id": {"type": "string", "pattern": "^connector:[a-zA-Z0-9_:/-]+$"}}, "additionalProperties": false}, "relation": {"oneOf": [{"type": "object", "required": ["type", "distance"], "properties": {"type": {"const": "signed_distance"}, "distance": {"type": "string", "maxLength": 128}}, "additionalProperties": false}, {"type": "object", "required": ["type", "angle", "turns"], "properties": {"type": {"const": "signed_angle"}, "angle": {"type": "string", "maxLength": 128}, "turns": {"type": "integer", "minimum": -32, "maximum": 32}}, "additionalProperties": false}]}}, "additionalProperties": false}}}, "additionalProperties": false},
     "joint_coupling": {"oneOf": [{"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "ratio"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "gear"}, "ratio": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}, {"type": "object", "required": ["type", "id", "driver_joint", "follower_joint", "metres_per_radian"], "properties": {"id": {"type": "string", "pattern": "^coupling:[a-zA-Z0-9_:/-]+$"}, "driver_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "follower_joint": {"type": "string", "pattern": "^joint:[a-zA-Z0-9_:/-]+$"}, "type": {"const": "rack"}, "metres_per_radian": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}, "additionalProperties": false}]},
     "exploded_view": {"type": "object", "required": ["id", "name", "offsets"], "properties": {"id": {"type": "string", "pattern": "^view:[a-zA-Z0-9_:/-]+$"}, "name": {"type": "string", "minLength": 1}, "offsets": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"type": "object", "required": ["instance_id", "translation_m"], "properties": {"instance_id": {"type": "string", "pattern": "^instance:[a-zA-Z0-9_:/-]+$"}, "translation_m": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": -1000000.0, "maximum": 1000000.0}}}, "additionalProperties": false}}}, "additionalProperties": false},
@@ -2206,6 +2379,21 @@
           "if": {
             "properties": {
               "type": {
+                "const": "seated_standard_hole"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/seated_standard_hole"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
                 "const": "datum_plane"
               }
             }
@@ -2254,6 +2442,7 @@
             "revolve",
             "hole",
             "standard_hole",
+            "seated_standard_hole",
             "fillet",
             "chamfer",
             "linear_pattern",

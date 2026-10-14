@@ -36,6 +36,7 @@ impl FeatureRegistry {
         registry.register(Box::new(RevolveFeatureExecutor));
         registry.register(Box::new(HoleFeatureExecutor));
         registry.register(Box::new(crate::standard_hole::StandardHoleFeatureExecutor));
+        registry.register(Box::new(crate::SeatedStandardHoleFeatureExecutor));
         registry.register(Box::new(FilletFeatureExecutor));
         registry.register(Box::new(ChamferFeatureExecutor));
         registry.register(Box::new(LinearPatternFeatureExecutor));
@@ -55,6 +56,18 @@ impl FeatureRegistry {
 
     pub fn register(&mut self, executor: Box<dyn Feature>) {
         self.executors.insert(executor.feature_type(), executor);
+    }
+
+    pub fn discover_output_faces(
+        &self,
+        node: &FeatureNode,
+        ctx: &dyn RegenContext,
+        output: &FeatureOutput,
+    ) -> Result<Option<Vec<opencad_geometry::FaceRefDiscovery>>> {
+        self.executors
+            .get(node.definition.feature_type())
+            .ok_or_else(|| OpenCadError::validation("missing feature executor"))?
+            .discover_output_faces(node, ctx, output)
     }
 
     pub fn execute(&self, node: &FeatureNode, ctx: &dyn RegenContext) -> Result<FeatureOutput> {

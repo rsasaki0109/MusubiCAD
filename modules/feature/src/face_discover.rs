@@ -129,7 +129,7 @@ fn triangle_centroid(positions: [[f32; 3]; 3]) -> [f32; 3] {
     ]
 }
 
-fn role_from_normal(normal: [f32; 3]) -> &'static str {
+pub(crate) fn role_from_normal(normal: [f32; 3]) -> &'static str {
     let abs = [normal[0].abs(), normal[1].abs(), normal[2].abs()];
     if abs[2] >= abs[0] && abs[2] >= abs[1] {
         if normal[2] >= 0.0 {

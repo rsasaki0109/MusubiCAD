@@ -121,6 +121,27 @@ impl FeatureDefinition {
                 def.length_expr.as_ref(),
                 scope,
             ),
+            Self::SeatedStandardHole(def) => {
+                let resolve = |expr: Option<&String>,
+                               stored: opencad_core::Length|
+                 -> Result<opencad_core::Length> {
+                    Ok(opencad_core::Length::from_meters(match expr {
+                        Some(expr) => crate::seated_standard_hole::evaluate_length(expr, scope)?,
+                        None => stored.meters(),
+                    }))
+                };
+                let mut copy = def.clone();
+                copy.bore_depth = resolve(def.bore_depth_expr.as_ref(), def.bore_depth)?;
+                let crate::StandardHoleSeat::Counterbore {
+                    diameter,
+                    depth,
+                    diameter_expr,
+                    depth_expr,
+                } = &mut copy.seat;
+                *diameter = resolve(diameter_expr.as_ref(), *diameter)?;
+                *depth = resolve(depth_expr.as_ref(), *depth)?;
+                copy.validate_dimensions()
+            }
             Self::StandardHole(def) => extent(
                 "standard hole depth",
                 &def.hole.depth,

@@ -687,10 +687,29 @@ packaged tutorial gates. See the [v0.3.1 release evidence](../../docs/plans/cli-
 mode for bounded physical rectangle/circle/concentric cuts. Default ordinary
 Mock IDs remain synthetic and cannot prove physical hole dimensions or volume.
 See `docs/api/analytic-mock.md` and `examples/analytic-mock/`. No new MCP command,
-persisted setting or document seat feature is introduced. Counterbores and
-countersinks still require P16-003/004 admission; do not invent seat fields or
+persisted setting or document seat feature is introduced. Counterbores use the P16-003 source/ownership gate below; countersinks
+remain P16-004; do not invent seat fields or
 substitute a plain bore. Use verified native DesignPatch for supported document
 edits. P16-010 admits actual closed bounded meshes and body-owned stock witnesses
 (ADR-063) in this explicit SDK mode; source/semantic ownership remains the
 feature layer's responsibility. Edge/inertia and unsupported geometry queries
 explicitly refuse; never count a synthetic fallback as physical evidence.
+
+
+## Counterbored standard holes (P16-003)
+
+Follow `docs/api/seated-hole-admission.md` / ADR-063 and
+`examples/counterbored_plate.md`. Author the closed `seated_standard_hole` /
+`counterbore` tags through `add_feature` or same-type
+`replace_feature_definition`. Require original rectangle/distance/NewBody stock,
+owned end-face reference, outward exact ISO-matching circle, strictly contained
+seat and bounded inward depths. Never invent optional seat fields on old holes,
+infer fastener head sizes, or substitute a plain bore.
+
+Metres use `{value_si: ...}`. Length expressions use `set_feature_expr` fields
+`bore_depth`, `seat_diameter`, `seat_depth`; parameter edits also regenerate.
+Review before apply. Verification cannot be disabled for seated-hole changes;
+unit/range/source/refusal preserves previous files/history/artifacts. Default
+Mock is unsupported; explicit analytic Mock is SDK evidence, native is the
+CLI/MCP path. Check `counterbore_seat_depth` eval / actual stdio regression;
+source and geometry both matter. This adds no new MCP tool or host validation.

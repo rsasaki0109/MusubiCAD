@@ -183,6 +183,7 @@ fn infer_face_refs(
                 node.definition,
                 opencad_feature::FeatureDefinition::Hole(_)
                     | opencad_feature::FeatureDefinition::StandardHole(_)
+                    | opencad_feature::FeatureDefinition::SeatedStandardHole(_)
             )
             .then(|| node.id.clone())
         }),

@@ -1,6 +1,6 @@
 # MusubiCAD implementation status
 
-Last reviewed: 2026-10-12
+Last reviewed: 2026-10-14
 
 This inventory is evidence-based against the current repository. **Implemented**
 means the capability has code and focused tests; **Partial** means the primary
@@ -10,6 +10,7 @@ are defined in the [canonical roadmap](roadmap.md).
 
 | Area | Status | Current evidence | Remaining work |
 |---|---|---|---|
+| Counterbored standard holes (MCAD-P16-003) | Implemented; complete upon PR merge | ADR-063 strict source/seat and lengths; source/physical stock/entry ownership, actual union volume/first moments/closed faces, producer metadata and warm-cache rechecks; both kernels, schema/migration/round trips, patch-authored example, guide/skill/eval, actual MCP creation/review/edit/refusal and Agent history | Original rectangle/distance/NewBody stock and owned end faces only; no side/oblique/already-cut/imported/fused targets, through-all, inferred head sizes, countersinks or threads; default Mock unsupported |
 | Parent-context flexible constraints (MCAD-P13-012) | Complete upon PR merge | ADR-061; exact connector scopes/owners, analytic distance/angle solve, explicit angular branch, bounded unique coordinates/coupled followers, fully bound DOF and shared physical leaves; DesignPatch/schema/migration/history, Mock/OCCT analytic fixtures, actual MCP, examples/guide/skill/eval | Fixed outer instances and immediate root-child drivers only; unsupported nonlinear/deeper/free scopes and motion/reach/URDF/HTML refuse; Mock exact mesh intersection/inertia refuse |
 | Independent articulated copies (MCAD-P13-011) | Complete upon PR merge | ADR-059/060; strict parent-owned coordinates, source inspection/snapshots, scoped physical leaves, consumer gates, DesignPatch/history/schema round trips, both-kernel analytic example, guide/skill/eval | Parent-context constraints remain P13-012; full hierarchical DOF/motion/reach/URDF/HTML and nested articulated/pattern scopes refuse; Mock exact mesh intersection/inertia refuse; no maturity credit |
 | Coupled gear/rack joints (MCAD-P13-007) | Implemented | ADR-056; source joint ID relations, signed dimensionless/SI coefficients, deterministic DAG and range/owner validation, DesignPatch/authoring/history/schema migration with legacy-reader wire refusal; shared read-only unit-bearing pose API, derived follower controls, both-kernel analytic bounds/centres/volume and native internal-moving-pair collisions, gear URDF mimic, example/guide/skill/eval | Sampled independent-driver grid only; no inferred phase/tooth contact; rack URDF and coupled HTML refused; Mock exact imported-solid Boolean support remains absent (bounded member compounds added by ADR-060); generic mate DOF estimate unchanged |
@@ -420,3 +421,27 @@ Independent exported-triangle and pick/refusal tests and the runnable SDK exampl
 supply evidence. Completion requires this task PR's checks and merge; this
 infrastructure earns no score. MCAD-P16-003 source/schema/semantic/DesignPatch seat
 feature work still follows after that merge.
+
+
+MCAD-P16-003 implements ADR-063 explicit counterbores on the P16-010 runtime
+prerequisite (PR #105). Source nodes and actual cuboid/entry geometry agree before
+cutting; actual volume/first moments and closed face-bearing output are required.
+A stateless feature query supplies physical output producer metadata, distinguishing
+retained stock faces from new cylinder/step/blind faces. Cached outputs repeat
+ownership and physical checks. New source/seat/length decoding is strict; both
+schemas and additive no-inference migration/expanded/packed/old-reader tests ship.
+Default Mock is not switched. CLI/Agent geometry gates cannot be disabled for
+seated holes. Patch-authored example, guide/skill and independent source-aware eval
+are included. Real MCP stdio makes 10 requests and Agent history makes two, with
+zero model calls: create, read-only preview/review, parameter edit, physical/source
+checker, protected wrong-entry/depth refusal, canonical Undo/Redo and CLI no-verify
+refusal. Existing history preserves JSON values/array order and imported bytes;
+object member order can change through opaque transport. No host/release credit.
+
+Only after this implementation PR merges, solid modeling 55 → 57 for bounded
+parametric counterbores with genuine Mock/OCCT physical evidence and protected
+source/patch/history. All other fixed-rubric scores stay sketch 60, assembly 70,
+drawing 50, I/O 60, GUI 45, ecosystem 14. Weighted general CAD 50.10 → 50.60
+(about 51%), agent operation 90 → 91 for the actual typed source/verified MCP
+manufacturing workflow. The bounded original-stock scope earns partial credit,
+not general arbitrary-face hole support. Before merge the baseline stays 50.10/90.

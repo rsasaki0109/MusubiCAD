@@ -97,6 +97,10 @@ impl FeatureDefinition {
                 ("sketch_feature", Some(&def.sketch_feature)),
                 ("target_feature", def.target_feature.as_ref()),
             ],
+            Self::SeatedStandardHole(def) => [
+                ("sketch_feature", Some(&def.sketch_feature)),
+                ("target_feature", Some(&def.target_feature)),
+            ],
             Self::StandardHole(def) => [
                 ("sketch_feature", Some(&def.hole.sketch_feature)),
                 ("target_feature", Some(&def.hole.target_feature)),
@@ -167,6 +171,7 @@ impl FeatureDefinition {
                 .collect();
         }
         let candidates: [(&'static str, Option<&String>); 2] = match self {
+            Self::SeatedStandardHole(def) => [("face_ref", Some(&def.face_ref)), ("", None)],
             Self::StandardHole(def) => [("face_ref", def.hole.face_ref.as_ref()), ("", None)],
             Self::Hole(def) => [("face_ref", def.face_ref.as_ref()), ("", None)],
             Self::Fillet(def) => [
@@ -211,6 +216,9 @@ impl FeatureDefinition {
                 def.hole.sketch_feature.as_str(),
                 def.hole.profile_ref.as_str(),
             )],
+            Self::SeatedStandardHole(def) => {
+                vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())]
+            }
             Self::Hole(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Revolve(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
             Self::Sweep(def) => vec![(def.sketch_feature.as_str(), def.profile_ref.as_str())],
@@ -242,6 +250,18 @@ impl FeatureDefinition {
 
     /// Parametric expressions this definition evaluates, as `(field, expr)`.
     pub fn expressions(&self) -> Vec<(&'static str, &str)> {
+        if let Self::SeatedStandardHole(def) = self {
+            let crate::StandardHoleSeat::Counterbore {
+                diameter_expr,
+                depth_expr,
+                ..
+            } = &def.seat;
+            return present([
+                ("bore_depth_expr", def.bore_depth_expr.as_ref()),
+                ("seat.diameter_expr", diameter_expr.as_ref()),
+                ("seat.depth_expr", depth_expr.as_ref()),
+            ]);
+        }
         if let Self::DatumPlane(def) = self {
             return def
                 .offset_expr
@@ -299,7 +319,8 @@ impl FeatureDefinition {
             Self::Shell(def) => ("thickness_expr", def.thickness_expr.as_ref()),
             Self::Draft(def) => ("angle_expr", def.angle_expr.as_ref()),
             Self::LinearPattern(def) => ("spacing_expr", def.spacing_expr.as_ref()),
-            Self::DatumPlane(_)
+            Self::SeatedStandardHole(_)
+            | Self::DatumPlane(_)
             | Self::DatumAxis(_)
             | Self::Sketch(_)
             | Self::ProjectedSketch(_)
