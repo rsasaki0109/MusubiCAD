@@ -321,6 +321,12 @@ a bounded radius ratio. It is arithmetic, not a body, MCP operation or accepted
 native approximation; nonconstant reference volume explicitly refuses. Continue
 to reject circular variable fillet authoring until P16-008's complete admission.
 
+P16-020 / [ADR-073](../adr/ADR-073-periodic-reference-volume-bounds.md) adds a
+bounded nonconstant ideal reference integral under explicit m³ width and leaf
+budget. It is not a mass query for native geometry or a new MCP operation;
+insufficient budget/precision refuses. Curved variable-fillet authoring remains
+unsupported pending actual construction and source admission.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

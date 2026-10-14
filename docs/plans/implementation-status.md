@@ -740,3 +740,20 @@ quadrature bound or native approximation admission. Nonconstant volume requests
 refuse, including one-ULP positive amplitudes. No kernel solid/mesh/source tag,
 schema, sampling or MCP operation is supplied. P16-008 remains planned; reference
 arithmetic earns no feature credit, actual52.60 / 95.
+
+
+P16-019 is complete in PR #119 (merge ab91af1), after all four mandatory local
+checks (1139 passed, 0 failed, 36 ignored, plugin passed) and all applicable
+exact-head CI/Design Review/Desktop/Release jobs succeeded; the PR release
+publisher was intentionally skipped. No score: actual52.60 / 95.
+
+MCAD-P16-020 implements ADR-073's bounded ideal nonconstant reference volume.
+The removed-corner divergence integral is analytically reduced over the normal's
+characteristic circle, then enclosed on four rational angular charts using
+outward binary64 arithmetic, a bounded atan series and explicit absolute SI width
+and leaf budgets. It refuses unmet precision/budget; identical authored radii
+use a bounded constant formula, positive amplitudes never snap constant. Independent
+original surface integrals, constant meridional integration, scales, refinement,
+determinism and protected refusals check the implementation. No Mock/OCCT solid,
+native approximation, mesh/source/schema/MCP operation or feature credit is
+introduced. P16-008 remains planned; actual52.60 / 95.

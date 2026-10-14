@@ -103,6 +103,13 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-020 / [ADR-073](../adr/ADR-073-periodic-reference-volume-bounds.md) adds a
+bounded ideal reference volume method. An analytic characteristic-circle reduction
+leaves one integral; private outward-rounded rational-chart intervals enclose it
+under explicit absolute SI width and cell budgets. It refuses unmet precision,
+retains the constant-only API semantics and never replaces native mass. This
+admits no new solid, mesh, source or native approximation.
+
 P16-019 / [ADR-072](../adr/ADR-072-bounded-periodic-fillet-reference.md) adds the
 pure `CircularFilletReference`, with explicit bounded dimensions/angles, ideal
 sphere-envelope point/normal and analytic two-parameter tangents. A factorization
