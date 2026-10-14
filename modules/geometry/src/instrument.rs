@@ -106,6 +106,15 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.inner.draft_cylindrical_stock(body, input)
     }
 
+    fn add_tapered_rib_stock(
+        &self,
+        body: KernelBody,
+        input: &crate::TaperedRibInput,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.add_tapered_rib_stock(body, input)
+    }
+
     fn cut_countersunk_stock(
         &self,
         body: KernelBody,

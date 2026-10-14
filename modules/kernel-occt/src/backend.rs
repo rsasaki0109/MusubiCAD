@@ -800,6 +800,52 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn add_tapered_rib_stock(
+        &self,
+        body: KernelBody,
+        input: &opencad_geometry::TaperedRibInput,
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let witness = self.rectangular_stock_geometry(&body, input.entry)?;
+            let g = input.admit(&witness)?;
+            let mut frame = Vec::new();
+            frame.extend(g.base_center_m);
+            frame.extend(g.length_axis);
+            frame.extend(g.width_axis);
+            frame.extend(g.outward_normal);
+            frame.extend([
+                g.length_m,
+                g.base_thickness_m,
+                g.top_thickness_m,
+                g.height_m,
+            ]);
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found("tapered rib stock"))?;
+            let mut bytes = Vec::new();
+            Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+            drop(store);
+            let output = crate::ffi::native::tapered_rib_stock(&bytes, &frame)
+                .map_err(|e| OpenCadError::validation(format!("tapered rib: {e}")))?;
+            let mut solids =
+                Solid::read_brep_text(&mut std::io::Cursor::new(output)).map_err(map_occt_error)?;
+            if solids.len() != 1 {
+                return Err(OpenCadError::validation("invalid tapered rib output"));
+            }
+            let solid = solids
+                .pop()
+                .ok_or_else(|| OpenCadError::validation("missing tapered rib solid"))?;
+            Ok(KernelBody::new(self.store.borrow_mut().insert_body(solid)))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, input);
+            Err(OpenCadError::validation("OCCT backend disabled"))
+        }
+    }
+
     fn cut_countersunk_stock(
         &self,
         body: KernelBody,

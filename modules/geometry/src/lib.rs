@@ -69,3 +69,6 @@ pub use stock::{CountersinkCut, RectangularStockGeometry};
 
 pub mod cylindrical_stock;
 pub use cylindrical_stock::{CylindricalDraftInput, CylindricalStockGeometry};
+
+pub mod tapered_rib;
+pub use tapered_rib::{TaperedRibGeometry, TaperedRibInput};

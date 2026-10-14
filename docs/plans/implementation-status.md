@@ -529,3 +529,26 @@ for the verified signed draft/source/history workflow. Infrastructure P16-012,
 new planning, host and release work receive no additional credit. Until merge,
 actual maturity remains 51.10 / 92; the additional approximately 60% goal remains
 in progress.
+
+MCAD-P16-005 is complete in PR #110 (merge ad09a40), after all exact-head CI,
+Design Review, Desktop and Release workflows and applicable Windows/native/
+packaged-smoke jobs pass. The conditional full-cylinder credit above is now
+earned: solid 61, weighted CAD 51.60 (about 52%), agent operation 93. Other fixed
+rubric scores and weights stay unchanged. P16-013 registers the physical tapered-
+rib prerequisite for P16-006; infrastructure itself earns no new score.
+
+MCAD-P16-013 implements ADR-066's runtime tapered-rib prerequisite: actual
+physical box witness and contained square-ended trapezoid-prism union, signed
+base-neutral thickness law, exact mass/area/COM/bounds, proper placements and
+protected invalid/unsupported inputs. Mock uses a separate RibbedStock record
+and exact planar stock/contact partition (11 faces, 68 triangles), omitting the
+internal interface. Native uses exception-catching exact prism/fuse, verifies
+one valid solid, 11 planar faces/24 edges/16 vertices, exact surviving stock/
+contact/top vertices and independent volume/area. No tolerance-erased addition,
+fake reconstruction ancestry or looser mesh retries. Independent tests cover
+all six face orientations, axis reversal, signed angles, rigid source/output
+placement and negative-draft overhang, with slice/triangle integrals, contact,
+area/COM/bounds and protected refusal. SDK example/API/architecture/guide/skill
+mark the runtime boundary. P16-006 supplies source/semantic/schema/patch/history/
+MCP eval next. No feature/host/release credit: earned solid 61, weighted CAD
+51.60 (about 52%), agent operation 93; the additional 60% goal remains active.

@@ -87,3 +87,22 @@ Mock uses explicit tracked records. Default Mock refuses this runtime API.
 This example changes no .ocad document. P16-005 supplies the guarded curved-draft
 source, side-reference ownership, DesignPatch/history and MCP eval afterward.
 No feature/host maturity credit is awarded for P16-012 infrastructure.
+
+## Tapered-rib runtime (P16-013, ADR-066)
+
+```sh
+cargo run -p opencad-geometry --example analytic_tapered_rib
+```
+
+An uncut 40×30×10 mm physical stock receives a strictly contained, square-ended
+30 mm rib with neutral base thickness 4 mm, height 20 mm and angle atan(0.05).
+Top thickness is 2 mm. Exact union volume is 13800 mm³, area 5061.49906367 mm²
+and centre (20,15,6.81159420290) mm. The 68-triangle Mock mesh removes the shared
+base interface and matches all boundary subdivisions. Native checks actual
+connected prism/stock union and exact surviving stock/contact/top vertices.
+
+`TaperedRibInput`/`add_tapered_rib_stock` are transient SDK APIs. Default Mock
+refuses; the example explicitly selects analytic Mock. P16-006 later adds the
+closed guarded source/semantic/patch/schema/history/eval contract. No .ocad
+`tapered_rib`, MCP creation tool, host/release support or maturity credit is
+claimed by this runtime prerequisite. Original constant-width `rib` is unchanged.

@@ -27,6 +27,8 @@
 #include <TopoDS.hxx>
 #include <Standard_Failure.hxx>
 #include <BRepAlgoAPI_Section.hxx>
+#include <BRepAlgoAPI_Fuse.hxx>
+#include <NCollection_List.hxx>
 #include <gp_Pln.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
@@ -41,8 +43,73 @@
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
+#include <limits>
 
 namespace musubicad {
+
+// ADR-066: exact trapezoidal prism and connected union, no synthetic stock IDs.
+rust::Vec<std::uint8_t> tapered_rib_stock(rust::Slice<const std::uint8_t> brep,rust::Slice<const double> p) {
+    try {
+        if(p.size()!=16) throw std::runtime_error("invalid tapered rib frame");
+        for(double v:p) if(!std::isfinite(v)) throw std::runtime_error("nonfinite tapered rib input");
+        const gp_Pnt center(p[0],p[1],p[2]);
+        const gp_Vec along(p[3],p[4],p[5]),width(p[6],p[7],p[8]),normal(p[9],p[10],p[11]);
+        const double length=p[12],base=p[13],top=p[14],height=p[15];
+        if(std::abs(along.Magnitude()-1)>1e-9||std::abs(width.Magnitude()-1)>1e-9||std::abs(normal.Magnitude()-1)>1e-9
+            ||std::abs(along.Dot(width))>1e-9||std::abs(along.Dot(normal))>1e-9||std::abs(width.Dot(normal))>1e-9
+            ||std::abs(along.Crossed(width).Dot(normal)-1)>1e-9||std::abs(base-top)<=1e-9)
+            throw std::runtime_error("invalid tapered rib axes/taper");
+        for(double v:{length,base,top,height}) if(v<=1e-9||v>1000) throw std::runtime_error("invalid tapered rib dimensions");
+        std::istringstream source(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));
+        TopoDS_Shape stock;BRep_Builder builder;BRepTools::Read(stock,source,builder);
+        if(stock.IsNull()||!BRepCheck_Analyzer(stock,true).IsValid()) throw std::runtime_error("invalid tapered rib stock");
+        // Repeat the actual cuboid type/topology proof at the private boundary.
+        (void)rectangular_stock_faces(brep);
+        BRepBuilderAPI_MakePolygon polygon;
+        const auto start=center.Translated(along*(-length/2));
+        polygon.Add(start.Translated(width*(-base/2)));
+        polygon.Add(start.Translated(width*(base/2)));
+        polygon.Add(start.Translated(width*(top/2)+normal*height));
+        polygon.Add(start.Translated(width*(-top/2)+normal*height));polygon.Close();
+        if(!polygon.IsDone()) throw std::runtime_error("invalid tapered rib profile");
+        BRepBuilderAPI_MakeFace profile(polygon.Wire(),true);
+        if(!profile.IsDone()) throw std::runtime_error("invalid tapered rib plane");
+        BRepPrimAPI_MakePrism prism(profile.Face(),along*length);prism.Build();
+        if(!prism.IsDone()||!BRepCheck_Analyzer(prism.Shape(),true).IsValid()) throw std::runtime_error("invalid tapered rib prism");
+        NCollection_List<TopoDS_Shape> arguments,tools;arguments.Append(stock);tools.Append(prism.Shape());
+        BRepAlgoAPI_Fuse fuse;fuse.SetArguments(arguments);fuse.SetTools(tools);fuse.SetRunParallel(false);fuse.Build();
+        if(!fuse.IsDone()||!BRepCheck_Analyzer(fuse.Shape(),true).IsValid()) throw std::runtime_error("invalid tapered rib union");
+        const auto result=fuse.Shape();
+        NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> solids;TopExp::MapShapes(result,TopAbs_SOLID,solids);
+        if(solids.Extent()!=1) throw std::runtime_error("tapered rib must form one connected solid");
+        NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> faces,edges,vertices,stockVertices;
+        TopExp::MapShapes(result,TopAbs_FACE,faces);TopExp::MapShapes(result,TopAbs_EDGE,edges);TopExp::MapShapes(result,TopAbs_VERTEX,vertices);
+        TopExp::MapShapes(stock,TopAbs_VERTEX,stockVertices);
+        if(faces.Extent()!=11||edges.Extent()!=24||vertices.Extent()!=16||stockVertices.Extent()!=8)
+            throw std::runtime_error("unresolvable tapered rib union topology");
+        for(int i=1;i<=faces.Extent();++i) if(BRepAdaptor_Surface(TopoDS::Face(faces(i))).GetType()!=GeomAbs_Plane)
+            throw std::runtime_error("nonplanar tapered rib union face");
+        std::vector<gp_Pnt> expectedVertices;
+        for(int i=1;i<=stockVertices.Extent();++i) expectedVertices.push_back(BRep_Tool::Pnt(TopoDS::Vertex(stockVertices(i))));
+        for(int end:{-1,1}) for(int side:{-1,1}) for(int layer:{0,1})
+            expectedVertices.push_back(center.Translated(along*(end*length/2)+width*(side*(layer?top:base)/2)+normal*(layer?height:0)));
+        for(const auto& expectedPoint:expectedVertices) {
+            int matches=0;const double coordinateScale=std::max({1.0,std::abs(expectedPoint.X()),std::abs(expectedPoint.Y()),std::abs(expectedPoint.Z())});
+            const double tolerance=1e-9+64*std::numeric_limits<double>::epsilon()*coordinateScale;
+            for(int i=1;i<=vertices.Extent();++i) if(expectedPoint.Distance(BRep_Tool::Pnt(TopoDS::Vertex(vertices(i))))<=tolerance) ++matches;
+            if(matches!=1) throw std::runtime_error("tapered rib union changed an exact source/contact vertex");
+        }
+        GProp_GProps before,after,oldArea,newArea;BRepGProp::VolumeProperties(stock,before);BRepGProp::VolumeProperties(result,after);
+        BRepGProp::SurfaceProperties(stock,oldArea);BRepGProp::SurfaceProperties(result,newArea);
+        const double added=length*height*(base+top)/2,expected=before.Mass()+added;
+        const double area=oldArea.Mass()-length*base+length*top+height*(base+top)+2*length*std::hypot(height,(top-base)/2);
+        if(expected<=0||!std::isfinite(after.Mass())||std::abs(after.Mass()-expected)>expected*1e-8
+            ||!std::isfinite(newArea.Mass())||std::abs(newArea.Mass()-area)>area*1e-8)
+            throw std::runtime_error("tapered rib union measurements disagree");
+        std::ostringstream stream;BRepTools::Write(result,stream);const auto bytes=stream.str();rust::Vec<std::uint8_t> output;
+        for(unsigned char b:bytes) {output.push_back(b);}return output;
+    } catch(const Standard_Failure& e) {throw std::runtime_error(e.what());}
+}
 // Exception-catching constructor; no OCCT exception crosses an infallible FFI.
 rust::Vec<std::uint8_t> cylindrical_frustum(rust::Slice<const double> p) {
     try {

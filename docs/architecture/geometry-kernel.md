@@ -329,3 +329,14 @@ Changed side consumption and physically classified cap/conical producers replace
 fabricated ancestry. Native hosts force candidate verification through existing
 DesignPatch/transaction gateways; cached outputs repeat source/physical proof
 and rediscover owners. General curved or already-modified stock still refuses.
+
+P16-013 / ADR-066 adds transient `TaperedRibInput` and an explicit physical
+stock/trapezoidal-prism union. Runtime proves actual uncut rectangular stock,
+unit witnessed axes, contained base and finite resolvable taper; only later
+P16-006 graph admission can prove original extrusion-end/source ownership.
+Analytic Mock's RibbedStock records exact added volume/first moments and exterior
+area, with an exact planar contact partition, no internal interface and no fake
+reconstruction ancestry. Native exception-catching BREP construction performs
+actual prism/fuse, requires one valid solid, 11 planar faces/24 edges/16 vertices,
+exact stock/contact/top vertices and independent expected volume/area. Unsupported
+records/inputs/precision refuse; no source tags or implicit kernel switches ship.

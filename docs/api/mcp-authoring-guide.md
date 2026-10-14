@@ -1205,3 +1205,12 @@ source; centred-plane volume alone cannot grade sign. Real stdio regression
 history with zero model calls. Both schemas, additive migration/round trips and
 old-reader refusal ship. v0.3.1 predates the tag; default Mock is unsupported,
 explicit analytic Mock is SDK evidence, and CLI/MCP uses native OCCT.
+
+P16-013 / ADR-066 supplies real tapered-rib **runtime** union in both kernels.
+It introduces no .ocad `tapered_rib` or MCP creation tool yet. Do not add optional
+angle/end fields to legacy `rib` that old readers ignore. The SDK example
+`analytic_tapered_rib` and independent `tapered_rib` tests prove connected stock/
+prism volume/area/first moments, exact contact and closed meshes with no internal
+interface. P16-006 adds original-stock/end/open-line source, semantic ownership,
+strict units, closed tag/schema, verified DesignPatch/history and eval afterward.
+Runtime witnessing cannot infer authored extrusion-end provenance from a box.

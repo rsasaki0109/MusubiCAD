@@ -336,6 +336,15 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// ADR-066: a connected physical stock/trapezoidal-prism union.
+    fn add_tapered_rib_stock(
+        &self,
+        _body: KernelBody,
+        _input: &crate::TaperedRibInput,
+    ) -> Result<KernelBody> {
+        Err(OpenCadError::validation("bounded tapered ribs unsupported"))
+    }
+
     /// ADR-064: actual cone/bore union on uncut rectangular stock, no approximation.
     fn cut_countersunk_stock(
         &self,
@@ -1028,6 +1037,18 @@ impl GeometryKernel for MockGeometryKernel {
             .ok_or_else(crate::analytic_mock::unsupported)?
             .borrow_mut()
             .cylindrical_draft(body, input)
+    }
+
+    fn add_tapered_rib_stock(
+        &self,
+        body: KernelBody,
+        input: &crate::TaperedRibInput,
+    ) -> Result<KernelBody> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow_mut()
+            .tapered_rib(body, input)
     }
 
     fn cut_countersunk_stock(
