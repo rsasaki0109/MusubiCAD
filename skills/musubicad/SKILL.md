@@ -300,6 +300,11 @@ current circle/cap/side ownership in analytic Mock and OCCT. It adds no MCP comm
 or fillet source. Keep curved variable authoring unsupported until P16-008 supplies
 actual construction, guarded source and independent eval evidence.
 
+P16-019 / ADR-072 adds an ideal analytic periodic fillet reference, with an
+all-angle geometric exposure/regularity proof in a bounded domain. It creates no
+Mock/OCCT solid or MCP operation and supplies no nonconstant volume quadrature.
+Do not use reference arithmetic as backend mass or claim circular fillet support.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

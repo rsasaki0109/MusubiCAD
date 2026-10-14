@@ -76,5 +76,8 @@ pub use cylindrical_stock::{
     CylindricalDraftInput, CylindricalRimsGeometry, CylindricalStockGeometry,
 };
 
+pub mod circular_fillet;
+pub use circular_fillet::{CircularFilletReference, CircularFilletSample};
+
 pub mod tapered_rib;
 pub use tapered_rib::{TaperedRibGeometry, TaperedRibInput};

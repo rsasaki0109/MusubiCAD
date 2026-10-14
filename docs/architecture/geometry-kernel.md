@@ -103,6 +103,15 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-019 / [ADR-072](../adr/ADR-072-bounded-periodic-fillet-reference.md) adds the
+pure `CircularFilletReference`, with explicit bounded dimensions/angles, ideal
+sphere-envelope point/normal and analytic two-parameter tangents. A factorization
+of the moving-sphere residual proves global exposure/injectivity and regularity
+for r_max<=R/4, H>=4*r_max in real arithmetic. It admits no kernel solid, native
+approximation or sampling. Constant-limit reference volume is independent of any
+backend; nonconstant volume calls refuse. See the
+[reference API](../api/periodic-fillet-reference.md).
+
 P16-018 / [ADR-071](../adr/ADR-071-physical-cylindrical-rim-witnesses.md) adds
 `cylindrical_stock_rims` and `CylindricalRimsGeometry` as a read-only prerequisite.
 Analytic Mock uses cylinder/cap/side records and a separate deterministic physical
