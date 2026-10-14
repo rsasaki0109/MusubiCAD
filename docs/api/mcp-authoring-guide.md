@@ -1206,11 +1206,36 @@ history with zero model calls. Both schemas, additive migration/round trips and
 old-reader refusal ship. v0.3.1 predates the tag; default Mock is unsupported,
 explicit analytic Mock is SDK evidence, and CLI/MCP uses native OCCT.
 
-P16-013 / ADR-066 supplies real tapered-rib **runtime** union in both kernels.
-It introduces no .ocad `tapered_rib` or MCP creation tool yet. Do not add optional
-angle/end fields to legacy `rib` that old readers ignore. The SDK example
-`analytic_tapered_rib` and independent `tapered_rib` tests prove connected stock/
-prism volume/area/first moments, exact contact and closed meshes with no internal
-interface. P16-006 adds original-stock/end/open-line source, semantic ownership,
-strict units, closed tag/schema, verified DesignPatch/history and eval afterward.
-Runtime witnessing cannot infer authored extrusion-end provenance from a box.
+### Square-ended tapered ribs (P16-006, ADR-066)
+
+Use distinct closed `tapered_rib` with original `target_feature`, authored
+`sketch_feature`/complete `centerline_ref`, mandatory owned `face_ref`, SI
+`base_thickness`, `height`, signed `angle`, optional expressions and `ends: square`.
+The reference is created by the original rectangle/distance/NewBody target,
+with `kind: face` and matching stable `extrusion_start` / `extrusion_end` role.
+Do not add ignored taper/end flags to legacy `rib` or infer source ends from a box.
+
+The centreline may be construction geometry; only its explicit declared consumer
+admits a profile-free complete line. End plane/source corners/height and actual
+stock witness must agree. Unit orthogonal frame, stock-axis-aligned complete
+line and strictly contained base are required. T(z)=T0-2*z*tan(angle), base neutral,
+square ends. Reject invalid units/static fallbacks, wrong/missing/ambiguous/
+foreign/stale/consumed ends, collapse/tiny additions, curves/oblique/modified targets.
+
+Create/review/apply through DesignPatch. Typed expression fields `base_thickness`,
+`rib_height`, `draft_angle` edit corresponding expressions; typed `face_ref`
+edits ownership. Parameter names `rib_thickness`, `rib_height`, `rib_angle_rad`
+use explicit expressions such as `4 mm`, `20 mm`, `2.862405226111748 deg`.
+Mandatory native verification remains active with verify:false/--no-verify;
+preview/review is read-only and failures preserve source/history/outputs.
+
+The entry plane survives around the contact rectangle, so its reference is not
+fully consumed. Physical output planes retain stock/end identity and give new
+rib surfaces explicit producers; cache repeats source/measurement/owner checks.
+See [source admission](tapered-rib.md), [example](../../examples/tapered_rib_plate.md),
+creation patch and source-aware `tapered_rib_height` eval. Actual stdio regression
+`tools/test_tapered_rib_mcp.py` tests typed previews, refusal and Agent history
+with zero model calls. Both schemas/migration/roundtrips/old-reader refusal ship.
+Default Mock is unsupported; explicit analytic Mock is SDK proof and CLI/MCP
+uses native OCCT. v0.3.1 predates the tag; no arbitrary curved/multiple-rib,
+generic picker named-end support, new host or release claim.

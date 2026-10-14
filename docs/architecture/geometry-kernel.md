@@ -340,3 +340,14 @@ reconstruction ancestry. Native exception-catching BREP construction performs
 actual prism/fuse, requires one valid solid, 11 planar faces/24 edges/16 vertices,
 exact stock/contact/top vertices and independent expected volume/area. Unsupported
 records/inputs/precision refuse; no source tags or implicit kernel switches ship.
+
+P16-006 exposes ADR-066's runtime through closed `tapered_rib`. Original authored
+rectangle/distance/NewBody and complete open-line source independently prove an
+owned original extrusion end; typed end roles stay stable under placement.
+Source compares actual stock geometry, strict SI expressions and square-end
+admission before calling the transient operation. Exact physical output planes
+prove six retained stock/end producers and five new rib producers; no full-end
+consumption or fake ancestry. Cached owners are rediscovered and host candidate
+verification is mandatory through existing DesignPatch/transactions. Only an
+explicit declared construction-line consumer admits a profile-free sketch;
+legacy/unconsumed profile validation remains unchanged.

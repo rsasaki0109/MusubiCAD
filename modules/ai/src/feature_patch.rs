@@ -348,6 +348,25 @@ pub(crate) fn check_feature_inputs(
     state: &DesignState,
     failures: &mut BTreeSet<String>,
 ) {
+    if let FeatureDefinition::TaperedRib(def) = &node.definition {
+        let sketch = state
+            .feature_nodes
+            .iter()
+            .find(|n| n.id == def.sketch_feature)
+            .and_then(|n| match &n.definition {
+                FeatureDefinition::Sketch(s) => {
+                    state.sketches.iter().find(|p| p.id.as_str() == s.sketch_id)
+                }
+                _ => None,
+            });
+        let line = sketch.and_then(|s| s.find_entity(&def.centerline_ref));
+        if !matches!(line, Some(opencad_sketch::SketchEntity::Line(_))) {
+            failures.insert(format!(
+                "feature '{}' requires an authored straight centreline '{}'",
+                node.id, def.centerline_ref
+            ));
+        }
+    }
     if let FeatureDefinition::ProjectedSketch(_) = &node.definition {
         if let Err(error) = opencad_feature::projected_sketch::resolve_design_sketch(
             &state.feature_nodes,

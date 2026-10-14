@@ -1,3 +1,6 @@
+// MCAD-P16-006 / ADR-066: tapered_rib is a distinct closed source tag.
+// No taper/end/stock ownership is inferred for legacy rib; old readers refuse
+// the unknown tag. Current schema-version migration remains additive.
 // MCAD-P16-005 / ADR-065: cylindrical_draft is a distinct closed source tag.
 // No angle, lateral ownership or neutral plane is inferred for legacy draft;
 // genuine old enums refuse it. Existing schema-version migration stays additive.

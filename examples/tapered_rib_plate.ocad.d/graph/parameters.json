@@ -1,0 +1,23 @@
+{
+  "parameters": {
+    "param:rib_thickness": {
+      "id": "param:rib_thickness",
+      "name": "rib_thickness",
+      "expr": "4 mm",
+      "dirty": false
+    },
+    "param:rib_height": {
+      "id": "param:rib_height",
+      "name": "rib_height",
+      "expr": "20 mm",
+      "dirty": false
+    },
+    "param:rib_angle": {
+      "id": "param:rib_angle",
+      "name": "rib_angle_rad",
+      "expr": "2.862405226111748 deg",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

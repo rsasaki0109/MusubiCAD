@@ -25,6 +25,7 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
                     | FeatureDefinition::DatumAxis(_)
                     | FeatureDefinition::Draft(_)
                     | FeatureDefinition::CylindricalDraft(_)
+                    | FeatureDefinition::TaperedRib(_)
                     | FeatureDefinition::Rib(_)
                     | FeatureDefinition::SeatedStandardHole(_)
             ) {
@@ -36,7 +37,9 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
     let values = if model.nodes.values().any(|n| {
         matches!(
             n.definition,
-            FeatureDefinition::SeatedStandardHole(_) | FeatureDefinition::CylindricalDraft(_)
+            FeatureDefinition::SeatedStandardHole(_)
+                | FeatureDefinition::CylindricalDraft(_)
+                | FeatureDefinition::TaperedRib(_)
         )
     }) || model.sketches.values().any(|s| {
         s.entities.iter().any(|e| {
@@ -183,6 +186,9 @@ fn resolve_feature_node(
             if let Some(expr) = &def.angle_expr {
                 def.angle = opencad_core::Angle::from_radians(eval_angle_expr(expr, values)?);
             }
+        }
+        FeatureDefinition::TaperedRib(def) => {
+            def.resolve_expressions(values)?;
         }
         FeatureDefinition::Rib(rib) => {
             if let Some(expr) = &rib.thickness_expr {

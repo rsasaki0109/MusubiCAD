@@ -1,0 +1,119 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_base",
+      "feature:extrude_base",
+      "feature:sketch_rib",
+      "feature:rib"
+    ],
+    "features": {
+      "feature:sketch_base": {
+        "id": "feature:sketch_base",
+        "name": "Base Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude_base": {
+        "id": "feature:extrude_base",
+        "name": "Extrude Base",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_rib": {
+        "id": "feature:sketch_rib",
+        "name": "Rib centreline",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:rib": {
+        "id": "feature:rib",
+        "name": "Square-ended tapered rib",
+        "feature_type": "tapered_rib",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_base",
+        "target": "feature:extrude_base",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_rib",
+        "target": "feature:rib",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:extrude_base",
+        "target": "feature:rib",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:extrude_base",
+      "name": "Extrude Base",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_base",
+        "profile_ref": "sketch:base/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:rib",
+      "name": "Square-ended tapered rib",
+      "definition": {
+        "type": "tapered_rib",
+        "target_feature": "feature:extrude_base",
+        "sketch_feature": "feature:sketch_rib",
+        "centerline_ref": "ent:rib_line",
+        "face_ref": "ref:face:rib_base",
+        "base_thickness": {
+          "value_si": 0.004
+        },
+        "height": {
+          "value_si": 0.02
+        },
+        "angle": {
+          "value_si": 0.049958395721942765
+        },
+        "base_thickness_expr": "rib_thickness",
+        "height_expr": "rib_height",
+        "angle_expr": "rib_angle_rad",
+        "ends": "square"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_base",
+      "name": "Base Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:base"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_rib",
+      "name": "Rib centreline",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:rib"
+      },
+      "suppressed": false
+    }
+  ]
+}

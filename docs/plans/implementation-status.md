@@ -552,3 +552,37 @@ area/COM/bounds and protected refusal. SDK example/API/architecture/guide/skill
 mark the runtime boundary. P16-006 supplies source/semantic/schema/patch/history/
 MCP eval next. No feature/host/release credit: earned solid 61, weighted CAD
 51.60 (about 52%), agent operation 93; the additional 60% goal remains active.
+
+
+MCAD-P16-013 is complete in PR #111 (merge 7328ef3), after all exact-head
+workflow/job CI, native Windows, Desktop and packaged-smoke checks pass.
+Runtime infrastructure earns no maturity increment: weighted CAD 51.60 / agent 93.
+
+MCAD-P16-006 implements closed `tapered_rib` authoring over ADR-066's runtime.
+Original authored rectangle/distance/NewBody stock and complete open line prove
+an owned original extrusion end, with stable extrusion_start/end roles independent
+of global orientation. Strict SI thickness/height/signed angle/square ends,
+source/world witness comparison, physical six-stock/five-rib producers and
+cache rediscovery protect the real interface-free union. Profile-free complete
+construction lines need an explicit declared consumer; suppression keeps source
+and returns stock geometry, while orphan/legacy profile checks remain unchanged.
+Known collapsed/resolution-invalid top thickness refuses before kernel work.
+Both schemas, no-inference migration, packed/expanded/authoring roundtrips,
+genuine old constant-rib reader refusal and canonical history accompany the tag.
+Independent Mock/native source tests cover original ends, oblique placement,
+height edits, signed widening, contact/volume/COM/closed triangles, real ownership,
+corrupted cache, unit/ref/source/range refusal and suppression. Patch-authored
+example, API/guide/skill and source-aware tapered_rib_height eval ship. Actual
+stdio makes 14 MCP and two Agent history requests, zero model calls: native
+13800→13224 mm³, read-only review/typed angle/thickness/suppression previews,
+mandatory verify:false/no-verify geometry, protected wrong-end/unit/range edits
+and canonical Undo/Redo pass. No new host or release claim.
+
+Only after P16-006 merges to main, solid 61→63 earns partial credit for actual
+square-ended tapered addition, parametric height/thickness/signed angle, owned
+source/end and protected MCP/history. Arbitrary curved/intersecting/multiple-rib
+families and existing constant-width rib receive no new credit. Other fixed
+scores remain sketch 60, assembly 70, drawing 50, I/O 60, GUI 45, ecosystem 14.
+Weighted CAD 51.60→52.10 (about 52%), agent operation 93→94. Before that merge,
+actual earned baseline remains 51.60 / 93; additional approximately 60% goal
+continues and runtime/planning receives no feature credit.

@@ -45,6 +45,7 @@ impl FeatureRegistry {
         registry.register(Box::new(crate::imported::ImportedSolidExecutor));
         registry.register(Box::new(crate::ImportedMeshExecutor));
         registry.register(Box::new(crate::shell::ShellFeatureExecutor));
+        registry.register(Box::new(crate::TaperedRibFeatureExecutor));
         registry.register(Box::new(crate::draft::DraftFeatureExecutor));
         registry.register(Box::new(crate::CylindricalDraftFeatureExecutor));
         registry.register(Box::new(crate::rib::RibFeatureExecutor));

@@ -432,6 +432,38 @@ def check_cylindrical_draft_source(task: dict, document: Path) -> list[str]:
         return ["cylindrical draft source evidence absent or malformed"]
 
 
+def check_tapered_rib_source(task: dict, document: Path) -> list[str]:
+    """A volume match cannot substitute a plain rib or altered end/source."""
+    try:
+        baseline = ROOT / task["source"]
+        for filename in ["features.json", "sketches.json", "semantic_refs.json"]:
+            before = json.loads((baseline / "graph" / filename).read_text(encoding="utf-8"))
+            after = json.loads((document / "graph" / filename).read_text(encoding="utf-8"))
+            if before != after:
+                return ["tapered rib source, neutral plane, ownership or order changed"]
+        features = json.loads((document / "graph/features.json").read_text(encoding="utf-8"))["feature_nodes"]
+        definition = next(n for n in features if n["id"] == task["expected_tapered_rib"])["definition"]
+        if definition["type"] != "tapered_rib":
+            return ["explicit tapered rib source is missing"]
+        old = json.loads((baseline / "graph/parameters.json").read_text(encoding="utf-8"))
+        new = json.loads((document / "graph/parameters.json").read_text(encoding="utf-8"))
+        expected = old["parameters"]["param:rib_height"]
+        actual = new["parameters"]["param:rib_height"]
+        if actual["expr"] != task["expected_rib_height_expr"]:
+            return ["rib height expression differs"]
+        for field in ["id", "name"]:
+            if actual[field] != expected[field]:
+                return ["rib parameter identity changed"]
+        # Only the requested expression and its disposable dirty flag may differ.
+        normalized = json.loads(json.dumps(new))
+        normalized["parameters"]["param:rib_height"] = expected
+        if normalized != old:
+            return ["another rib parameter source was changed"]
+        return []
+    except (OSError, ValueError, KeyError, TypeError, StopIteration):
+        return ["tapered rib source evidence absent or malformed"]
+
+
 def check(
     task: dict,
     document: Path,
@@ -441,6 +473,8 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_tapered_rib" in task:
+        problems.extend(check_tapered_rib_source(task, document))
     if "expected_cylindrical_draft" in task:
         problems.extend(check_cylindrical_draft_source(task, document))
     if "expected_counterbore" in task:
@@ -911,6 +945,20 @@ def self_test() -> None:
         next(n for n in data["feature_nodes"] if n["id"] == "feature:draft")["definition"]["type"] = "draft"
         path.write_text(json.dumps(data), encoding="utf-8")
         assert not check(draft_task, candidate, f"volume_m3: {draft_task['expected_volume_mm3']/1e9}\n")[0]
+    rib_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "tapered_rib_height")
+    with tempfile.TemporaryDirectory() as folder:
+        candidate = Path(folder) / "rib.ocad.d"
+        shutil.copytree(ROOT / rib_task["source"], candidate)
+        path = candidate / "graph/parameters.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["parameters"]["param:rib_height"]["expr"] = "12 mm"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        assert check_tapered_rib_source(rib_task, candidate) == []
+        path = candidate / "graph/features.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        next(n for n in data["feature_nodes"] if n["id"] == "feature:rib")["definition"]["type"] = "rib"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        assert not check(rib_task, candidate, "volume_m3: 0.000013224\n")[0]
     output = "regenerated: 3 features\nvolume_m3: 0.0000053684999999\nmass_kg: 1\n"
     assert abs(regenerated_volume_mm3(output) - 5368.5) < 1e-6
     assert regenerated_volume_mm3("no volume here") is None
