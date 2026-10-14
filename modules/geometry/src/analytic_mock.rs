@@ -10,6 +10,8 @@ use crate::{
 };
 
 mod mesh;
+mod rib;
+use rib::Rib;
 
 const RECORD_BUDGET: usize = 100_000;
 const CUT_BUDGET: usize = 64;
@@ -259,6 +261,11 @@ impl Cut {
 }
 #[derive(Clone, Debug)]
 enum Body {
+    RibbedStock {
+        frame: Frame,
+        dimensions: [f64; 3],
+        rib: Rib,
+    },
     Stock {
         frame: Frame,
         dimensions: [f64; 3],
@@ -409,6 +416,11 @@ impl Body {
             return Err(invalid("density must be finite and positive in kg/m^3"));
         }
         let (volume, area, center) = match self {
+            Self::RibbedStock {
+                frame,
+                dimensions,
+                rib,
+            } => rib.mass(*frame, *dimensions)?,
             Self::Cylinder {
                 origin,
                 axis,
@@ -501,6 +513,25 @@ impl Body {
     }
     pub(crate) fn bounds(&self) -> BoundingBox {
         match self {
+            Self::RibbedStock {
+                frame,
+                dimensions,
+                rib,
+            } => {
+                let mut bounds = Self::Stock {
+                    frame: *frame,
+                    dimensions: *dimensions,
+                    cuts: Vec::new(),
+                }
+                .bounds();
+                for p in rib.vertices(dimensions[2]).map(|p| frame.map(p)) {
+                    for (i, v) in p.into_iter().enumerate() {
+                        bounds.min[i] = bounds.min[i].min(v);
+                        bounds.max[i] = bounds.max[i].max(v);
+                    }
+                }
+                bounds
+            }
             Self::Cylinder {
                 origin,
                 axis,
@@ -571,6 +602,15 @@ impl Body {
             return Err(invalid("transform must be a finite proper rigid rotation"));
         }
         Ok(match self {
+            Self::RibbedStock {
+                frame,
+                dimensions,
+                rib,
+            } => Self::RibbedStock {
+                frame: frame.transformed(transform),
+                dimensions: *dimensions,
+                rib: rib.clone(),
+            },
             Self::Stock {
                 frame,
                 dimensions,
@@ -769,6 +809,55 @@ impl AnalyticMock {
                 radius,
                 end_radius,
                 length: stock.height_m,
+            },
+            None,
+            false,
+        )
+    }
+
+    pub(crate) fn tapered_rib(
+        &mut self,
+        body: KernelBody,
+        input: &crate::TaperedRibInput,
+    ) -> Result<KernelBody> {
+        let witness = self.stock_geometry(&body, input.entry)?;
+        let geometry = input.admit(&witness)?;
+        let swap = dot(
+            cross(witness.u_axis, witness.v_axis),
+            witness.outward_normal,
+        ) < 0.;
+        let [u, v] = if swap {
+            [witness.v_axis, witness.u_axis]
+        } else {
+            [witness.u_axis, witness.v_axis]
+        };
+        let frame = Frame {
+            origin: sub(
+                witness.origin_m,
+                scale(witness.outward_normal, witness.inward_thickness_m),
+            ),
+            axes: [u, v, witness.outward_normal],
+        };
+        let spans = if swap {
+            [witness.face_spans_m[1], witness.face_spans_m[0]]
+        } else {
+            witness.face_spans_m
+        };
+        let dimensions = [spans[0], spans[1], witness.inward_thickness_m];
+        let local = frame.local(geometry.base_center_m);
+        let rib = Rib {
+            center: [local[0], local[1]],
+            along_u: dot(u, geometry.length_axis).abs() > 0.999999,
+            length: geometry.length_m,
+            base_thickness: geometry.base_thickness_m,
+            top_thickness: geometry.top_thickness_m,
+            height: geometry.height_m,
+        };
+        self.store(
+            Body::RibbedStock {
+                frame,
+                dimensions,
+                rib,
             },
             None,
             false,

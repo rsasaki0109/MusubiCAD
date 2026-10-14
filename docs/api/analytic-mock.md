@@ -143,3 +143,40 @@ budget gates. Reconstruction publishes new body-owned faces with no invented
 history. Actual rigid transforms preserve physical measurements. Generic Mock
 Booleans/shape edits on frustums refuse. This introduces no .ocad or MCP source
 command; P16-005 owns the closed source/semantic/patch/old-reader contract.
+
+## Bounded tapered-rib union (P16-013, ADR-066)
+
+`TaperedRibInput` holds an outward `FacePick` at the footprint centre, finite unit
+`length_axis_hint`, `length_m`, `base_thickness_m`, `height_m` and signed
+`angle_rad`. Query actual `rectangular_stock_geometry`, then `admit` returns
+transient `TaperedRibGeometry`: actual base centre, length/width/outward axes,
+length, base/top thickness and height. Hints choose witnessed in-plane axes;
+no source provenance is inferred from shape. `add_tapered_rib_stock` repeats the
+actual stock witness/admission and returns a real connected union.
+
+T(z)=T0-2*z*tan(angle), neutral base, square end planes. Dimensions are finite
+in (1nm,1000m], angle magnitude 1e-8..pi/4, top thickness positive and width
+delta >1nm. Added volume exceeds 64*EPSILON times stock volume. Require a full
+strictly contained base rectangle, >1nm margins, arithmetic-only plane offset,
+actual stock-axis alignment and world vertices within 1e6m. Unknown/modified/
+curved stock, oblique hint, non-unit data, collapse and unresolvable addition
+refuse. Runtime admits actual physical box faces; only later graph source can
+establish original authored extrusion ends/import/boolean ownership.
+
+Analytic Mock stores separate RibbedStock data. Its exact volume/area/first
+moments include the added trapezoid and exclude the internal contact surface.
+Bounds include actual stock and rib vertices; proper rigid placements retain
+physical geometry, with accumulated-frame drift refusal. General shape edits/
+booleans/cuts on this record refuse. Reconstruction has no fake ancestry.
+
+A deterministic 4×4 coordinate grid partitions both stock caps and walls around
+the rectangular footprint; omit the contact cell and add five true rib quads.
+It produces 11 face IDs and 68 triangles (204 per-face vertices), with matching
+shared boundary subdivisions, finite/f32-deflection checks, nondegeneracy,
+paired opposite edges and positive oriented volume. Exact planar tessellation
+needs no angular sampling; invalid quality, budgets or precision refuse without
+looser retries. Native exact prism/union is verified separately, not replaced by
+this grid. Default Mock remains unsupported. SDK example:
+`analytic_tapered_rib`; independent tests: `tapered_rib` in geometry/kernel-occt.
+No .ocad feature, MCP tool or new maturity/host/release credit yet; P16-006 owns
+source/semantic/patch/schema/history/example/eval afterward.

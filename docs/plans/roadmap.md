@@ -879,7 +879,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-002 | Track bounded analytic stock and concentric cuts in Mock | Real rectangle/circle extrusion records and admitted concentric cuts; independently calculated volume/first moments/bounds and native parity; unknown/mixed/unsupported operations refuse, legacy synthetic paths remain explicit; no feature credit | Complete: PR #103 |
 | MCAD-P16-003 | Add explicit counterbored standard holes | P16-009/010 prerequisites; parametric bore/seat dimensions, contained bounded physical removal without overlap double-counting, source/face ownership, distinct serialized feature with old-reader refusal, both kernels and complete deliverables | Complete: PR #106 |
 | MCAD-P16-004 | Add explicit countersunk standard holes | SI seat diameter/included angle, derived frustum depth and volume/contact dimensions, accepted analytic/native admission, distinct closed seat form and protected failures/history; P16-011 complete in PR #107 | Complete: PR #108 |
-| MCAD-P16-005 | Extend draft to admitted curved faces | ADR-065 closed cylindrical_draft; original exact-circle source and owned full side, signed SI angle/neutral plane, physical ownership/cache, strict schema/patch/history and independent Mock/native/MCP evidence | Implemented; complete upon P16-005 PR merge |
+| MCAD-P16-005 | Extend draft to admitted curved faces | ADR-065 closed cylindrical_draft; original exact-circle source and owned full side, signed SI angle/neutral plane, physical ownership/cache, strict schema/patch/history and independent Mock/native/MCP evidence | Complete: PR #110 |
 | MCAD-P16-006 | Add tapered rib profiles | Accepted thickness/height/draft/end contract and cross-section-integral tests in both kernels; explicit refusal of unsupported curved intersections | Planned |
 | MCAD-P16-007 | Model standard external thread geometry | Accepted standard/profile/handedness/end representation and actual geometry with independent pitch/crest/root/volume checks; existing generic helical sweep gets no repeat credit | Planned |
 | MCAD-P16-008 | Expand admitted variable fillet contours | Accepted radius-law/contour and semantic ownership, genuinely new supported cases with independent volume/contact tests in both kernels; no general curved-edge claim from another straight-edge case | Planned |
@@ -887,6 +887,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-010 | Supply physical analytic meshes and stock-face witnesses | After P16-009, actual closed rectangle/cylinder/concentric-cut meshes with bounded quality/error/IDs and a unique body-owned rectangular-stock query in Mock/OCCT; independent mesh and face/refusal evidence, default Mock isolation; no source feature or score | Complete: PR #105 |
 | MCAD-P16-011 | Supply bounded physical countersink cuts | P16-004 prerequisite; ADR-064, real conical-frustum/bore union removal on original rectangular stock in both kernels, exact volume/area/first moments and closed face-bearing bounded meshes, independent parity/refusal tests; runtime geometry only, no feature score | Complete: PR #107 |
 | MCAD-P16-012 | Supply physical cylindrical-stock draft geometry | P16-005 prerequisite; ADR-065, actual body-owned full-cylinder witness and neutral-plane cylinder-to-frustum transformation in Mock/OCCT; independent radii/volume/area/first moments/bounds/closed meshes and protected refusal; runtime only, no feature score | Complete: PR #109 |
+| MCAD-P16-013 | Supply bounded tapered-rib stock geometry | P16-006 prerequisite; ADR-066, real rectangle-stock/trapezoid-prism union in Mock/OCCT, exact contact/interface-free planar meshes and independent cross-section/volume/area/COM/bounds/refusal evidence; runtime only, no feature score | Implemented; complete upon P16-013 PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -901,6 +902,8 @@ prerequisite) → P16-003 (source/feature/patch/schema/eval). The new prerequisi
 IDs do not reorder later manufacturing features or award infrastructure credit.
 For countersinks, P16-011 supplies the missing variable-radius physical cut
 before P16-004 adds the strict angle-bearing source, patches, schemas and eval.
+For tapered ribs, P16-013 supplies the actual stock/prism union and exact planar
+contact mesh before P16-006 adds guarded source/patch/schema/history/eval.
 For curved draft, P16-012 supplies the full-cylinder witness and actual solid
 frustum runtime before P16-005 adds its guarded source/semantic/patch contract.
 

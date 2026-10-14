@@ -11,6 +11,7 @@ pub(super) enum FaceKey {
     Cap(u64, u64, u64),
     Cylinder(usize),
     Frustum(usize),
+    Rib(usize),
 }
 fn wall(a: f64, b: f64, r: f64, end_radius: f64) -> FaceKey {
     if (r - end_radius).abs() <= roundoff(r.max(end_radius)) {
@@ -22,7 +23,7 @@ fn wall(a: f64, b: f64, r: f64, end_radius: f64) -> FaceKey {
 fn cap(z: f64, a: f64, b: f64) -> FaceKey {
     FaceKey::Cap(z.to_bits(), a.min(b).to_bits(), a.max(b).to_bits())
 }
-fn validate_frame(frame: Frame) -> Result<()> {
+pub(super) fn validate_frame(frame: Frame) -> Result<()> {
     if frame.axes.iter().flatten().any(|v| !v.is_finite())
         || (0..3).any(|i| (dot(frame.axes[i], frame.axes[i]) - 1.).abs() > ROTATION_TOLERANCE)
         || (0..3)
@@ -34,6 +35,10 @@ fn validate_frame(frame: Frame) -> Result<()> {
 }
 pub(super) fn keys(body: &Body) -> Result<Vec<FaceKey>> {
     match body {
+        Body::RibbedStock { .. } => Ok((0..3)
+            .flat_map(|i| [FaceKey::Outer(i, false), FaceKey::Outer(i, true)])
+            .chain((0..5).map(FaceKey::Rib))
+            .collect()),
         Body::Cylinder { .. } => Ok((0..3).map(FaceKey::Cylinder).collect()),
         Body::Frustum { .. } => Ok((0..3).map(FaceKey::Frustum).collect()),
         Body::Stock {
@@ -135,7 +140,16 @@ impl AnalyticMock {
         }
         let body_record = self.body(body)?;
         let face_ids = &self.faces[&body.0];
+        if let Body::RibbedStock {
+            frame,
+            dimensions,
+            rib,
+        } = body_record
+        {
+            return ribbed_mesh(*frame, *dimensions, rib, face_ids, linear);
+        }
         let radius = match body_record {
+            Body::RibbedStock { .. } => 0.,
             Body::Stock { cuts, .. } => cuts
                 .iter()
                 .map(|c| c.radius.max(c.end_radius))
@@ -159,6 +173,11 @@ impl AnalyticMock {
             .collect();
         let mut builder = Builder::new();
         match body_record {
+            Body::RibbedStock {
+                frame,
+                dimensions,
+                rib,
+            } => return ribbed_mesh(*frame, *dimensions, rib, face_ids, linear),
             Body::Stock {
                 frame,
                 dimensions,
@@ -445,6 +464,88 @@ impl AnalyticMock {
         }
         builder.finish()
     }
+}
+fn ribbed_mesh(
+    frame: Frame,
+    dimensions: [f64; 3],
+    rib: &Rib,
+    faces: &BTreeMap<FaceKey, u64>,
+    linear: f64,
+) -> Result<MeshSet> {
+    validate_frame(frame)?;
+    let mut builder = Builder::new();
+    let footprint = rib.limits(false);
+    let grids = [
+        vec![0., footprint[0][0], footprint[0][1], dimensions[0]],
+        vec![0., footprint[1][0], footprint[1][1], dimensions[1]],
+        vec![0., dimensions[2]],
+    ];
+    for grid in &grids {
+        if grid.windows(2).any(|p| p[1] - p[0] <= POSITION_TOLERANCE_M) {
+            return Err(invalid("unresolvable rib/stock partition"));
+        }
+    }
+    for axis in 0..3 {
+        for high in [false, true] {
+            let u = (axis + 1) % 3;
+            let v = (axis + 2) % 3;
+            for (i, a) in grids[u].windows(2).enumerate() {
+                for (j, b) in grids[v].windows(2).enumerate() {
+                    if axis == 2 && high && i == 1 && j == 1 {
+                        continue;
+                    }
+                    let p = [[a[0], b[0]], [a[1], b[0]], [a[1], b[1]], [a[0], b[1]]].map(|p| {
+                        let mut q = [0.; 3];
+                        q[axis] = if high { dimensions[axis] } else { 0. };
+                        q[u] = p[0];
+                        q[v] = p[1];
+                        frame.map(q)
+                    });
+                    builder.quad(
+                        p,
+                        scale(frame.axes[axis], if high { 1. } else { -1. }),
+                        faces[&FaceKey::Outer(axis, high)],
+                    )?;
+                }
+            }
+        }
+    }
+    let vertices = rib.vertices(dimensions[2]).map(|p| frame.map(p));
+    let length_axis = usize::from(!rib.along_u);
+    let width_axis = 1 - length_axis;
+    let slope = (rib.base_thickness - rib.top_thickness) / (2. * rib.height);
+    for (axis, face_offset) in [(length_axis, 0), (width_axis, 2)] {
+        for high in [false, true] {
+            let bit = 1 << axis;
+            let other = 1 << (1 - axis);
+            let first = if high { bit } else { 0 };
+            let normal = add(
+                scale(frame.axes[axis], if high { 1. } else { -1. }),
+                scale(frame.axes[2], if axis == width_axis { slope } else { 0. }),
+            );
+            builder.quad(
+                [
+                    vertices[first],
+                    vertices[first | other],
+                    vertices[first | other | 4],
+                    vertices[first | 4],
+                ],
+                normal,
+                faces[&FaceKey::Rib(face_offset + usize::from(high))],
+            )?;
+        }
+    }
+    builder.quad(
+        [vertices[4], vertices[5], vertices[7], vertices[6]],
+        frame.axes[2],
+        faces[&FaceKey::Rib(4)],
+    )?;
+    if builder.error > linear {
+        return Err(invalid(
+            "rib mesh deflection below representable coordinate error",
+        ));
+    }
+    builder.finish()
 }
 fn gap(angles: &[f64], i: usize) -> f64 {
     if i + 1 < angles.len() {

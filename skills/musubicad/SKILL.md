@@ -751,3 +751,14 @@ creation patch, `cylindrical_draft_angle` eval and real stdio regression
 `tools/test_cylindrical_draft_mcp.py`. Sign is independently graded because a
 centred-plane volume cannot distinguish opposite angles. v0.3.1 predates the tag;
 no general curved/NURBS draft, additional host or release credit is claimed.
+
+P16-013 / ADR-066 supplies physical tapered-rib runtime only: actual connected
+stock/trapezoid-prism union, exact SI contact/volume/area/COM and closed exterior
+mesh in explicit analytic Mock and native OCCT. No .ocad `tapered_rib` or MCP
+creation tool ships yet. Do not invent optional angle/end fields on legacy
+`rib`, substitute synthetic mass or retain the shared internal interface.
+Runtime cannot infer original extrusion-end source from an arbitrary physical
+box. P16-006 owns guarded authored stock/end/open-line, semantic ownership,
+closed source/schema/patch/history/eval admission. SDK example:
+`analytic_tapered_rib`; independent runtime tests: `tapered_rib`. No maturity,
+new host or release credit for this prerequisite.

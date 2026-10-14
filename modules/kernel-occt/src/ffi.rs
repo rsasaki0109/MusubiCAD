@@ -5,6 +5,7 @@
 pub(crate) mod native {
     unsafe extern "C++" {
         include!("cpp/variable_fillet.h");
+        fn tapered_rib_stock(brep: &[u8], frame: &[f64]) -> Result<Vec<u8>>;
         fn cylindrical_frustum(frame: &[f64]) -> Result<Vec<u8>>;
         fn cylindrical_stock(brep: &[u8]) -> Result<Vec<f64>>;
         fn rectangular_stock_faces(brep: &[u8]) -> Result<Vec<f64>>;
