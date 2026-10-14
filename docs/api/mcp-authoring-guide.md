@@ -327,6 +327,12 @@ budget. It is not a mass query for native geometry or a new MCP operation;
 insufficient budget/precision refuses. Curved variable-fillet authoring remains
 unsupported pending actual construction and source admission.
 
+P16-021 / [native diagnostic](native-periodic-fillet-diagnostic.md) reproduces
+pinned-OCCT contact/volume discrepancies, including equal-volume wrong-phase
+controls. Its successful diagnostic explicitly keeps the candidate unsupported.
+Do not treat a valid BREP, stored radius law or ideal reference mass as curved
+variable-fillet authoring support.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

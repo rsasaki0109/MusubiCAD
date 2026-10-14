@@ -894,7 +894,8 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-017 | Define closed circular variable-fillet acceptance | ADR-070 / P16-008 prerequisite; distinguish periodic radius and authored phase from BREP seam, specify rolling-sphere reference/contact and constant-limit volume, ownership/reader/cache gates; native law/physical Mock/sampling remain proof obligations, design only, no score | Complete: PR #117 |
 | MCAD-P16-018 | Supply body-owned complete cylinder rims | ADR-071 / P16-008 prerequisite; actual full-cylinder stock and cap/side incidence including Location in Mock/OCCT, current physical rim IDs and exact circle queries, independent dimensions/volume/placement and protected refusal; read-only runtime witness, no fillet construction or score | Complete: PR #118 |
 | MCAD-P16-019 | Prove the bounded periodic fillet reference | ADR-072 / P16-008 prerequisite; analytic sphere-envelope/contact/derivative reference, explicit global exposure and regularity proof for a bounded cosine law, independent identities and constant-limit volume; no kernel solid, sampling or feature credit | Complete: PR #119 |
-| MCAD-P16-020 | Bound the periodic reference volume | ADR-073 / P16-008 prerequisite; exact characteristic-arc reduction and outward-rounded rational-chart interval integration with explicit SI width and work-budget refusal, independent surface/constant-limit tests; no kernel solid or native fidelity credit | Implemented; complete upon P16-020 PR merge |
+| MCAD-P16-020 | Bound the periodic reference volume | ADR-073 / P16-008 prerequisite; exact characteristic-arc reduction and outward-rounded rational-chart interval integration with explicit SI width and work-budget refusal, independent surface/constant-limit tests; no kernel solid or native fidelity credit | Complete: PR #120 |
+| MCAD-P16-021 | Reproduce native periodic-fillet fidelity failures | ADR-074 / P16-008 investigation; actual pinned native contact/interior witnesses and volume measurements against bounded ideal reference, constant and wrong-phase controls, reproducible CI diagnostic across sampling/tolerance profiles; no construction/source admission or feature credit | Implemented; complete upon P16-021 PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -937,6 +938,11 @@ not establish native fidelity, admit sampling or construct a physical body.
 P16-020 / ADR-073 supplies the bounded nonconstant reference-volume integral.
 Actual Mock/native construction, contact/phase/periodicity fidelity and bounded
 meshes remain further accepted prerequisites before the source feature.
+P16-021 / ADR-074 makes the native mismatch reproducible in CI, including actual
+contacts/interior witnesses, bounded ideal-volume reference and wrong-phase
+controls across the tested interpolation/tolerance profiles. It rejects these
+recipes rather than admitting an unbounded approximation. Actual construction
+and its complete approximation/mesh contract still require further decisions.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;

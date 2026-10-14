@@ -44,6 +44,9 @@ jobs:
       - name: Verify flexible assembly analytic grader
         run: python tools/test_assembly_tutorial.py
 
+      - name: Verify periodic native diagnostic report contract
+        run: python tools/test_periodic_fillet_probe.py
+
       - name: Verify repository Python cache hygiene
         run: python tools/test_repo_hygiene.py
 
@@ -90,6 +93,20 @@ jobs:
 
       - name: Test
         run: cargo test --workspace
+
+      - name: Reproduce pinned native periodic fillet counterexamples
+        run: >-
+          python tools/run_periodic_fillet_probe.py
+          --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu
+          --output target/periodic-fillet-diagnostic.json
+
+      - name: Upload native periodic fillet diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: periodic-fillet-diagnostic-${{ github.run_id }}
+          path: target/periodic-fillet-diagnostic.json
+          if-no-files-found: warn
 
       - name: Execute reproducible MCP editing tutorial
         run: python tools/run_editing_tutorial.py
