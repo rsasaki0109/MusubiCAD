@@ -35,6 +35,7 @@ pub enum FeatureExprField {
     BoreDepth,
     SeatDiameter,
     SeatDepth,
+    SeatIncludedAngle,
 }
 
 /// Supported semantic ref fields for patch operations.
@@ -76,6 +77,7 @@ impl FeatureExprField {
             Self::BoreDepth => "bore_depth",
             Self::SeatDiameter => "seat_diameter",
             Self::SeatDepth => "seat_depth",
+            Self::SeatIncludedAngle => "seat_included_angle",
         }
     }
 
@@ -90,8 +92,9 @@ impl FeatureExprField {
             "bore_depth" => Ok(Self::BoreDepth),
             "seat_diameter" => Ok(Self::SeatDiameter),
             "seat_depth" => Ok(Self::SeatDepth),
+            "seat_included_angle" => Ok(Self::SeatIncludedAngle),
             _ => Err(OpenCadError::validation(format!(
-                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', 'thickness_expr', 'bore_depth', 'seat_diameter', or 'seat_depth'"
+                "unsupported feature field '{field}'; expected 'length_expr', 'depth_expr', 'radius_expr', 'distance_expr', 'spacing_expr', 'thickness_expr', 'bore_depth', 'seat_diameter', 'seat_depth', or 'seat_included_angle'"
             ))),
         }
     }
@@ -1425,14 +1428,32 @@ fn apply_feature_expr(node: &mut FeatureNode, field: FeatureExprField, expr: &st
             Ok(())
         }
         (FeatureDefinition::SeatedStandardHole(def), FeatureExprField::SeatDiameter) => {
-            let opencad_feature::StandardHoleSeat::Counterbore { diameter_expr, .. } =
-                &mut def.seat;
+            let (opencad_feature::StandardHoleSeat::Counterbore { diameter_expr, .. }
+            | opencad_feature::StandardHoleSeat::Countersink { diameter_expr, .. }) = &mut def.seat;
             *diameter_expr = Some(expr.to_string());
             Ok(())
         }
         (FeatureDefinition::SeatedStandardHole(def), FeatureExprField::SeatDepth) => {
-            let opencad_feature::StandardHoleSeat::Counterbore { depth_expr, .. } = &mut def.seat;
+            let opencad_feature::StandardHoleSeat::Counterbore { depth_expr, .. } = &mut def.seat
+            else {
+                return Err(OpenCadError::validation(
+                    "countersink depth is derived; edit seat_included_angle",
+                ));
+            };
             *depth_expr = Some(expr.to_string());
+            Ok(())
+        }
+        (FeatureDefinition::SeatedStandardHole(def), FeatureExprField::SeatIncludedAngle) => {
+            let opencad_feature::StandardHoleSeat::Countersink {
+                included_angle_expr,
+                ..
+            } = &mut def.seat
+            else {
+                return Err(OpenCadError::validation(
+                    "seat_included_angle requires a countersink",
+                ));
+            };
+            *included_angle_expr = Some(expr.to_string());
             Ok(())
         }
         (FeatureDefinition::Extrude(extrude), FeatureExprField::LengthExpr) => {

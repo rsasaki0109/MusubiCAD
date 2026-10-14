@@ -136,22 +136,7 @@ fn resolve_feature_node(
                     expr, values,
                 )?);
             }
-            let crate::StandardHoleSeat::Counterbore {
-                diameter,
-                depth,
-                diameter_expr,
-                depth_expr,
-            } = &mut def.seat;
-            if let Some(expr) = diameter_expr {
-                *diameter = Length::from_meters(crate::seated_standard_hole::evaluate_length(
-                    expr, values,
-                )?);
-            }
-            if let Some(expr) = depth_expr {
-                *depth = Length::from_meters(crate::seated_standard_hole::evaluate_length(
-                    expr, values,
-                )?);
-            }
+            def.seat.resolve_expressions(values)?;
             def.validate_dimensions()?;
         }
         FeatureDefinition::StandardHole(def) => {

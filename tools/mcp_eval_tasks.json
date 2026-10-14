@@ -2006,6 +2006,19 @@
         "bore_depth"
       ],
       "expected_counterbore": "feature:seat"
+    },
+    {
+      "id": "countersink_angle",
+      "source": "examples/countersunk_plate.ocad.d",
+      "document": "countersink.ocad.d",
+      "prompt": "Change only seat_angle_rad in {document} from 90 deg to 60 deg. Preserve the explicit seated_standard_hole / countersink source, ISO273 M6 normal standard, 6.6 mm bore, 12 mm seat diameter, 10 mm bore depth, original stock/circle sketches, owned entry reference and feature order. Review then apply through DesignPatch, verify fresh native regeneration and the exact frustum/bore union volume. Do not substitute a counterbore or a plain hole.",
+      "expected_volume_mm3": 11491.275833221702,
+      "required_parameters": [
+        "seat_angle_rad",
+        "seat_diameter",
+        "bore_depth"
+      ],
+      "expected_countersink": "feature:seat"
     }
   ]
 }

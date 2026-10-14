@@ -249,3 +249,12 @@ Fillet and chamfer features may target a single persisted edge via `edge_ref`. D
 - [Pattern examples](../examples/patterns.md)
 - [Geometry kernel boundary](./geometry-kernel.md)
 - [Design graph](./design-graph.md)
+
+
+P16-004 / ADR-064 adds the closed countersink seat to seated standard holes.
+The feature layer owns standard/circle/source/semantic validation and typed
+angle expressions, derives frustum depth, then calls P16-011's transient
+physical kernel operation. Independent polynomial excess-removal/first-moment
+postconditions, closed output and cached ownership checks precede publication.
+Counterbore source/execution stays explicit; both forms share DesignPatch gates
+and default-refusing contexts. No document ownership crosses the kernel boundary.

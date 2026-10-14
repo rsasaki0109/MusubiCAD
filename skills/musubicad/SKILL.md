@@ -687,8 +687,7 @@ packaged tutorial gates. See the [v0.3.1 release evidence](../../docs/plans/cli-
 mode for bounded physical rectangle/circle/concentric cuts. Default ordinary
 Mock IDs remain synthetic and cannot prove physical hole dimensions or volume.
 See `docs/api/analytic-mock.md` and `examples/analytic-mock/`. No new MCP command,
-persisted setting or document seat feature is introduced. Counterbores use the P16-003 source/ownership gate below; countersinks
-remain P16-004; do not invent seat fields or
+persisted setting or document seat feature is introduced. Counterbores use the P16-003 source/ownership gate below; countersinks use P16-004 below; do not invent seat fields or
 substitute a plain bore. Use verified native DesignPatch for supported document
 edits. P16-010 admits actual closed bounded meshes and body-owned stock witnesses
 (ADR-063) in this explicit SDK mode; source/semantic ownership remains the
@@ -714,8 +713,21 @@ Mock is unsupported; explicit analytic Mock is SDK evidence, native is the
 CLI/MCP path. Check `counterbore_seat_depth` eval / actual stdio regression;
 source and geometry both matter. This adds no new MCP tool or host validation.
 
-P16-011 adds bounded physical countersink cuts to the runtime kernel (ADR-064),
-not to .ocad/DesignPatch/MCP authoring. Until P16-004 supplies the strict
-angle-bearing seat variant, refuse countersink authoring rather than substituting
-a bore or counterbore. The SDK example is `analytic_countersink`; physical
-integration/refusal tests run in geometry and kernel-occt, with no model calls.
+P16-011 supplies bounded physical countersink geometry (ADR-064); P16-004
+adds the strict `seated_standard_hole` / `countersink` source. Use explicit
+`diameter: {value_si: metres}` and `included_angle: {value_si: radians}`,
+with optional diameter_expr/included_angle_expr. Angle parameters use names
+like `seat_angle_rad` and unit-bearing expressions like `90 deg`. Length and
+angle fields refuse cross-kind units/references. No head dimensions are inferred.
+
+Depth is derived from the diameter/radius difference and half-angle tangent;
+angle must be finite in (0,pi), radial/lateral margins exceed 1 nm, and seat
+depth is strictly smaller than bore depth. The same owned original-stock end
+face, exact standard bore circle and mandatory verified DesignPatch gate apply.
+Use `seat_included_angle` for typed expression edits; `seat_depth` is
+counterbore-only. Do not substitute a cylindrical counterbore or plain bore.
+See `examples/countersunk_plate.md`, `countersink_angle` eval and
+`tools/test_countersink_mcp.py`. Packed/expanded source and canonical Undo/Redo
+are tested; old counterbore-only readers reject countersinks. Real stdio uses
+zero model calls, with no additional host/release credit. v0.3.1 predates these
+source tags. Explicit analytic Mock is SDK evidence; CLI/MCP uses native OCCT.

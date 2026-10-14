@@ -251,15 +251,26 @@ impl FeatureDefinition {
     /// Parametric expressions this definition evaluates, as `(field, expr)`.
     pub fn expressions(&self) -> Vec<(&'static str, &str)> {
         if let Self::SeatedStandardHole(def) = self {
-            let crate::StandardHoleSeat::Counterbore {
-                diameter_expr,
-                depth_expr,
-                ..
-            } = &def.seat;
+            let (diameter_expr, depth_field, depth_expr) = match &def.seat {
+                crate::StandardHoleSeat::Counterbore {
+                    diameter_expr,
+                    depth_expr,
+                    ..
+                } => (diameter_expr, "seat.depth_expr", depth_expr),
+                crate::StandardHoleSeat::Countersink {
+                    diameter_expr,
+                    included_angle_expr,
+                    ..
+                } => (
+                    diameter_expr,
+                    "seat.included_angle_expr",
+                    included_angle_expr,
+                ),
+            };
             return present([
                 ("bore_depth_expr", def.bore_depth_expr.as_ref()),
                 ("seat.diameter_expr", diameter_expr.as_ref()),
-                ("seat.depth_expr", depth_expr.as_ref()),
+                (depth_field, depth_expr.as_ref()),
             ]);
         }
         if let Self::DatumPlane(def) = self {

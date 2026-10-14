@@ -1,3 +1,6 @@
+// MCAD-P16-004 / ADR-064: countersink is a strict seat discriminant with explicit
+// SI included angle; counterbore-only readers refuse it. Never infer an angle,
+// seat diameter, face ownership or frustum depth in legacy hole/counterbore data.
 // MCAD-P16-003 / ADR-063: seated_standard_hole is an additive strict feature
 // tag with a closed counterbore seat. Old readers refuse the new tag. No seat,
 // face, standard or depth is inferred for legacy hole/standard_hole records.

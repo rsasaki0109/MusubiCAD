@@ -378,6 +378,27 @@ def check_counterbore_source(task: dict, document: Path) -> list[str]:
         return ["counterbore source evidence absent or malformed"]
 
 
+def check_countersink_source(task: dict, document: Path) -> list[str]:
+    """A mass match alone cannot substitute a plain bore or changed stock."""
+    try:
+        baseline = ROOT / task["source"]
+        old = json.loads((baseline / "graph/features.json").read_text(encoding="utf-8"))
+        new = json.loads((document / "graph/features.json").read_text(encoding="utf-8"))
+        before = {n["id"]: n for n in old["feature_nodes"]}
+        after = {n["id"]: n for n in new["feature_nodes"]}
+        if before != after or old["feature_graph"]["order"] != new["feature_graph"]["order"]:
+            return ["countersink source/standard/seat/target/order was altered"]
+        for filename in ["sketches.json", "semantic_refs.json"]:
+            if json.loads((baseline / "graph" / filename).read_text(encoding="utf-8")) != json.loads((document / "graph" / filename).read_text(encoding="utf-8")):
+                return ["countersink sketch or owned entry reference was altered"]
+        definition = after[task["expected_countersink"]]["definition"]
+        if definition["type"] != "seated_standard_hole" or definition["seat"]["type"] != "countersink":
+            return ["explicit countersink source is missing"]
+        return []
+    except (OSError, ValueError, KeyError, TypeError):
+        return ["countersink source evidence absent or malformed"]
+
+
 def check(
     task: dict,
     document: Path,
@@ -389,6 +410,8 @@ def check(
     problems = []
     if "expected_counterbore" in task:
         problems.extend(check_counterbore_source(task, document))
+    if "expected_countersink" in task:
+        problems.extend(check_countersink_source(task, document))
     if "expected_articulated_leaves" in task:
         if musubicad is None:
             problems.append("articulated checker requires fresh native regeneration")
@@ -822,6 +845,18 @@ def self_test() -> None:
         next(n for n in data["feature_nodes"] if n["id"] == "feature:seat")["definition"]["type"] = "hole"
         path.write_text(json.dumps(data), encoding="utf-8")
         assert check_counterbore_source(counterbore_task, candidate)
+    countersink_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "countersink_angle")
+    sink_seed = ROOT / countersink_task["source"]
+    assert check_countersink_source(countersink_task, sink_seed) == []
+    with tempfile.TemporaryDirectory() as folder:
+        candidate = Path(folder) / "plate.ocad.d"
+        shutil.copytree(sink_seed, candidate)
+        path = candidate / "graph/features.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        next(n for n in data["feature_nodes"] if n["id"] == "feature:seat")["definition"]["seat"]["type"] = "counterbore"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        passed, problems = check(countersink_task, candidate, f"volume_m3: {countersink_task['expected_volume_mm3']/1e9}\n")
+        assert not passed and problems  # A claimed mass cannot substitute a different seat.
     output = "regenerated: 3 features\nvolume_m3: 0.0000053684999999\nmass_kg: 1\n"
     assert abs(regenerated_volume_mm3(output) - 5368.5) < 1e-6
     assert regenerated_volume_mm3("no volume here") is None

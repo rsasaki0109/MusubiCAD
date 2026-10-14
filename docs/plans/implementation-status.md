@@ -459,3 +459,25 @@ model call is introduced. P16-004 still owns angle-bearing source/patch/schema/
 roundtrip/history/eval deliverables. Infrastructure earns no score: all rubric
 scores remain solid 57, sketch 60, assembly 70, drawing 50, I/O 60, GUI 45,
 ecosystem 14 (weighted 50.60, about 51%; agent operation 91).
+
+MCAD-P16-011 is complete in PR #107 (merge 3fc2817); its runtime-only geometry
+prerequisite earns no score. MCAD-P16-004 implements ADR-064's explicit
+`countersink` seat: SI diameter/included angle, derived frustum depth, strict
+nested decoding/length-angle expressions, typed `seat_included_angle` patch,
+source/owned-end/physical/cache admission and mandatory native host gates.
+Both schemas preserve the counterbore form in a strict oneOf, with no-inference
+migration, packed/expanded/authoring/old-reader refusal tests. Independent
+Mock/native formulae, contact/closed-mesh checks and a non-axis-aligned stock
+placement prove actual geometry. Patch-authored example, MCP guide/skill and
+source-aware `countersink_angle` eval are included. Real stdio makes 11 MCP
+requests and two Agent history requests with zero model calls; fresh native
+volume, read-only preview/review, protected wrong-ref/range/unit refusal,
+canonical Undo/Redo and CLI no-verify refusal pass. No host/release credit.
+
+Only after P16-004 merges, solid 57 → 59 earns partial countersink capability
+credit for real conical removal, parametric angle/contact and protected source/
+MCP authoring; arbitrary-face hole support or implicit manufacturing standards
+are not claimed. Other rubric scores remain sketch 60, assembly 70, drawing 50,
+I/O 60, GUI 45, ecosystem 14. Weighted general CAD 50.60 → 51.10 (about 51%),
+agent operation 91 → 92 for the verified typed angle-bearing manufacturing
+workflow. Before that merge, the earned baseline remains 50.60 / 91.

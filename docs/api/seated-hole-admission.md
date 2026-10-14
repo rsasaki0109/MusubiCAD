@@ -1,4 +1,4 @@
-# Seated standard-hole admission sketch
+# Seated standard-hole admission
 
 MCAD-P16-009 / [ADR-063](../adr/ADR-063-counterbore-source-and-physical-mesh-admission.md)
 defines the source and physical gate. MCAD-P16-003 implements the initial
@@ -34,7 +34,8 @@ The owning sketch supplies the exact bore circle. ISO273 M6 normal derives a
 independent of fastener designation. Seat diameter must exceed bore diameter;
 seat depth must be strictly smaller than bore depth, which cannot exceed stock
 thickness. ADR-063 defines finite/range/material-margin rules. No automatic
-head dimensions, countersinks, thread helix or tolerance class are inferred.
+head dimensions, thread helix or tolerance class are inferred. Countersinks
+use the explicit P16-004 form below.
 
 The new struct and closed seat variants reject unknown fields. `face_ref` is
 required and nonempty. The admitted target is the original right-rectangle,
@@ -123,3 +124,35 @@ See [the patch-authored example](../../examples/counterbored_plate.md),
 `counterbore_seat_depth` has an independent MCP eval checker that checks actual
 fresh native volume and preserved explicit source/standard/seat/sketch/reference
 records. The stdio regression makes zero model calls; no paid-host result is claimed.
+
+
+## Countersinks (P16-004, ADR-064)
+
+P16-011 supplies real cylinder/frustum union geometry; P16-004 adds the strict
+`countersink` seat with required `diameter: Length`, `included_angle: Angle`,
+optional `diameter_expr` / `included_angle_expr`. Angle uses `{value_si: radians}`
+and rejects unknown nested fields. Derive depth as (seat radius - bore radius)
+/ tan(angle/2); require finite angle in (0,pi), radial difference above 1 nm,
+and all original-stock/end-face/depth/containment rules. Old counterbore-only
+readers reject this discriminant; migration infers no new seats or angles.
+
+`StandardHoleSeat::dimensions(bore_diameter)` is now fallible and returns the
+seat diameter and physical depth; a countersink needs the standard bore input.
+Counterbore values remain explicit and unchanged. `seat_included_angle` is a
+typed patch field for countersinks; `seat_depth` applies only to counterbores.
+Angle expressions use strict angle units/parameter kinds; all length expressions
+retain strict length kinds. Dependency, cache admission, physical volume/COM,
+retained outer-face ownership and mandatory host verification apply to both.
+
+Counterbore excess removal uses the cylinder annulus. Countersink excess is
+pi*s*(R*R+R*r-2*r*r)/3 with depth first moment
+pi*s*s*(R*R+2*R*r-3*r*r)/12, so overlap with the bore is counted once.
+Meshes contain conical walls and no fictitious planar shoulder at the bore join.
+In-memory successful regeneration resolves numeric fallback values while
+preserving expressions; document preview/review/failed apply remain protected,
+and canonical history preserves authored values/array order.
+
+See [the countersunk example](../../examples/countersunk_plate.md), both
+`countersunk_standard_hole` integration suites, `countersink_angle` independent
+source-aware eval, and `tools/test_countersink_mcp.py` real stdio regression.
+No default Mock, automatic fastener head sizing or extra host validation is added.
