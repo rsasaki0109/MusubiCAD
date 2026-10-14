@@ -103,6 +103,16 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-018 / [ADR-071](../adr/ADR-071-physical-cylindrical-rim-witnesses.md) adds
+`cylindrical_stock_rims` and `CylindricalRimsGeometry` as a read-only prerequisite.
+Analytic Mock uses cylinder/cap/side records and a separate deterministic physical
+rim namespace, with exact current circle queries. Native incidence uses IsSame,
+including Location; a circular extrusion may reuse a TShape for its two caps.
+Private BREP integer indices follow the pinned cadrum unique-edge iterator and
+are validated by actual public circle queries. IDs remain body-scoped; no source
+phase, general edge selector or fillet body is inferred. See the
+[API](../api/cylindrical-rim-witnesses.md).
+
 P16-017's [ADR-070](../adr/ADR-070-closed-circular-variable-fillet-acceptance.md)
 defines a future closed circular candidate and independent sphere-envelope,
 contact and constant-radius volume reference. It does not enable a curved-edge

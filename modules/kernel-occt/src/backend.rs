@@ -760,6 +760,51 @@ impl GeometryKernel for OcctGeometryKernel {
             Err(OpenCadError::Other("OCCT backend disabled".into()))
         }
     }
+    fn cylindrical_stock_rims(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<opencad_geometry::CylindricalRimsGeometry> {
+        #[cfg(feature = "occt")]
+        {
+            let stock = self.cylindrical_stock_geometry(body, axis_hint)?;
+            let store = self.store.borrow();
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("rim body {}", body.0)))?;
+            if solid.iter_face().count() != 3 || solid.iter_edge().count() != 3 {
+                return Err(OpenCadError::validation("cylinder rim topology disagrees"));
+            }
+            let mut bytes = Vec::new();
+            Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+            let ids = crate::ffi::native::cylindrical_rim_ids(
+                &bytes,
+                stock.start_face_id,
+                stock.end_face_id,
+                stock.lateral_face_id,
+            )
+            .map_err(|e| OpenCadError::validation(format!("cylinder rim incidence: {e}")))?;
+            if ids.len() != 2 || ids.iter().any(|id| *id == 0 || *id > 3) {
+                return Err(OpenCadError::validation("invalid native cylinder rim IDs"));
+            }
+            let witness = opencad_geometry::CylindricalRimsGeometry {
+                stock,
+                start_edge_id: ids[0],
+                end_edge_id: ids[1],
+            };
+            witness.validate_circles(
+                &self.circular_edge_geometry(body, witness.start_edge_id)?,
+                &self.circular_edge_geometry(body, witness.end_edge_id)?,
+            )?;
+            Ok(witness)
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, axis_hint);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn draft_cylindrical_stock(
         &self,
         body: KernelBody,

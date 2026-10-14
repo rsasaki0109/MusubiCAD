@@ -18,6 +18,64 @@ fn parallel(a: [f64; 3], b: [f64; 3]) -> bool {
     ];
     dot(c, c).sqrt() <= ROTATION_TOLERANCE
 }
+/// ADR-071: current complete-circle edges shared by an actual cylinder's caps
+/// and lateral face. IDs are scoped to the queried physical body, not source refs.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CylindricalRimsGeometry {
+    pub stock: CylindricalStockGeometry,
+    pub start_edge_id: u64,
+    pub end_edge_id: u64,
+}
+impl CylindricalRimsGeometry {
+    pub fn validate(&self) -> Result<()> {
+        self.stock.validate()?;
+        if self.start_edge_id == 0
+            || self.end_edge_id == 0
+            || self.start_edge_id == self.end_edge_id
+        {
+            return Err(OpenCadError::validation(
+                "invalid physical cylinder rim IDs",
+            ));
+        }
+        Ok(())
+    }
+
+    /// Check independently queried complete circles against the physical stock.
+    /// Plane-normal sign does not establish authored phase or cap winding.
+    pub fn validate_circles(
+        &self,
+        start: &crate::CircularEdgeGeometry,
+        end: &crate::CircularEdgeGeometry,
+    ) -> Result<()> {
+        self.validate()?;
+        for (circle, z) in [(start, 0.), (end, self.stock.height_m)] {
+            let expected: [f64; 3] =
+                std::array::from_fn(|i| self.stock.origin_m[i] + self.stock.axis[i] * z);
+            let scale = expected
+                .into_iter()
+                .chain(circle.center_m)
+                .map(f64::abs)
+                .fold(1., f64::max);
+            let tolerance = POSITION_TOLERANCE_M + 64. * f64::EPSILON * scale;
+            if circle.center_m.iter().any(|v| !v.is_finite())
+                || !circle.radius_m.is_finite()
+                || (circle.radius_m - self.stock.radius_m).abs() > POSITION_TOLERANCE_M
+                || !unit(circle.normal)
+                || !parallel(circle.normal, self.stock.axis)
+                || circle
+                    .center_m
+                    .into_iter()
+                    .zip(expected)
+                    .any(|(a, b)| (a - b).abs() > tolerance)
+            {
+                return Err(OpenCadError::validation(
+                    "physical cylinder rim circle disagrees with stock",
+                ));
+            }
+        }
+        Ok(())
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CylindricalStockGeometry {
     pub origin_m: [f64; 3],

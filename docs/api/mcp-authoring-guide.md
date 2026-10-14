@@ -309,6 +309,12 @@ or accepted patch form. Existing Mock variable fillets change IDs and supply no
 physical curved-contour proof. P16-008 remains planned pending native law/contact
 evidence and physical Mock construction; keep rejecting curved variable requests.
 
+P16-018 / [ADR-071](../adr/ADR-071-physical-cylindrical-rim-witnesses.md) now supplies
+a read-only body-owned complete-cylinder rim witness in both physical kernels.
+It introduces no source tag or MCP operation; do not create a circular variable
+fillet through the legacy `fillet` fields. Authored phase and actual fillet
+construction remain P16-008 acceptance work.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

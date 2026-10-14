@@ -4,6 +4,7 @@ namespace musubicad {
 rust::Vec<std::uint8_t> tapered_rib_stock(rust::Slice<const std::uint8_t> brep, rust::Slice<const double> frame);
 rust::Vec<std::uint8_t> cylindrical_frustum(rust::Slice<const double> frame);
 rust::Vec<double> cylindrical_stock(rust::Slice<const std::uint8_t> brep);
+rust::Vec<std::uint64_t> cylindrical_rim_ids(rust::Slice<const std::uint8_t> brep, std::uint64_t start_face, std::uint64_t end_face, std::uint64_t side_face);
 rust::Vec<double> rectangular_stock_faces(rust::Slice<const std::uint8_t> brep);
 rust::Vec<double> tight_bounds(rust::Slice<const std::uint8_t> brep);
 rust::Vec<std::uint8_t> cubic_prism(rust::Slice<const double> controls, rust::Slice<const double> delta);

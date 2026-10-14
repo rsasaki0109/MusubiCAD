@@ -326,6 +326,18 @@ pub trait GeometryKernel {
             "cylindrical stock witness unsupported",
         ))
     }
+    /// ADR-071: body-owned complete circles shared by the full cylinder's caps
+    /// and lateral face. Axis hints orient the witness, never establish geometry.
+    fn cylindrical_stock_rims(
+        &self,
+        _body: &KernelBody,
+        _axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalRimsGeometry> {
+        Err(OpenCadError::validation(
+            "physical cylindrical rims unsupported",
+        ))
+    }
+
     fn draft_cylindrical_stock(
         &self,
         _body: KernelBody,
@@ -1038,6 +1050,17 @@ impl GeometryKernel for MockGeometryKernel {
             .borrow()
             .cylinder_geometry(body, axis_hint)
     }
+    fn cylindrical_stock_rims(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalRimsGeometry> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow()
+            .cylinder_rims(body, axis_hint)
+    }
     fn draft_cylindrical_stock(
         &self,
         body: KernelBody,
@@ -1305,6 +1328,9 @@ impl GeometryKernel for MockGeometryKernel {
         body: &KernelBody,
         edge_id: u64,
     ) -> Result<CircularEdgeGeometry> {
+        if let Some(state) = &self.analytic {
+            return state.borrow().rim_circle(body, edge_id);
+        }
         self.refuse_ellipse_edit(body)?;
         // Mock contract: synthetic edge 5 is a complete XY circle, radius half
         // the body's deterministic side length. Box edges 1..4 remain straight.

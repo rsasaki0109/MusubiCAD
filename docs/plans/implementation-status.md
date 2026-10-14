@@ -704,3 +704,20 @@ global regularity/exposure, physical Mock and bounded construction/sampling stil
 require evidence and a further runtime ADR before source implementation.
 P16-008 remains planned. P16-017 is design only: no new kernel body, source tag,
 schema, example or runnable MCP operation, and no score. Actual52.60 / 95.
+
+P16-017 is complete in PR #117 (merge a7a57f9) after all mandatory local checks
+(1129 passed, 0 failed, 36 ignored, plugin passed) and every applicable exact-head
+CI / Design Review job succeeded. Desktop/Release PR workflows were inapplicable
+by their path filters. No design score: actual52.60 / 95.
+
+MCAD-P16-018 implements ADR-071's read-only body-owned full-cylinder rim witness.
+Explicit analytic Mock stores deterministic current rim IDs with real cylinder
+and cap/side records, and exact circle queries refuse stale/foreign/legacy IDs.
+Native OCCT proves the full stock and actual cap/side edge incidence using IsSame
+(TShape plus Location). The regression fixture's translated cap circles share a
+TShape, so a pointer-only test cannot distinguish them. Public native IDs retain
+the pinned cadrum unique-edge iterator convention and pass actual edge/circle
+queries. Independent centre/plane/radius/circumference, mass/area/COM, closed mesh,
+proper placement, reversed hints, equal-volume different stocks and protected
+refusal are checked in both kernels. No new feature/schema/MCP command or fillet
+solid/sampling is admitted. P16-008 remains planned; no score, actual52.60 / 95.
