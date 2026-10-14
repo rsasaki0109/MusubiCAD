@@ -97,6 +97,14 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.record();
         self.inner.cylindrical_stock_geometry(body, axis_hint)
     }
+    fn cylindrical_stock_rims(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalRimsGeometry> {
+        self.record();
+        self.inner.cylindrical_stock_rims(body, axis_hint)
+    }
     fn draft_cylindrical_stock(
         &self,
         body: KernelBody,

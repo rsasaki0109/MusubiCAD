@@ -17,6 +17,12 @@ pub(crate) mod native {
         fn tapered_rib_stock(brep: &[u8], frame: &[f64]) -> Result<Vec<u8>>;
         fn cylindrical_frustum(frame: &[f64]) -> Result<Vec<u8>>;
         fn cylindrical_stock(brep: &[u8]) -> Result<Vec<f64>>;
+        fn cylindrical_rim_ids(
+            brep: &[u8],
+            start_face: u64,
+            end_face: u64,
+            side_face: u64,
+        ) -> Result<Vec<u64>>;
         fn rectangular_stock_faces(brep: &[u8]) -> Result<Vec<f64>>;
         fn tight_bounds(brep: &[u8]) -> Result<Vec<f64>>;
         fn cubic_prism(controls: &[f64], delta: &[f64]) -> Result<Vec<u8>>;

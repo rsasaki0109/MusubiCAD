@@ -222,6 +222,43 @@ rust::Vec<double> cylindrical_stock(rust::Slice<const std::uint8_t> brep) {
     } catch(const Standard_Failure& e) {throw std::runtime_error(e.what());}
 }
 
+// ADR-071: shared edge identity includes Location, not only a TShape pointer.
+rust::Vec<std::uint64_t> cylindrical_rim_ids(rust::Slice<const std::uint8_t> brep,
+        std::uint64_t start_face, std::uint64_t end_face, std::uint64_t side_face) {
+    try {
+        const auto stock=cylindrical_stock(brep);
+        const auto a=static_cast<std::uint64_t>(stock[8]),b=static_cast<std::uint64_t>(stock[9]);
+        if(side_face!=static_cast<std::uint64_t>(stock[10])
+            ||!((start_face==a&&end_face==b)||(start_face==b&&end_face==a)))
+            throw std::runtime_error("rim faces do not belong to the full cylinder");
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));
+        TopoDS_Shape shape;BRep_Builder builder;BRepTools::Read(shape,stream,builder);
+        NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> faces,edges;
+        TopExp::MapShapes(shape,TopAbs_FACE,faces);TopExp::MapShapes(shape,TopAbs_EDGE,edges);
+        if(faces.Extent()!=3||edges.Extent()!=3) throw std::runtime_error("invalid rim topology");
+        auto owns=[&](std::uint64_t id,const TopoDS_Shape& edge) {
+            for(TopExp_Explorer ex(faces(static_cast<int>(id)),TopAbs_EDGE);ex.More();ex.Next())
+                if(ex.Current().IsSame(edge)) return true;
+            return false;
+        };
+        rust::Vec<std::uint64_t> result;
+        for(auto cap:{start_face,end_face}) {
+            const auto other=cap==start_face?end_face:start_face;
+            int found=0;
+            for(int i=1;i<=edges.Extent();++i) {
+                if(owns(cap,edges(i))&&owns(side_face,edges(i))&&!owns(other,edges(i))) {
+                    if(found) throw std::runtime_error("ambiguous cylinder rim incidence");
+                    found=i;
+                }
+            }
+            if(!found) throw std::runtime_error("missing cylinder rim incidence");
+            result.push_back(static_cast<std::uint64_t>(found));
+        }
+        if(result[0]==result[1]) throw std::runtime_error("cylinder rims must be distinct");
+        return result;
+    } catch(const Standard_Failure& e) {throw std::runtime_error(e.what());}
+}
+
 // ADR-063: exact OCCT type/topology admission, not mesh or bounding-box inference.
 rust::Vec<double> rectangular_stock_faces(rust::Slice<const std::uint8_t> brep) {
     try {

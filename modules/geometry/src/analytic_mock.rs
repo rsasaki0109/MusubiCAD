@@ -661,6 +661,7 @@ pub(crate) struct AnalyticMock {
     wires: BTreeMap<u64, Profile>,
     bodies: BTreeMap<u64, Body>,
     faces: BTreeMap<u64, BTreeMap<mesh::FaceKey, u64>>,
+    rims: BTreeMap<u64, [u64; 2]>,
     histories: BTreeMap<u64, Vec<(u64, u64)>>,
     next_face: u64,
 }
@@ -731,6 +732,12 @@ impl AnalyticMock {
         }
         self.faces.insert(id, faces);
         self.histories.insert(id, history);
+        if matches!(&body, Body::Cylinder { .. }) {
+            // The 100000-record budget bounds this arithmetic; MAX/7 is
+            // separate from physical body/face and legacy synthetic namespaces.
+            let first = u64::MAX / 7 - 2 * self.bodies.len() as u64;
+            self.rims.insert(id, [first, first - 1]);
+        }
         self.bodies.insert(id, body);
         Ok(KernelBody::new(id))
     }
@@ -803,6 +810,62 @@ impl AnalyticMock {
         }
         .oriented(axis_hint)
     }
+    pub(crate) fn cylinder_rims(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<crate::CylindricalRimsGeometry> {
+        let stock = self.cylinder_geometry(body, axis_hint)?;
+        let ids = self.rims.get(&body.0).ok_or_else(unsupported)?;
+        let Body::Cylinder { axis, .. } = self.body(body)? else {
+            return Err(unsupported());
+        };
+        let [start_edge_id, end_edge_id] = if dot(stock.axis, *axis) > 0. {
+            *ids
+        } else {
+            [ids[1], ids[0]]
+        };
+        let witness = crate::CylindricalRimsGeometry {
+            stock,
+            start_edge_id,
+            end_edge_id,
+        };
+        witness.validate_circles(
+            &self.rim_circle(body, start_edge_id)?,
+            &self.rim_circle(body, end_edge_id)?,
+        )?;
+        Ok(witness)
+    }
+
+    pub(crate) fn rim_circle(
+        &self,
+        body: &KernelBody,
+        edge_id: u64,
+    ) -> Result<crate::CircularEdgeGeometry> {
+        let Body::Cylinder {
+            origin,
+            axis,
+            radius,
+            length,
+        } = self.body(body)?
+        else {
+            return Err(unsupported());
+        };
+        let ids = self.rims.get(&body.0).ok_or_else(unsupported)?;
+        let z = if edge_id == ids[0] {
+            0.
+        } else if edge_id == ids[1] {
+            *length
+        } else {
+            return Err(invalid("edge is not a current body-owned cylinder rim"));
+        };
+        Ok(crate::CircularEdgeGeometry {
+            center_m: add(*origin, scale(*axis, z)),
+            normal: *axis,
+            radius_m: *radius,
+        })
+    }
+
     pub(crate) fn nominal_thread(
         &mut self,
         body: KernelBody,

@@ -295,6 +295,11 @@ it enables no source tag or patch. P16-008 remains planned. The existing Mock
 variable path changes IDs, not physical geometry. Do not use it as curved-contour
 proof or try to create a circular variable fillet before runtime admission.
 
+P16-018 / ADR-071 adds a kernel-only physical complete-cylinder rim query, with
+current circle/cap/side ownership in analytic Mock and OCCT. It adds no MCP command
+or fillet source. Keep curved variable authoring unsupported until P16-008 supplies
+actual construction, guarded source and independent eval evidence.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`
