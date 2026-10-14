@@ -675,12 +675,32 @@ independently graded eval, failed-batch/artifact protection and Agent Undo/Redo.
 The runnable source example, creation/left edit patches, API, architecture,
 authoring guide and skill distinguish nominal geometry from production threads.
 
-Only after P16-007 merges to main, solid63→65 earns partial fixed-rubric credit
+P16-007 is complete in PR #116 (merge 508e7c8). All four mandatory local checks
+passed (1129 passed, 0 failed, 36 ignored, plugin passed), and every applicable
+exact-head CI, Design Review, Desktop and Release job succeeded; the PR release
+publisher was skipped. Solid63→65 earns partial fixed-rubric credit
 for usable source-authored nominal metric external threads in both kernels,
 independent physical pitch/radius/hand/volume/area/COM checks, protected source/
 ref/cache/history and native verified MCP edits. Weighted CAD52.10→52.60 (about
 53%), agent94→95 for the new independently graded source-aware authoring task.
-Other scores/weights remain unchanged. Before that merge actual52.10 / 94.
+Other scores/weights remain unchanged. Actual weighted CAD52.60 / agent95.
 No extra credit for ADR-067/068/069 planning/runtime, legacy generic helix or
 nominal calculations alone; no production fit, rounded-root, partial/internal/
 multi-start/runout, general downstream thread-face editing or host/release claim.
+
+MCAD-P16-017 supplies ADR-070's closed circular variable-fillet reference and
+acceptance gates before P16-008 implementation. The target is an original authored
+cylinder's owned complete end rim, a positive single-period cosine radius law
+and sketch-defined phase independent of native seams. It derives the ideal sphere
+envelope/contact equations and independent constant-limit removed volume, with
+nonconstant surface-integral, ownership, wrong-phase cache, reader/patch/history
+and MCP completion requirements. Legacy Mock variable fillets change IDs only;
+that path supplies no physical proof. A direct pinned-OCCT SDK probe produced
+valid constant/variable circular solids, with approximately 1 micrometre sampled
+contact error for the variable fixture; ADR-070 records its recipe and explicitly
+unbounded exploratory integral comparison. This is not an authored feature or
+general geometry/sampling proof. Native radius coordinates/periodicity,
+global regularity/exposure, physical Mock and bounded construction/sampling still
+require evidence and a further runtime ADR before source implementation.
+P16-008 remains planned. P16-017 is design only: no new kernel body, source tag,
+schema, example or runnable MCP operation, and no score. Actual52.60 / 95.

@@ -290,6 +290,11 @@ transfer has no exact face-history relay and downstream references need geometry
 provenance. Reference: `examples/agent/create_variable_fillet_plate_patch.json`
 and ADR-038.
 
+P16-017 / ADR-070 defines acceptance for a future closed circular periodic law;
+it enables no source tag or patch. P16-008 remains planned. The existing Mock
+variable path changes IDs, not physical geometry. Do not use it as curved-contour
+proof or try to create a circular variable fillet before runtime admission.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`
