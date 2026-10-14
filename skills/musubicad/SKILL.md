@@ -731,3 +731,10 @@ See `examples/countersunk_plate.md`, `countersink_angle` eval and
 are tested; old counterbore-only readers reject countersinks. Real stdio uses
 zero model calls, with no additional host/release credit. v0.3.1 predates these
 source tags. Explicit analytic Mock is SDK evidence; CLI/MCP uses native OCCT.
+
+P16-012 / ADR-065 proves bounded cylinder-to-solid-frustum runtime draft, with
+an actual full-cylinder witness and explicit neutral plane/angle. It is not a
+curved .ocad/MCP feature yet. Refuse curved-side authoring via legacy planar
+`draft`; do not add optional fields an old reader ignores. P16-005 owns guarded
+source/semantic-side/patch/history/eval admission. SDK example:
+`analytic_cylindrical_draft`; independent tests run in geometry/kernel-occt.

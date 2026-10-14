@@ -1172,3 +1172,11 @@ native volume plus unchanged explicit feature/standard/sketch/ref/order source.
 `tools/test_countersink_mcp.py` exercises actual MCP/Agent stdio with zero model
 calls. Counterbore-only readers reject the seat discriminant; both schemas and
 additive migration/roundtrip tests ship. Released v0.3.1 predates these tags.
+
+P16-012 / ADR-065 supplies real cylinder witnessing and neutral-plane solid
+frustum geometry in both kernels. It does not add a curved document draft or
+MCP tool yet. Do not send a curved side to the legacy planar `draft` feature
+or invent ignored optional fields. P16-005 supplies a distinct guarded source,
+owned lateral ref, neutral-plane and verified DesignPatch/history contract.
+The SDK example is `analytic_cylindrical_draft`; actual geometric tests are
+`cylindrical_draft` in both geometry/kernel-occt crates, with zero model calls.

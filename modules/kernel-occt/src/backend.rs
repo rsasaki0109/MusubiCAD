@@ -717,6 +717,89 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn cylindrical_stock_geometry(
+        &self,
+        body: &KernelBody,
+        axis_hint: [f64; 3],
+    ) -> Result<opencad_geometry::CylindricalStockGeometry> {
+        #[cfg(feature = "occt")]
+        {
+            let store = self.store.borrow();
+            if store.compound_members.contains_key(&body.0) {
+                return Err(OpenCadError::validation("cylinder compounds unsupported"));
+            }
+            let solid = store
+                .body(body.0)
+                .ok_or_else(|| OpenCadError::not_found(format!("stock body {}", body.0)))?;
+            let mut bytes = Vec::new();
+            Solid::write_brep_text([solid], &mut bytes).map_err(map_occt_error)?;
+            let p = crate::ffi::native::cylindrical_stock(&bytes)
+                .map_err(|e| OpenCadError::validation(format!("cylinder witness: {e}")))?;
+            if p.len() != 11
+                || p.iter().any(|v| !v.is_finite())
+                || p[8..]
+                    .iter()
+                    .any(|v| *v < 1. || *v > 3. || v.fract().abs() > f64::EPSILON)
+            {
+                return Err(OpenCadError::validation("invalid native cylinder witness"));
+            }
+            opencad_geometry::CylindricalStockGeometry {
+                origin_m: [p[0], p[1], p[2]],
+                axis: [p[3], p[4], p[5]],
+                radius_m: p[6],
+                height_m: p[7],
+                start_face_id: p[8] as u64,
+                end_face_id: p[9] as u64,
+                lateral_face_id: p[10] as u64,
+            }
+            .oriented(axis_hint)
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, axis_hint);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+    fn draft_cylindrical_stock(
+        &self,
+        body: KernelBody,
+        input: &opencad_geometry::CylindricalDraftInput,
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let stock = self.cylindrical_stock_geometry(&body, input.axis_hint)?;
+            let [a, b] = input.endpoint_radii(&stock)?;
+            let frame = [
+                stock.origin_m[0],
+                stock.origin_m[1],
+                stock.origin_m[2],
+                stock.axis[0],
+                stock.axis[1],
+                stock.axis[2],
+                a,
+                b,
+                stock.height_m,
+            ];
+            let bytes = crate::ffi::native::cylindrical_frustum(&frame)
+                .map_err(|e| OpenCadError::validation(format!("cylindrical draft: {e}")))?;
+            let mut solids =
+                Solid::read_brep_text(&mut std::io::Cursor::new(bytes)).map_err(map_occt_error)?;
+            if solids.len() != 1 {
+                return Err(OpenCadError::validation(
+                    "draft must produce one frustum solid",
+                ));
+            }
+            let result = solids.remove(0);
+            let id = self.store.borrow_mut().insert_body(result);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, input);
+            Err(OpenCadError::Other("OCCT backend disabled".into()))
+        }
+    }
+
     fn cut_countersunk_stock(
         &self,
         body: KernelBody,

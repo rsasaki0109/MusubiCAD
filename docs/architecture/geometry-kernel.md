@@ -304,3 +304,19 @@ with paired endpoint rings. Existing cylindrical chains retain their admission;
 general cuts on tapered stock refuse. No source graph/schema/standard sizing
 moves into the kernel. P16-004 separately implements the closed angle-bearing
 seat source, semantic ownership, DesignPatch/transaction and history gates.
+
+## Physical cylindrical-stock draft (P16-012)
+
+ADR-065 separates exact full-cylinder witnessing and solid-frustum generation
+from ADR-036's convex planar draft. Geometry receives no source graph or semantic
+ownership. A private native bridge checks BREP surface/curve/full-boundary types
+and body-specific cap/side indices. It uses actual outward derivatives and face
+orientation, so a valid indirect cylinder frame is not mistaken for an inward
+face. The validated neutral-plane radial law produces a real cone via a bridge
+that catches OCCT construction failures before publishing a handle.
+
+Analytic Mock has a separate solid Frustum record, exact mass/bounds and real
+closed conical disk/wall meshes. No synthetic IDs establish physical proof;
+new face identities have no fabricated reconstruction ancestry. Default Mock
+and legacy planar draft stay unchanged. P16-005 adds source ownership, consumed
+side/retained neutral-cap semantics, patches/schemas/history and MCP evidence.

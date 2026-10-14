@@ -31,6 +31,7 @@
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeCone.hxx>
 #include <gp_Elips.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <gp_Ax2.hxx>
@@ -42,6 +43,118 @@
 #include <stdexcept>
 
 namespace musubicad {
+// Exception-catching constructor; no OCCT exception crosses an infallible FFI.
+rust::Vec<std::uint8_t> cylindrical_frustum(rust::Slice<const double> p) {
+    try {
+        if(p.size()!=9) throw std::runtime_error("invalid frustum frame");
+        for(double v:p) if(!std::isfinite(v)) throw std::runtime_error("nonfinite frustum input");
+        gp_Vec axis(p[3],p[4],p[5]);
+        if(std::abs(axis.Magnitude()-1)>1e-9||p[6]<=1e-9||p[7]<=1e-9||p[8]<=1e-9
+            ||p[6]>1000||p[7]>1000||p[8]>1000||std::abs(p[6]-p[7])<=1e-9)
+            throw std::runtime_error("invalid physical frustum dimensions");
+        BRepPrimAPI_MakeCone maker(gp_Ax2(gp_Pnt(p[0],p[1],p[2]),gp_Dir(axis)),p[6],p[7],p[8]);
+        maker.Build();
+        if(!maker.IsDone()||!BRepCheck_Analyzer(maker.Shape(),true).IsValid()) throw std::runtime_error("invalid drafted frustum");
+        std::ostringstream stream;BRepTools::Write(maker.Shape(),stream);auto bytes=stream.str();rust::Vec<std::uint8_t> result;
+        for(unsigned char b:bytes) {result.push_back(b);}
+        return result;
+    } catch(const Standard_Failure& e) {throw std::runtime_error(e.what());}
+}
+
+// ADR-065: one exact full cylinder; private topology/type proof, never bounds.
+rust::Vec<double> cylindrical_stock(rust::Slice<const std::uint8_t> brep) {
+    try {
+        constexpr double tol=1e-9,pi=3.14159265358979323846;
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));
+        TopoDS_Shape shape; BRep_Builder builder; BRepTools::Read(shape,stream,builder);
+        if(shape.IsNull()||!BRepCheck_Analyzer(shape,true).IsValid()) throw std::runtime_error("invalid cylinder BREP");
+        NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> solids,faces,edges,vertices;
+        TopExp::MapShapes(shape,TopAbs_SOLID,solids);TopExp::MapShapes(shape,TopAbs_FACE,faces);
+        TopExp::MapShapes(shape,TopAbs_EDGE,edges);TopExp::MapShapes(shape,TopAbs_VERTEX,vertices);
+        if(solids.Extent()!=1||faces.Extent()!=3||edges.Extent()!=3||vertices.Extent()!=2)
+            throw std::runtime_error("requires one full cylinder with two caps and seam");
+        int circles=0,lines=0;
+        for(int i=1;i<=edges.Extent();++i) {
+            BRepAdaptor_Curve curve(TopoDS::Edge(edges(i)));
+            if(curve.GetType()==GeomAbs_Circle) {
+                if(std::abs(curve.LastParameter()-curve.FirstParameter()-2*pi)>tol)
+                    throw std::runtime_error("partial circular edge");
+                ++circles;
+            } else if(curve.GetType()==GeomAbs_Line) ++lines;
+            else throw std::runtime_error("unsupported cylinder boundary");
+        }
+        if(circles!=2||lines!=1) throw std::runtime_error("invalid cylinder boundary types");
+        int side=0,index=0;double radius=0,v0=0,v1=0;gp_Pnt axisOrigin;gp_Dir axis(0,0,1);
+        std::vector<std::pair<int,gp_Pln>> caps;std::vector<gp_Vec> capNormals;
+        for(TopExp_Explorer ex(shape,TopAbs_FACE);ex.More();ex.Next()) {
+            ++index;auto face=TopoDS::Face(ex.Current());BRepAdaptor_Surface surface(face);
+            int wires=0;for(TopExp_Explorer w(face,TopAbs_WIRE);w.More();w.Next())++wires;
+            if(wires!=1) throw std::runtime_error("cylinder face has extra wires");
+            if(surface.GetType()==GeomAbs_Cylinder) {
+                if(side||(face.Orientation()!=TopAbs_FORWARD&&face.Orientation()!=TopAbs_REVERSED)) throw std::runtime_error("ambiguous cylinder side");
+                side=index;auto cylinder=surface.Cylinder();radius=cylinder.Radius();axisOrigin=cylinder.Location();axis=cylinder.Axis().Direction();
+                double u0,u1;BRepTools::UVBounds(face,u0,u1,v0,v1);
+                if(std::abs(u1-u0-2*pi)>tol||!std::isfinite(radius)||radius<=tol||radius>1000
+                    ||!std::isfinite(v0)||!std::isfinite(v1)||v1-v0<=tol||v1-v0>1000)
+                    throw std::runtime_error("partial or empty cylinder surface");
+                gp_Pnt point;gp_Vec du,dv;surface.D1((u0+u1)/2,(v0+v1)/2,point,du,dv);
+                auto normal=du.Crossed(dv);if(face.Orientation()==TopAbs_REVERSED)normal.Reverse();
+                const gp_Vec offset(axisOrigin,point),direction(axis);
+                const auto radial=offset-direction*offset.Dot(direction);
+                if(normal.Magnitude()<=0||radial.Magnitude()<=tol||normal.Normalized().Dot(radial.Normalized())<=0
+                    ||normal.Normalized().Crossed(radial.Normalized()).Magnitude()>tol)
+                    throw std::runtime_error("cylinder side normal is not outward");
+            } else if(surface.GetType()==GeomAbs_Plane) {
+                NCollection_IndexedMap<TopoDS_Shape,TopTools_ShapeMapHasher> fe;
+                TopExp::MapShapes(face,TopAbs_EDGE,fe);
+                if(fe.Extent()!=1) throw std::runtime_error("cap is not one disk");
+                gp_Pnt point;gp_Vec du,dv;surface.D1(0,0,point,du,dv);auto normal=du.Crossed(dv);
+                if(face.Orientation()==TopAbs_REVERSED)normal.Reverse();
+                else if(face.Orientation()!=TopAbs_FORWARD)throw std::runtime_error("unsupported cap orientation");
+                if(normal.Magnitude()<=0)throw std::runtime_error("undefined cap normal");
+                caps.emplace_back(index,surface.Plane());capNormals.push_back(normal.Normalized());
+            } else throw std::runtime_error("noncylindrical stock surface");
+        }
+        if(!side||caps.size()!=2||!std::isfinite(radius)||radius<=tol) throw std::runtime_error("invalid full cylinder");
+        gp_Vec direction(axis);int start=0,end=0;
+        for(std::size_t ci=0;ci<caps.size();++ci) {
+            const auto& cap=caps[ci];gp_Vec normal=capNormals[ci];
+            if(normal.Crossed(direction).Magnitude()>tol) throw std::runtime_error("oblique cylinder cap");
+            const double z=direction.Dot(gp_Vec(axisOrigin,cap.second.Location()));
+            if(std::abs(z-v0)<=tol&&!start) {
+                if(normal.Dot(direction)>=0) {throw std::runtime_error("start cap is not outward");}
+                start=cap.first;
+            } else if(std::abs(z-v1)<=tol&&!end) {
+                if(normal.Dot(direction)<=0) {throw std::runtime_error("end cap is not outward");}
+                end=cap.first;
+            }
+            else throw std::runtime_error("cylinder cap height disagreement");
+        }
+        if(!start||!end) throw std::runtime_error("missing cylinder endpoints");
+        for(int i=1;i<=edges.Extent();++i) {
+            BRepAdaptor_Curve curve(TopoDS::Edge(edges(i)));
+            if(curve.GetType()==GeomAbs_Circle) {
+                auto circle=curve.Circle();gp_Vec offset(axisOrigin,circle.Location());
+                const double z=direction.Dot(offset);
+                if(std::abs(circle.Radius()-radius)>tol||gp_Vec(circle.Axis().Direction()).Crossed(direction).Magnitude()>tol
+                    ||(offset-direction*z).Magnitude()>tol||(std::abs(z-v0)>tol&&std::abs(z-v1)>tol))
+                    throw std::runtime_error("cap circle does not match cylinder");
+            }
+        }
+        const double h=v1-v0;GProp_GProps props;BRepGProp::VolumeProperties(shape,props);
+        const double expected=pi*radius*radius*h;
+        if(!std::isfinite(props.Mass())||props.Mass()<=0||std::abs(props.Mass()-expected)>expected*1e-8)
+            throw std::runtime_error("cylinder volume disagreement");
+        auto origin=axisOrigin.Translated(direction*v0);rust::Vec<double> result;
+        for(double value:{origin.X(),origin.Y(),origin.Z(),axis.X(),axis.Y(),axis.Z(),radius,h,
+            double(start),double(end),double(side)}) {
+            if(!std::isfinite(value)) {throw std::runtime_error("nonfinite cylinder witness");}
+            result.push_back(value);
+        }
+        return result;
+    } catch(const Standard_Failure& e) {throw std::runtime_error(e.what());}
+}
+
 // ADR-063: exact OCCT type/topology admission, not mesh or bounding-box inference.
 rust::Vec<double> rectangular_stock_faces(rust::Slice<const std::uint8_t> brep) {
     try {
