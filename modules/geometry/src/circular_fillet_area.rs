@@ -21,40 +21,6 @@ fn norm(v: [I; 3]) -> I {
         squared.sqrt()
     }
 }
-fn split(p: &P, axis: usize) -> (P, P) {
-    let mut a = P::zero(p.u, p.v);
-    let mut b = a.clone();
-    let (degree, rows) = if axis == 0 { (p.u, p.v) } else { (p.v, p.u) };
-    for row in 0..=rows {
-        let mut values: Vec<_> = (0..=degree)
-            .map(|i| {
-                if axis == 0 {
-                    p.at(i, row)
-                } else {
-                    p.at(row, i)
-                }
-            })
-            .collect();
-        for level in 0..=degree {
-            let ia = if axis == 0 {
-                level * (p.v + 1) + row
-            } else {
-                row * (p.v + 1) + level
-            };
-            let ib = if axis == 0 {
-                (degree - level) * (p.v + 1) + row
-            } else {
-                row * (p.v + 1) + degree - level
-            };
-            a.c[ia] = values[0];
-            b.c[ib] = values[degree - level];
-            for i in 0..degree - level {
-                values[i] = (values[i] + values[i + 1]) * I::exact(0.5);
-            }
-        }
-    }
-    (a, b)
-}
 #[derive(Clone)]
 struct Leaf {
     cross: [P; 3],
@@ -123,18 +89,15 @@ impl Leaf {
         Self::new(cross, 1., serial)
     }
     fn children(self, serial: &mut usize) -> Result<Vec<Self>> {
-        let halves: [_; 3] = std::array::from_fn(|i| split(&self.cross[i], 0));
+        let halves: [_; 3] = std::array::from_fn(|i| self.cross[i].split_half(0));
         let mut children = Vec::with_capacity(4);
         for side in 0..2 {
             let quarters: [_; 3] = std::array::from_fn(|i| {
-                split(
-                    if side == 0 {
-                        &halves[i].0
-                    } else {
-                        &halves[i].1
-                    },
-                    1,
-                )
+                if side == 0 {
+                    halves[i].0.split_half(1)
+                } else {
+                    halves[i].1.split_half(1)
+                }
             });
             for upper in 0..2 {
                 let cross = std::array::from_fn(|i| {

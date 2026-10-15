@@ -963,3 +963,32 @@ performs actual native construction and uploads its report. No global rounded/
 native normal/G1/embedding certificate, physical Mock/production runtime/mesh,
 source/schema/MCP operation or editable NURBS is admitted. Previous polynomial
 certificates do not transfer. P16-008 stays planned; actual52.60 / 95.
+
+
+PR #131 merged P16-031 into main at
+`79421a4956d6ba17d4c8858da8981275565079cc` after all four applicable exact-head
+workflows and their complete job inventories succeeded (release publisher
+intentionally skipped). Required local checks passed: 1184 Rust tests succeeded,
+36 ignored, plus agent-plugin validation. Actual native construction/report upload
+succeeded. No score: actual52.60 / 95.
+
+MCAD-P16-032 / ADR-085 adds complete closed-chart rounded rational derivative,
+normal, positive Jacobian and orientation certificates tied privately to the
+construction reference. Outward homogeneous differences include actual pole/weight
+rounding; derivatives retain original u/v scale through shared de Casteljau
+restriction. An analytic ideal Jacobian bound and deterministic bounded complete
+cover prove regularity and normal precision, or refuse without mutation/partial
+certificates. Mathematical support/seam normal bounds follow; native D1/Jacobian,
+analytic constant derivatives and paired owner normals remain numerical witnesses
+with separate allowances. Independent analytic/scale/boundary tests, actual-control
+negative tests and synthetic report refusals protect the contract. No global native
+G1/embedding, physical Mock/runtime/mesh, source/schema/MCP operation/eval or editable
+NURBS admission; P16-008 remains planned. No score: actual52.60 / 95.
+
+P16-032 local mandatory checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1189 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Eight rational geometry tests, two private control
+refusals, eleven synthetic report tests and the actual pinned native probe pass.
+Eight complete chart certificates use 411 total leaves; maximum normal bound
+9.973e-10 and minimum Jacobian lower bound 2.393e-6 m². Native evidence remains
+numerical, not a global certificate. Completion requires this PR's merge.

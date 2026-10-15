@@ -905,7 +905,8 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-028 | Bound curved diagnostic surface areas | ADR-081 / P16-008 investigation; outward Bernstein cross-product area enclosures with deterministic refinement and explicit SI width/work refusal, independent native band/skirt area comparisons; planar caps and global embedding excluded, no feature admission | Complete: PR #128 |
 | MCAD-P16-029 | Construct rational support contact curves | ADR-082 / P16-008 prerequisite; fixed positive-weight side/end contact curves, encoded cylinder/plane identities and outward whole-curve positional bounds, actual native closed contact wires and phase decoys; no trimming/G1/body/source admission | Complete: PR #129 |
 | MCAD-P16-030 | Trim unchanged native contact supports | ADR-083 / P16-008 investigation; actual rational-contact-bounded cylinder quadrants and end plane, current native pcurves/support identity/tolerance/topology, independent retained-region/area/phase controls; numerical projection evidence only, no blend/G1/body/source admission | Complete: PR #130 |
-| MCAD-P16-031 | Construct rational rolling-sphere reference surfaces | ADR-084 / P16-008 prerequisite; fixed positive-weight rational characteristic-circle charts with outward actual-pole positional bounds, independent sphere/envelope/contact/normal controls and native sewing with unchanged supports; no production Mock/source/mesh admission or global native G1/embedding certificate | Implemented; complete upon P16-031 PR merge |
+| MCAD-P16-031 | Construct rational rolling-sphere reference surfaces | ADR-084 / P16-008 prerequisite; fixed positive-weight rational characteristic-circle charts with outward actual-pole positional bounds, independent sphere/envelope/contact/normal controls and native sewing with unchanged supports; no production Mock/source/mesh admission or global native G1/embedding certificate | Complete: PR #131 |
+| MCAD-P16-032 | Certify rounded rational reference normals | ADR-085 / P16-008 prerequisite; whole-chart actual-control derivative/normal/regularity/orientation bounds with deterministic Bernstein restriction, explicit precision/work refusal and support/seam implications, independent analytic/native checks; no global native G1/embedding or production Mock/source/mesh admission | Implemented; complete upon PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -957,6 +958,13 @@ P16-022 / ADR-075 supplies ideal rational patch bounds and a rounded-corner
 positional interpolation error inequality for investigating direct construction.
 It does not return a mesh or admit native fitting/normal error/closure/mass;
 actual Mock/native bodies and the complete construction/source contract remain.
+P16-031 / ADR-084 subsequently constructs rational reference charts and actual
+closed native diagnostic solids with unchanged analytic supports. P16-032 /
+ADR-085 certifies complete rounded-chart derivatives, regularity/orientation and
+normal/support/seam error bounds with explicit precision/work refusal. These
+mathematical certificates do not prove every native conversion/sewing error or
+global native G1/embedding; physical Mock/runtime, bounded mesh and guarded
+source ownership/cache/history/reader acceptance remain before P16-008.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;

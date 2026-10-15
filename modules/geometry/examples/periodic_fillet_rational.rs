@@ -16,7 +16,12 @@ fn main() -> opencad_core::Result<()> {
         let mut side_pcurves = Vec::new();
         for chart in 0..4 {
             let patch = reference.rational_patch(chart)?;
-            patches.push(json!({"chart":chart,"u_degree":patch.u_degree(),"v_degree":patch.v_degree(),"control_points_m":patch.control_points_m(),"weights":patch.weights(),"position_error_upper_m":patch.position_error_upper_m()}));
+            let normal = patch.normal_bounds(1e-9, 4096)?;
+            patches.push(json!({"chart":chart,"u_degree":patch.u_degree(),"v_degree":patch.v_degree(),"control_points_m":patch.control_points_m(),"weights":patch.weights(),"position_error_upper_m":patch.position_error_upper_m(),"normal_bounds":{
+                "jacobian_area_lower_m2":normal.jacobian_area_lower_m2,"jacobian_area_upper_m2":normal.jacobian_area_upper_m2,
+                "ideal_normal_alignment_lower":normal.ideal_normal_alignment_lower,"normal_error_upper":normal.normal_error_upper,
+                "du_error_upper_m":normal.du_error_upper_m,"dv_error_upper_m":normal.dv_error_upper_m,"leaves":normal.leaves
+            }}));
             let pc = reference.cylindrical_contact_pcurve(chart)?;
             side_pcurves.push(json!({"chart":chart,"divisions":pc.divisions(),"control_points_rad_m":pc.control_points_rad_m(),"angle_error_upper_rad":pc.angle_error_upper_rad(),"height_error_upper_m":pc.height_error_upper_m(),"position_error_upper_m":pc.position_error_upper_m()}));
         }
@@ -34,7 +39,7 @@ fn main() -> opencad_core::Result<()> {
     }
     println!(
         "{}",
-        json!({"format_version":1,"radius_m":0.01,"height_m":0.02,"cases":cases})
+        json!({"format_version":1,"radius_m":0.01,"height_m":0.02,"normal_error_request":1e-9,"normal_max_leaves":4096,"cases":cases})
     );
     Ok(())
 }

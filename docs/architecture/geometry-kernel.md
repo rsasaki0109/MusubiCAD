@@ -103,6 +103,18 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-032 / [ADR-085](../adr/ADR-085-rounded-rational-normal-certificates.md)
+certifies the actual immutable rational controls' derivatives, positive Jacobian,
+outward orientation and unit-normal error on each entire closed chart. Private
+reference binding, outward homogeneous differences, an analytic ideal Jacobian
+lower bound and deterministic Bernstein restriction provide complete bounded
+coverage; invalid/unattainable requests refuse without geometry mutation. Shared
+private de Casteljau restriction preserves previous area-integration semantics.
+Support/quarter seam normal implications concern supplied mathematical geometry;
+actual native D1/Jacobian/boundary witnesses remain separately gated numerical
+evidence, not global native G1/embedding or source admission.
+
+
 P16-031 / [ADR-084](../adr/ADR-084-rational-rolling-sphere-surfaces.md) supplies
 immutable degree-(8,2) rational characteristic-circle charts, a direct
 reparameterization of the ideal envelope with outward actual-control position

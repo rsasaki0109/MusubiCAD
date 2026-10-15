@@ -1,4 +1,4 @@
-"""ADR-084: actual rational envelope solids; no production geometry admission."""
+"""ADR-084/085: actual rational envelope solids; no production geometry admission."""
 from __future__ import annotations
 import argparse
 from collections import Counter
@@ -17,6 +17,7 @@ D1_M = 1e-12  # Metres per dimensionless local parameter.
 NORMAL = 1e-9
 JOIN_M = 1e-9  # Native numerical gates, not certified global native errors.
 VOLUME_M3 = 1e-12
+JACOBIAN_M2 = 1e-16  # Separate numerical witness allowance, not a native certificate.
 
 
 def tensor(poles, weights, u, v):
@@ -78,6 +79,8 @@ def grade(reference, native):
     for report in (reference, native):
         require(type(report.get("format_version")) is int and report["format_version"] == 1 and len(report["cases"]) == 2, "wrong rational surface report/inventory")
     require(native["occt_version"] == "8.0.0" and abs(number(reference["radius_m"])-.01) <= 1e-15 and abs(number(reference["height_m"])-.02) <= 1e-15, "wrong SDK/stock")
+    require(number(reference["normal_error_request"]) == 1e-9 and type(reference["normal_max_leaves"]) is int and reference["normal_max_leaves"] == 4096, "wrong whole-chart normal precision/work request")
+    certificates = []
     maxima = {key: 0. for key in ("point_m", "d1_m", "normal", "join_gap_m", "join_normal_gap")}
     phase_mismatches = []
     for law, (ref, actual) in enumerate(zip(reference["cases"], native["cases"])):
@@ -115,6 +118,11 @@ def grade(reference, native):
                 require(type(face[key]) is int and face[key] == value and type(patch[key]) is int and patch[key] == value, "wrong rational surface degree")
             bound = number(patch["position_error_upper_m"])
             require(0 < bound <= 1e-12, "unresolved whole-patch actual-pole error")
+            certificate = patch["normal_bounds"]
+            jlo, jhi, alignment, error, eu, ev = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
+            require(0 < jlo <= jhi and 0 < alignment <= 1 and 0 < error <= reference["normal_error_request"] and 0 < eu <= D1_M and 0 < ev <= D1_M, "unresolved whole-chart normal/regularity/derivative certificate")
+            require(type(certificate["leaves"]) is int and 1 <= certificate["leaves"] <= reference["normal_max_leaves"], "incomplete/exhausted normal certificate work")
+            certificates.append(certificate)
             poles, weights = patch["control_points_m"], patch["weights"]
             require(len(poles) == len(weights) == len(face["poles_m"]) == len(face["weights"]) == 9 and all(len(row) == 3 for net in (poles, weights, face["poles_m"], face["weights"]) for row in net), "missing current control net")
             require(all(number(w) > 0 for net in (weights, face["weights"]) for row in net for w in row), "nonpositive patch weight")
@@ -135,6 +143,14 @@ def grade(reference, native):
                 k = 0. if law == 0 else -.0005*math.sin(theta)/(.01-r)
                 alpha = math.atan2(2*v+2*k*k*v*v, 1-v*v)
                 ideal, ideal_normal = envelope(law, theta, alpha)
+                native_normal, native_jacobian = unit_cross(vector(sample["du_m"]), vector(sample["dv_m"]))
+                require(jlo-JACOBIAN_M2 <= native_jacobian <= jhi+JACOBIAN_M2 and distance(native_normal, ideal_normal) <= error+NORMAL and sum(x*y for x, y in zip(native_normal, ideal_normal)) >= alignment-NORMAL, "native D1/normal witness outside rounded rational certificate")
+                if law == 0:
+                    # Independent exact toroidal-chart derivatives in original u,v.
+                    rho, tu, av = .01-r+r*math.cos(alpha), 2/(1+u*u), 2/(1+v*v)
+                    exact_du = [-rho*math.sin(theta)*tu, rho*math.cos(theta)*tu, 0.]
+                    exact_dv = [-r*math.sin(alpha)*math.cos(theta)*av, -r*math.sin(alpha)*math.sin(theta)*av, r*math.cos(alpha)*av]
+                    require(distance(sample["du_m"], exact_du) <= eu+D1_M and distance(sample["dv_m"], exact_dv) <= ev+D1_M, "native D1 outside independent constant-chart derivative bounds")
                 require(distance(sample["point_m"], ideal) <= bound+POINT_M and distance(sample["normal"], ideal_normal) <= NORMAL, "native rational surface differs from independent sphere envelope")
                 maxima["point_m"], maxima["d1_m"], maxima["normal"] = max(maxima["point_m"], ep), max(maxima["d1_m"], ed), max(maxima["normal"], en)
         require(faces == {0: 4, 1: 4, 2: 1, 3: 1} and set(blends) == set(range(4)), "wrong analytic/blend face inventory")
@@ -184,6 +200,12 @@ def grade(reference, native):
                 if pair == (1, 3): require(abs(sum(x*y for x, y in zip(a, b))) <= NORMAL, "bottom edge lost expected right angle")
                 else:
                     gap = distance(a, b);require(gap <= NORMAL, "native support/seam tangent-plane witness failed")
+                    # Whole mathematical support/seam implications plus a separate
+                    # native witness allowance; this does not certify native G1.
+                    certified_gap = sum(ref["patches"][c]["normal_bounds"]["normal_error_upper"] for k, c in roles if k == 0)
+                    if pair == (0, 1): certified_gap += ref["side_pcurves"][next(c for k, c in roles if k == 0)]["angle_error_upper_rad"]
+                    if pair in ((0, 0), (0, 1), (0, 2)):
+                        require(gap <= certified_gap+NORMAL, "native join normal witness outside mathematical boundary implication")
                     maxima["join_normal_gap"] = max(maxima["join_normal_gap"], gap)
         require(pairs == {(0, 0): 4, (0, 1): 4, (0, 2): 4, (1, 1): 4, (1, 3): 4} and sorted(seam_pairs) == [(0, 1), (0, 3), (1, 2), (2, 3)] and sorted(side_contacts) == sorted(end_contacts) == [0, 1, 2, 3], "wrong sewn support/seam adjacency")
         require(len(actual["classifications"]) == 8, "missing actual solid/phase classifiers")
@@ -200,8 +222,9 @@ def grade(reference, native):
     require(phase_mismatches[0] == 0 and phase_mismatches[1] >= 2, "constant/variable actual solid phase decoys not distinguished")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
             "native_diagnostic_solids_created": 2, "native_rational_blend_faces_created": 8,
+            "rounded_reference_certificates": {"count": len(certificates), "maximum_normal_error": max(c["normal_error_upper"] for c in certificates), "minimum_jacobian_m2": min(c["jacobian_area_lower_m2"] for c in certificates), "total_cover_leaves": sum(c["leaves"] for c in certificates), "global_native_certificate": False},
             "maxima": maxima, "rotated_classifier_mismatches": phase_mismatches,
-            "native_allowances": {"point_m": POINT_M, "d1_m": D1_M, "normal": NORMAL, "join_m": JOIN_M, "volume_m3": VOLUME_M3}}
+            "native_allowances": {"point_m": POINT_M, "d1_m": D1_M, "normal": NORMAL, "join_m": JOIN_M, "volume_m3": VOLUME_M3, "jacobian_m2": JACOBIAN_M2}}
 
 
 def run(occt_root, output):

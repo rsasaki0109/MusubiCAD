@@ -9,6 +9,7 @@ use opencad_core::{OpenCadError, Result};
 #[derive(Debug, Clone)]
 pub struct CircularFilletRationalPatch {
     chart: u8,
+    pub(super) reference: CircularFilletReference,
     poles_m: [[[f64; 3]; 3]; 9],
     weights: [[f64; 3]; 9],
     error_m: f64,
@@ -181,61 +182,7 @@ impl CircularFilletReference {
         if chart >= 4 {
             return Err(invalid());
         }
-        let [r, h, min, max] = [
-            self.cylinder_radius(),
-            self.cylinder_height(),
-            self.min_radius(),
-            self.max_radius(),
-        ]
-        .map(|x| I::exact(x.meters()));
-        let m = (min + max) / I::exact(2.);
-        let a = (max - min) / I::exact(2.);
-        let base = |values: [f64; 3], transverse| P {
-            u: if transverse { 0 } else { 2 },
-            v: if transverse { 2 } else { 0 },
-            c: values.map(I::exact).to_vec(),
-        };
-        let d = base([1., 1., 2.], false);
-        let c = base([1., 1., 0.], false);
-        let s = base([0., 1., 2.], false);
-        let (c, s) = match chart {
-            0 => (c, s),
-            1 => (scale(&s, I::exact(-1.)), c),
-            2 => (scale(&c, I::exact(-1.)), scale(&s, I::exact(-1.))),
-            _ => (s, scale(&c, I::exact(-1.))),
-        };
-        let n = sum(&scale(&d, m), &scale(&c, a));
-        let l = scale(&d, r).difference(&n);
-        let k = scale(&s, -a);
-        let l2 = l.product(&l);
-        let k2 = k.product(&k);
-        let two_v2 = base([0., 0., 2.], true);
-        let wc = sum(&l2.product(&base([1., 1., 2.], true)), &k2.product(&two_v2));
-        let nr = l2.product(&base([1., 1., 0.], true));
-        let nt = k.product(&l).product(&base([0., 1., 0.], true));
-        let nz = sum(&l2.product(&base([0., 1., 2.], true)), &k2.product(&two_v2));
-        let w = d.product(&d).product(&wc);
-        let numerators = [
-            sum(
-                &l.product(&c).product(&wc),
-                &n.product(&nr.product(&c).difference(&nt.product(&s))),
-            ),
-            sum(
-                &l.product(&s).product(&wc),
-                &n.product(&sum(&nr.product(&s), &nt.product(&c))),
-            ),
-            sum(
-                &scale(&d, h).difference(&n).product(&d).product(&wc),
-                &n.product(&d).product(&nz),
-            ),
-        ];
-        if w.c
-            .iter()
-            .chain(numerators.iter().flat_map(|p| &p.c))
-            .any(|x| !x.valid())
-        {
-            return Err(invalid());
-        }
+        let (numerators, w) = homogeneous(self, chart)?;
         let mut poles_m = [[[0.; 3]; 3]; 9];
         let mut weights = [[0.; 3]; 9];
         for (i, row) in weights.iter_mut().enumerate() {
@@ -289,9 +236,73 @@ impl CircularFilletReference {
         }
         Ok(CircularFilletRationalPatch {
             chart,
+            reference: self,
             poles_m,
             weights,
             error_m,
         })
     }
+}
+
+/// Unchanged ADR-084 homogeneous equations shared by construction/certification.
+pub(super) fn homogeneous(reference: CircularFilletReference, chart: u8) -> Result<([P; 3], P)> {
+    if chart >= 4 {
+        return Err(invalid());
+    }
+    let [r, h, min, max] = [
+        reference.cylinder_radius(),
+        reference.cylinder_height(),
+        reference.min_radius(),
+        reference.max_radius(),
+    ]
+    .map(|x| I::exact(x.meters()));
+    let m = (min + max) / I::exact(2.);
+    let a = (max - min) / I::exact(2.);
+    let base = |values: [f64; 3], transverse| P {
+        u: if transverse { 0 } else { 2 },
+        v: if transverse { 2 } else { 0 },
+        c: values.map(I::exact).to_vec(),
+    };
+    let d = base([1., 1., 2.], false);
+    let c = base([1., 1., 0.], false);
+    let s = base([0., 1., 2.], false);
+    let (c, s) = match chart {
+        0 => (c, s),
+        1 => (scale(&s, I::exact(-1.)), c),
+        2 => (scale(&c, I::exact(-1.)), scale(&s, I::exact(-1.))),
+        _ => (s, scale(&c, I::exact(-1.))),
+    };
+    let n = sum(&scale(&d, m), &scale(&c, a));
+    let l = scale(&d, r).difference(&n);
+    let k = scale(&s, -a);
+    let l2 = l.product(&l);
+    let k2 = k.product(&k);
+    let two_v2 = base([0., 0., 2.], true);
+    let wc = sum(&l2.product(&base([1., 1., 2.], true)), &k2.product(&two_v2));
+    let nr = l2.product(&base([1., 1., 0.], true));
+    let nt = k.product(&l).product(&base([0., 1., 0.], true));
+    let nz = sum(&l2.product(&base([0., 1., 2.], true)), &k2.product(&two_v2));
+    let w = d.product(&d).product(&wc);
+    let numerators = [
+        sum(
+            &l.product(&c).product(&wc),
+            &n.product(&nr.product(&c).difference(&nt.product(&s))),
+        ),
+        sum(
+            &l.product(&s).product(&wc),
+            &n.product(&sum(&nr.product(&s), &nt.product(&c))),
+        ),
+        sum(
+            &scale(&d, h).difference(&n).product(&d).product(&wc),
+            &n.product(&d).product(&nz),
+        ),
+    ];
+    if w.c
+        .iter()
+        .chain(numerators.iter().flat_map(|p| &p.c))
+        .any(|x| !x.valid())
+    {
+        return Err(invalid());
+    }
+    Ok((numerators, w))
 }

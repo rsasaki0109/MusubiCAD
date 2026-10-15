@@ -110,3 +110,6 @@ pub use circular_fillet_contacts::{CircularFilletContactCurve, CircularFilletCon
 
 mod circular_fillet_rational;
 pub use circular_fillet_rational::{CircularFilletCylindricalPcurve, CircularFilletRationalPatch};
+
+mod circular_fillet_rational_normals;
+pub use circular_fillet_rational_normals::CircularFilletRationalNormalBounds;

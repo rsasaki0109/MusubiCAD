@@ -24,7 +24,7 @@ def fixture():
         return out
     def bcoef(a, i, j):
         return sum((value*F(math.comb(i, p), math.comb(8, p))*F(math.comb(j, q), math.comb(2, q)) for (p, q), value in a.items() if p <= i and q <= j), F(0))
-    reference = {"format_version": 1, "radius_m": .01, "height_m": .02, "cases": []}
+    reference = {"format_version": 1, "radius_m": .01, "height_m": .02, "normal_error_request": 1e-9, "normal_max_leaves": 4096, "cases": []}
     native = {"format_version": 1, "occt_version": "8.0.0", "cases": []}
     for law in range(2):
         minimum, maximum = F(.0005), F(.0005 if law == 0 else .0015)
@@ -48,7 +48,7 @@ def fixture():
             nums = [add(mul(mul(l, c), wc), mul(n, add(mul(nr, c), scale(mul(nt, s), -1)))), add(mul(mul(l, s), wc), mul(n, add(mul(nr, s), mul(nt, c)))), add(mul(mul(add(scale(d, h), scale(n, -1)), d), wc), mul(mul(n, d), nz))]
             weights = [[float(bcoef(w, i, j)) for j in range(3)] for i in range(9)]
             poles = [[[float(bcoef(p, i, j)/F(weights[i][j])) for p in nums] for j in range(3)] for i in range(9)]
-            patch = {"chart": chart, "u_degree": 8, "v_degree": 2, "control_points_m": poles, "weights": weights, "position_error_upper_m": 5e-13}
+            patch = {"chart": chart, "u_degree": 8, "v_degree": 2, "control_points_m": poles, "weights": weights, "position_error_upper_m": 5e-13, "normal_bounds": {"jacobian_area_lower_m2": 1e-6, "jacobian_area_upper_m2": 1e-3, "ideal_normal_alignment_lower": .999999999, "normal_error_upper": 1e-9, "du_error_upper_m": 1e-13, "dv_error_upper_m": 1e-13, "leaves": 64}}
             ref["patches"].append(patch)
             face = {"role": {"kind": 0, "chart": chart}, "forward": True, "u_degree": 8, "v_degree": 2, "poles_m": copy.deepcopy(poles), "weights": copy.deepcopy(weights), "samples": []}
             for i in range(9):
@@ -184,6 +184,22 @@ class Contract(unittest.TestCase):
         for key, value in (("state", 0), ("rotated_state", 0), ("point_m", [0, 0, .01])):
             native = copy.deepcopy(base);native["cases"][0]["classifications"][0][key] = value
             with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+
+    def test_invalid_global_normal_certificates_and_work_refuse(self):
+        ref, native = fixture()
+        for key, value in (("jacobian_area_lower_m2", 0.), ("jacobian_area_upper_m2", 1e-10), ("ideal_normal_alignment_lower", -1.), ("normal_error_upper", 2e-9), ("du_error_upper_m", float("nan")), ("dv_error_upper_m", 1e-8), ("leaves", 0), ("leaves", 4097), ("leaves", True)):
+            changed = copy.deepcopy(ref);changed["cases"][0]["patches"][0]["normal_bounds"][key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError): grade(changed, native)
+        for key, value in (("normal_error_request", 1e-7), ("normal_max_leaves", True), ("normal_max_leaves", 1)):
+            changed = copy.deepcopy(ref);changed[key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(changed, native)
+        changed = copy.deepcopy(ref);del changed["cases"][0]["patches"][0]["normal_bounds"]
+        with self.assertRaises(KeyError): grade(changed, native)
+
+    def test_native_jacobian_outside_claimed_global_bounds_refuses(self):
+        ref, native = fixture()
+        ref["cases"][0]["patches"][0]["normal_bounds"].update(jacobian_area_lower_m2=1e-8, jacobian_area_upper_m2=2e-8)
+        with self.assertRaisesRegex(ValueError, "outside rounded rational certificate"): grade(ref, native)
 
     def test_positionally_close_coarse_pcurve_still_fails_normal_gate(self):
         ref, native = fixture()
