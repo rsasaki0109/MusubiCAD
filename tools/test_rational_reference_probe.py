@@ -4,7 +4,7 @@ from fractions import Fraction as F
 import math
 import unittest
 from test_rational_contact_probe import fixture as contact_fixture
-from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor
+from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request
 from run_reference_bezier_probe import unit_cross
 from run_rational_contact_probe import rational
 
@@ -50,7 +50,7 @@ def fixture():
             poles = [[[float(bcoef(p, i, j)/F(weights[i][j])) for p in nums] for j in range(3)] for i in range(9)]
             patch = {"chart": chart, "u_degree": 8, "v_degree": 2, "control_points_m": poles, "weights": weights, "position_error_upper_m": 5e-13, "normal_bounds": {"jacobian_area_lower_m2": 1e-6, "jacobian_area_upper_m2": 1e-3, "ideal_normal_alignment_lower": .999999999, "normal_error_upper": 1e-9, "du_error_upper_m": 1e-13, "dv_error_upper_m": 1e-13, "leaves": 64}}
             ref["patches"].append(patch)
-            face = {"role": {"kind": 0, "chart": chart}, "forward": True, "u_degree": 8, "v_degree": 2, "poles_m": copy.deepcopy(poles), "weights": copy.deepcopy(weights), "samples": []}
+            face = {"role": {"kind": 0, "chart": chart}, "forward": True, "location_identity": True, "u_degree": 8, "v_degree": 2, "poles_m": copy.deepcopy(poles), "poles_mm": [[[x*1000 for x in p] for p in row] for row in poles], "u_bounds": [0., 1.], "v_bounds": [0., 1.], "u_periodic": False, "v_periodic": False, "weights": copy.deepcopy(weights), "samples": []}
             for i in range(9):
                 for j in range(9):
                     p, du, dv = tensor(poles, weights, i/8, j/8);normal, _ = unit_cross(du, dv)
@@ -65,7 +65,7 @@ def fixture():
                 pc["control_points_rad_m"][3*i:3*i+4] = [p, [p[k]+dp[k]/768 for k in range(2)], [q[k]-dq[k]/768 for k in range(2)], q]
             ref["side_pcurves"].append(pc)
         for kind in (1, 1, 1, 1, 2, 3):
-            actual["surface_faces"].append({"role": {"kind": kind, "chart": -1}, "forward": kind != 3, "support_origin_m": [0, 0, .02 if kind == 2 else 0], "support_axis": [0, 0, 1], "support_x": [1, 0, 0], "support_radius_m": .01 if kind == 1 else 0.})
+            actual["surface_faces"].append({"role": {"kind": kind, "chart": -1}, "forward": kind != 3, "location_identity": True, "support_origin_m": [0, 0, .02 if kind == 2 else 0], "support_axis": [0, 0, 1], "support_x": [1, 0, 0], "support_radius_m": .01 if kind == 1 else 0.})
         def side_sample(kind, chart, uv):
             u, v = uv
             if kind == 0:
@@ -98,6 +98,13 @@ def fixture():
             p, n = envelope(law, theta, math.pi/4);state = 1 if j%2 == 0 else 0
             actual["classifications"].append({"theta_rad": theta, "offset_m": offset, "point_m": [x+offset*y for x, y in zip(p, n)], "state": state, "rotated_state": 1-state if law == 1 and j in (1, 4) else state})
         reference["cases"].append(ref);native["cases"].append(actual)
+    # Invented certificate records test parsing only. Live execution calls the
+    # Rust proof on post-sewing OCCT raw controls, never this fixture generator.
+    native["surface_definition_proof_refusals"] = {"input_limit": True, "wrong_chart": True, "last_request_precision": True}
+    native["surface_definition_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "whole_brep_certified": False, "certificates": [
+        {"request": copy.deepcopy(snapshot_request(reference, case, face)), "position_error_upper_m": 5e-13,
+         "normal_bounds": copy.deepcopy(case["patches"][face["role"]["chart"]]["normal_bounds"])}
+        for case, actual in zip(reference["cases"], native["cases"]) for face in actual["surface_faces"] if face["role"]["kind"] == 0]}
     return reference, native
 
 
@@ -200,6 +207,38 @@ class Contract(unittest.TestCase):
         ref, native = fixture()
         ref["cases"][0]["patches"][0]["normal_bounds"].update(jacobian_area_lower_m2=1e-8, jacobian_area_upper_m2=2e-8)
         with self.assertRaisesRegex(ValueError, "outside rounded rational certificate"): grade(ref, native)
+
+    def test_raw_native_definition_and_snapshot_binding_refuse(self):
+        ref, base = fixture()
+        for key, value in (("location_identity", False), ("poles_mm", [[[0., 0., 0.]]*3]*9), ("u_bounds", [0, 2]), ("v_bounds", [0, 2]), ("u_periodic", True), ("v_periodic", True)):
+            native = copy.deepcopy(base);native["cases"][0]["surface_faces"][0][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("chart", 1), ("cylinder_radius_m", .02), ("maximum_position_error_m", 1e-10), ("maximum_normal_error", 1e-7), ("max_leaves", 8192)):
+            native = copy.deepcopy(base);native["surface_definition_certificates"]["certificates"][0]["request"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["surface_definition_certificates"]["certificates"][0]["request"]["weights"][4][1] *= 2
+        with self.assertRaises(ValueError): grade(ref, native)
+
+        for value in (False, -0.0):
+            native = copy.deepcopy(base);native["surface_definition_certificates"]["certificates"][0]["request"]["poles_mm"][0][0][1] = value
+            with self.subTest(echo=value), self.assertRaises(ValueError): grade(ref, native)
+
+    def test_missing_unresolved_or_overclaimed_native_certificates_refuse(self):
+        ref, base = fixture()
+        native = copy.deepcopy(base);native["surface_definition_proof_refusals"]["last_request_precision"] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+        for key in ("native_floating_evaluation_certified", "whole_brep_certified"):
+            native = copy.deepcopy(base);native["surface_definition_certificates"][key] = True
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["surface_definition_certificates"]["certificates"].pop()
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);del native["surface_definition_certificates"]
+        with self.assertRaises(KeyError): grade(ref, native)
+        for value in (0., 1e-10, float("nan")):
+            native = copy.deepcopy(base);native["surface_definition_certificates"]["certificates"][0]["position_error_upper_m"] = value
+            with self.subTest(value=value), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["surface_definition_certificates"]["certificates"][0]["normal_bounds"]["jacobian_area_upper_m2"] = 2e-6
+        with self.assertRaisesRegex(ValueError, "captured surface-definition"): grade(ref, native)
 
     def test_positionally_close_coarse_pcurve_still_fails_normal_gate(self):
         ref, native = fixture()

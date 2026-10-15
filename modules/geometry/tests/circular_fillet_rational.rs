@@ -1,6 +1,8 @@
 //! Independent tensor evaluation and geometric oracles, not native evidence.
 use opencad_core::{Angle, Length};
-use opencad_geometry::{CircularFilletRationalPatch, CircularFilletReference};
+use opencad_geometry::{
+    CircularFilletRationalPatch, CircularFilletRationalSnapshot, CircularFilletReference,
+};
 use std::f64::consts::{FRAC_PI_2, PI};
 
 fn reference(scale: f64, variable: bool) -> CircularFilletReference {
@@ -25,6 +27,14 @@ fn derivative_basis(n: usize, i: usize, t: f64) -> f64 {
             - if i < n { basis(n - 1, i, t) } else { 0. })
 }
 fn evaluate(p: &CircularFilletRationalPatch, u: f64, v: f64) -> [[f64; 3]; 3] {
+    evaluate_controls(p.control_points_m(), p.weights(), u, v)
+}
+fn evaluate_controls(
+    poles: &[[[f64; 3]; 3]; 9],
+    weights: &[[f64; 3]; 9],
+    u: f64,
+    v: f64,
+) -> [[f64; 3]; 3] {
     let mut h = [[0.; 4]; 3];
     for i in 0..9 {
         for j in 0..3 {
@@ -35,13 +45,8 @@ fn evaluate(p: &CircularFilletRationalPatch, u: f64, v: f64) -> [[f64; 3]; 3] {
             ];
             for k in 0..3 {
                 for (axis, component) in h[k].iter_mut().enumerate() {
-                    *component += factors[k]
-                        * p.weights()[i][j]
-                        * if axis == 3 {
-                            1.
-                        } else {
-                            p.control_points_m()[i][j][axis]
-                        };
+                    *component +=
+                        factors[k] * weights[i][j] * if axis == 3 { 1. } else { poles[i][j][axis] };
                 }
             }
         }
@@ -460,4 +465,191 @@ fn certificate_precision_and_work_refuse_deterministically_without_mutation() {
     assert_eq!(format!("{before:?}"), format!("{after:?}"));
     assert_eq!(patch.control_points_m(), &poles);
     assert_eq!(patch.weights(), &weights);
+}
+
+#[test]
+fn native_snapshot_si_bounds_match_independent_envelope_and_constant_derivatives() {
+    for scale in [0.001, 1., 1000.] {
+        for variable in [false, true] {
+            let reference = reference(scale, variable);
+            for chart in 0..4 {
+                let patch = reference.rational_patch(chart).unwrap();
+                let mm = patch
+                    .control_points_m()
+                    .map(|row| row.map(|p| p.map(|x| x * 1000.)));
+                let snapshot =
+                    CircularFilletRationalSnapshot::from_millimeter_controls(&mm, patch.weights())
+                        .unwrap();
+                let cert = reference
+                    .certify_rational_snapshot(
+                        chart,
+                        &snapshot,
+                        Length::from_meters(1e-12 * scale),
+                        1e-9,
+                        4096,
+                    )
+                    .unwrap();
+                assert!(
+                    cert.position_error_upper_m > 0.
+                        && cert.position_error_upper_m <= 1e-12 * scale
+                );
+                assert!(
+                    cert.normal.jacobian_area_lower_m2 > 0.
+                        && cert.normal.ideal_normal_alignment_lower > 0.
+                );
+                assert!(cert.normal.normal_error_upper <= 1e-9);
+                let si = mm.map(|row| row.map(|p| p.map(|x| x / 1000.)));
+                for i in 0..=8 {
+                    for j in 0..=8 {
+                        let (u, v) = (i as f64 / 8., j as f64 / 8.);
+                        let theta = chart as f64 * FRAC_PI_2 + 2. * u.atan();
+                        let r = (0.0005
+                            + if variable {
+                                0.0005 * (1. + theta.cos())
+                            } else {
+                                0.
+                            })
+                            * scale;
+                        let k = if variable {
+                            -0.0005 * scale * theta.sin() / (0.01 * scale - r)
+                        } else {
+                            0.
+                        };
+                        let alpha = (2. * v + 2. * k * k * v * v).atan2(1. - v * v);
+                        let ideal = reference
+                            .sample(
+                                Angle::from_radians(theta.min(2. * PI)),
+                                Angle::from_radians(alpha),
+                            )
+                            .unwrap();
+                        let [p, du, dv] = evaluate_controls(&si, patch.weights(), u, v);
+                        assert!(
+                            distance(p, ideal.point_m)
+                                <= cert.position_error_upper_m + 1e-16 * scale
+                        );
+                        assert!(
+                            distance(normal(du, dv), ideal.normal)
+                                <= cert.normal.normal_error_upper + 1e-13
+                        );
+                        let jacobian = distance(
+                            std::array::from_fn(|k| {
+                                du[(k + 1) % 3] * dv[(k + 2) % 3]
+                                    - du[(k + 2) % 3] * dv[(k + 1) % 3]
+                            }),
+                            [0.; 3],
+                        );
+                        assert!(
+                            cert.normal.jacobian_area_lower_m2 <= jacobian
+                                && jacobian <= cert.normal.jacobian_area_upper_m2
+                        );
+                        if !variable {
+                            let rho = 0.01 * scale - r + r * alpha.cos();
+                            let tu = 2. / (1. + u * u);
+                            let av = 2. / (1. + v * v);
+                            assert!(
+                                distance(du, [-rho * theta.sin() * tu, rho * theta.cos() * tu, 0.])
+                                    <= cert.normal.du_error_upper_m + 1e-16 * scale
+                            );
+                            assert!(
+                                distance(
+                                    dv,
+                                    [
+                                        -r * alpha.sin() * theta.cos() * av,
+                                        -r * alpha.sin() * theta.sin() * av,
+                                        r * alpha.cos() * av
+                                    ]
+                                ) <= cert.normal.dv_error_upper_m + 1e-16 * scale
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn native_snapshot_weight_gauge_and_precision_work_are_deterministic() {
+    let reference = reference(1., true);
+    let patch = reference.rational_patch(0).unwrap();
+    let mm = patch
+        .control_points_m()
+        .map(|row| row.map(|p| p.map(|x| x * 1000.)));
+    for factor in [0.125, 1., 32.] {
+        let weights = patch.weights().map(|row| row.map(|w| w * factor));
+        let snapshot =
+            CircularFilletRationalSnapshot::from_millimeter_controls(&mm, &weights).unwrap();
+        let before = reference
+            .certify_rational_snapshot(0, &snapshot, Length::from_meters(1e-12), 1e-9, 4096)
+            .unwrap();
+        for (pos, normal, leaves) in [
+            (0., 1e-9, 4096),
+            (-1., 1e-9, 4096),
+            (f64::NAN, 1e-9, 4096),
+            (f64::INFINITY, 1e-9, 4096),
+            (1e-30, 1e-9, 64),
+            (1e-12, 0., 4096),
+            (1e-12, 1., 4096),
+            (1e-12, f64::NAN, 4096),
+            (1e-12, 1e-9, 0),
+            (1e-12, 1e-9, 16385),
+            (1e-12, 1e-9, 1),
+        ] {
+            assert!(reference
+                .certify_rational_snapshot(0, &snapshot, Length::from_meters(pos), normal, leaves)
+                .is_err());
+        }
+        let after = reference
+            .certify_rational_snapshot(0, &snapshot, Length::from_meters(1e-12), 1e-9, 4096)
+            .unwrap();
+        assert_eq!(format!("{before:?}"), format!("{after:?}"));
+        assert!(reference
+            .certify_rational_snapshot(4, &snapshot, Length::from_meters(1e-12), 1e-9, 4096)
+            .is_err());
+    }
+}
+
+#[test]
+fn native_snapshot_rejects_wrong_units_phase_deformation_weights_and_invalid_data() {
+    let reference = reference(1., true);
+    let patch = reference.rational_patch(0).unwrap();
+    let mm = patch
+        .control_points_m()
+        .map(|row| row.map(|p| p.map(|x| x * 1000.)));
+    let mut reversed = mm;
+    for row in &mut reversed {
+        row.reverse();
+    }
+    let mut changed = mm;
+    changed[4][1][2] += 0.1;
+    let rotated = mm.map(|row| row.map(|p| [-p[1], p[0], p[2]]));
+    let mut nonuniform = *patch.weights();
+    nonuniform[4][1] *= 1.001;
+    for (poles, weights) in [
+        (*patch.control_points_m(), *patch.weights()),
+        ([[[0.; 3]; 3]; 9], *patch.weights()),
+        (reversed, *patch.weights()),
+        (changed, *patch.weights()),
+        (rotated, *patch.weights()),
+        (mm, nonuniform),
+    ] {
+        let snapshot =
+            CircularFilletRationalSnapshot::from_millimeter_controls(&poles, &weights).unwrap();
+        assert!(reference
+            .certify_rational_snapshot(0, &snapshot, Length::from_meters(1e-12), 1e-9, 64)
+            .is_err());
+    }
+    for value in [0., -1., f64::NAN, f64::INFINITY] {
+        let mut weights = *patch.weights();
+        weights[4][1] = value;
+        assert!(CircularFilletRationalSnapshot::from_millimeter_controls(&mm, &weights).is_err());
+    }
+    for value in [f64::NAN, f64::INFINITY] {
+        let mut poles = mm;
+        poles[4][1][2] = value;
+        assert!(
+            CircularFilletRationalSnapshot::from_millimeter_controls(&poles, patch.weights())
+                .is_err()
+        );
+    }
 }

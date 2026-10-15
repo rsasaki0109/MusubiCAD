@@ -405,6 +405,15 @@ regressions, not global native fidelity/G1/embedding certificates. This adds no
 physical Mock/runtime/source, MCP operation/eval or editable NURBS admission;
 P16-008 remains planned. Use only existing documented DesignPatch operations.
 
+P16-033 / ADR-086 recomputes whole-domain position/normal/regularity certificates
+from captured current native surface definitions, including outward native-to-SI
+conversion and common weight-gauge normalization. The live probe binds echoed
+proof input to actual post-sewing controls, canonical domain and identity
+Location. This certifies mathematical surface definitions, not every floating
+evaluation, trim, contact coincidence, exact G1 or whole-BREP/global embedding.
+It adds no physical Mock/runtime/mesh, source/MCP operation/eval or editable
+NURBS admission. P16-008 remains planned; use documented DesignPatch operations.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

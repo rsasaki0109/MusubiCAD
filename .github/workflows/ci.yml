@@ -62,7 +62,7 @@ jobs:
       - name: Verify trimmed support diagnostic report contract
         run: python tools/test_trimmed_support_probe.py
 
-      - name: Verify rational reference solid and normal certificate contract
+      - name: Verify rational reference and native snapshot certificate contract
         run: python tools/test_rational_reference_probe.py
 
       - name: Verify repository Python cache hygiene
@@ -148,7 +148,7 @@ jobs:
           --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu
           --output target/trimmed-support-diagnostic.json
 
-      - name: Construct rational native reference solids and check normal certificates
+      - name: Construct rational native reference solids and certify captured definitions
         run: >-
           python tools/run_rational_reference_probe.py
           --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu

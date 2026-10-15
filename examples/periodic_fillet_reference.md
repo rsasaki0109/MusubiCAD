@@ -248,3 +248,21 @@ current native D1/Jacobians/normals against the mathematical certificates with
 separate numerical allowances. Global native G1/embedding, production Mock/source
 and MCP admission remain excluded; see
 [normal certificate API](../docs/api/periodic-fillet-reference.md#rounded-rational-normal-certificates-p16-032).
+
+
+P16-033 extends the same live native command to capture post-sewing native
+Bezier controls in their original millimetres. It passes those current data to
+`periodic_fillet_native_snapshot`, a read-only Rust example with 256 KiB bounded
+stdin and eight requests. Each complete proof requests position 1e-12 m and
+normal 1e-9 with 4096 leaves, includes outward native-to-SI conversion and common
+weight-gauge normalization, and echoes its capture/reference/request for grading.
+The report certifies underlying mathematical native surface definitions, not
+floating evaluation, trims, contact coincidence or whole-BREP fidelity. Missing
+or mismatched captures, changed domain/Location, invalid budgets and unresolved
+certificates refuse. No new source/MCP operation is introduced; see
+[native definition certificates](../docs/api/periodic-fillet-reference.md#current-native-surface-definition-certificates-p16-033).
+
+The live snapshot example also rejects inputs over 256 KiB, an invalid quarter
+and an unattainable precision on the last of eight requests. All three must
+return failure with no partial certificate stdout, after the same real native
+capture; synthetic parser tests do not substitute for these executions.

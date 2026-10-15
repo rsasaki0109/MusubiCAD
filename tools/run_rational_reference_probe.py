@@ -1,6 +1,7 @@
 """ADR-084/085: actual rational envelope solids; no production geometry admission."""
 from __future__ import annotations
 import argparse
+import copy
 from collections import Counter
 import json
 import math
@@ -75,11 +76,40 @@ def pcurve(actual, ref, chart, law):
         require(len(p) == len(q) == 2 and all(abs(number(x)-number(y)) <= 1e-14 for x, y in zip(p, q)), "current bounded pcurve controls changed")
 
 
+def same_numeric_data(actual, expected):
+    """Exact binary64 transport identity, including zero sign; bool is not numeric."""
+    if isinstance(expected, list):
+        return isinstance(actual, list) and len(actual) == len(expected) and all(same_numeric_data(a, b) for a, b in zip(actual, expected))
+    return number(actual).hex() == number(expected).hex()
+
+
+def snapshot_request(reference, case, face):
+    """Bind a read-only proof to CURRENT raw native data, not supplied poles."""
+    return {"chart": face["role"]["chart"], "cylinder_radius_m": reference["radius_m"],
+            "cylinder_height_m": reference["height_m"], "minimum_radius_m": case["minimum_radius_m"],
+            "maximum_radius_m": case["maximum_radius_m"], "poles_mm": face["poles_mm"],
+            "weights": face["weights"], "maximum_position_error_m": 1e-12,
+            "maximum_normal_error": 1e-9, "max_leaves": 4096}
+
+
+def normal_certificate(certificate, maximum_error, max_leaves):
+    values = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
+    jlo, jhi, alignment, error, eu, ev = values
+    require(0 < jlo <= jhi and 0 < alignment <= 1 and 0 < error <= maximum_error and 0 < eu <= D1_M and 0 < ev <= D1_M, "unresolved whole-chart normal/regularity/derivative certificate")
+    require(type(certificate["leaves"]) is int and 1 <= certificate["leaves"] <= max_leaves, "incomplete/exhausted normal certificate work")
+    return values
+
+
 def grade(reference, native):
     for report in (reference, native):
         require(type(report.get("format_version")) is int and report["format_version"] == 1 and len(report["cases"]) == 2, "wrong rational surface report/inventory")
     require(native["occt_version"] == "8.0.0" and abs(number(reference["radius_m"])-.01) <= 1e-15 and abs(number(reference["height_m"])-.02) <= 1e-15, "wrong SDK/stock")
     require(number(reference["normal_error_request"]) == 1e-9 and type(reference["normal_max_leaves"]) is int and reference["normal_max_leaves"] == 4096, "wrong whole-chart normal precision/work request")
+    refusals = native["surface_definition_proof_refusals"]
+    require(set(refusals) == {"input_limit", "wrong_chart", "last_request_precision"} and all(v is True for v in refusals.values()), "missing live snapshot proof refusals")
+    captured = native["surface_definition_certificates"]
+    require(type(captured["format_version"]) is int and captured["format_version"] == 1 and len(captured["certificates"]) == 8 and captured["native_floating_evaluation_certified"] is False and captured["whole_brep_certified"] is False, "missing/mislabelled native definition certificate inventory")
+    native_certificates = []
     certificates = []
     maxima = {key: 0. for key in ("point_m", "d1_m", "normal", "join_gap_m", "join_normal_gap")}
     phase_mismatches = []
@@ -106,6 +136,7 @@ def grade(reference, native):
             kind, chart = face["role"]["kind"], face["role"]["chart"]
             require(type(kind) is int and type(chart) is int and 0 <= kind <= 3 and (0 <= chart < 4 if kind == 0 else chart == -1), "unknown surface role")
             faces[kind] += 1
+            require(face["location_identity"] is True, "native surface Location is not identity")
             require(face["forward"] is (kind != 3), "inverted blend/support orientation")
             if kind != 0:
                 require(distance(face["support_origin_m"], [0, 0, .02 if kind == 2 else 0]) <= POINT_M and distance(face["support_axis"], [0, 0, 1]) <= 1e-14 and distance(face["support_x"], [1, 0, 0]) <= 1e-14 and abs(number(face["support_radius_m"])-(.01 if kind == 1 else 0.)) <= POINT_M, "unchanged analytic support lost")
@@ -119,9 +150,7 @@ def grade(reference, native):
             bound = number(patch["position_error_upper_m"])
             require(0 < bound <= 1e-12, "unresolved whole-patch actual-pole error")
             certificate = patch["normal_bounds"]
-            jlo, jhi, alignment, error, eu, ev = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
-            require(0 < jlo <= jhi and 0 < alignment <= 1 and 0 < error <= reference["normal_error_request"] and 0 < eu <= D1_M and 0 < ev <= D1_M, "unresolved whole-chart normal/regularity/derivative certificate")
-            require(type(certificate["leaves"]) is int and 1 <= certificate["leaves"] <= reference["normal_max_leaves"], "incomplete/exhausted normal certificate work")
+            jlo, jhi, alignment, error, eu, ev = normal_certificate(certificate, reference["normal_error_request"], reference["normal_max_leaves"])
             certificates.append(certificate)
             poles, weights = patch["control_points_m"], patch["weights"]
             require(len(poles) == len(weights) == len(face["poles_m"]) == len(face["weights"]) == 9 and all(len(row) == 3 for net in (poles, weights, face["poles_m"], face["weights"]) for row in net), "missing current control net")
@@ -129,6 +158,20 @@ def grade(reference, native):
             for i in range(9):
                 for j in range(3):
                     require(distance(face["poles_m"][i][j], poles[i][j]) <= POINT_M and abs(face["weights"][i][j]/face["weights"][0][0]-weights[i][j]/weights[0][0]) <= 1e-13, "sewing changed rational surface controls")
+            require(face["u_bounds"] == [0, 1] and face["v_bounds"] == [0, 1] and all(type(x) is not bool and number(x) in (0., 1.) for x in face["u_bounds"]+face["v_bounds"]) and face["u_periodic"] is False and face["v_periodic"] is False, "current native definition parameterization changed")
+            raw = face["poles_mm"]
+            require(len(raw) == 9 and all(len(row) == 3 for row in raw), "incomplete original native millimetre controls")
+            for row, si_row in zip(raw, face["poles_m"]):
+                for mm, si in zip(row, si_row): require(distance([x/1000 for x in vector(mm)], si) <= POINT_M, "raw native and rounded SI export disagree")
+            snapshot = captured["certificates"][law*4+chart]
+            expected = snapshot_request(reference, ref, face)
+            # Exact binary64 DATA identity binds the proof transport, not a
+            # geometric closeness test or a surrogate source-control comparison.
+            require(isinstance(snapshot["request"], dict) and set(snapshot["request"]) == set(expected) and type(snapshot["request"]["chart"]) is int and type(snapshot["request"]["max_leaves"]) is int and all(same_numeric_data(snapshot["request"][key], value) for key, value in expected.items()), "native definition certificate capture/reference/request mismatch")
+            native_position = number(snapshot["position_error_upper_m"])
+            require(0 < native_position <= expected["maximum_position_error_m"], "unresolved native definition position certificate")
+            njlo, njhi, nalignment, nerror, neu, nev = normal_certificate(snapshot["normal_bounds"], expected["maximum_normal_error"], expected["max_leaves"])
+            native_certificates.append(snapshot)
             require(len(face["samples"]) == 81, "missing native D1/normal/surface witnesses")
             for index, sample in enumerate(face["samples"]):
                 u, v = index//9/8, index%9/8
@@ -145,12 +188,14 @@ def grade(reference, native):
                 ideal, ideal_normal = envelope(law, theta, alpha)
                 native_normal, native_jacobian = unit_cross(vector(sample["du_m"]), vector(sample["dv_m"]))
                 require(jlo-JACOBIAN_M2 <= native_jacobian <= jhi+JACOBIAN_M2 and distance(native_normal, ideal_normal) <= error+NORMAL and sum(x*y for x, y in zip(native_normal, ideal_normal)) >= alignment-NORMAL, "native D1/normal witness outside rounded rational certificate")
+                require(njlo-JACOBIAN_M2 <= native_jacobian <= njhi+JACOBIAN_M2 and distance(sample["point_m"], ideal) <= native_position+POINT_M and distance(native_normal, ideal_normal) <= nerror+NORMAL and sum(x*y for x, y in zip(native_normal, ideal_normal)) >= nalignment-NORMAL, "native witness outside its captured surface-definition certificate")
                 if law == 0:
                     # Independent exact toroidal-chart derivatives in original u,v.
                     rho, tu, av = .01-r+r*math.cos(alpha), 2/(1+u*u), 2/(1+v*v)
                     exact_du = [-rho*math.sin(theta)*tu, rho*math.cos(theta)*tu, 0.]
                     exact_dv = [-r*math.sin(alpha)*math.cos(theta)*av, -r*math.sin(alpha)*math.sin(theta)*av, r*math.cos(alpha)*av]
                     require(distance(sample["du_m"], exact_du) <= eu+D1_M and distance(sample["dv_m"], exact_dv) <= ev+D1_M, "native D1 outside independent constant-chart derivative bounds")
+                    require(distance(sample["du_m"], exact_du) <= neu+D1_M and distance(sample["dv_m"], exact_dv) <= nev+D1_M, "native D1 outside captured constant-chart certificate")
                 require(distance(sample["point_m"], ideal) <= bound+POINT_M and distance(sample["normal"], ideal_normal) <= NORMAL, "native rational surface differs from independent sphere envelope")
                 maxima["point_m"], maxima["d1_m"], maxima["normal"] = max(maxima["point_m"], ep), max(maxima["d1_m"], ed), max(maxima["normal"], en)
         require(faces == {0: 4, 1: 4, 2: 1, 3: 1} and set(blends) == set(range(4)), "wrong analytic/blend face inventory")
@@ -223,6 +268,7 @@ def grade(reference, native):
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
             "native_diagnostic_solids_created": 2, "native_rational_blend_faces_created": 8,
             "rounded_reference_certificates": {"count": len(certificates), "maximum_normal_error": max(c["normal_error_upper"] for c in certificates), "minimum_jacobian_m2": min(c["jacobian_area_lower_m2"] for c in certificates), "total_cover_leaves": sum(c["leaves"] for c in certificates), "global_native_certificate": False},
+            "native_surface_definition_certificates": {"count": len(native_certificates), "maximum_position_error_m": max(c["position_error_upper_m"] for c in native_certificates), "maximum_normal_error": max(c["normal_bounds"]["normal_error_upper"] for c in native_certificates), "minimum_jacobian_m2": min(c["normal_bounds"]["jacobian_area_lower_m2"] for c in native_certificates), "total_cover_leaves": sum(c["normal_bounds"]["leaves"] for c in native_certificates), "includes_native_coordinate_conversion": True, "native_floating_evaluation_certified": False, "whole_brep_certified": False},
             "maxima": maxima, "rotated_classifier_mismatches": phase_mismatches,
             "native_allowances": {"point_m": POINT_M, "d1_m": D1_M, "normal": NORMAL, "join_m": JOIN_M, "volume_m3": VOLUME_M3, "jacobian_m2": JACOBIAN_M2}}
 
@@ -253,6 +299,22 @@ def run(occt_root, output):
         result = subprocess.run([str(binary)], input="\n".join(values)+"\n", capture_output=True, text=True, timeout=120)
         require(result.returncode == 0, "native construction failed: "+result.stderr[:1000])
         native = json.loads(result.stdout)
+    requests = [snapshot_request(ref, case, face) for case, actual in zip(ref["cases"], native["cases"])
+                for face in sorted((f for f in actual["surface_faces"] if f["role"]["kind"] == 0), key=lambda f: f["role"]["chart"])]
+    command = ["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "periodic_fillet_native_snapshot"]
+    payload = json.dumps({"format_version": 1, "requests": requests}, allow_nan=False)
+    proof = subprocess.run(command, input=payload, check=True, cwd=ROOT, capture_output=True, text=True, timeout=180)
+    native["surface_definition_certificates"] = json.loads(proof.stdout)
+    wrong_chart = copy.deepcopy(requests);wrong_chart[0]["chart"] = 4
+    tight_last = copy.deepcopy(requests);tight_last[-1]["maximum_normal_error"] = 1e-30
+    adversarial = {"input_limit": payload+" "*max(1, 262145-len(payload.encode("utf-8"))),
+                   "wrong_chart": json.dumps({"format_version": 1, "requests": wrong_chart}, allow_nan=False),
+                   "last_request_precision": json.dumps({"format_version": 1, "requests": tight_last}, allow_nan=False)}
+    native["surface_definition_proof_refusals"] = {}
+    for name, bad_payload in adversarial.items():
+        refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
+        require(refused.returncode != 0 and not refused.stdout.strip(), "snapshot probe accepted invalid input or emitted partial certificates: "+name)
+        native["surface_definition_proof_refusals"][name] = True
     report = {"format_version": 1, "diagnostic_passed": False, "candidate_admitted": False, "reference": ref, "native": native}
     try: report.update(grade(ref, native))
     except (KeyError, TypeError, ValueError) as error:

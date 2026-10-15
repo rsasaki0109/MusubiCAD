@@ -103,6 +103,19 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-033 / [ADR-086](../adr/ADR-086-native-rational-surface-certificates.md)
+recomputes complete position/normal/regularity/orientation bounds from current
+post-sewing native surface definitions. A fixed immutable descriptive snapshot
+converts original millimetre controls outward into SI homogeneous intervals;
+common weight gauge is normalized with its uncertainty retained. The shared
+complete-cover proof gates both position and normal requests. An explicit Rust
+example reads bounded diagnostic input and echoes its exact data; the live probe
+binds certificates to current native capture, canonical domain and identity
+Location. No core I/O, OCCT types or editing/body/source authority is introduced.
+Floating evaluation, trims, contact coincidence, exact G1 and whole-BREP/global
+embedding remain separate gates.
+
+
 P16-032 / [ADR-085](../adr/ADR-085-rounded-rational-normal-certificates.md)
 certifies the actual immutable rational controls' derivatives, positive Jacobian,
 outward orientation and unit-normal error on each entire closed chart. Private
