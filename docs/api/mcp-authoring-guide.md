@@ -1453,3 +1453,11 @@ f32 export certificate or authorable fillet. No new MCP operation/eval applies.
 Global embedding/exact G1/native floating fidelity and production admission remain
 separate. See docs/api/closed-periodic-reference-mesh.md and
 examples/closed_periodic_reference_mesh.md. P16-008 stays planned; no score.
+
+P16-040 / ADR-093 adds read-only `CircularFilletReferenceMesh::grid_solid` for
+contributors: explicit final SI position/normal precision, actual TriangleSolid
+admission and outward grid displacement/facet-normal differences. Existing
+10000-triangle/intersection budgets and final-quality refusal are mandatory;
+never reuse raw bounds for rounded coordinates. This is no new MCP operation or
+DesignPatch feature; P16-008 remains planned. See
+[grid conversion scope](grid-admitted-reference-solid.md).

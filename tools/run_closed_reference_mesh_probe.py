@@ -107,6 +107,57 @@ def grade(reference,native):
     return {"diagnostic_passed":True,"product_body_created":False,"global_embedding_certified":False,"cases":summaries}
 
 
+def grid_reference(reference):
+    """Bind the existing native transport to actual admitted vertices/face order."""
+    out=copy.deepcopy(reference)
+    for case in out['cases']:
+        for m in case['meshes']:
+            m.update({k:m['grid_solid'][k] for k in ('vertices_m','triangles')})
+    return out
+
+
+def grade_grid(reference,native):
+    """Independent conversion witnesses/mass; no exact global intersection proof."""
+    require(type(native['format_version']) is int and native['format_version']==1 and native['occt_version']=='8.0.0' and len(native['cases'])==2,'wrong grid native inventory')
+    require(set(native['process_refusals'])==set(REFUSALS) and all(v is True for v in native['process_refusals'].values()),'missing grid process refusals')
+    summaries=[]
+    for case,actual in zip(reference['cases'],native['cases']):
+        for raw in case['meshes']:
+            g=raw['grid_solid'];require(g['numeric_triangle_solid_admitted'] is True and g['exact_global_embedding_certified'] is False,'overclaimed grid admission')
+            require(number(g['vertex_grid_m'])==1e-9 and type(g['triangle_limit']) is int and g['triangle_limit']==10000,'changed grid/budget')
+            require(len(g['vertices_m'])==len(raw['vertices_m']) and len(g['triangles'])==len(raw['triangles'])<=10000,'grid changed inventory')
+            vol,area,moment,normals=measured(g);_,_,_,old_normals=measured(raw)
+            forward={};reverse={};delta=0.
+            for a,b in zip(raw['triangles'],g['triangles']):
+                for i,j in zip(a,b):
+                    require(forward.setdefault(i,j)==j and reverse.setdefault(j,i)==i,'grid correspondence not bijective')
+                    p=raw['vertices_m'][i];q=g['vertices_m'][j]
+                    expected=[]
+                    for v in p:
+                        scaled=abs(v/1e-9);base=math.floor(scaled)
+                        expected.append(math.copysign(float(base+(scaled-base>=.5))*1e-9,v))
+                    # Exact representational binding to documented binary64 rounding.
+                    require(all(x==y for x,y in zip(q,expected)),'grid vertex not actual rounded input')
+                    delta=max(delta,distance(p,q))
+            require(len(forward)==len(raw['vertices_m']) and len(reverse)==len(g['vertices_m']),'incomplete grid correspondence')
+            d=number(g['grid_displacement_upper_m']);e=number(g['grid_normal_change_upper'])
+            require(0<d<=1e-9 and delta<=d+1e-22 and 0<e<1 and all(distance(a,b)<=e+1e-14 for a,b in zip(old_normals,normals)),'uncertified grid conversion differences')
+            position=number(g['position_error_upper_m']);normal=number(g['normal_error_upper'])
+            require(raw['position_error_upper_m']+d<=position<=raw['requested_position_error_m'] and raw['normal_error_upper']+e<=normal<=raw['requested_normal_error'],'final grid quality not preserved')
+            require(abs(number(g['volume_m3'])-vol)<=VOLUME_M3 and abs(number(g['area_m2'])-area)<=AREA_M2 and distance(g['center_of_mass_m'],[x/vol for x in moment])<=COM_M,'grid solid mass mismatch')
+        fine=case['meshes'][1];g=fine['grid_solid'];v,a,mom,normals=measured(g);nt=len(g['triangles']);nv=len(g['vertices_m'])
+        for key,value in (('faces',nt),('vertices',nv),('edges',nt*3//2),('euler',2),('free_edges',0)):
+            require(type(actual[key]) is int and actual[key]==value,'wrong grid native topology')
+        require(all(actual[k] is True for k in ('valid','closed','connected','edge_incidence_two')),'invalid grid native solid')
+        require(abs(number(actual['volume_m3'])-v)<=VOLUME_M3 and abs(number(actual['area_m2'])-a)<=AREA_M2 and distance(actual['center_of_mass_m'],[x/v for x in mom])<=COM_M,'grid native mass mismatch')
+        require(all(abs(number(actual['volume_m3'])*vector(actual['center_of_mass_m'])[k]-mom[k])<=MOMENT_M4 for k in range(3)),'grid native first moments mismatch')
+        require(len(actual['current_faces'])==nt and Counter(f['triangle'] for f in actual['current_faces'])==Counter(range(nt)),'missing grid native faces')
+        for f in actual['current_faces']:
+            require(type(f['triangle']) is int and distance(f['normal'],normals[f['triangle']])<=NORMAL,'grid native face normal mismatch')
+        summaries.append({'law':case['law'],'position_error_upper_m':g['position_error_upper_m'],'normal_error_upper':g['normal_error_upper'],'grid_displacement_upper_m':g['grid_displacement_upper_m'],'grid_normal_change_upper':g['grid_normal_change_upper'],'native_volume_m3':actual['volume_m3']})
+    return summaries
+
+
 def native_input(reference):
     values=['2']
     for case in reference["cases"]:
@@ -122,20 +173,30 @@ def run(sdk,output):
     with tempfile.TemporaryDirectory(prefix='closed-reference-mesh-') as directory:
         binary=Path(directory)/'probe';libs=['TKTopAlgo','TKShHealing','TKGeomAlgo','TKBRep','TKGeomBase','TKG3d','TKG2d','TKMath','TKernel']
         subprocess.run([shutil.which('c++') or 'c++','-O2','-std=c++17','-I',str(sdk/'include/opencascade'),str(ROOT/'modules/kernel-occt/diagnostics/closed_reference_mesh.cpp'),'-L',str(sdk/'lib'),'-Wl,--start-group',*[f'-l{x}' for x in libs],'-Wl,--end-group','-lpthread','-ldl','-o',str(binary)],check=True,timeout=180)
-        payload=native_input(ref);result=subprocess.run([str(binary)],input=payload,text=True,capture_output=True,check=True,timeout=180);native=json.loads(result.stdout)
-        changes={'missing_input':payload[:len(payload)//2]}
-        for name in REFUSALS[1:]:
-            bad=copy.deepcopy(ref);m=bad['cases'][0]['meshes'][1]
-            if name=='wrong_units':m['vertices_m']=[[x*1000 for x in p] for p in m['vertices_m']]
-            elif name=='missing_triangle':m['triangles'].pop()
-            else:m['triangles']=[list(reversed(t)) for t in m['triangles']]
-            changes[name]=native_input(bad)
-        native['process_refusals']={}
-        for name,payload in changes.items():
-            refused=subprocess.run([str(binary)],input=payload,text=True,capture_output=True,timeout=180)
-            require(refused.returncode!=0 and not refused.stdout.strip(),'invalid native input/partial stdout: '+name);native['process_refusals'][name]=True
-    report={'format_version':1,'diagnostic_passed':False,'reference':ref,'native':native}
-    try:report.update(grade(ref,native))
+        def native_pass(reference, mode):
+            command=[str(binary)]+(['--grid'] if mode=='grid' else [])
+            payload=native_input(reference)
+            result=subprocess.run(command,input=payload,text=True,capture_output=True,check=True,timeout=180)
+            native=json.loads(result.stdout)
+            changes={'missing_input':payload[:len(payload)//2]}
+            for name in REFUSALS[1:]:
+                bad=copy.deepcopy(reference);m=bad['cases'][0]['meshes'][1]
+                if name=='wrong_units':m['vertices_m']=[[x*1000 for x in p] for p in m['vertices_m']]
+                elif name=='missing_triangle':m['triangles'].pop()
+                else:m['triangles']=[list(reversed(t)) for t in m['triangles']]
+                changes[name]=native_input(bad)
+            native['process_refusals']={}
+            for name,payload in changes.items():
+                refused=subprocess.run(command,input=payload,text=True,capture_output=True,timeout=180)
+                require(refused.returncode!=0 and not refused.stdout.strip(),'invalid native input/partial stdout: '+mode+'/'+name);native['process_refusals'][name]=True
+            return native
+        native=native_pass(ref,'raw')
+        grid_native=native_pass(grid_reference(ref),'grid')
+    report={'format_version':1,'diagnostic_passed':False,'reference':ref,'native':native,'grid_native':grid_native}
+    try:
+        passed=grade(ref,native)
+        report['grid_cases']=grade_grid(ref,grid_native)
+        report.update(passed)
     finally:output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
     print('closed periodic reference mesh/native diagnostic passed; product unsupported; report='+str(output))
 

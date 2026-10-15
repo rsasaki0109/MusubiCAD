@@ -2,7 +2,7 @@
 import copy
 import math
 import unittest
-from run_closed_reference_mesh_probe import grade, measured, REFUSALS
+from run_closed_reference_mesh_probe import grade, grade_grid, measured, REFUSALS
 from run_rational_reference_probe import envelope
 
 
@@ -65,5 +65,43 @@ class Contract(unittest.TestCase):
         with self.assertRaises(ValueError):grade(self.reference,native)
         ref=copy.deepcopy(self.reference);ref["cases"][0]["meshes"][0]["boundary_integrals"]["volume_m3"]=[0.,1.]
         with self.assertRaises(ValueError):grade(ref,self.native)
+
+class GridContract(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        ref,native=fixture()
+        for case_index,case in enumerate(ref['cases']):
+            for raw in case['meshes']:
+                def rounded(v):
+                    x=abs(v/1e-9);base=math.floor(x)
+                    return math.copysign(float(base+(x-base>=.5))*1e-9,v)
+                g={'vertices_m':[[rounded(x) for x in p] for p in raw['vertices_m']], 'triangles':copy.deepcopy(raw['triangles']),
+                   'numeric_triangle_solid_admitted':True,'exact_global_embedding_certified':False,'vertex_grid_m':1e-9,'triangle_limit':10000,
+                   'grid_displacement_upper_m':9e-10,'grid_normal_change_upper':.001,
+                   'position_error_upper_m':raw['position_error_upper_m']+1e-9,'normal_error_upper':raw['normal_error_upper']+.002}
+                v,a,m,n=measured(g);g.update(volume_m3=v,area_m2=a,center_of_mass_m=[x/v for x in m]);raw['grid_solid']=g
+            actual=native['cases'][case_index]
+            actual.update(volume_m3=v,area_m2=a,center_of_mass_m=[x/v for x in m],current_faces=[{'triangle':i,'normal':p} for i,p in enumerate(n)])
+        cls.reference,cls.native=ref,native
+    def test_complete_synthetic_grid_contract(self):
+        self.assertEqual(len(grade_grid(self.reference,self.native)),2)
+    def test_grid_binding_and_final_quality_refuse(self):
+        for key,value in [('numeric_triangle_solid_admitted',False),('exact_global_embedding_certified',True),('vertex_grid_m',1e-6),('triangle_limit',True),('grid_displacement_upper_m',0.),('grid_normal_change_upper',0.),('position_error_upper_m',1.),('normal_error_upper',0.),('volume_m3',1.)]:
+            ref=copy.deepcopy(self.reference);ref['cases'][0]['meshes'][0]['grid_solid'][key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):grade_grid(ref,self.native)
+        ref=copy.deepcopy(self.reference);ref['cases'][0]['meshes'][0]['grid_solid']['vertices_m'][0][0]+=1e-9
+        with self.assertRaisesRegex(ValueError,'rounded input'):grade_grid(ref,self.native)
+        ref=copy.deepcopy(self.reference);t=ref['cases'][0]['meshes'][0]['grid_solid']['triangles'][0];t[:]=t[1:]+t[:1]
+        with self.assertRaisesRegex(ValueError,'rounded input'):grade_grid(ref,self.native)
+    def test_grid_native_mass_normals_and_refusals_cannot_be_borrowed(self):
+        _, raw_native=fixture()
+        with self.assertRaises(ValueError):grade_grid(self.reference,raw_native)
+        for key,value in [('volume_m3',1.),('faces',True),('closed',False),('current_faces',[])]:
+            native=copy.deepcopy(self.native);native['cases'][0][key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):grade_grid(self.reference,native)
+        native=copy.deepcopy(self.native);native['cases'][0]['current_faces'][0]['normal']=[0.,0.,-1.]
+        with self.assertRaises(ValueError):grade_grid(self.reference,native)
+        native=copy.deepcopy(self.native);native['process_refusals']['wrong_units']=False
+        with self.assertRaises(ValueError):grade_grid(self.reference,native)
 
 if __name__=='__main__':unittest.main()

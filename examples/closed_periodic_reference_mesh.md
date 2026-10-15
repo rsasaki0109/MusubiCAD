@@ -31,3 +31,13 @@ kept distinct.
 
 No global embedding, exact G1, native floating-kernel proof or production
 Mock/source/MCP admission follows. See [API](../docs/api/closed-periodic-reference-mesh.md).
+
+ADR-093 also runs `mesh.grid_solid(CircularFilletGridPrecision {
+maximum_position_error: Length::from_meters(position),
+maximum_normal_error: normal })` for both qualities/laws. Each mesh JSON object
+now includes `grid_solid` with actual stored vertices/triangles, final error
+bounds, measured grid displacement/normal-change bounds and actual mass.
+The same pinned probe constructs two additional fine grid native solids and
+retains `grid_native`/`grid_cases`. Raw certificates/diagnostics stay separate.
+All eight process refusal controls must pass (four for each transport mode).
+No new MCP operation, source feature or score is introduced.
