@@ -909,7 +909,8 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-032 | Certify rounded rational reference normals | ADR-085 / P16-008 prerequisite; whole-chart actual-control derivative/normal/regularity/orientation bounds with deterministic Bernstein restriction, explicit precision/work refusal and support/seam implications, independent analytic/native checks; no global native G1/embedding or production Mock/source/mesh admission | Complete: PR #132 |
 | MCAD-P16-033 | Certify current native rational surface definitions | ADR-086 / P16-008 prerequisite; read-only fixed-layout post-sewing control snapshots, outward exact mm-to-m conversion and common-weight gauge normalization, complete position/derivative/normal/regularity/orientation bounds and precision/work refusal, independent analytic and live native controls; no floating evaluation/trim/whole-BREP/G1/embedding or production admission | Complete (PR #133) |
 | MCAD-P16-034 | Certify current native contact curve definitions | ADR-087 / P16-008 prerequisite; immutable degree-2/4 post-sewing 3D contact snapshots, outward SI and common weight gauge, whole-curve reference position bounds, independent analytic and live native refusal controls; no attached-pcurve lift/contact-gap/G1/whole-BREP or production admission | Complete (PR #134) |
-| MCAD-P16-035 | Certify current native end contact boundary gaps | ADR-088 / P16-008 prerequisite; actual plane pcurve/frame lifts, canonical attached blend lines, recomputed native edge/lift/surface bounds and outward whole-span pairwise gaps with precision/work refusal; independent analytic/live native evidence; excludes cylinder contacts, exact G1 and whole-BREP/production admission | Implemented; complete upon PR merge |
+| MCAD-P16-035 | Certify current native end contact boundary gaps | ADR-088 / P16-008 prerequisite; actual plane pcurve/frame lifts, canonical attached blend lines, recomputed native edge/lift/surface bounds and outward whole-span pairwise gaps with precision/work refusal; independent analytic/live native evidence; excludes cylinder contacts, exact G1 and whole-BREP/production admission | Complete (PR #135) |
+| MCAD-P16-036 | Certify current native side contact boundary gaps | ADR-089 / P16-008 prerequisite; actual raw cylindrical pcurve/frame/radius capture, complete fixed-basis angle/height/lift bounds and recomputed edge/blend pairwise gap bounds with precision/work refusal; independent analytic/live native controls; no paired-normal/G1/whole-BREP or production admission | Implemented; complete upon PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -982,6 +983,11 @@ canonical attached blend lines and recomputed edge/lift/surface certificates
 bound all pairwise gaps over complete corresponding-parameter unit spans.
 Cylindrical side contacts, quarter seams, native floating evaluation, paired
 normal/G1, embedding and whole-BREP/production admission remain separate gates.
+P16-036 / ADR-089 closes the cylindrical SIDE position-gap portion with current
+raw pcurve/frame/radius data, complete fixed-basis interpolation/conversion/frame
+bounds and recomputed edge/lift/blend pairwise sums. P16-035/036 together cover
+end/side position gaps; quarter seams, paired normals/G1, floating native
+evaluation, global embedding and whole-BREP/production admission remain separate.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;

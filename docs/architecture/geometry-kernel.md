@@ -566,3 +566,15 @@ Rust diagnostic binds all eight proofs to current captures. No OCCT types or
 ownership enter geometry, and no external certificate can authorize a body.
 Side contacts, quarter seams, exact G1, floating native evaluation, global embedding
 and whole-BREP/production admission remain separate obligations.
+
+P16-036 / [ADR-089](../adr/ADR-089-native-side-boundary-certificates.md) supplies
+immutable cylindrical pcurve snapshots of original [angle_rad,height_mm] controls
+and their actual owning cylinder's raw frame/radius. Fixed-basis convex hulls
+add native control differences to the reference Hermite bounds; global circle
+Lipschitz and frame/radius inequalities give a whole lifted-position bound without
+sampling. Recomputed edge/lift/blend certificates then bound all pairwise side
+gaps. Actual unit weights/basis and attached blend line (t,0) are separate capture
+qualifications. All eight proofs bind to raw definitions and budgets. Geometry
+contains no OCCT types, source ownership or body construction; floating native
+evaluation, quarter seams, paired normals/G1, embedding and whole-BREP/production
+admission remain separate gates before P16-008.

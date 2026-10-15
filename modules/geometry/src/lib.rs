@@ -107,6 +107,11 @@ pub use circular_fillet_area::CircularFilletAreaBounds;
 
 mod circular_fillet_contacts;
 pub use circular_fillet_contacts::{CircularFilletContactCurve, CircularFilletContactKind};
+mod circular_fillet_cylindrical_snapshot;
+pub use circular_fillet_cylindrical_snapshot::{
+    CircularFilletCylindricalContactBounds, CircularFilletCylindricalContactSnapshot,
+    CircularFilletSideBoundaryBounds, CircularFilletSideBoundaryPrecision,
+};
 mod circular_fillet_contact_snapshot;
 pub use circular_fillet_contact_snapshot::{
     CircularFilletContactSnapshot, CircularFilletContactSnapshotBounds,

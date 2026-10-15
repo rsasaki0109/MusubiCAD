@@ -108,6 +108,9 @@ impl CircularFilletPlanarContactSnapshot {
     }
 }
 impl CircularFilletContactSnapshot {
+    pub(crate) fn kind(&self) -> CircularFilletContactKind {
+        self.kind
+    }
     /// Fixed clamped [0,1] Bernstein representation. The caller must establish
     /// the actual native degree/knots/multiplicities, nonperiodicity and identity
     /// Location separately. Constructor acceptance is not geometric admission.

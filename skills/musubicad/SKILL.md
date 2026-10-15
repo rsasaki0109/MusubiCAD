@@ -407,6 +407,14 @@ bound to eight recomputed proofs. This does not certify cylindrical side contact
 paired normals/exact G1, floating evaluation or whole-BREP fidelity. No production
 Mock/runtime/source or MCP operation/eval is admitted; P16-008 stays planned.
 
+P16-036 / ADR-089 also certifies complete cylindrical SIDE boundary position
+gaps from current raw pcurve controls, owning cylinder frame/radius, 3D edge and
+blend definitions. Fixed unit weights/basis and actual attached (t,0) lines are
+qualified; conversion, interpolation and frame errors enter every whole-span
+proof. P16-035/036 cover END/SIDE position gaps, not paired normals/G1, quarter
+seams, floating evaluation, global embedding or whole-BREP fidelity. No production
+Mock/runtime/source or MCP operation/eval is admitted; P16-008 stays planned.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

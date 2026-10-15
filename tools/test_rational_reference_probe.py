@@ -4,7 +4,7 @@ from fractions import Fraction as F
 import math
 import unittest
 from test_rational_contact_probe import fixture as contact_fixture
-from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges, end_boundary_request
+from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges, end_boundary_request, side_boundary_request
 from run_reference_bezier_probe import unit_cross
 from run_rational_contact_probe import rational
 
@@ -81,7 +81,11 @@ def fixture():
                 if category in (1, 2):
                     contact = ref["contacts"][(0 if category == 1 else 4)+chart]
                     edge["contact_curve"] = {"degree": contact["degree"], "location_identity": True, "periodic": False, "poles_mm": [[x*1000 for x in p] for p in contact["control_points_m"]], "poles_m": copy.deepcopy(contact["control_points_m"]), "weights": contact["weights"][:], "knots": [0, 1], "multiplicities": [contact["degree"]+1]*2}
-                    if category == 1: edge["cylindrical_pcurve"] = {"degree": 3, "rational": False, "periodic": False, "poles_rad_m": copy.deepcopy(ref["side_pcurves"][chart]["control_points_rad_m"]), "knots": [i/256 for i in range(257)], "multiplicities": [4]+[3]*255+[4]}
+                    if category == 1:
+                        poles = copy.deepcopy(ref["side_pcurves"][chart]["control_points_rad_m"])
+                        edge["cylindrical_pcurve"] = {"degree": 3, "rational": False, "periodic": False, "poles_rad_m": poles, "poles_rad_mm": [[p[0],p[1]*1000] for p in poles], "weights": [1.]*769, "range": [0.,1.], "knots": [i/256 for i in range(257)], "multiplicities": [4]+[3]*255+[4]}
+                        edge["cylinder_frame"] = {"origin_mm": [0.,0.,0.], "directions": [[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]], "radius_mm": 10.}
+                        edge["blend_side_line"] = {"kind": "geom2d_line", "origin": [0.,0.], "direction": [1.,0.], "range": [0.,1.]}
                     else:
                         edge["planar_pcurve"] = {"degree": 4, "periodic": False, "range": [0., 1.], "poles_mm": [p[:2] for p in edge["contact_curve"]["poles_mm"]], "weights": contact["weights"][:], "knots": [0., 1.], "multiplicities": [5, 5]}
                         edge["blend_end_line"] = {"kind": "geom2d_line", "origin": [0., 1.], "direction": [1., 0.], "range": [0., 1.]}
@@ -120,10 +124,61 @@ def fixture():
          "edge_to_plane_gap_upper_m": 3e-13, "edge_to_blend_gap_upper_m": 7e-13, "plane_to_blend_gap_upper_m": 7e-13,
          "blend_normal_bounds": copy.deepcopy(case["patches"][next(r["chart"] for r in edge["roles"] if r["kind"] == 0)]["normal_bounds"])}
         for case, actual in zip(reference["cases"], native["cases"]) for edge in contact_edges(actual) if any(r["kind"] == 2 for r in edge["roles"])]}
+    native["side_boundary_proof_refusals"] = {key: True for key in ("input_limit", "wrong_line", "nonunit_weight", "wrong_units", "changed_frame", "changed_radius", "changed_angle", "changed_height", "missing_control", "last_request_precision", "exhausted_work")}
+    native["side_boundary_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "end_contact_boundaries_certified": False, "whole_brep_certified": False, "certificates": [
+        {"request": copy.deepcopy(side_boundary_request(reference, case, actual, edge)),
+         "edge_position_error_upper_m": 1e-13, "cylindrical_lift_position_error_upper_m": 7e-13, "blend_position_error_upper_m": 1e-13,
+         "angle_error_upper_rad": 5e-11, "height_error_upper_m": 1e-16 if case["law"] == "constant" else 3e-13, "support_frame_error_upper_m": 1e-18,
+         "edge_to_cylinder_gap_upper_m": 9e-13, "edge_to_blend_gap_upper_m": 3e-13, "cylinder_to_blend_gap_upper_m": 9e-13,
+         "blend_normal_bounds": copy.deepcopy(case["patches"][next(r["chart"] for r in edge["roles"] if r["kind"] == 0)]["normal_bounds"])}
+        for case, actual in zip(reference["cases"], native["cases"]) for edge in contact_edges(actual) if any(r["kind"] == 1 for r in edge["roles"])]}
     return reference, native
 
 
 class Contract(unittest.TestCase):
+    def test_current_side_pcurve_frame_line_and_echo_binding_refuse(self):
+        ref, base = fixture()
+        for key, value in (("range", [0.,1.0000000000000002]), ("weights", [1.]*768), ("weights", [True]*769), ("poles_rad_mm", [[0.,0.]]*769)):
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][4]["cylindrical_pcurve"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["cases"][0]["shared_edges"][4]["cylindrical_pcurve"]["weights"][384] = 1.0000000000000002
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["cases"][0]["shared_edges"][4]["cylindrical_pcurve"]["knots"][0] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("origin", [0.,1e-16]), ("direction", [-1.,0.]), ("range", [0.,2.]), ("kind", "other")):
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][4]["blend_side_line"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("origin_mm", [0.,0.,0.001]), ("directions", [[0.,1.,0.],[1.,0.,0.],[0.,0.,1.]]), ("radius_mm", 10.001)):
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][4]["cylinder_frame"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("chart", False), ("chart", 1), ("max_leaves", True), ("maximum_gap_m", 1e-8), ("cylinder_radius_mm", 10.001)):
+            native = copy.deepcopy(base);native["side_boundary_certificates"]["certificates"][0]["request"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for value in (False, -0.0, 0.001):
+            native = copy.deepcopy(base);native["side_boundary_certificates"]["certificates"][0]["request"]["pcurve_poles_rad_mm"][0][0] = value
+            with self.subTest(value=value), self.assertRaises(ValueError): grade(ref, native)
+
+    def test_incomplete_side_component_bounds_gap_sums_and_overclaims_refuse(self):
+        ref, base = fixture()
+        for key in ("native_floating_evaluation_certified", "end_contact_boundaries_certified", "whole_brep_certified"):
+            native = copy.deepcopy(base);native["side_boundary_certificates"][key] = True
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key in ("edge_position_error_upper_m", "cylindrical_lift_position_error_upper_m", "blend_position_error_upper_m", "edge_to_cylinder_gap_upper_m", "edge_to_blend_gap_upper_m", "cylinder_to_blend_gap_upper_m"):
+            for value in (0., 1e-10, float("nan"), True):
+                native = copy.deepcopy(base);native["side_boundary_certificates"]["certificates"][0][key] = value
+                with self.subTest(key=key,value=value), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("angle_error_upper_rad", 1e-15), ("height_error_upper_m", 0.), ("support_frame_error_upper_m", -1.), ("support_frame_error_upper_m", 1e-10), ("edge_to_cylinder_gap_upper_m", 1e-13)):
+            native = copy.deepcopy(base);native["side_boundary_certificates"]["certificates"][0][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["side_boundary_certificates"]["certificates"].pop()
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);del native["side_boundary_certificates"]
+        with self.assertRaises(KeyError): grade(ref, native)
+        native = copy.deepcopy(base);native["side_boundary_proof_refusals"]["last_request_precision"] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["side_boundary_certificates"]["certificates"][0]["blend_normal_bounds"]["leaves"] = 4097
+        with self.assertRaises(ValueError): grade(ref, native)
+
     def test_current_end_pcurve_line_frame_and_echo_binding_refuse(self):
         ref, base = fixture()
         for key, value in (("degree", 3), ("periodic", True), ("range", [0, 1.0000000000000002]), ("knots", [False, True]), ("multiplicities", [4, 4]), ("weights", [0.]*5), ("poles_mm", [[0,0]]*4)):
@@ -324,19 +379,23 @@ class Contract(unittest.TestCase):
         native = copy.deepcopy(base);native["surface_definition_certificates"]["certificates"][0]["normal_bounds"]["jacobian_area_upper_m2"] = 2e-6
         with self.assertRaisesRegex(ValueError, "captured surface-definition"): grade(ref, native)
 
-    def test_positionally_close_coarse_pcurve_still_fails_normal_gate(self):
+    def test_coarse_pcurve_inside_old_join_allowance_fails_complete_side_gap(self):
         ref, native = fixture()
         edge = native["cases"][0]["shared_edges"][4]
         # A 2e-9 rad angular offset is only 2e-11 m on this cylinder, within
-        # the 1e-9 m join gate. All changed witnesses agree with their changed
-        # pcurve/support, but the paired tangent-plane gate must still refuse.
+        # the old 1e-9 m join allowance. Update raw capture and echo too: the
+        # stronger complete-gap witness gate must reject this before the old
+        # tangent-plane gate. Synthetic bounds are deliberately underclaimed;
+        # the live Rust proof refuses changed angular controls before output.
         for control in edge["cylindrical_pcurve"]["poles_rad_m"]: control[0] += 2e-9
         ref["cases"][0]["side_pcurves"][0]["control_points_rad_m"] = copy.deepcopy(edge["cylindrical_pcurve"]["poles_rad_m"])
+        edge["cylindrical_pcurve"]["poles_rad_mm"] = [[p[0],p[1]*1000] for p in edge["cylindrical_pcurve"]["poles_rad_m"]]
+        native["side_boundary_certificates"]["certificates"][0]["request"] = copy.deepcopy(side_boundary_request(ref,ref["cases"][0],native["cases"][0],edge))
         for sample in edge["samples"]:
             side = sample["sides"][1]
             u, v = cubic_pcurve(edge["cylindrical_pcurve"]["poles_rad_m"], sample["t"])
             side.update(uv=[u, v], point_m=[.01*math.cos(u), .01*math.sin(u), v], normal=[math.cos(u), math.sin(u), 0.])
-        with self.assertRaisesRegex(ValueError, "tangent-plane witness"):
+        with self.assertRaisesRegex(ValueError, "outside whole side boundary"):
             grade(ref, native)
 
 
