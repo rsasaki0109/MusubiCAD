@@ -1155,3 +1155,34 @@ eight complete seam certificates with maximum gap bound 8.268e-17 m against
 1e-12 m requested. All ten real-process refusal controls emit empty stdout.
 Existing reference, surface, 3D contact, end and side certificates are exactly
 unchanged. Completion requires merge; no score, actual52.60 / 95.
+
+
+PR #137 completed P16-037 at main
+`31faa9a7998e92d444ab509abc8e74964bc08419`, after all four exact-head applicable
+workflows and full job inventories succeeded (PR publisher intentionally skipped).
+Test/native proof/contract/upload succeeded; merge tree equals tested head tree.
+No score: actual52.60 / 95.
+
+MCAD-P16-038 / ADR-091 adds complete corresponding-parameter paired-normal chord
+bounds for current side/end/seam boundaries. Four actual surface certificates
+and cylindrical lifts are recomputed once per case. Outward actual support-frame
+cross-product/normalization errors and whole actual pcurve angle errors combine
+with ideal radial/axial/shared-seam identities; all twelve gaps per case must meet
+explicit precision. Bounded read-only two-case transport binds all raw inputs,
+charts, canonical attached lines, unit weights and precision/work budgets with
+no partial stdout. Finite normal gaps do not establish exact G1, native floating
+evaluation, embedding, untouched support seams or whole-BREP/production fidelity.
+No Mock/runtime/mesh/source/schema/MCP operation/eval or editable NURBS admission.
+P16-008 remains planned; no score, actual52.60 / 95.
+
+
+P16-038 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1216 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Three new independent geometry integration tests,
+one private analytic support-frame test, twenty-four synthetic report tests,
+seven support tests and repository hygiene pass. Actual pinned native capture
+produces two complete cases / 24 paired normal gap bounds with maximum
+4.994e-10 against 1e-9 requested. All eleven real-process refusal controls emit
+empty stdout. Existing reference and surface/contact/end/side/seam position
+certificate records are exactly unchanged. Completion requires merge; no score,
+actual52.60 / 95.

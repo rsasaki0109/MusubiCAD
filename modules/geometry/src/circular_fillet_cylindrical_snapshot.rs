@@ -47,6 +47,10 @@ fn magnitude(x: I) -> f64 {
     x.lo.abs().max(x.hi.abs())
 }
 impl CircularFilletCylindricalContactSnapshot {
+    pub(crate) fn normal_directions(&self) -> [[I; 3]; 3] {
+        self.directions
+    }
+
     /// Original origin/radius/height use mm; directions are dimensionless,
     /// pcurve controls are [angle_rad,height_mm]. Exactly 769 controls. Caller
     /// separately establishes current cylinder type/identity Location and the

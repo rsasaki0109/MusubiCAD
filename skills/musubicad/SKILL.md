@@ -953,3 +953,13 @@ refusals emit no partial stdout. This adds no authored operation or runnable MCP
 eval: never invent create_curved_fillet or infer production admission from the
 diagnostic. Paired normals/G1, native floating evaluation, global embedding and
 whole-BREP fidelity remain separate. P16-008 stays planned; scores unchanged.
+
+
+P16-038 / ADR-091 adds complete current paired unit-normal chord bounds for all
+24 blend side/end/seam boundaries of the native diagnostic. Actual support axes,
+whole current pcurve angle bounds and recomputed surface certificates contribute
+to every gap; attached maps, original raw definitions and precision/work budgets
+are strictly bound. This is finite normal agreement, NOT exact G1 or native
+floating evaluation/embedding/whole-BREP fidelity. Existing position proofs remain
+mandatory. No authored operation or runnable MCP eval is added: never infer
+create_curved_fillet or production admission. P16-008 stays planned; no score.

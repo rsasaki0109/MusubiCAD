@@ -590,3 +590,16 @@ external certificate, sampling or native mutation enters the proof. Bounded
 transport emits all eight proofs together and binds every raw input/budget.
 Surface/end/side proofs remain intact. Paired normals/G1, floating evaluation,
 global embedding and whole-BREP/production admission remain separate; no score.
+
+
+P16-038 / [ADR-091](../adr/ADR-091-native-boundary-normal-certificates.md) recomputes
+four actual surface certificates once per case, then bounds all side/end/seam
+unit-normal chord gaps using actual support axes, whole actual pcurve angle
+bounds and ideal boundary identities. Immutable cylindrical snapshots expose
+axis intervals only within geometry; no OCCT types or mutable native authority
+enter the core. Outward frame cross-product/normalization inequalities include
+orientation and refuse unresolved frames. All twelve gaps per case must meet
+explicit precision/work requirements. Bounded transport binds actual raw data
+and canonical attached maps; existing position proofs remain mandatory. Finite
+normal agreement is separate from exact G1, native floating evaluation, embedding
+and whole-BREP/production fidelity; no maturity credit follows.

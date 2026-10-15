@@ -78,3 +78,11 @@ and [example](../../examples/periodic_fillet_reference.md). Eight complete direc
 position-gap certificates and ten real-process refusals supplement the existing
 surface/end/side proofs. Native floating evaluation, paired normals/G1 and
 whole-BREP/production admission remain unproved.
+
+
+P16-038 / ADR-091 adds recomputed current paired-normal bounds for 24 blend
+side/end/seam boundaries, with actual support-frame and pcurve-angle errors.
+See [the paired-normal API](periodic-fillet-reference.md#current-native-paired-boundary-normal-bounds-p16-038).
+Two complete case proofs and eleven real-process refusals complement the existing
+position certificates. Finite normal gaps do not establish exact G1, native
+floating evaluation, global embedding or whole-BREP/production admission.

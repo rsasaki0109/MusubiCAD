@@ -914,3 +914,58 @@ evaluation, paired normals/exact G1, global embedding, unchanged support seams
 and whole-BREP fidelity remain separate. No production fillet, Mock/runtime,
 mesh, source/schema/DesignPatch or new MCP operation/eval is admitted; P16-008
 remains planned and maturity scores stay unchanged.
+
+
+## Current native paired boundary normal bounds (P16-038)
+
+[ADR-091](../adr/ADR-091-native-boundary-normal-certificates.md) adds
+`reference.certify_boundary_normals(&surfaces, &cylinders, plane_axes, precision)`.
+The first two inputs are arrays of four immutable current snapshots in chart
+order 0..3. Plane axes are the actual dimensionless X/Y directions. Capture must
+qualify owning forward faces, identity Locations, fixed definitions and original
+unit-span maps: side (t,0), end (t,1), seam left (1,t), right (0,t) on chart
+(c+1)%4. Constructor or certificate acceptance does not admit a production body.
+
+`CircularFilletBoundaryNormalPrecision` specifies `maximum_position_error: Length`,
+`maximum_surface_normal_error`, `maximum_normal_gap` (dimensionless unit-normal
+chord bounds strictly in (0,1)), and `max_leaves` in 1..=16384 PER surface. Four
+whole current-surface certificates and four whole cylindrical lifts are recomputed
+once per case. All twelve boundary normal gaps must meet the pair budget.
+No external certificate metadata, finite samples or geometry mutation enters the
+proof, and refusal returns no partial case result.
+
+For deviations dx,dy,dz of actual axes from canonical X/Y/Z, plane cross-product
+error is at most dp=dx+dy+dx*dy; cylinder cross-product error is at most
+dc=(dx+dy)*(1+dz)+dz uniformly over angle. Require finite d<1: the actual
+unnormalized direction has norm at least 1-d, and its normalized chord error is
+at most 2*d. This is a conservative near-canonical frame contract; arbitrary
+frames can refuse. Plane origin and positive cylinder radius do not affect
+normal direction. Existing position proofs remain mandatory.
+
+`CircularFilletBoundaryNormalBounds` returns recomputed `surfaces[4]` and
+`cylindrical_lifts[4]`, `plane_frame_normal_error_upper`,
+`cylinder_frame_normal_error_upper[4]`, `cylinder_normal_error_upper[4]`, and
+`side_normal_gap_upper[4]`, `end_normal_gap_upper[4]`, `seam_normal_gap_upper[4]`.
+ADR-085's ideal radial/axial/shared-seam identities give outward bounds:
+side=N[c]+2*dc[c]+ea[c], end=N[c]+2*dp, seam=N[c]+N[(c+1)%4], where ea is the
+recomputed actual pcurve angle bound. Every operation is outward, including raw
+SI conversion inside the existing snapshots. Invalid data, overflow, unresolved
+orientation, precision and exhausted work refuse.
+
+The read-only `periodic_fillet_boundary_normals` example accepts exactly TWO case
+requests within 1 MiB. Each contains four raw surfaces, four raw cylindrical
+pcurves/supports/unit weights, actual plane axes, all attached lines/charts and
+all reference/precision/work inputs. It qualifies charts/weights/lines and echoes
+every input, including signed zero, emitting only when both whole cases succeed.
+The native runner strictly binds actual captures and validates all component/
+outward sum bounds. Native numerical witnesses retain the existing NORMAL
+allowance and all previous gates. Native floating evaluation is not proved.
+
+The fixture requests position 1e-12 m, per-surface normal 2.5e-10, paired normal
+1e-9 and 4096 leaves per surface. Full proofs and real refusals are
+`native.boundary_normal_certificates` and `native.boundary_normal_proof_refusals`;
+`native_boundary_normal_certificates` summarizes the two cases / 24 boundaries.
+Earlier position-only certificates keep their own narrower scope flags. This
+finite normal-gap certificate is NOT exact G1, global embedding, untouched
+support seam, whole-BREP or production admission. P16-008 remains planned;
+no editable NURBS, Mock/runtime/mesh/source/schema/MCP operation/eval or score.
