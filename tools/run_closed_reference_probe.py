@@ -8,10 +8,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from run_reference_bezier_probe import ROOT, bernstein, distance, number, require
+from run_reference_bezier_probe import ROOT, bernstein, distance, number, require, vector
 
 ALLOWANCE_M = 1e-12
 MASS_ALLOWANCE_M3 = 1e-15  # Comparison/stability allowance, not certified native error.
+MOMENT_ALLOWANCE_M4 = 1e-17
+COM_ALLOWANCE_M = 1e-10
 NAMES = ("constant-coarse", "constant-fine", "variable-coarse", "variable-fine")
 
 
@@ -47,6 +49,25 @@ def grade(reference: dict, native: dict) -> dict:
         require(all(actual[f] is True for f in ("brep_valid", "shell_closed", "face_connected", "edge_incidence_two", "cap_normals_outward")), "unclosed, misoriented or invalid native solid")
         volume, delta = number(actual["volume_m3"]), number(actual["volume_refinement_delta_m3"])
         require(0 < volume < math.pi*0.01**2*0.02 and 0 <= delta <= MASS_ALLOWANCE_M3, "invalid or unstable native volume")
+        integrals = ref["boundary_integrals"]
+        def enclosure(value, max_width):
+            require(isinstance(value, list) and len(value) == 2, "missing boundary integral interval")
+            lower, upper = map(number, value)
+            require(lower <= upper and upper-lower <= max_width, "invalid or unresolved boundary integral")
+            return lower, upper
+        vlo, vhi = enclosure(integrals["volume_m3"], MASS_ALLOWANCE_M3)
+        require(vlo > 0 and vlo-MASS_ALLOWANCE_M3 <= volume <= vhi+MASS_ALLOWANCE_M3, "native volume outside independent boundary comparison")
+        moments, center = vector(actual["first_moments_m4"]), vector(actual["center_of_mass_m"])
+        require(len(integrals["first_moments_m4"]) == 3, "missing moment enclosures")
+        center_bounds = []
+        for axis, interval in enumerate(integrals["first_moments_m4"]):
+            lower, upper = enclosure(interval, MOMENT_ALLOWANCE_M4)
+            require(lower-MOMENT_ALLOWANCE_M4 <= moments[axis] <= upper+MOMENT_ALLOWANCE_M4, "native moment outside independent boundary comparison")
+            require(abs(moments[axis]-volume*center[axis]) <= 1e-22, "inconsistent native mass/center/moments")
+            quotients = [m/v for m in (lower, upper) for v in (vlo, vhi)]
+            clo, chi = math.nextafter(min(quotients), -math.inf), math.nextafter(max(quotients), math.inf)
+            require(clo-COM_ALLOWANCE_M <= center[axis] <= chi+COM_ALLOWANCE_M, "native center outside independent boundary comparison")
+            center_bounds.append([clo, chi])
         support_error = number(actual["max_sampled_skirt_cylinder_error_m"])
         require(ALLOWANCE_M < support_error <= ref["position_error_upper_m"]+ALLOWANCE_M, "skirt approximation distinction missing or changed")
         surfaces = actual["surface_cells"]
@@ -68,7 +89,9 @@ def grade(reference: dict, native: dict) -> dict:
                 error = distance(sample["point_m"], bernstein(poles, u, v)[0])
                 require(error <= ALLOWANCE_M, "native closed surface evaluation mismatch")
                 max_error = max(max_error, error)
-        findings.append({"name": name, "divisions": n, "native_volume_m3": volume,
+        findings.append({"name": name, "divisions": n, "native_volume_m3": volume, "polynomial_boundary_volume_m3": [vlo, vhi],
+                         "polynomial_boundary_first_moments_m4": integrals["first_moments_m4"], "polynomial_boundary_center_m": center_bounds,
+                         "native_first_moments_m4": moments, "native_center_of_mass_m": center,
                          "native_minus_ideal_interval_m3": [math.nextafter(volume-hi, -math.inf), math.nextafter(volume-lo, math.inf)],
                          "distance_to_ideal_interval_m3": max(lo-volume, volume-hi, 0.),
                          "max_sampled_surface_error_m": max_error, "sampled_skirt_cylinder_error_m": support_error})
@@ -80,7 +103,7 @@ def grade(reference: dict, native: dict) -> dict:
         improves = fine_gap < coarse_gap-MASS_ALLOWANCE_M3 if coarse_gap > MASS_ALLOWANCE_M3 else fine_gap <= coarse_gap+MASS_ALLOWANCE_M3
         require(improves and fine["sampled_skirt_cylinder_error_m"] < coarse["sampled_skirt_cylinder_error_m"], "native approximation refinement changed")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
-            "native_diagnostic_solids_created": 4, "evaluation_allowance_m": ALLOWANCE_M, "mass_comparison_allowance_m3": MASS_ALLOWANCE_M3, "findings": findings}
+            "native_diagnostic_solids_created": 4, "evaluation_allowance_m": ALLOWANCE_M, "mass_comparison_allowance_m3": MASS_ALLOWANCE_M3, "moment_comparison_allowance_m4": MOMENT_ALLOWANCE_M4, "center_comparison_allowance_m": COM_ALLOWANCE_M, "findings": findings}
 
 
 def run(occt_root: Path, output: Path) -> None:

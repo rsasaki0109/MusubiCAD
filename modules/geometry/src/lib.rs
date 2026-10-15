@@ -97,3 +97,6 @@ pub use circular_fillet_normals::CircularFilletNormalBounds;
 
 mod circular_fillet_band;
 pub use circular_fillet_band::{CircularFilletBandCell, CircularFilletBezierBand};
+
+mod circular_fillet_integrals;
+pub use circular_fillet_integrals::CircularFilletBoundaryIntegrals;

@@ -117,7 +117,10 @@ void measure(std::ostream& out) {
   require(std::isfinite(fine.Mass()) && fine.Mass()>0,"nonpositive native volume; no orientation repair permitted");
   out << "{\"brep_valid\":true,\"shell_closed\":true,\"face_connected\":true,\"edge_incidence_two\":true,\"free_edges\":0,\"shells\":1,\"solids\":1,\"euler\":2,\"faces\":" << faces.Extent()
       << ",\"vertices\":" << vertices.Extent() << ",\"edges\":" << edges.Extent() << ",\"volume_m3\":" << fine.Mass()*1e-9
-      << ",\"volume_refinement_delta_m3\":" << std::abs(fine.Mass()-coarse.Mass())*1e-9 << ",\"surface_cells\":[";
+      << ",\"volume_refinement_delta_m3\":" << std::abs(fine.Mass()-coarse.Mass())*1e-9;
+  const auto center=fine.CentreOfMass();
+  out << ",\"center_of_mass_m\":";point(out,center);
+  out << ",\"first_moments_m4\":[" << fine.Mass()*center.X()*1e-12 << ',' << fine.Mass()*center.Y()*1e-12 << ',' << fine.Mass()*center.Z()*1e-12 << "],\"surface_cells\":[";
   int planes=0, emitted=0;double radial_error=0;
   for (int f=1;f<=faces.Extent();++f) {
     auto face=TopoDS::Face(faces(f));BRepAdaptor_Surface adaptor(face);

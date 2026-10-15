@@ -359,6 +359,12 @@ using an explicitly approximate polynomial skirt and planar caps. It adds no
 MCP operation or product/Mock body; measured refinement and native solidity do
 not admit exact support/G1 fidelity or circular variable-fillet source creation.
 
+P16-027 / ADR-080 independently bounds signed volume/first moments of the
+mathematical diagnostic boundary and compares actual native COM/moments. It
+adds no MCP operation or source feature. Polynomial integral bounds and native
+numerical comparisons do not prove embedding, G1, unchanged cylindrical support
+or all native mass error; circular authoring remains unsupported.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

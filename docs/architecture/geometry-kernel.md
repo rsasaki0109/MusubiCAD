@@ -103,6 +103,12 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-027 / [ADR-080](../adr/ADR-080-closed-reference-boundary-integrals.md)
+independently integrates actual mathematical band/skirt/cap boundary polynomials
+with outward Bernstein arithmetic for signed volume/first moments. Native GProp
+COM/moments are separate measured outputs. Numerical native comparisons do not
+certify sewing/conversion/integration error, embedding or physical Mock admission.
+
 P16-026 / [ADR-079](../adr/ADR-079-closed-native-reference-diagnostic.md) closes
 diagnostic bands using ruled polynomial skirts and planar caps, and measures
 actual native solids/refinement against bounded ideal volume. Skirts approximate

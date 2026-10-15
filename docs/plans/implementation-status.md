@@ -866,3 +866,20 @@ contract tests preserve negative gates; live CI performs actual native construct
 No production GeometryKernel/Mock body, G1/global embedding/independent solid mass
 certificate, mesh, source/schema/MCP operation or feature admission is supplied.
 P16-008 remains planned; actual52.60 / 95.
+
+
+P16-026 is complete in PR #126 (merge 38ca404), after all mandatory local checks
+(1166 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Actual closed native diagnostic
+and report upload succeeded; PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-027 / ADR-080 independently bounds signed volume/first-moment boundary
+integrals of current mathematical polynomial band/skirt/cap geometry with outward
+Bernstein arithmetic. Native GProp COM/moments are measured separately and
+compared using explicit numerical allowances; these comparisons do not certify
+all native sewing/conversion/integration error. Independent analytic prism,
+translation/scaling/orientation/current-pole and high-order quadrature controls
+plus invalid-boundary/report refusals exercise the contract. No embedding/G1,
+unchanged cylindrical support, physical Mock/product body, source/schema/MCP
+operation or feature admission is added. P16-008 remains planned; actual52.60 / 95.

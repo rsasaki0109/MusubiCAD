@@ -311,3 +311,55 @@ runtime/mesh, exact or separately admitted support/G1 fidelity, global embedding
 independent solid area/volume/moment bounds and guarded source/cache/history
 remain unresolved. No schema, migration, editable NURBS or MCP operation is added.
 See [runnable fixture](../../modules/geometry/examples/closed_periodic_reference.rs).
+
+## Independent closed boundary integrals (P16-027)
+
+[ADR-080](../adr/ADR-080-closed-reference-boundary-integrals.md) adds
+`CircularFilletBezierBand::closed_diagnostic_integrals()`. It recomputes from
+current control points and returns `CircularFilletBoundaryIntegrals` with
+`volume_m3: [lower, upper]` and `first_moments_m4: [[lower, upper]; 3]`.
+It ignores mutable position/normal certificate metadata. The scope is the
+mathematical polynomial band, its ruled skirts to z=0 and planar caps; the
+unchanged cylindrical support and ideal fillet are different geometries.
+
+The method requires an ordered complete dyadic cover with at most 4096 cells,
+finite poles, exact shared polynomial boundaries and a common positive planar
+top height. Representation equality on shared poles/grid boundaries is checked
+exactly; this is not a numerical proximity test. The top height comes from the
+actual top poles, including their rounding, rather than an ideal stock height.
+Malformed, nonplanar, nonfinite or over-budget covers refuse.
+
+For J=x_u*y_v-x_v*y_u, integrate z*J, x*z*J, y*z*J and z²*J/2 on each band
+patch. Skirts and bottom have zero z-directed flux. The top cap's area and
+first moments follow from Green integrals of its actual cubic boundary curves.
+Bernstein derivative/product identities and exact basis integrals, evaluated
+with outward arithmetic, enclose these polynomial integrals without sampled
+quadrature. Native GProp and ideal-volume integration are independent of this
+calculation. Signed flux bounds alone cannot prove embedding or a physical solid;
+reversed boundaries remain signed, without automatic orientation repair.
+
+The existing `run_closed_reference_probe.py` command now measures actual native
+COM in metres and first moments in m⁴, and compares both to these independent
+intervals. A positive volume interval also permits interval division for COM.
+The numerical comparison allowances are separately reported: 1e-15 m³ volume,
+1e-17 m⁴ first moments and 1e-10 m COM. Mathematical interval widths must fit
+within the corresponding volume/moment comparison allowances. SI/mm conversion,
+sewing, native cap-plane rounding and native integration error are outside the
+polynomial certificate; passing comparison does not certify all native error.
+Synthetic report fixtures test rejection logic only.
+
+Independent regressions cover analytic prism volume/moments, XY translations,
+SI scaling, changed interior poles, reversed orientation, invalid boundaries,
+and six-point Gauss-Legendre surface quadrature for real constant/variable bands.
+The existing CI diagnostic executes actual native comparisons and retains its
+report. This adds no area/embedding/G1 certificate, Mock/native product body,
+mesh, source/schema or MCP operation; circular authoring remains unsupported.
+
+In the local four-case run, mathematical volume interval widths were about
+1.2e-18 m³ (coarse) and 4.5e-18 m³ (fine), and every measured native volume/COM
+lay within its mathematical interval even before the comparison allowance.
+More cells can widen rounding enclosures through accumulation; these widths do
+not measure geometric approximation error or prove convergence. The variable
+fine case's actual native COM was approximately (-1.00088037e-5,
+-3.21070960e-13, 9.97712089e-3) m. These fixture observations are not universal
+native accuracy guarantees.
