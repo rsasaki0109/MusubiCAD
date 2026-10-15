@@ -1032,3 +1032,33 @@ native definition certificates use 649 leaves; maximum position bound
 1.277e-15 m, maximum normal bound 9.998e-10 and minimum Jacobian lower bound
 2.393e-6 m². All three real-process refusal cases emit no partial stdout.
 Completion requires this PR's merge; no score, actual52.60 / 95.
+
+PR #133 completed P16-033 at main
+`52274847083e18bc1aeba7f4bd5357f7b57ecfe5`, after all four exact-head applicable
+workflows and full job inventories succeeded (PR publisher intentionally skipped).
+Actual native capture/proof and diagnostic upload succeeded. No score:
+actual52.60 / 95.
+
+MCAD-P16-034 / ADR-087 adds immutable CURRENT native 3D contact curve snapshots
+and whole-curve side/end position certificates with outward raw mm-to-m conversion,
+common weight gauge and positive Bernstein denominator hulls. The pinned native
+probe captures current post-sewing definitions with explicit identity Location,
+fixed degree/knots/range and nonperiodicity, then recomputes sixteen proofs in
+a bounded read-only Rust process. Strict echo binding ties every proof to raw
+capture, law, kind, chart and precision. Independent analytic/scale/gauge and
+deformation/unit/phase/precision tests complement synthetic parser refusals and
+real-process no-partial-output controls. This proves 3D curve definitions only:
+attached pcurve lifts/full contact gaps, native floating evaluation, derivatives,
+exact G1, embedding and whole-BREP fidelity remain separate. No feature, Mock/
+runtime body, source/schema/MCP operation/eval or editable NURBS admission.
+P16-008 remains planned; completion requires merge; no score, actual52.60 / 95.
+
+P16-034 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1197 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Three new integration geometry tests and a private
+exact-fraction conversion test pass, alongside fifteen synthetic reference-report
+tests and seven support-report tests. Actual pinned native capture produces
+sixteen complete current 3D curve-definition certificates with maximum position
+bound 1.070e-15 m against 1e-12 m requested. All six real-process refusal controls
+emit no partial stdout. Existing reference data and eight surface certificates
+are unchanged. Completion requires merge; no score, actual52.60 / 95.

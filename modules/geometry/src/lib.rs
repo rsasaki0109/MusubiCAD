@@ -107,6 +107,10 @@ pub use circular_fillet_area::CircularFilletAreaBounds;
 
 mod circular_fillet_contacts;
 pub use circular_fillet_contacts::{CircularFilletContactCurve, CircularFilletContactKind};
+mod circular_fillet_contact_snapshot;
+pub use circular_fillet_contact_snapshot::{
+    CircularFilletContactSnapshot, CircularFilletContactSnapshotBounds,
+};
 
 mod circular_fillet_rational;
 pub use circular_fillet_rational::{CircularFilletCylindricalPcurve, CircularFilletRationalPatch};

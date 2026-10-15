@@ -4,7 +4,7 @@ from fractions import Fraction as F
 import math
 import unittest
 from test_rational_contact_probe import fixture as contact_fixture
-from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request
+from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges
 from run_reference_bezier_probe import unit_cross
 from run_rational_contact_probe import rational
 
@@ -79,7 +79,7 @@ def fixture():
                 edge = {"roles": [{"kind": k, "chart": c} for k, c in pair], "same_parameter": True, "same_range": True, "tolerance_m": 1e-10, "range": [0., 1.], "samples": []}
                 if category in (1, 2):
                     contact = ref["contacts"][(0 if category == 1 else 4)+chart]
-                    edge["contact_curve"] = {"degree": contact["degree"], "poles_m": copy.deepcopy(contact["control_points_m"]), "weights": contact["weights"][:], "knots": [0, 1], "multiplicities": [contact["degree"]+1]*2}
+                    edge["contact_curve"] = {"degree": contact["degree"], "location_identity": True, "periodic": False, "poles_mm": [[x*1000 for x in p] for p in contact["control_points_m"]], "poles_m": copy.deepcopy(contact["control_points_m"]), "weights": contact["weights"][:], "knots": [0, 1], "multiplicities": [contact["degree"]+1]*2}
                     if category == 1: edge["cylindrical_pcurve"] = {"degree": 3, "rational": False, "periodic": False, "poles_rad_m": copy.deepcopy(ref["side_pcurves"][chart]["control_points_rad_m"]), "knots": [i/256 for i in range(257)], "multiplicities": [4]+[3]*255+[4]}
                 for j in range(9):
                     t = edge_fraction(j)
@@ -105,10 +105,45 @@ def fixture():
         {"request": copy.deepcopy(snapshot_request(reference, case, face)), "position_error_upper_m": 5e-13,
          "normal_bounds": copy.deepcopy(case["patches"][face["role"]["chart"]]["normal_bounds"])}
         for case, actual in zip(reference["cases"], native["cases"]) for face in actual["surface_faces"] if face["role"]["kind"] == 0]}
+    native["contact_definition_proof_refusals"] = {key: True for key in ("input_limit", "wrong_chart", "wrong_units", "nonuniform_weight", "missing_control", "last_request_precision")}
+    native["contact_definition_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "attached_pcurve_lifts_certified": False, "whole_brep_certified": False, "certificates": [
+        {"request": copy.deepcopy(contact_request(reference, case, edge)), "position_error_upper_m": 5e-13}
+        for case, actual in zip(reference["cases"], native["cases"]) for edge in contact_edges(actual)]}
     return reference, native
 
 
 class Contract(unittest.TestCase):
+    def test_current_contact_definition_and_transport_binding_refuse(self):
+        ref, base = fixture()
+        for key, value in (("location_identity", False), ("periodic", True), ("poles_mm", [[0.,0.,0.]]*3), ("knots", [False, True]), ("multiplicities", [True, True])):
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][4]["contact_curve"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["cases"][0]["shared_edges"][4]["range"][0] = 1e-16
+        with self.assertRaisesRegex(ValueError, "domain unsupported"): grade(ref, native)
+        for key, value in (("kind", "end"), ("chart", 1), ("chart", False), ("maximum_radius_m", .002), ("maximum_position_error_m", 1e-10)):
+            native = copy.deepcopy(base);native["contact_definition_certificates"]["certificates"][0]["request"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for value in (False, -0.0, .001):
+            native = copy.deepcopy(base);native["contact_definition_certificates"]["certificates"][0]["request"]["poles_mm"][0][1] = value
+            with self.subTest(value=value), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["contact_definition_certificates"]["certificates"][0]["request"]["weights"][1] *= 2
+        with self.assertRaises(ValueError): grade(ref, native)
+
+    def test_missing_unresolved_or_overclaimed_contact_certificates_refuse(self):
+        ref, base = fixture()
+        for key in ("native_floating_evaluation_certified", "attached_pcurve_lifts_certified", "whole_brep_certified"):
+            native = copy.deepcopy(base);native["contact_definition_certificates"][key] = True
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for value in (0., 1e-10, float("nan"), True):
+            native = copy.deepcopy(base);native["contact_definition_certificates"]["certificates"][0]["position_error_upper_m"] = value
+            with self.subTest(value=value), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["contact_definition_certificates"]["certificates"].pop()
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);del native["contact_definition_certificates"]
+        with self.assertRaises(KeyError): grade(ref, native)
+        native = copy.deepcopy(base);native["contact_definition_proof_refusals"]["last_request_precision"] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+
     def test_complete_report_keeps_product_admission_false(self):
         result = grade(*fixture())
         self.assertTrue(result["diagnostic_passed"])

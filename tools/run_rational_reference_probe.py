@@ -60,6 +60,7 @@ def cubic_pcurve(poles, t):
 
 def controls(actual, ref, degree):
     require(type(actual["degree"]) is int and actual["degree"] == degree and actual["knots"] == [0, 1] and actual["multiplicities"] == [degree+1]*2, "current contact representation changed")
+    require(actual["location_identity"] is True and actual["periodic"] is False and all(type(x) is int for x in actual["multiplicities"]) and all(type(x) is not bool for x in actual["knots"]), "placed/periodic/invalid current contact representation")
     require(len(actual["poles_m"]) == len(actual["weights"]) == len(ref["control_points_m"]) == len(ref["weights"]) == degree+1, "incomplete current contact controls")
     require(all(number(w) > 0 for w in actual["weights"]+ref["weights"]), "nonpositive contact weight")
     for p, q, w, z in zip(actual["poles_m"], ref["control_points_m"], actual["weights"], ref["weights"]):
@@ -92,6 +93,22 @@ def snapshot_request(reference, case, face):
             "maximum_normal_error": 1e-9, "max_leaves": 4096}
 
 
+def contact_request(reference, case, edge):
+    roles = edge["roles"]
+    return {"kind": "side" if any(r["kind"] == 1 for r in roles) else "end",
+            "chart": next(r["chart"] for r in roles if r["kind"] == 0),
+            "cylinder_radius_m": reference["radius_m"], "cylinder_height_m": reference["height_m"],
+            "minimum_radius_m": case["minimum_radius_m"], "maximum_radius_m": case["maximum_radius_m"],
+            "poles_mm": edge["contact_curve"]["poles_mm"], "weights": edge["contact_curve"]["weights"],
+            "maximum_position_error_m": 1e-12}
+
+
+def contact_edges(case):
+    return sorted((edge for edge in case["shared_edges"] if "contact_curve" in edge),
+                  key=lambda edge: (0 if any(r["kind"] == 1 for r in edge["roles"]) else 1,
+                                    next(r["chart"] for r in edge["roles"] if r["kind"] == 0)))
+
+
 def normal_certificate(certificate, maximum_error, max_leaves):
     values = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
     jlo, jhi, alignment, error, eu, ev = values
@@ -110,6 +127,11 @@ def grade(reference, native):
     captured = native["surface_definition_certificates"]
     require(type(captured["format_version"]) is int and captured["format_version"] == 1 and len(captured["certificates"]) == 8 and captured["native_floating_evaluation_certified"] is False and captured["whole_brep_certified"] is False, "missing/mislabelled native definition certificate inventory")
     native_certificates = []
+    contact_refusals = native["contact_definition_proof_refusals"]
+    require(set(contact_refusals) == {"input_limit", "wrong_chart", "wrong_units", "nonuniform_weight", "missing_control", "last_request_precision"} and all(v is True for v in contact_refusals.values()), "missing live contact proof refusals")
+    contact_proofs = native["contact_definition_certificates"]
+    require(type(contact_proofs["format_version"]) is int and contact_proofs["format_version"] == 1 and len(contact_proofs["certificates"]) == 16 and all(contact_proofs[key] is False for key in ("native_floating_evaluation_certified", "attached_pcurve_lifts_certified", "whole_brep_certified")), "missing/overclaimed contact definition certificates")
+    contact_certificates = []
     certificates = []
     maxima = {key: 0. for key in ("point_m", "d1_m", "normal", "join_gap_m", "join_normal_gap")}
     phase_mismatches = []
@@ -218,6 +240,20 @@ def grade(reference, native):
                 require(contact["kind"] == ("side" if pair == (0, 1) else "end") and type(contact["chart"]) is int and contact["chart"] == chart and 0 < number(contact["position_error_upper_m"]) <= 1e-12, "wrong contact reference")
                 controls(edge["contact_curve"], contact, 2 if pair == (0, 1) else 4)
                 require(abs(first) <= 1e-14 and abs(last-1) <= 1e-14, "contact range changed")
+                # Fixed representation domain is a DATA gate, not geometry
+                # proximity: the proof covers exactly the canonical unit span.
+                require(all(type(x) is not bool for x in edge["range"]) and edge["range"] == [0, 1], "contact definition domain unsupported")
+                raw = edge["contact_curve"]["poles_mm"]
+                require(len(raw) == len(edge["contact_curve"]["poles_m"]), "missing raw contact controls")
+                for mm, si in zip(raw, edge["contact_curve"]["poles_m"]):
+                    require(distance([x/1000 for x in vector(mm)], si) <= POINT_M, "raw contact and rounded SI export disagree")
+                proof = contact_proofs["certificates"][law*8+(0 if pair == (0, 1) else 4)+chart]
+                expected_request = contact_request(reference, ref, edge)
+                echo = proof["request"]
+                require(isinstance(echo, dict) and set(echo) == set(expected_request) and echo["kind"] == expected_request["kind"] and type(echo["chart"]) is int and all(same_numeric_data(echo[key], value) for key, value in expected_request.items() if key != "kind"), "contact certificate capture/reference/request mismatch")
+                bound = number(proof["position_error_upper_m"])
+                require(0 < bound <= expected_request["maximum_position_error_m"], "unresolved whole-curve native contact position certificate")
+                contact_certificates.append(proof)
                 if pair == (0, 1): pcurve(edge["cylindrical_pcurve"], ref["side_pcurves"][chart], chart, law)
             for j, sample in enumerate(edge["samples"]):
                 t = first+(last-first)*edge_fraction(j)
@@ -226,6 +262,11 @@ def grade(reference, native):
                 if contact is not None:
                     expected, _ = rational(contact["control_points_m"], contact["weights"], t)
                     require(distance(point, expected) <= POINT_M, "current sewn contact geometry changed")
+                    theta = contact["chart"]*math.pi/2+2*math.atan(t)
+                    radius = .0005 if law == 0 else .001+.0005*math.cos(theta)
+                    rho = .01 if pair == (0, 1) else .01-radius
+                    ideal_contact = [rho*math.cos(theta), rho*math.sin(theta), .02-radius if pair == (0, 1) else .02]
+                    require(distance(point, ideal_contact) <= bound+POINT_M, "native edge witness outside captured contact certificate")
                 for (kind, chart), side in zip(roles, sample["sides"]):
                     require(len(side["uv"]) == 2, "missing native pcurve UV")
                     u, v = map(number, side["uv"])
@@ -267,6 +308,7 @@ def grade(reference, native):
     require(phase_mismatches[0] == 0 and phase_mismatches[1] >= 2, "constant/variable actual solid phase decoys not distinguished")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
             "native_diagnostic_solids_created": 2, "native_rational_blend_faces_created": 8,
+            "native_contact_definition_certificates": {"count": len(contact_certificates), "maximum_position_error_m": max(c["position_error_upper_m"] for c in contact_certificates), "includes_native_coordinate_conversion": True, "native_floating_evaluation_certified": False, "attached_pcurve_lifts_certified": False, "whole_brep_certified": False},
             "rounded_reference_certificates": {"count": len(certificates), "maximum_normal_error": max(c["normal_error_upper"] for c in certificates), "minimum_jacobian_m2": min(c["jacobian_area_lower_m2"] for c in certificates), "total_cover_leaves": sum(c["leaves"] for c in certificates), "global_native_certificate": False},
             "native_surface_definition_certificates": {"count": len(native_certificates), "maximum_position_error_m": max(c["position_error_upper_m"] for c in native_certificates), "maximum_normal_error": max(c["normal_bounds"]["normal_error_upper"] for c in native_certificates), "minimum_jacobian_m2": min(c["normal_bounds"]["jacobian_area_lower_m2"] for c in native_certificates), "total_cover_leaves": sum(c["normal_bounds"]["leaves"] for c in native_certificates), "includes_native_coordinate_conversion": True, "native_floating_evaluation_certified": False, "whole_brep_certified": False},
             "maxima": maxima, "rotated_classifier_mismatches": phase_mismatches,
@@ -315,6 +357,24 @@ def run(occt_root, output):
         refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
         require(refused.returncode != 0 and not refused.stdout.strip(), "snapshot probe accepted invalid input or emitted partial certificates: "+name)
         native["surface_definition_proof_refusals"][name] = True
+    requests = [contact_request(ref, case, edge) for case, actual in zip(ref["cases"], native["cases"]) for edge in contact_edges(actual)]
+    command = ["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "periodic_fillet_native_contacts"]
+    payload = json.dumps({"format_version": 1, "requests": requests}, allow_nan=False)
+    proof = subprocess.run(command, input=payload, check=True, cwd=ROOT, capture_output=True, text=True, timeout=180)
+    native["contact_definition_certificates"] = json.loads(proof.stdout)
+    wrong_chart = copy.deepcopy(requests);wrong_chart[0]["chart"] = 4
+    wrong_units = copy.deepcopy(requests);wrong_units[0]["poles_mm"] = [[x/1000 for x in p] for p in wrong_units[0]["poles_mm"]]
+    changed_weight = copy.deepcopy(requests);changed_weight[0]["weights"][1] *= 1.0001
+    missing = copy.deepcopy(requests);missing[0]["poles_mm"].pop()
+    tight_last = copy.deepcopy(requests);tight_last[-1]["maximum_position_error_m"] = 1e-30
+    adversarial = {"input_limit": payload+" "*max(1, 65537-len(payload.encode("utf-8")))}
+    for name, data in (("wrong_chart", wrong_chart), ("wrong_units", wrong_units), ("nonuniform_weight", changed_weight), ("missing_control", missing), ("last_request_precision", tight_last)):
+        adversarial[name] = json.dumps({"format_version": 1, "requests": data}, allow_nan=False)
+    native["contact_definition_proof_refusals"] = {}
+    for name, bad_payload in adversarial.items():
+        refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
+        require(refused.returncode != 0 and not refused.stdout.strip(), "contact proof accepted invalid input or emitted partial certificates: "+name)
+        native["contact_definition_proof_refusals"][name] = True
     report = {"format_version": 1, "diagnostic_passed": False, "candidate_admitted": False, "reference": ref, "native": native}
     try: report.update(grade(ref, native))
     except (KeyError, TypeError, ValueError) as error:

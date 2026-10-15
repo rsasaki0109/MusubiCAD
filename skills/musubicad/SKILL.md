@@ -392,6 +392,14 @@ evaluation, trim, contact coincidence, exact G1 or whole-BREP/global embedding.
 It adds no physical Mock/runtime/mesh, source/MCP operation/eval or editable
 NURBS admission. P16-008 remains planned; use documented DesignPatch operations.
 
+P16-034 / ADR-087 also certifies entire CURRENT native 3D side/end contact curve
+definitions from raw millimetre poles and weights with complete corresponding-
+parameter position bounds. Strict capture/reference/kind/chart/budget binding
+and real-process refusals protect the sixteen diagnostic proofs. Attached 2D
+pcurve lifts/full edge-to-face gaps, derivatives, native floating evaluation and
+whole-BREP fidelity remain unproved. This adds no source, Mock/runtime or MCP
+operation/eval; P16-008 stays planned. Author only documented DesignPatch operations.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`
