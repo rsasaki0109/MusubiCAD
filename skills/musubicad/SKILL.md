@@ -324,6 +324,11 @@ surfaces. These are transient reference data, with no MCP operation, physical
 Mock/native solid or editable NURBS. Shared boundary poles and positional error
 bounds do not establish tangent continuity or admit a curved variable fillet.
 
+P16-024 / ADR-077 recomputes local area/orientation/normal bounds from current
+reference poles, with native normal/seam diagnostic witnesses. No MCP operation,
+physical body, G1 or support trimming is admitted. Normal certificates do not
+validate positional metadata; edited poles require all relevant bounds anew.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

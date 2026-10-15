@@ -105,3 +105,21 @@ scale, domain refusal and shared control-net edges. The
 constructs and measures those surfaces in OCCT; it does not create a closed
 fillet body. Position error, native sampled agreement and shared curves alone
 cannot establish tangent continuity, support trimming, mass or feature support.
+
+
+P16-024 checks the current poles' whole-patch local orientation and normals:
+
+```rust
+let normals = patch.normal_bounds(reference, 0, 0.25, 0.255, 0.30, 0.305)?;
+assert!(normals.jacobian_area_lower_m2 > 0.0);
+assert!(normals.ideal_normal_alignment_lower > 0.0);
+// normal_error_upper is dimensionless unit-vector distance, not radians.
+// This recomputation ignores stored position bounds and cannot validate them.
+```
+
+Run `cargo test -p opencad-geometry --test circular_fillet_normals` for independent
+planar area/normals, Bernstein and angular comparisons, scale and protected
+refusals (collapsed/reversed/interior-corrupted nets and underflow). The existing
+native diagnostic also checks actual unit normals/area and shared seam gaps.
+Whole-patch bounds prove local immersion/orientation only; support trimming,
+global embedding, tangent-continuous assembly and a closed solid remain pending.

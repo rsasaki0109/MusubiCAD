@@ -812,3 +812,21 @@ and derivatives across forty constant/nonconstant/contact/interior/seam cases.
 Negative report controls reject displaced surfaces and corrupt measurements.
 No native or Mock solid, support trimming, normal/G1/volume certificate, source,
 schema or MCP operation is supplied. P16-008 remains planned; actual52.60 / 95.
+
+
+P16-023 is complete in PR #123 (merge 0962891), after all mandatory local checks
+(1158 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Native Bezier diagnostic and
+artifact upload succeeded in CI; the PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-024 / ADR-077 supplies whole-patch derivative-control-hull certificates
+for the actual current reference poles: positive local Jacobian area in m²,
+ideal-normal orientation and unit-normal component/error bounds. Recompute
+without trusting stored position metadata; nonfinite, degenerate, reversed,
+interior-corrupted or precision-uncertifiable cases refuse. Independent planar,
+Bernstein/angular and scaling tests check the implementation. The live native
+diagnostic measures normals/area at all 1000 samples and full-cycle seam normal
+gaps; its numerical allowances remain separate from mathematical bounds. No
+G1, support trimming, global embedding, physical Mock/native solid, source/schema
+or MCP operation is admitted. P16-008 remains planned; actual52.60 / 95.

@@ -67,6 +67,13 @@ int main() {
           vector(out, du.X(), du.Y(), du.Z());
           out << ",\"dv_m\":";
           vector(out, dv.X(), dv.Y(), dv.Z());
+          auto normal = du.Crossed(dv);
+          const double area = normal.Magnitude();
+          if (!std::isfinite(area) || area <= 0)
+            throw std::runtime_error("degenerate native surface normal");
+          normal.Normalize();
+          out << ",\"jacobian_area_m2\":" << area << ",\"normal\":";
+          vector(out, normal.X(), normal.Y(), normal.Z());
           out << '}';
         }
       out << "]}";

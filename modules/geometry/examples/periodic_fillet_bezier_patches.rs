@@ -27,6 +27,7 @@ fn main() -> opencad_core::Result<()> {
                     _ => (0.25_f64, 0.255_f64),
                 };
                 let patch = reference.bezier_patch(chart, u0, u1, v0, v1)?;
+                let normals = patch.normal_bounds(reference, chart, u0, u1, v0, v1)?;
                 let mut samples = Vec::new();
                 for u in [0_f64, 0.25, 0.5, 0.75, 1.] {
                     for v in [0., 0.25, 0.5, 0.75, 1.] {
@@ -36,11 +37,14 @@ fn main() -> opencad_core::Result<()> {
                             ),
                             Angle::from_radians(2. * (v0 + (v1 - v0) * v).atan()),
                         )?;
-                        samples.push(json!({"u":u,"v":v,"reference_point_m":s.point_m}));
+                        samples.push(json!({"u":u,"v":v,"reference_point_m":s.point_m,"reference_normal":s.normal}));
                     }
                 }
                 cases.push(json!({"name":format!("{}-{chart}-{region}",if constant {"constant"} else {"variable"}),
                     "control_points_m":patch.control_points_m,"position_error_upper_m":patch.position_error_upper_m,
+                    "normal_lower":normals.normal_lower,"normal_upper":normals.normal_upper,
+                    "jacobian_area_lower_m2":normals.jacobian_area_lower_m2,"jacobian_area_upper_m2":normals.jacobian_area_upper_m2,
+                    "ideal_normal_alignment_lower":normals.ideal_normal_alignment_lower,"normal_error_upper":normals.normal_error_upper,
                     "reference_to_bilinear_error_upper_m":patch.reference_to_bilinear_error_upper_m,
                     "control_net_deviation_upper_m":patch.control_net_deviation_upper_m,"samples":samples}));
             }

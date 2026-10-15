@@ -13,14 +13,17 @@ def fixture():
         offset = -1. if name.endswith("seam-end") else 0.
         poles = [[[0.001*(i/3+offset), 0.001*j/3, 0.02] for j in range(4)] for i in range(4)]
         ref = {"name": name, "control_points_m": poles, "position_error_upper_m": 2e-8,
+               "jacobian_area_lower_m2": 0.999999e-6, "jacobian_area_upper_m2": 1.000001e-6,
+               "ideal_normal_alignment_lower": 1-1e-14, "normal_error_upper": 1e-8,
+               "normal_lower": [0., 0., 1-1e-14], "normal_upper": [0., 0., 1+1e-14],
                "reference_to_bilinear_error_upper_m": 1e-8, "control_net_deviation_upper_m": 1e-8, "samples": []}
         actual = {"u_degree": 3, "v_degree": 3, "poles_m": copy.deepcopy(poles), "samples": []}
         for i in range(5):
             for j in range(5):
                 u, v = i/4, j/4
                 p = [0.001*(u+offset), 0.001*v, 0.02]
-                ref["samples"].append({"u": u, "v": v, "reference_point_m": p.copy()})
-                actual["samples"].append({"u": u, "v": v, "point_m": p.copy(), "du_m": [0.001, 0., 0.], "dv_m": [0., 0.001, 0.]})
+                ref["samples"].append({"u": u, "v": v, "reference_point_m": p.copy(), "reference_normal": [0., 0., 1.]})
+                actual["samples"].append({"u": u, "v": v, "point_m": p.copy(), "du_m": [0.001, 0., 0.], "dv_m": [0., 0.001, 0.], "normal": [0., 0., 1.], "jacobian_area_m2": 1e-6})
         reference["cases"].append(ref)
         native["cases"].append(actual)
     return reference, native
@@ -77,6 +80,25 @@ class Contract(unittest.TestCase):
             sample["point_m"][2] += 1e-4
         with self.assertRaisesRegex(ValueError, "outside reference bound"):
             grade(ref, native)
+
+    def test_invalid_normal_certificate_refuses(self):
+        for field, value in (("jacobian_area_lower_m2", 0.), ("jacobian_area_upper_m2", 1e-9), ("ideal_normal_alignment_lower", -1.), ("normal_error_upper", float("nan")), ("normal_error_upper", -0.1), ("normal_lower", [0., 0., 2.])):
+            ref, native = fixture()
+            ref["cases"][0][field] = value
+            with self.assertRaises(ValueError):
+                grade(ref, native)
+
+    def test_false_native_normal_area_and_orientation_refuse(self):
+        for corruption in ("normal", "area", "orientation"):
+            ref, native = fixture()
+            if corruption == "normal":
+                native["cases"][0]["samples"][0]["normal"] = [0., 0., -1.]
+            elif corruption == "area":
+                native["cases"][0]["samples"][0]["jacobian_area_m2"] = 1e-4
+            else:
+                ref["cases"][0]["samples"][0]["reference_normal"] = [0., 0., -1.]
+            with self.assertRaises(ValueError):
+                grade(ref, native)
 
 
 if __name__ == "__main__":

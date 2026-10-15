@@ -12,6 +12,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 EVALUATION_ALLOWANCE_M = 1e-14
+NORMAL_ALLOWANCE = 1e-11  # Dimensionless native evaluation test allowance.
+AREA_ALLOWANCE_M2 = 1e-24
 NAMES = {f"{law}-{chart}-{region}" for law in ("constant", "variable")
          for chart in range(4) for region in ("side", "interior", "top", "seam-start", "seam-end")}
 
@@ -33,6 +35,13 @@ def vector(x: object) -> list[float]:
 
 def distance(a: list, b: list) -> float:
     return math.sqrt(sum((x-y)**2 for x, y in zip(vector(a), vector(b))))
+
+
+def unit_cross(du: list, dv: list) -> tuple[list, float]:
+    w = [du[(i+1)%3]*dv[(i+2)%3]-du[(i+2)%3]*dv[(i+1)%3] for i in range(3)]
+    area = math.sqrt(sum(x*x for x in w))
+    require(math.isfinite(area) and area > 0, "degenerate Bernstein normal")
+    return [x/area for x in w], area
 
 
 def bernstein(poles: list, u: float, v: float) -> tuple[list, list, list]:
@@ -60,6 +69,10 @@ def grade(reference: dict, native: dict) -> dict:
         base = number(ref["reference_to_bilinear_error_upper_m"])
         delta = number(ref["control_net_deviation_upper_m"])
         require(0 <= base and 0 <= delta and base+delta <= bound < 1e-6, "invalid positional bound")
+        area_lo, area_hi = number(ref["jacobian_area_lower_m2"]), number(ref["jacobian_area_upper_m2"])
+        alignment, normal_error = number(ref["ideal_normal_alignment_lower"]), number(ref["normal_error_upper"])
+        nlo, nhi = vector(ref["normal_lower"]), vector(ref["normal_upper"])
+        require(0 < area_lo <= area_hi and 0 < alignment <= 1 and 0 <= normal_error < 0.1 and all(a <= b for a, b in zip(nlo, nhi)), "invalid normal certificate")
         require(type(actual["u_degree"]) is int and actual["u_degree"] == 3 and type(actual["v_degree"]) is int and actual["v_degree"] == 3, "wrong native degrees")
         poles = ref["control_points_m"]
         require(isinstance(poles, list) and len(poles) == 4 and all(isinstance(row, list) and len(row) == 4 for row in poles), "wrong control net size")
@@ -69,7 +82,7 @@ def grade(reference: dict, native: dict) -> dict:
         # Exact data transfer check, not a geometric equality comparison.
         require(actual["poles_m"] == poles, "native control coordinates changed")
         require(len(actual["samples"]) == 25 and len(ref["samples"]) == 25, "missing surface witnesses")
-        max_error = 0.
+        max_error, max_normal_error = 0., 0.
         for index, (expected, measured) in enumerate(zip(ref["samples"], actual["samples"])):
             u, v = index//5/4, index%5/4
             require(number(measured["u"]) == u and number(measured["v"]) == v and number(expected["u"]) == u and number(expected["v"]) == v, "wrong witness parameters")
@@ -79,18 +92,42 @@ def grade(reference: dict, native: dict) -> dict:
             error = distance(measured["point_m"], expected["reference_point_m"])
             require(error <= bound + EVALUATION_ALLOWANCE_M, "native surface outside reference bound")
             max_error = max(max_error, error)
+            expected_normal, expected_area = unit_cross(du, dv)
+            n, ideal_n = vector(measured["normal"]), vector(expected["reference_normal"])
+            area = number(measured["jacobian_area_m2"])
+            require(abs(sum(x*x for x in n)-1) <= NORMAL_ALLOWANCE and abs(sum(x*x for x in ideal_n)-1) <= NORMAL_ALLOWANCE, "nonunit normal")
+            require(distance(n, expected_normal) <= NORMAL_ALLOWANCE, "native Bernstein normal mismatch")
+            require(abs(area-expected_area) <= expected_area*NORMAL_ALLOWANCE+AREA_ALLOWANCE_M2, "native area mismatch")
+            require(area_lo-AREA_ALLOWANCE_M2 <= area <= area_hi+AREA_ALLOWANCE_M2 and area > 0, "native area outside certificate")
+            require(all(lo-NORMAL_ALLOWANCE <= x <= hi+NORMAL_ALLOWANCE for x, lo, hi in zip(n, nlo, nhi)), "native normal outside component bounds")
+            require(sum(a*b for a, b in zip(n, ideal_n))+NORMAL_ALLOWANCE >= alignment, "native orientation mismatch")
+            normal_delta = distance(n, ideal_n)
+            require(normal_delta <= normal_error+NORMAL_ALLOWANCE, "native normal outside reference bound")
+            max_normal_error = max(max_normal_error, normal_delta)
         findings.append({"name": ref["name"], "position_error_upper_m": bound,
-                         "max_sampled_native_reference_error_m": max_error})
+                         "max_sampled_native_reference_error_m": max_error,
+                         "normal_error_upper": normal_error, "max_sampled_normal_error": max_normal_error})
     rows = {ref["name"]: actual for ref, actual in zip(reference["cases"], native["cases"])}
+    certificates = {ref["name"]: ref for ref in reference["cases"]}
+    seam_findings = []
     for law in ("constant", "variable"):
         for chart in range(4):
             end = rows[f"{law}-{chart}-seam-end"]
             start = rows[f"{law}-{(chart+1)%4}-seam-start"]
             require(end["poles_m"][3] == start["poles_m"][0], "shared native seam poles changed")
+            end_ref = certificates[f"{law}-{chart}-seam-end"]
+            start_ref = certificates[f"{law}-{(chart+1)%4}-seam-start"]
+            gap_bound = math.nextafter(end_ref["normal_error_upper"]+start_ref["normal_error_upper"], math.inf)
+            max_gap = 0.
             for last, first in zip(end["samples"][20:25], start["samples"][0:5]):
                 require(distance(last["point_m"], first["point_m"]) <= EVALUATION_ALLOWANCE_M, "native seam positions disagree")
+                gap = distance(last["normal"], first["normal"])
+                require(gap <= gap_bound+2*NORMAL_ALLOWANCE, "native seam normal gap outside bound")
+                max_gap = max(max_gap, gap)
+            seam_findings.append({"name": f"{law}-{chart}", "normal_gap_upper": gap_bound, "max_sampled_normal_gap": max_gap})
     return {"diagnostic_passed": True, "candidate_admitted": False,
-            "evaluation_allowance_m": EVALUATION_ALLOWANCE_M, "findings": findings}
+            "evaluation_allowance_m": EVALUATION_ALLOWANCE_M, "normal_evaluation_allowance": NORMAL_ALLOWANCE,
+            "area_evaluation_allowance_m2": AREA_ALLOWANCE_M2, "findings": findings, "seams": seam_findings}
 
 
 def run(occt_root: Path, output: Path) -> None:
