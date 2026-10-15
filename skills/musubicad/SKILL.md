@@ -358,6 +358,14 @@ existing band/cache metadata without rebuilding/re-certifying surfaces. No
 editable NURBS, physical Mock/source or MCP operation is admitted; circular
 variable-fillet authoring remains unsupported.
 
+P16-030 / ADR-083 builds separate native trimmed analytic cylinder/top faces
+with rational contacts, projected pcurves and measured boundary/tolerance,
+retained-region/area and phase controls. Numerical gates do not certify global
+pcurve error. Wire builders may copy edge identities; no semantic ownership,
+compatible blend/body, physical Mock/source or MCP admission follows. Never
+invent a circular-fillet command or transfer old polynomial-band certificates
+to new boundaries. See docs/api/periodic-fillet-reference.md's trimming scope.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

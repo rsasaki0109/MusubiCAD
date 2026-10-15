@@ -483,3 +483,59 @@ surfaces and re-establishing their certificates. Native support trimming/pcurves
 compatible surface/G1 construction, global embedding, physical Mock/runtime/mesh
 and guarded source/cache/history/reader/MCP acceptance remain further gates.
 No .ocad schema, migration, golden or MCP operation is added.
+
+## Native analytic support trimming (P16-030)
+
+[ADR-083](../adr/ADR-083-native-contact-support-trimming.md) uses the rational
+contacts to bound actual retained native cylinder quadrants and top-plane
+faces. These are separate diagnostic faces, not a shell, blend or product body.
+The original cylinder radius/frame and plane height remain analytic; no
+off-cylinder ruled skirt substitutes for the stock surface.
+
+```sh
+python tools/run_trimmed_support_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/trimmed-support-diagnostic.json
+python tools/test_trimmed_support_probe.py
+```
+
+The fixed fixture creates eight cylindrical quadrant faces and two planar
+faces, each with one valid closed four-edge/four-vertex wire. No shell or solid
+is constructed. Each cylindrical boundary consists of its rational side contact,
+a bottom circular arc and two axial generators. The end contact encloses the
+retained top-plane region containing the axis.
+
+OCCT `GeomProjLib::Curve2d` projects the existing 3D edges onto the original
+support, using explicit quadrant UV bounds and 1e-7 mm requested tolerance.
+`BRepLib::SameParameter` is forced after attaching pcurves. Actual projection,
+edge and vertex tolerances must remain at most 1e-6 mm (1e-9 m); current flags,
+ranges, contacts and pcurve/3D correspondence are inspected. Wire builders can
+copy edges while merging vertices: matching actual curve handles plus current
+representation checks establishes contact geometry, not preserved edge identity
+or semantic ownership. The non-rational azimuth mapping `2*atan(t)` means the
+cylindrical pcurve is approximate, even though the mathematical encoded 3D side
+curve lies on its cylinder.
+
+Every boundary has 17 current native witnesses, including endpoints, with a
+separate 1e-9 m pcurve/3D allowance. Report sample `uv` has units `[rad,m]` on
+cylinders and `[m,m]` on planes; all 3D coordinates are metres and normals are
+dimensionless. Current contact poles use a 1e-14 m conversion allowance and
+weight ratios a 1e-14 allowance. These tests do not certify whole-pcurve error.
+
+For `r=m+a*cos(theta)`, independent retained area expressions are
+`R*((H-m)*pi/2-a*(sin(u1)-sin(u0)))` for a quadrant and
+`pi*((R-m)^2+a^2/2)` for the end plane. Actual native surface integration must
+agree within a separate numerical 1e-10 m² allowance. Fixed physical points
+inside/outside the retained region are classified on current faces; an actual
+quarter-turn transform preserves the constant control while the variable law
+fails the authored-phase region test.
+
+The initial local fixture measured a maximum pcurve/3D witness gap of about
+1.04e-10 m and area residual of about 1.59e-14 m². They are numerical observations,
+not a global projection bound or manufacturing accuracy claim. Seven synthetic
+report tests prove parser refusals only; live CI performs the native construction
+and retains its report. Flags stay `candidate_admitted: false` and
+`product_body_created: false`. Existing polynomial band certificates do not
+transfer to new contact boundaries. Compatible blend construction, support/seam
+G1, embedding, physical Mock/runtime/mesh and guarded source/cache/history/reader
+acceptance remain required. No new MCP operation or editable NURBS is exposed.
