@@ -103,6 +103,13 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-029 / [ADR-082](../adr/ADR-082-rational-support-contact-curves.md) supplies
+immutable fixed-degree rational side/end contact curves with positive weights,
+encoded support identities and outward positional error bounds. Native SDK
+edges/wires and measured phase/D1 are separate diagnostic outputs. No OCCT
+curve types enter the geometry API; no source/editor/body admission is added.
+Existing polynomial surfaces must be rebuilt/re-certified before using new edges.
+
 P16-028 / [ADR-081](../adr/ADR-081-curved-reference-area-enclosures.md)
 reuses private outward Bernstein arithmetic for band/skirt parametric-area
 bounds. Deterministic cross-product subdivision changes integration partitions,

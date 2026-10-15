@@ -351,6 +351,13 @@ excluded from this independent certificate. Refinement changes integration
 partitions, not geometry or native topology. Area agreement does not prove
 embedding/G1 or admit circular source/Mock/MCP creation.
 
+P16-029 / ADR-082 creates fixed read-only rational support contact curves and
+native diagnostic closed wires, with position bounds and physical phase controls.
+These are not trimmed supports or fillet bodies. Do not substitute them into
+existing band/cache metadata without rebuilding/re-certifying surfaces. No
+editable NURBS, physical Mock/source or MCP operation is admitted; circular
+variable-fillet authoring remains unsupported.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

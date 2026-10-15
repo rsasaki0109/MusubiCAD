@@ -413,3 +413,73 @@ coarse/fine curved areas. Every native value lay inside its mathematical area
 interval before the numerical allowance. Interval widths were below 0.1 mm²;
 leaf counts were 1949, 4410, 2780 and 4437, respectively. These fixture
 observations neither certify all native error nor prove geometric fidelity.
+
+## Rational support contact curves (P16-029)
+
+[ADR-082](../adr/ADR-082-rational-support-contact-curves.md) adds
+`CircularFilletReference::rational_contact_curve(kind, chart)`, where
+`CircularFilletContactKind::{Side, End}` selects the support and chart is 0..3.
+`CircularFilletContactCurve` has private immutable data with read-only
+`kind()`, `chart()`, `degree()`, `control_points_m()`, `weights()` and
+`position_error_upper_m()` accessors. It is transient mathematical data,
+not an editable NURBS operation, source tag, GeometryKernel body or Mock record.
+
+For t in [0,1], D=1+t² and the unrotated circle has C=1-t², S=2t. Rotate C/S
+by the chart's quarter turn, preserving the authored +X radius maximum.
+With m=(r_min+r_max)/2 and a=(r_max-r_min)/2, side homogeneous coordinates are
+(R*C,R*S,(H-m)*D-a*C,D). Degree-two weights [1,1,2] and exact stored side
+x/y poles [(R,0),(R,R),(0,R)], rotated by chart, give the encoded mathematical
+identity x²+y²=R² regardless of rounded z poles. The identity concerns the
+encoded curve; native coordinate conversion/evaluation error remains separate.
+
+End homogeneous coordinates are
+((R-m)*C*D-a*C²,(R-m)*S*D-a*C*S,H*D²,D²). Degree-four ideal weights
+[1,1,4/3,2,4] are rounded positively, and every Cartesian z pole is exactly
+the same stored H. The encoded curve therefore lies in its encoded plane;
+its x/y contact law remains a bounded approximation. Shared axis/radius endpoint
+tables preserve identical endpoint representations, including the full-period
+wrap. These equality checks concern stored representation, not proximity.
+
+Outward homogeneous Bernstein arithmetic bounds every ideal numerator N and
+denominator W coefficient. Actual stored P_i*w_i,w_i and positive denominator
+lower bounds wa,wi give component error no larger than
+max|P_i*w_i-N_i|/wa + max|N_i|*max|w_i-W_i|/(wa*wi), then an outward Euclidean
+norm. This includes forced support coordinates, shared endpoint rounding and
+actual rounded weights; no sampled fitting, native output or ideal substituted
+mass supplies the certificate. It is a whole-curve position bound at corresponding
+chart parameters, not a derivative/G1 certificate or native error guarantee.
+Invalid charts/numerical enclosures refuse; work is fixed degree and bounded.
+
+```sh
+cargo run -p opencad-geometry --example periodic_fillet_contacts
+python tools/run_rational_contact_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/rational-contact-diagnostic.json
+```
+
+The live pinned SDK builds 16 actual weighted B-spline edges with clamped
+knots and four valid closed four-edge/four-vertex contact wires. Measure current
+edge controls, weights, degrees, positions and D1 against independent rational
+evaluation, with separate 1e-14 m point and 1e-13 m-per-local-parameter derivative
+allowances. Check the actual physical azimuth contact law, side cylinder/end
+plane relations, endpoint/wire closure and native rigid-turn length invariance.
+A native quarter-turn decoy preserves the constant law's contact relation while
+failing the variable law's phase. That failure is witnessed at measured points;
+it is not a whole-curve upper bound on the decoy's error. Native length is a
+numerical measurement, not an independently certified length bound.
+
+The initial local fixture's largest mathematical position bound was approximately
+8.33e-16 m. Actual point/D1 discrepancies were approximately 7.16e-18 m and
+1.10e-17 m per local parameter. The rotated variable-law witness erred by about
+0.705 mm; the constant-law residual was below 5e-18 m. These observations do
+not certify native conversion/integration error or manufacturing accuracy.
+Synthetic report tests check rejection logic only; CI executes actual construction
+and retains the report. Report flags remain `candidate_admitted: false` and
+`product_body_created: false`, with edge/wire counts distinguished from bodies.
+
+These curves are separate from the existing polynomial diagnostic band. Do not
+replace its boundary metadata/edges with these curves without rebuilding the
+surfaces and re-establishing their certificates. Native support trimming/pcurves,
+compatible surface/G1 construction, global embedding, physical Mock/runtime/mesh
+and guarded source/cache/history/reader/MCP acceptance remain further gates.
+No .ocad schema, migration, golden or MCP operation is added.

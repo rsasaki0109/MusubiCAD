@@ -902,3 +902,21 @@ native diagnostics measure each curved face, separate caps and total area and
 compare the curved sum independently. No physical Mock/product/source/MCP body,
 G1/support/whole-solid fidelity or native-error admission is added. P16-008 remains
 planned; actual52.60 / 95.
+
+
+P16-028 is complete in PR #128 (merge 01874c4), after all mandatory local checks
+(1175 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Actual independent curved-area
+comparison and artifact upload succeeded; PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-029 / ADR-082 constructs immutable positive-weight rational support
+contacts with exact encoded side circle/end-plane identities and outward
+whole-curve positional bounds including actual weights/poles/endpoint rounding.
+Actual native edges form four valid closed contact wires; current native controls,
+positions/D1, physical contact law and rigid-turn phase/length controls are measured.
+Four independent geometry regressions and five synthetic report controls exercise
+the contract; CI runs actual construction. No support trimming, compatible blend
+surface/G1, global embedding, physical Mock/product/source/MCP body or feature
+admission is added. Existing band certificates cannot be retained after swapping
+new boundaries. P16-008 remains planned; actual52.60 / 95.
