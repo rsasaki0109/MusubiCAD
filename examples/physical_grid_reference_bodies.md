@@ -20,3 +20,13 @@ area/centroid, constant/coarse and variable/fine cases, physical mesh closure,
 proper placement, owned face queries, unsupported analytic Mock edits and
 protected invalid inputs. This is a faceted reference-body prerequisite, not an
 authored variable fillet. See [the API](../docs/api/physical-grid-reference-bodies.md).
+
+ADR-095 also calls `g.volume_comparison(CircularFilletGridVolumePrecision {
+maximum_reference_interval_width_m3: 1e-12,
+maximum_absolute_difference_m3: 1e-7, max_cells: 262144 })`. Each case reports
+actual grid signed-volume flux, its privately bound ideal-volume interval,
+signed/absolute/relative discrepancy bounds and reference cell count under
+`volume_comparison`. Both backend masses remain separate actual measurements.
+These comparison bounds do not certify native/placed/f32 geometry or exact
+global embedding. CI retains the example JSON as
+`grid-reference-volume-comparison.json` in its existing diagnostics artifact.

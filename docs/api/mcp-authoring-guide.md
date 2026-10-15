@@ -1470,3 +1470,11 @@ Do not claim smooth cylinder supports, a transformed/native/f32 error certificat
 or an authored variable-fillet operation. No source/MCP operation or eval is
 introduced; P16-008 stays planned. See
 [scope and example](physical-grid-reference-bodies.md).
+
+P16-042 / ADR-095 provides developer-only `grid.volume_comparison` with explicit
+SI integral width, absolute discrepancy and bounded cell count. The grid retains
+its original reference privately; a different reference or supplied mass cannot
+be substituted. Use actual backend mass separately from this signed-integral
+comparison; it does not prove phase, native fidelity, exact embedding or source
+fillet admission. No new MCP operation/eval. See
+[volume comparison](grid-reference-volume-difference.md).

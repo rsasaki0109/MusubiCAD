@@ -23,6 +23,7 @@ pub struct CircularFilletMeshIntegrals {
 /// Immutable f64 SI mesh; the bounds exclude later f32/native conversion.
 #[derive(Debug, Clone)]
 pub struct CircularFilletReferenceMesh {
+    reference: CircularFilletReference,
     n: usize,
     vertices: Vec<[f64; 3]>,
     triangles: Vec<[u32; 3]>,
@@ -40,13 +41,100 @@ pub struct CircularFilletGridPrecision {
 /// Immutable conversion certificate, not a document feature or native body.
 #[derive(Debug, Clone)]
 pub struct CircularFilletGridSolid {
+    reference: CircularFilletReference,
     solid: crate::TriangleSolid,
     position_error: f64,
     normal_error: f64,
     displacement: f64,
     normal_change: f64,
 }
+/// Explicit SI integral precision and permitted absolute signed-volume difference.
+#[derive(Debug, Clone, Copy)]
+pub struct CircularFilletGridVolumePrecision {
+    pub maximum_reference_interval_width_m3: f64,
+    pub maximum_absolute_difference_m3: f64,
+    pub max_cells: usize,
+}
+/// ADR-095: signed boundary-integral comparison, not an embedding/native proof.
+#[derive(Debug, Clone, Copy)]
+pub struct CircularFilletGridVolumeComparison {
+    grid_flux_m3: [f64; 2],
+    ideal_volume_m3: [f64; 2],
+    difference_m3: [f64; 2],
+    absolute_difference: f64,
+    relative_difference: f64,
+    reference_cells: usize,
+}
+impl CircularFilletGridVolumeComparison {
+    pub fn grid_signed_volume_flux_m3(&self) -> [f64; 2] {
+        self.grid_flux_m3
+    }
+    pub fn ideal_volume_m3(&self) -> [f64; 2] {
+        self.ideal_volume_m3
+    }
+    pub fn signed_difference_m3(&self) -> [f64; 2] {
+        self.difference_m3
+    }
+    pub fn absolute_difference_upper_m3(&self) -> f64 {
+        self.absolute_difference
+    }
+    pub fn relative_difference_upper(&self) -> f64 {
+        self.relative_difference
+    }
+    pub fn reference_cells(&self) -> usize {
+        self.reference_cells
+    }
+}
 impl CircularFilletGridSolid {
+    /// Compare the exact stored-grid signed flux to its privately bound ideal reference.
+    /// No native/placed/f32 or exact global embedding certificate is implied.
+    pub fn volume_comparison(
+        &self,
+        p: CircularFilletGridVolumePrecision,
+    ) -> Result<CircularFilletGridVolumeComparison> {
+        let invalid = || {
+            OpenCadError::validation(
+                "grid reference volume precision, work or discrepancy not certified",
+            )
+        };
+        if !p.maximum_reference_interval_width_m3.is_finite()
+            || p.maximum_reference_interval_width_m3 <= 0.
+            || !p.maximum_absolute_difference_m3.is_finite()
+            || p.maximum_absolute_difference_m3 <= 0.
+            || !(4..=262144).contains(&p.max_cells)
+        {
+            return Err(invalid());
+        }
+        let reference = self
+            .reference
+            .volume_bounds_m3(p.maximum_reference_interval_width_m3, p.max_cells)?;
+        let ideal = I {
+            lo: reference.body_lower_m3,
+            hi: reference.body_upper_m3,
+        };
+        let flux = grid_volume_flux(&self.solid);
+        if !flux.valid() || flux.lo <= 0. || !ideal.valid() || ideal.lo <= 0. {
+            return Err(invalid());
+        }
+        let delta = flux - ideal;
+        let absolute = delta.lo.abs().max(delta.hi.abs());
+        let relative = (I::exact(absolute) / I::exact(ideal.lo)).hi;
+        if !delta.valid()
+            || !absolute.is_finite()
+            || !relative.is_finite()
+            || absolute > p.maximum_absolute_difference_m3
+        {
+            return Err(invalid());
+        }
+        Ok(CircularFilletGridVolumeComparison {
+            grid_flux_m3: [flux.lo, flux.hi],
+            ideal_volume_m3: [ideal.lo, ideal.hi],
+            difference_m3: [delta.lo, delta.hi],
+            absolute_difference: absolute,
+            relative_difference: relative,
+            reference_cells: reference.cells,
+        })
+    }
     pub fn solid(&self) -> &crate::TriangleSolid {
         &self.solid
     }
@@ -62,6 +150,12 @@ impl CircularFilletGridSolid {
     pub fn grid_normal_change_upper(&self) -> f64 {
         self.normal_change
     }
+}
+fn grid_volume_flux(solid: &crate::TriangleSolid) -> I {
+    solid.triangles().iter().fold(I::exact(0.), |sum, t| {
+        let [a, b, c] = t.map(|i| solid.vertices_m()[i as usize].map(I::exact));
+        sum + dot(a, cross(b, c)) / I::exact(6.)
+    })
 }
 fn invalid() -> OpenCadError {
     OpenCadError::validation("closed periodic reference mesh or requested quality not certified")
@@ -164,6 +258,7 @@ impl CircularFilletReferenceMesh {
             return Err(invalid());
         }
         Ok(CircularFilletGridSolid {
+            reference: self.reference,
             solid,
             position_error,
             normal_error,
@@ -290,6 +385,7 @@ fn level(
     let k = 4 * n;
     let stride = 2 * n + 1;
     let mut mesh = CircularFilletReferenceMesh {
+        reference: r,
         n,
         vertices: vec![[0.; 3]; k * stride + 2],
         triangles: Vec::with_capacity(16 * n * n + 8 * n),
@@ -457,6 +553,28 @@ impl CircularFilletReference {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn signed_flux_encloses_exact_dyadic_simplex_volume_by_integer_bit_comparison() {
+        let (o, x, y, z) = ([0.; 3], [0.5, 0., 0.], [0., 0.25, 0.], [0., 0., 0.125]);
+        let tetra =
+            crate::TriangleSolid::from_triangles(&[[o, y, x], [o, x, z], [o, z, y], [x, y, z]])
+                .unwrap();
+        let flux = grid_volume_flux(&tetra);
+        assert!(flux.valid() && flux.lo > 0.);
+        // Exact volume is 1/384. Compare exact binary64 endpoint fractions,
+        // without using interval arithmetic or a rounded 1/384 as the oracle.
+        let rational = |v: f64| {
+            let bits = v.to_bits();
+            let numerator = (u128::from(bits & ((1_u64 << 52) - 1))) + (1_u128 << 52);
+            let exponent = ((bits >> 52) & 0x7ff) as i32 - 1023 - 52;
+            assert!((-100..0).contains(&exponent));
+            (numerator, 1_u128 << (-exponent as u32))
+        };
+        let (n, d) = rational(flux.lo);
+        assert!(n * 384 <= d);
+        let (n, d) = rational(flux.hi);
+        assert!(n * 384 >= d);
+    }
     #[test]
     fn grid_conversion_rejects_unbound_corner_correspondence_and_collapsed_geometry() {
         let r = CircularFilletReference::new(

@@ -1277,3 +1277,30 @@ and variable coarse bodies with 1088 triangles/faces each. Independent integer-
 grid volume, actual area/centroid/bounds, closed/current facets and proper
 placement agree. Release policy and repository hygiene checks passed. No score
 is assigned; completion requires merge, actual52.60 / 95.
+
+PR #141 completed P16-041 at main
+`8b42e454c262d5d6fe77861323b8dfd09544d191`, after all four exact-head applicable
+workflows and complete job inventories succeeded. Both parents match tested
+base/head and the merge tree equals the tested head tree. No score: actual52.60 / 95.
+
+MCAD-P16-042 / ADR-095 privately retains the original reference in raw/grid meshes
+and adds immutable outward grid signed-volume flux versus ideal-volume interval
+comparisons. Explicit SI width/work/absolute-discrepancy budgets fail closed;
+backend mass stays actual and no geometry is mutated. Independent integer-grid
+determinants, analytic constant-limit volume/scales, variable-law binding and
+refinement/refusal tests cover the integral contract. Both physical kernels
+retain actual grid mass; the example/CI report comparisons and actual masses
+separately. API/architecture/MCP-guide/skill/example updated. No exact embedding,
+native/placed/f32, ideal area/first-moment or source/schema/golden/MCP-operation/
+eval admission; P16-008 remains planned. Completion requires merge; no score,
+actual52.60 / 95.
+
+P16-042 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1232 passed, 0 failed, 36 ignored),
+and agent plugin contract. Three new geometry integration tests, one exact
+binary-endpoint tetrahedron unit test and a new actual both-kernel mass
+comparison passed. Release policy/hygiene passed. The coarse example bounds
+constant/variable absolute flux differences by 4.527e-8 / 4.547e-8 m³
+(relative 0.007208 / 0.007254); the variable reference uses 242125 cells
+within the unchanged 262144 cap at 1e-12 m³ width. These are input-grid
+integral bounds, not native/embedding/source certificates. No score.

@@ -47,3 +47,7 @@ Integration comparison tolerances are 1e-14 m³ volume, 1e-10 m² area, 1e-9 m
 centroid and 2e-7 m bounding coordinates; rendered coordinates are checked within
 5e-9 m unplaced / 3e-8 m placed. These are numerical test evidence, not new
 whole-geometry error certificates.
+
+ADR-095 adds [input-grid signed-volume comparisons](grid-reference-volume-difference.md).
+Backend mass remains actual measured grid/BREP mass. The input comparison does
+not certify native or placed coordinates; the example reports both separately.
