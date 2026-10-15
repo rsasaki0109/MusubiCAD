@@ -70,3 +70,11 @@ refusals; they are not native shape evidence. CI runs the live diagnostic after
 the full workspace tests and uploads its JSON. P16-008 remains planned; actual
 Mock/native construction, full approximation/mesh bounds and guarded source/
 phase/cache/history/MCP acceptance remain separate work.
+
+
+The rational-reference runner also performs P16-037 / ADR-090 current quarter
+seam proofs. See [the seam API](periodic-fillet-reference.md#current-native-quarter-seam-boundary-certificates-p16-037)
+and [example](../../examples/periodic_fillet_reference.md). Eight complete direct
+position-gap certificates and ten real-process refusals supplement the existing
+surface/end/side proofs. Native floating evaluation, paired normals/G1 and
+whole-BREP/production admission remain unproved.

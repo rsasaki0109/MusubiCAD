@@ -14,6 +14,7 @@
 #include <BRep_Tool.hxx>
 #include <GProp_GProps.hxx>
 #include <Geom_BezierSurface.hxx>
+#include <Geom_BezierCurve.hxx>
 #include <Geom_BSplineCurve.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_CylindricalSurface.hxx>
@@ -218,6 +219,19 @@ void measure(std::ostream& out,int law) {
       out << "],\"knots\":[";for (int i=1;i<=pc->NbKnots();++i) {if (i>1) out << ',';out << pc->Knot(i);}
       out << "],\"multiplicities\":[";for (int i=1;i<=pc->NbKnots();++i) {if (i>1) out << ',';out << pc->Multiplicity(i);}out << "]}";
       out << ",\"blend_end_line\":{\"kind\":\"geom2d_line\",\"origin\":[" << line->Location().X() << ',' << line->Location().Y() << "],\"direction\":[" << line->Direction().X() << ',' << line->Direction().Y() << "],\"range\":[" << bf << ',' << bl << "]}" << std::noshowpoint;
+    }
+    if (r0.kind==0 && r1.kind==0) {
+      auto seam=Handle(Geom_BezierCurve)::DownCast(curve);require(!seam.IsNull(),"quarter seam representation replaced");
+      out << ",\"seam_curve\":{\"kind\":\"geom_bezier_curve\",\"degree\":" << seam->Degree() << ",\"periodic\":" << (seam->IsPeriodic() ? "true" : "false") << ",\"location_identity\":true,\"poles_mm\":[" << std::showpoint;
+      for (int i=1;i<=seam->NbPoles();++i) {if(i>1) out << ',';xyz(out,seam->Pole(i),1);}
+      out << "],\"weights\":[";for (int i=1;i<=seam->NbPoles();++i) {if(i>1) out << ',';out << seam->Weight(i);}
+      out << "],\"poles_m\":[";for (int i=1;i<=seam->NbPoles();++i) {if(i>1) out << ',';xyz(out,seam->Pole(i));}
+      out << "]},\"seam_lines\":[";
+      for(int side=0;side<2;++side) {
+        if(side) out << ',';double pf,pl;auto line=Handle(Geom2d_Line)::DownCast(BRep_Tool::CurveOnSurface(edge,pair[side],pf,pl));require(!line.IsNull(),"attached quarter seam line replaced");
+        out << "{\"kind\":\"geom2d_line\",\"origin\":[" << line->Location().X() << ',' << line->Location().Y() << "],\"direction\":[" << line->Direction().X() << ',' << line->Direction().Y() << "],\"range\":[" << pf << ',' << pl << "]}";
+      }
+      out << ']' << std::noshowpoint;
     }
     out << ",\"samples\":[";
     for (int j=0;j<=8;++j) {

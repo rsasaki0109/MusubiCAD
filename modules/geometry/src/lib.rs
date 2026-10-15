@@ -129,3 +129,6 @@ mod circular_fillet_snapshot;
 pub use circular_fillet_snapshot::{
     CircularFilletRationalSnapshot, CircularFilletRationalSnapshotBounds,
 };
+
+mod circular_fillet_seam_snapshot;
+pub use circular_fillet_seam_snapshot::{CircularFilletSeamBounds, CircularFilletSeamSnapshot};

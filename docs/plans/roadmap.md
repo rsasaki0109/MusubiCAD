@@ -910,7 +910,8 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-033 | Certify current native rational surface definitions | ADR-086 / P16-008 prerequisite; read-only fixed-layout post-sewing control snapshots, outward exact mm-to-m conversion and common-weight gauge normalization, complete position/derivative/normal/regularity/orientation bounds and precision/work refusal, independent analytic and live native controls; no floating evaluation/trim/whole-BREP/G1/embedding or production admission | Complete (PR #133) |
 | MCAD-P16-034 | Certify current native contact curve definitions | ADR-087 / P16-008 prerequisite; immutable degree-2/4 post-sewing 3D contact snapshots, outward SI and common weight gauge, whole-curve reference position bounds, independent analytic and live native refusal controls; no attached-pcurve lift/contact-gap/G1/whole-BREP or production admission | Complete (PR #134) |
 | MCAD-P16-035 | Certify current native end contact boundary gaps | ADR-088 / P16-008 prerequisite; actual plane pcurve/frame lifts, canonical attached blend lines, recomputed native edge/lift/surface bounds and outward whole-span pairwise gaps with precision/work refusal; independent analytic/live native evidence; excludes cylinder contacts, exact G1 and whole-BREP/production admission | Complete (PR #135) |
-| MCAD-P16-036 | Certify current native side contact boundary gaps | ADR-089 / P16-008 prerequisite; actual raw cylindrical pcurve/frame/radius capture, complete fixed-basis angle/height/lift bounds and recomputed edge/blend pairwise gap bounds with precision/work refusal; independent analytic/live native controls; no paired-normal/G1/whole-BREP or production admission | Implemented; complete upon PR merge |
+| MCAD-P16-036 | Certify current native side contact boundary gaps | ADR-089 / P16-008 prerequisite; actual raw cylindrical pcurve/frame/radius capture, complete fixed-basis angle/height/lift bounds and recomputed edge/blend pairwise gap bounds with precision/work refusal; independent analytic/live native controls; no paired-normal/G1/whole-BREP or production admission | Complete (PR #136) |
+| MCAD-P16-037 | Certify current native quarter seam gaps | ADR-090 / P16-008 prerequisite; current quadratic Bezier edge and canonical attached boundary lines, direct outward homogeneous comparisons against both actual surface boundary rows over the complete original unit span; independent analytic/live native controls, no normal/G1/whole-BREP or production admission | Implemented; complete upon PR merge |
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
@@ -988,6 +989,12 @@ raw pcurve/frame/radius data, complete fixed-basis interpolation/conversion/fram
 bounds and recomputed edge/lift/blend pairwise sums. P16-035/036 together cover
 end/side position gaps; quarter seams, paired normals/G1, floating native
 evaluation, global embedding and whole-BREP/production admission remain separate.
+
+P16-037 / ADR-090 additionally closes quarter seam POSITION gaps directly between
+current mathematical edge/left/right boundary definitions after actual line and
+chart-adjacency qualification. No ideal-chart equality is assumed. Paired
+normals/G1, floating evaluation, global embedding, unchanged support seams and
+whole-BREP/production admission remain separate gates.
 
 **Tests:** SI dimensions, volume and first moments against independently derived
 formulae in both kernels; parametric edits and invalid ranges/units/references;

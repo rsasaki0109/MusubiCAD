@@ -184,6 +184,51 @@ def grade_side_boundary(reference, case, actual, edge, proof):
     return proof
 
 
+SEAM_REFUSALS = ("input_limit", "wrong_chart", "wrong_line", "wrong_units", "changed_edge", "changed_weight", "changed_left", "changed_right", "missing_control", "last_request_precision")
+SEAM_GAPS = ("edge_to_left_gap_upper_m", "edge_to_right_gap_upper_m", "left_to_right_gap_upper_m")
+
+
+def seam_layout(edge):
+    roles, lines = edge["roles"], edge["seam_lines"]
+    require(len(roles) == len(lines) == 2 and all(type(r["kind"]) is int and r["kind"] == 0 and type(r["chart"]) is int and 0 <= r["chart"] < 4 for r in roles), "unsupported seam owner inventory")
+    ends = []
+    for line in lines:
+        require(set(line) == {"kind", "origin", "direction", "range"} and line["kind"] == "geom2d_line" and line["origin"] in ([0, 0], [1, 0]) and line["direction"] == [0, 1] and line["range"] == [0, 1] and all(math.isfinite(number(x)) for key in ("origin", "direction", "range") for x in line[key]), "unsupported attached seam line")
+        ends.append(line["origin"][0])
+    require(sorted(ends) == [0, 1], "seam must connect opposite chart boundaries")
+    left = ends.index(1);right = 1-left
+    require(roles[right]["chart"] == (roles[left]["chart"]+1)%4, "nonadjacent seam charts")
+    return left, right
+
+
+def seam_edges(actual):
+    return sorted((e for e in actual["shared_edges"] if all(r["kind"] == 0 for r in e["roles"])), key=lambda e: e["roles"][seam_layout(e)[0]]["chart"])
+
+
+def seam_boundary_request(actual, edge):
+    left, right = seam_layout(edge)
+    charts = [edge["roles"][i]["chart"] for i in (left, right)]
+    faces = [next(f for f in actual["surface_faces"] if f["role"] == {"kind": 0, "chart": c}) for c in charts]
+    curve = edge["seam_curve"]
+    return {"left_chart": charts[0], "right_chart": charts[1], "edge_poles_mm": curve["poles_mm"], "edge_weights": curve["weights"],
+            "left_poles_mm": faces[0]["poles_mm"], "left_weights": faces[0]["weights"],
+            "right_poles_mm": faces[1]["poles_mm"], "right_weights": faces[1]["weights"],
+            "left_line": edge["seam_lines"][left], "right_line": edge["seam_lines"][right], "maximum_gap_m": 1e-12}
+
+
+def grade_seam_boundary(actual, edge, proof):
+    curve = edge["seam_curve"]
+    require(curve["kind"] == "geom_bezier_curve" and type(curve["degree"]) is int and curve["degree"] == 2 and curve["periodic"] is False and curve["location_identity"] is True, "unsupported current seam representation")
+    require(edge["range"] == [0, 1] and all(math.isfinite(number(x)) for x in edge["range"]), "unsupported seam domain")
+    require(len(curve["poles_mm"]) == len(curve["poles_m"]) == len(curve["weights"]) == 3 and all(number(w) > 0 for w in curve["weights"]), "invalid seam controls")
+    for raw, si in zip(curve["poles_mm"], curve["poles_m"]):
+        require(distance([x/1000 for x in vector(raw)], si) <= POINT_M, "raw seam controls disagree with SI witnesses")
+    expected = seam_boundary_request(actual, edge)
+    require(same_numeric_data(proof["request"], expected) and type(proof["request"]["left_chart"]) is int and type(proof["request"]["right_chart"]) is int, "seam boundary capture/request mismatch")
+    require(all(0 < number(proof[k]) <= expected["maximum_gap_m"] for k in SEAM_GAPS), "unresolved complete seam boundary precision")
+    return proof
+
+
 def normal_certificate(certificate, maximum_error, max_leaves):
     values = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
     jlo, jhi, alignment, error, eu, ev = values
@@ -217,6 +262,11 @@ def grade(reference, native):
     side_proofs = native["side_boundary_certificates"]
     require(type(side_proofs["format_version"]) is int and side_proofs["format_version"] == 1 and len(side_proofs["certificates"]) == 8 and all(side_proofs[k] is False for k in ("native_floating_evaluation_certified", "end_contact_boundaries_certified", "whole_brep_certified")), "missing/overclaimed side boundary certificates")
     side_certificates = []
+    seam_refusals = native["seam_boundary_proof_refusals"]
+    require(set(seam_refusals) == set(SEAM_REFUSALS) and all(v is True for v in seam_refusals.values()), "missing live seam boundary refusals")
+    seam_proofs = native["seam_boundary_certificates"]
+    require(type(seam_proofs["format_version"]) is int and seam_proofs["format_version"] == 1 and len(seam_proofs["certificates"]) == 8 and all(seam_proofs[k] is False for k in ("native_floating_evaluation_certified", "paired_normals_certified", "whole_brep_certified")), "missing/overclaimed seam boundary certificates")
+    seam_certificates = []
     certificates = []
     maxima = {key: 0. for key in ("point_m", "d1_m", "normal", "join_gap_m", "join_normal_gap")}
     phase_mismatches = []
@@ -317,7 +367,12 @@ def grade(reference, native):
             first, last = map(number, edge["range"])
             require(first < last and len(edge["samples"]) == 9, "missing/invalid current edge samples")
             contact = None
-            if pair == (0, 0): seam_pairs.append(tuple(sorted(c for _, c in roles)))
+            if pair == (0, 0):
+                seam_pairs.append(tuple(sorted(c for _, c in roles)))
+                left, right = seam_layout(edge)
+                seam_chart = roles[left][1]
+                seam_whole = grade_seam_boundary(actual, edge, seam_proofs["certificates"][law*4+seam_chart])
+                seam_certificates.append(seam_whole)
             if pair in ((0, 1), (0, 2)):
                 chart = next(c for k, c in roles if k == 0)
                 (side_contacts if pair == (0, 1) else end_contacts).append(chart)
@@ -347,6 +402,14 @@ def grade(reference, native):
                 t = first+(last-first)*edge_fraction(j)
                 require(abs(number(sample["t"])-t) <= 1e-12 and len(sample["sides"]) == 2, "wrong native edge/pcurve parameter")
                 point = vector(sample["point_m"])
+                if pair == (0, 0):
+                    expected_point, _ = rational(edge["seam_curve"]["poles_m"], edge["seam_curve"]["weights"], t)
+                    require(distance(point, expected_point) <= POINT_M, "native seam witness differs from captured edge")
+                    lp, rp = [sample["sides"][i]["point_m"] for i in (left, right)]
+                    require(all(distance(a, b) <= seam_whole[k]+2*POINT_M for k, a, b in zip(SEAM_GAPS, (point, point, lp), (lp, rp, rp))), "native paired witness outside whole seam boundary certificate")
+                    for i, end in ((left, 1), (right, 0)):
+                        uv = sample["sides"][i]["uv"]
+                        require(len(uv) == 2 and abs(number(uv[0])-end) <= 1e-14 and abs(number(uv[1])-t) <= 1e-14, "seam witness differs from canonical attached line")
                 if contact is not None:
                     expected, _ = rational(contact["control_points_m"], contact["weights"], t)
                     require(distance(point, expected) <= POINT_M, "current sewn contact geometry changed")
@@ -406,6 +469,7 @@ def grade(reference, native):
     require(phase_mismatches[0] == 0 and phase_mismatches[1] >= 2, "constant/variable actual solid phase decoys not distinguished")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
             "native_diagnostic_solids_created": 2, "native_rational_blend_faces_created": 8,
+            "native_seam_boundary_certificates": {"count": len(seam_certificates), "maximum_gap_m": max(c[k] for c in seam_certificates for k in SEAM_GAPS), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "paired_normals_certified": False, "whole_brep_certified": False},
             "native_side_boundary_certificates": {"count": len(side_certificates), "maximum_gap_m": max(c[k] for c in side_certificates for k in ("edge_to_cylinder_gap_upper_m", "edge_to_blend_gap_upper_m", "cylinder_to_blend_gap_upper_m")), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "end_contact_boundaries_certified": False, "whole_brep_certified": False},
             "native_end_boundary_certificates": {"count": len(end_certificates), "maximum_gap_m": max(c[k] for c in end_certificates for k in ("edge_to_plane_gap_upper_m", "edge_to_blend_gap_upper_m", "plane_to_blend_gap_upper_m")), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "side_contact_boundaries_certified": False, "whole_brep_certified": False},
             "native_contact_definition_certificates": {"count": len(contact_certificates), "maximum_position_error_m": max(c["position_error_upper_m"] for c in contact_certificates), "includes_native_coordinate_conversion": True, "native_floating_evaluation_certified": False, "attached_pcurve_lifts_certified": False, "whole_brep_certified": False},
@@ -522,6 +586,32 @@ def run(occt_root, output):
         refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
         require(refused.returncode != 0 and not refused.stdout.strip(), "side boundary accepted invalid input or emitted partial certificates: "+name)
         native["side_boundary_proof_refusals"][name] = True
+    requests = [seam_boundary_request(actual, edge) for actual in native["cases"] for edge in seam_edges(actual)]
+    command = ["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "periodic_fillet_seam_boundary"]
+    payload = json.dumps({"format_version": 1, "requests": requests}, allow_nan=False)
+    proof = subprocess.run(command, input=payload, check=True, cwd=ROOT, capture_output=True, text=True, timeout=180)
+    native["seam_boundary_certificates"] = json.loads(proof.stdout)
+    changes = {}
+    for name in SEAM_REFUSALS:
+        if name == "input_limit":
+            changes[name] = payload+" "*max(1, 262145-len(payload.encode("utf-8")))
+            continue
+        data = copy.deepcopy(requests)
+        if name == "wrong_chart": data[0]["right_chart"] = data[0]["left_chart"]
+        elif name == "wrong_line": data[0]["left_line"]["origin"][0] = 1.0000000000000002
+        elif name == "wrong_units": data[0]["edge_poles_mm"] = [[x/1000 for x in p] for p in data[0]["edge_poles_mm"]]
+        elif name == "changed_edge": data[0]["edge_poles_mm"][1][0] += .001
+        elif name == "changed_weight": data[0]["edge_weights"][1] *= 1.001
+        elif name == "changed_left": data[0]["left_poles_mm"][8][1][0] += .001
+        elif name == "changed_right": data[0]["right_poles_mm"][0][1][0] += .001
+        elif name == "missing_control": data[0]["edge_poles_mm"].pop()
+        else: data[-1]["maximum_gap_m"] = 1e-30
+        changes[name] = json.dumps({"format_version": 1, "requests": data}, allow_nan=False)
+    native["seam_boundary_proof_refusals"] = {}
+    for name, bad_payload in changes.items():
+        refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
+        require(refused.returncode != 0 and not refused.stdout.strip(), "seam boundary accepted invalid input or emitted partial certificates: "+name)
+        native["seam_boundary_proof_refusals"][name] = True
     report = {"format_version": 1, "diagnostic_passed": False, "candidate_admitted": False, "reference": ref, "native": native}
     try: report.update(grade(ref, native))
     except (KeyError, TypeError, ValueError) as error:

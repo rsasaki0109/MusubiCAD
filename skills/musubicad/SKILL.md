@@ -942,3 +942,14 @@ equal claimed volume. Physical phase is independently measured in Rust tests;
 no model host was impersonated. Preview/review/failure and canonical history
 use the existing shared backend. No rounded production root, fit class,
 partial/internal/multi-start/runout or general thread-face refinement claim.
+
+
+P16-037 / ADR-090 additionally bounds complete current quarter seam POSITION
+gaps directly between each captured quadratic Bezier edge and the two actual
+surface boundary rows. Capture qualifies adjacent chart roles and attached
+(1,t)/(0,t) lines, fixed types/degrees/unit ranges and identity Locations.
+Eight bounded read-only proofs echo all raw inputs/budgets; ten real-process
+refusals emit no partial stdout. This adds no authored operation or runnable MCP
+eval: never invent create_curved_fillet or infer production admission from the
+diagnostic. Paired normals/G1, native floating evaluation, global embedding and
+whole-BREP fidelity remain separate. P16-008 stays planned; scores unchanged.
