@@ -147,12 +147,17 @@ void measure(std::ostream& out,int law) {
   out << "],\"surface_faces\":[";
   for (int index=1;index<=10;++index) {
     if (index>1) out << ',';const auto face=TopoDS::Face(faces(index));const auto r=identify(face,records);const auto surface=BRep_Tool::Surface(face);
-    out << "{\"role\":";role(out,r);out << ",\"forward\":" << (face.Orientation()==TopAbs_FORWARD ? "true" : "false");
+    out << "{\"role\":";role(out,r);out << ",\"location_identity\":true,\"forward\":" << (face.Orientation()==TopAbs_FORWARD ? "true" : "false");
     if (r.kind==0) {
       auto patch=Handle(Geom_BezierSurface)::DownCast(surface);require(!patch.IsNull(),"rational surface type lost");
       out << ",\"u_degree\":" << patch->UDegree() << ",\"v_degree\":" << patch->VDegree() << ",\"poles_m\":[";
       for (int i=1;i<=patch->NbUPoles();++i) {if (i>1) out << ',';out << '[';for (int j=1;j<=patch->NbVPoles();++j) {if (j>1) out << ',';xyz(out,patch->Pole(i,j));}out << ']';}
-      out << "],\"weights\":[";for (int i=1;i<=patch->NbUPoles();++i) {if (i>1) out << ',';out << '[';for (int j=1;j<=patch->NbVPoles();++j) {if (j>1) out << ',';out << patch->Weight(i,j);}out << ']';}
+      out << "],\"poles_mm\":[" << std::showpoint;
+      for (int i=1;i<=patch->NbUPoles();++i) {if (i>1) out << ',';out << '[';for (int j=1;j<=patch->NbVPoles();++j) {if (j>1) out << ',';xyz(out,patch->Pole(i,j),1);}out << ']';}
+      out << std::noshowpoint; // Preserve signed zero as a JSON float in raw controls.
+      double uf,ul,vf,vl;patch->Bounds(uf,ul,vf,vl);
+      out << "],\"u_bounds\":[" << uf << ',' << ul << "],\"v_bounds\":[" << vf << ',' << vl << "],\"u_periodic\":" << (patch->IsUPeriodic() ? "true" : "false") << ",\"v_periodic\":" << (patch->IsVPeriodic() ? "true" : "false");
+      out << ",\"weights\":[";for (int i=1;i<=patch->NbUPoles();++i) {if (i>1) out << ',';out << '[';for (int j=1;j<=patch->NbVPoles();++j) {if (j>1) out << ',';out << patch->Weight(i,j);}out << ']';}
       out << "],\"samples\":[";
       for (int i=0;i<=8;++i) for (int j=0;j<=8;++j) {
         if (i || j) out << ',';gp_Pnt p;gp_Vec du,dv;patch->D1(i/8.,j/8.,p,du,dv);auto normal=du.Crossed(dv);normal.Normalize();

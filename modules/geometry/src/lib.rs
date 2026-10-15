@@ -113,3 +113,8 @@ pub use circular_fillet_rational::{CircularFilletCylindricalPcurve, CircularFill
 
 mod circular_fillet_rational_normals;
 pub use circular_fillet_rational_normals::CircularFilletRationalNormalBounds;
+
+mod circular_fillet_snapshot;
+pub use circular_fillet_snapshot::{
+    CircularFilletRationalSnapshot, CircularFilletRationalSnapshotBounds,
+};

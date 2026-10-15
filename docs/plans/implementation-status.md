@@ -992,3 +992,43 @@ refusals, eleven synthetic report tests and the actual pinned native probe pass.
 Eight complete chart certificates use 411 total leaves; maximum normal bound
 9.973e-10 and minimum Jacobian lower bound 2.393e-6 m². Native evidence remains
 numerical, not a global certificate. Completion requires this PR's merge.
+
+
+PR #132 completed P16-032 at main
+`bcbbdcd14e31ac10fe3df280357c58f2a5d330b2`, after all four exact-head applicable
+workflows and full job inventories succeeded (PR publisher intentionally skipped).
+Local required checks passed with 1189 Rust successes, 0 failures, 36 ignored
+and agent-plugin validation. Actual native construction and report upload
+succeeded. No score: actual52.60 / 95.
+
+MCAD-P16-033 / ADR-086 certifies captured CURRENT post-sewing native rational
+surface definitions instead of transferring supplied-control certificates from
+sampled agreement. A fixed immutable descriptive snapshot stores outward SI
+homogeneous intervals from original millimetre poles and positive weights;
+common-weight gauge normalization carries its uncertainty. A shared complete
+cover proves requested position AND normal precision, positive Jacobian/
+orientation and derivative errors, or refuses deterministically without partial
+output/mutation. Native capture includes current raw controls, domain, degree,
+nonperiodicity, identity Location and orientation. A bounded-stdin Rust example
+recomputes all eight proofs and echoes actual inputs for strict capture/reference/
+request binding. Independent analytic/scale/gauge/unit/phase/refusal tests and
+synthetic report tests protect the contract; CI runs the actual native capture
+and proof. This certifies underlying surface definitions, not floating native
+evaluation, trims, contact coincidence, exact G1, embedding or whole-BREP fidelity.
+No physical Mock/runtime/mesh, source/schema/MCP operation/eval or editable NURBS
+admission. P16-008 remains planned; no score, actual52.60 / 95.
+
+The live Rust snapshot process also refuses over-budget input bytes, invalid
+chart and unattainable last-request precision with no partial certificate stdout.
+An independent exact binary64-fraction oracle tests native-to-SI coordinate
+enclosures, including finite-input conversion-overflow refusal.
+
+P16-033 local mandatory checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1193 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Eleven rational geometry tests, three private
+control/conversion tests, thirteen synthetic report tests, seven support-report
+tests and the final live pinned native capture/proof all pass. Eight current
+native definition certificates use 649 leaves; maximum position bound
+1.277e-15 m, maximum normal bound 9.998e-10 and minimum Jacobian lower bound
+2.393e-6 m². All three real-process refusal cases emit no partial stdout.
+Completion requires this PR's merge; no score, actual52.60 / 95.

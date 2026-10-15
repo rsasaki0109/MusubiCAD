@@ -614,8 +614,8 @@ paired normal gap about 5.14e-12, and constant/variable rotated-classifier misma
 counts 0/4. These are numerical observations, not manufacturing accuracy or a
 global native G1/embedding/conversion/sewing/integration certificate.
 
-Eight independent Rust geometry tests, two private control-refusal tests and
-eleven synthetic report-contract tests
+Eleven independent Rust geometry tests, three private control/refusal tests and
+thirteen synthetic report-contract tests
 protect the construction and refusals. Synthetic flags/samples are parser tests
 only; CI executes actual native construction and retains its report. Flags remain
 `candidate_admitted: false` and `product_body_created: false`; the report separately
@@ -664,3 +664,66 @@ conversion/sewing and evaluation errors still lack global certificates. Report
 `rounded_reference_certificates.global_native_certificate` remains false.
 No production Mock/kernel feature, source/schema, MCP operation/eval, mesh policy
 or editable NURBS admission is added; P16-008 remains planned.
+
+
+## Current native surface definition certificates (P16-033)
+
+[ADR-086](../adr/ADR-086-native-rational-surface-certificates.md) extends the
+proof to captured post-sewing native surface definitions. It does not transfer
+the supplied-control certificate from a sampled control/point comparison.
+
+`CircularFilletRationalSnapshot::from_millimeter_controls(&poles_mm, &weights)`
+reads fixed 9-by-3 finite Cartesian native controls and positive weights into
+immutable private SI homogeneous intervals. Raw native q_mm is converted using
+outward `q_mm/1000`, not a rounded SI export treated as exact. Overflow refuses.
+This is a descriptive read-only snapshot; it creates no surface or body and
+supplies no editing, persistence or source authority.
+
+`CircularFilletReference::certify_rational_snapshot(chart, &snapshot,
+maximum_position_error: Length, maximum_normal_error, max_leaves)` certifies the
+complete closed original unit square against that validated reference and
+quarter. Position precision must be finite positive metres. Normal precision
+and work/depth gates match P16-032. Common positive weight gauge is normalized
+by an outward ideal/actual anchor ratio before homogeneous differences; the
+normalization uncertainty remains in every bound. `CircularFilletRationalSnapshotBounds`
+returns `position_error_upper_m` and `normal: CircularFilletRationalNormalBounds`.
+One complete deterministic cover must satisfy both position and normal requests;
+invalid/unresolved/exhausted requests refuse without partial output or mutation.
+
+The actual native probe now exports ORIGINAL millimetre poles and current
+weights after sewing, along with identity Location, degree, unit bounds,
+nonperiodicity and forward orientation. Existing SI samples remain numerical
+witnesses. Seventeen decimal significant digits and serde_json float_roundtrip
+preserve binary64 inputs. The bounded-stdin Rust example
+`periodic_fillet_native_snapshot` consumes eight requests, echoes the exact
+request data, and emits only after all eight complete proofs succeed. Input is
+limited to 256 KiB. It accepts no OCCT handles, source or body mutation.
+
+Run the existing native probe command above; it constructs real native solids,
+feeds their current captures to the Rust proof and grades both together. Each
+request uses 1e-12 m position, 1e-9 normal and 4096 leaves. The report binds each
+certificate echo to that current capture/reference/request and retains the
+full proof result under `native.surface_definition_certificates`. Top-level
+`native_surface_definition_certificates` reports extrema and total cover size.
+Synthetic reports prove parser refusals only; CI runs the live capture/proof.
+
+The certificate covers the mathematical native rational surface DEFINITION,
+including native-coordinate conversion, across its entire canonical domain.
+It bounds approximate normal agreement with ideal support/quarter boundaries
+at corresponding parameters. Native floating evaluation, actual trim/pcurve
+parameterization, contact-edge coincidence, native integration, exact G1,
+global embedding and whole-BREP fidelity remain unproven. Both
+`native_floating_evaluation_certified` and `whole_brep_certified` remain false.
+P16-032's separate supplied-control summary retains its narrower scope. No
+production Mock/kernel feature, mesh, schema/migration/golden, MCP operation/eval
+or editable NURBS admission is added; P16-008 remains planned.
+
+The live snapshot example also rejects inputs over 256 KiB, an invalid quarter
+and an unattainable precision on the last of eight requests. All three must
+return failure with no partial certificate stdout, after the same real native
+capture; synthetic parser tests do not substitute for these executions.
+
+Raw native pole JSON uses showpoint so signed zero remains a floating value
+through Python transport. Echo comparison rejects booleans as numeric values
+and checks binary64 identity including zero sign; geometry comparisons retain
+their separate explicit tolerances.

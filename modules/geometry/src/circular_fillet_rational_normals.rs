@@ -1,7 +1,8 @@
 //! ADR-085: complete rounded rational-chart normal certificates, not native G1.
 use crate::{
     bernstein::P, circular_fillet_patch::norm_upper, circular_fillet_rational::homogeneous,
-    interval::I, CircularFilletRationalPatch, CircularFilletReference,
+    interval::I, CircularFilletRationalPatch, CircularFilletRationalSnapshotBounds,
+    CircularFilletReference,
 };
 use opencad_core::{OpenCadError, Result};
 
@@ -85,7 +86,7 @@ impl Cell {
             depth: self.depth + 1,
         })
     }
-    fn bounds(&self, global_j: f64) -> Result<CircularFilletRationalNormalBounds> {
+    fn bounds(&self, global_j: f64) -> Result<CircularFilletRationalSnapshotBounds> {
         let hull_jet =
             |jet: &Jet| -> Result<[I; 3]> { Ok([hull(&jet[0])?, hull(&jet[1])?, hull(&jet[2])?]) };
         let ideal = self
@@ -146,14 +147,21 @@ impl Cell {
         if !jacobian.valid() || !error.valid() || !alignment.valid() {
             return Err(invalid());
         }
-        Ok(CircularFilletRationalNormalBounds {
-            jacobian_area_lower_m2: jacobian.lo,
-            jacobian_area_upper_m2: jacobian.hi,
-            ideal_normal_alignment_lower: alignment.lo,
-            normal_error_upper: error.hi,
-            du_error_upper_m: eu.hi,
-            dv_error_upper_m: ev.hi,
-            leaves: 1,
+        let position_error_upper_m = norm_upper(position_error);
+        if !position_error_upper_m.is_finite() {
+            return Err(invalid());
+        }
+        Ok(CircularFilletRationalSnapshotBounds {
+            position_error_upper_m,
+            normal: CircularFilletRationalNormalBounds {
+                jacobian_area_lower_m2: jacobian.lo,
+                jacobian_area_upper_m2: jacobian.hi,
+                ideal_normal_alignment_lower: alignment.lo,
+                normal_error_upper: error.hi,
+                du_error_upper_m: eu.hi,
+                dv_error_upper_m: ev.hi,
+                leaves: 1,
+            },
         })
     }
 }
@@ -174,8 +182,6 @@ fn certify(
     {
         return Err(invalid());
     }
-    let (n, w) = homogeneous(reference, chart)?;
-    let ideal = [n[0].clone(), n[1].clone(), n[2].clone(), w];
     let actual: [P; 4] = std::array::from_fn(|axis| P {
         u: 8,
         v: 2,
@@ -191,6 +197,58 @@ fn certify(
             })
             .collect(),
     });
+    Ok(certify_homogeneous(
+        reference,
+        chart,
+        actual,
+        f64::INFINITY,
+        maximum_error,
+        max_leaves,
+        false,
+    )?
+    .normal)
+}
+
+// One complete cover for supplied SI controls and captured native definitions.
+// Infinity is used only internally by the old normal-only API.
+pub(super) fn certify_homogeneous(
+    reference: CircularFilletReference,
+    chart: u8,
+    mut actual: [P; 4],
+    maximum_position_error_m: f64,
+    maximum_error: f64,
+    max_leaves: usize,
+    normalize_gauge: bool,
+) -> Result<CircularFilletRationalSnapshotBounds> {
+    if maximum_position_error_m.is_nan()
+        || maximum_position_error_m <= 0.
+        || !maximum_error.is_finite()
+        || maximum_error <= 0.
+        || maximum_error >= 1.
+        || !(1..=16384).contains(&max_leaves)
+        || actual
+            .iter()
+            .any(|p| p.u != 8 || p.v != 2 || p.c.len() != 27 || p.c.iter().any(|c| !c.valid()))
+    {
+        return Err(invalid());
+    }
+    let (n, w) = homogeneous(reference, chart)?;
+    let ideal = [n[0].clone(), n[1].clone(), n[2].clone(), w];
+    if normalize_gauge {
+        let anchor = actual[3].at(0, 0);
+        if anchor.lo <= 0. {
+            return Err(invalid());
+        }
+        let scale = ideal[3].at(0, 0) / anchor;
+        if !scale.valid() || scale.lo <= 0. {
+            return Err(invalid());
+        }
+        for p in &mut actual {
+            for c in &mut p.c {
+                *c = *c * scale;
+            }
+        }
+    }
     let delta = std::array::from_fn(|i| actual[i].difference(&ideal[i]));
     let global_j = ideal_jacobian_lower(reference)?;
     let root = Cell {
@@ -201,32 +259,46 @@ fn certify(
     };
     let mut stack = vec![root];
     let mut cover_leaves = 1;
-    let mut result = CircularFilletRationalNormalBounds {
-        jacobian_area_lower_m2: f64::INFINITY,
-        jacobian_area_upper_m2: 0.,
-        ideal_normal_alignment_lower: 1.,
-        normal_error_upper: 0.,
-        du_error_upper_m: 0.,
-        dv_error_upper_m: 0.,
-        leaves: 0,
+    let mut result = CircularFilletRationalSnapshotBounds {
+        position_error_upper_m: 0.,
+        normal: CircularFilletRationalNormalBounds {
+            jacobian_area_lower_m2: f64::INFINITY,
+            jacobian_area_upper_m2: 0.,
+            ideal_normal_alignment_lower: 1.,
+            normal_error_upper: 0.,
+            du_error_upper_m: 0.,
+            dv_error_upper_m: 0.,
+            leaves: 0,
+        },
     };
     while let Some(cell) = stack.pop() {
-        let b = cell.bounds(global_j)?;
-        if b.jacobian_area_lower_m2 > 0.
+        let bounds = cell.bounds(global_j)?;
+        let b = bounds.normal;
+        if bounds.position_error_upper_m <= maximum_position_error_m
+            && b.jacobian_area_lower_m2 > 0.
             && b.ideal_normal_alignment_lower > 0.
             && b.normal_error_upper <= maximum_error
         {
-            result.jacobian_area_lower_m2 =
-                result.jacobian_area_lower_m2.min(b.jacobian_area_lower_m2);
-            result.jacobian_area_upper_m2 =
-                result.jacobian_area_upper_m2.max(b.jacobian_area_upper_m2);
-            result.ideal_normal_alignment_lower = result
+            result.position_error_upper_m = result
+                .position_error_upper_m
+                .max(bounds.position_error_upper_m);
+            result.normal.jacobian_area_lower_m2 = result
+                .normal
+                .jacobian_area_lower_m2
+                .min(b.jacobian_area_lower_m2);
+            result.normal.jacobian_area_upper_m2 = result
+                .normal
+                .jacobian_area_upper_m2
+                .max(b.jacobian_area_upper_m2);
+            result.normal.ideal_normal_alignment_lower = result
+                .normal
                 .ideal_normal_alignment_lower
                 .min(b.ideal_normal_alignment_lower);
-            result.normal_error_upper = result.normal_error_upper.max(b.normal_error_upper);
-            result.du_error_upper_m = result.du_error_upper_m.max(b.du_error_upper_m);
-            result.dv_error_upper_m = result.dv_error_upper_m.max(b.dv_error_upper_m);
-            result.leaves += 1;
+            result.normal.normal_error_upper =
+                result.normal.normal_error_upper.max(b.normal_error_upper);
+            result.normal.du_error_upper_m = result.normal.du_error_upper_m.max(b.du_error_upper_m);
+            result.normal.dv_error_upper_m = result.normal.dv_error_upper_m.max(b.dv_error_upper_m);
+            result.normal.leaves += 1;
         } else {
             if cover_leaves >= max_leaves || cell.depth >= 28 {
                 return Err(invalid());
@@ -237,11 +309,11 @@ fn certify(
             stack.push(left);
         }
     }
-    if result.leaves != cover_leaves
-        || !result.jacobian_area_lower_m2.is_finite()
-        || !result.jacobian_area_upper_m2.is_finite()
-        || result.jacobian_area_lower_m2 <= 0.
-        || result.jacobian_area_lower_m2 > result.jacobian_area_upper_m2
+    if result.normal.leaves != cover_leaves
+        || !result.normal.jacobian_area_lower_m2.is_finite()
+        || !result.normal.jacobian_area_upper_m2.is_finite()
+        || result.normal.jacobian_area_lower_m2 <= 0.
+        || result.normal.jacobian_area_lower_m2 > result.normal.jacobian_area_upper_m2
     {
         return Err(invalid());
     }
