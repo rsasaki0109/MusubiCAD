@@ -329,6 +329,11 @@ reference poles, with native normal/seam diagnostic witnesses. No MCP operation,
 physical body, G1 or support trimming is admitted. Normal certificates do not
 validate positional metadata; edited poles require all relevant bounds anew.
 
+P16-025 / ADR-078 supplies complete bounded reference bands with explicit
+quality/budget refusal and a measured native open-shell sewing diagnostic.
+Two remaining boundary loops mean this is not a closed solid. Do not infer
+G1, support trimming, physical Mock bodies or curved variable-fillet authoring.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

@@ -349,6 +349,11 @@ actual native seam-normal measurements. They do not create a solid or MCP
 operation, validate stale positional metadata or prove G1/support trimming.
 Curved variable-fillet authoring remains unsupported.
 
+P16-025 / ADR-078 adds complete bounded reference bands and a native sewn
+open-shell diagnostic. The cover has explicit position/normal/work budgets;
+a connected shell with two boundary loops is not a closed fillet body. No MCP
+operation, physical Mock solid, G1 or support-trimming admission is introduced.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

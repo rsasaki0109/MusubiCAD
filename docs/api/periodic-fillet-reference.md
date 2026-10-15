@@ -197,3 +197,58 @@ certificate. The all-patch guarantees follow from the mathematical derivative
 hulls and interval arithmetic. Diagnostics continue to report no feature admission.
 
 See [independent normal tests](../../modules/geometry/tests/circular_fillet_normals.rs).
+
+
+## Complete periodic reference bands (P16-025)
+
+[ADR-078](../adr/ADR-078-bounded-periodic-bezier-bands.md) adds
+`reference.bezier_band(position_error: Length, normal_error: f64, max_patches: usize)`.
+Require finite positive position error in metres, dimensionless unit-normal chord
+error in (0,2], and a patch budget in [4,16384]. These are explicit caller requests,
+not manufacturing defaults. The fixed hard cap bounds allocation/interval work.
+
+`CircularFilletBezierBand` contains a uniform dyadic `divisions_per_chart_axis`,
+ordered `cells` and maximum `position_error_upper_m` / `normal_error_upper`.
+There are exactly 4*n*n cells, ordered chart/u/v. Each `CircularFilletBandCell`
+contains `chart`, dimensionless `[u_min,u_max,v_min,v_max]` in `chart_domain`,
+current `patch` poles/position bounds and independently recomputed `normals`.
+Normal area coefficients use each cell's own normalized local parameter square.
+Editing returned data invalidates their cover/certificates.
+
+Try n=1,2,4,... and refine the whole grid when a coarse interval certificate
+refuses or either requested error is exceeded. Check the next cell count before
+allocation; return no partial result when the conforming level exceeds budget.
+All four charts and their full transverse interval are covered by construction.
+Shared complete edge nets match exactly, including the final periodic seam;
+there are no T-junctions. Early level refusal and a geometric sum of bounded
+levels keep interval work finite. No sampling fallback admits failed cells.
+
+The isolated native diagnostic builds faces from these actual poles, converts
+metres to millimetres explicitly and sews the whole band:
+
+```sh
+python tools/run_reference_band_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/reference-band-diagnostic.json
+```
+
+For the documented constant/variable fixtures, an explicit 1e-4 m position,
+0.8 normal-chord request and 4096-patch budget produce n=16 / 1024 faces per band.
+These coarse demonstration requests do not authorize a manufacturing feature.
+The native diagnostic checks actual BREP validity, one connected face graph in
+one open shell, zero solids, one/two-face edge incidence, Euler characteristic
+zero and exactly two degree-two free-edge cycles. Both cycles have 4*n vertices;
+actual boundary points must match distinct side/top reference contacts and phase.
+Actual sewn face surfaces/poles and nine values per face are compared to the
+original control nets and an independent Bernstein evaluator with a 1e-12 m
+numerical allowance. Sewing tolerance is 1e-6 mm = 1e-9 m, confined to this diagnostic.
+CI saves the live report; synthetic report tests are parser/contract controls only.
+
+This supplies a complete bounded reference band and tested native open-shell
+topology. It does not establish exact G1, global embedding, support trimming,
+closed physical Mock/native solids, mass, mesh policy, editable NURBS or source
+feature support. Successful diagnostics retain `candidate_admitted: false` and
+`solid_created: false`. P16-008 remains planned.
+
+See [band tests](../../modules/geometry/tests/circular_fillet_band.rs) and
+[runnable fixtures](../../modules/geometry/examples/periodic_fillet_bezier_bands.rs).
