@@ -344,6 +344,11 @@ OCCT surfaces in a separate diagnostic. It adds no MCP operation or physical
 Mock/native solid; positional bounds/shared edge curves cannot authorize curved
 variable-fillet creation, support trimming or tangent-continuity claims.
 
+P16-024 / ADR-077 adds whole-patch local orientation/normal certificates and
+actual native seam-normal measurements. They do not create a solid or MCP
+operation, validate stale positional metadata or prove G1/support trimming.
+Curved variable-fillet authoring remains unsupported.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

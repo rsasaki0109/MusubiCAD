@@ -154,3 +154,46 @@ always retain `candidate_admitted: false`. CI saves both native diagnostic repor
 See the [runnable fixture](../../modules/geometry/examples/periodic_fillet_bezier_patches.rs),
 [independent geometry tests](../../modules/geometry/tests/circular_fillet_bezier.rs),
 and [example](../../examples/periodic_fillet_reference.md).
+
+
+## Normal and orientation certificates (P16-024)
+
+[ADR-077](../adr/ADR-077-bezier-normal-and-orientation-bounds.md) adds
+`patch.normal_bounds(reference, chart, u_min, u_max, v_min, v_max)`.
+`CircularFilletNormalBounds` describes the mathematical Bezier surface of the
+current poles using normalized local dimensionless coordinates. It recomputes
+from these poles, ignoring all three stored positional-error fields. A normal
+certificate cannot validate stale position metadata or prove positional fidelity.
+
+The derivative control nets are `3*(P[i+1][j]-P[i][j])` and
+`3*(P[i][j+1]-P[i][j])`. Their componentwise Bernstein hulls enclose derivatives
+throughout the square. Outward cross-product, norm and division operations yield:
+
+- `jacobian_area_lower_m2`, `jacobian_area_upper_m2`: bounds on the magnitude of
+  the local derivative cross product, in m². A positive lower bound proves local
+  immersion of this patch, including its boundary.
+- `normal_lower`, `normal_upper`: dimensionless oriented unit-normal component
+  bounds. Cross-product order is positive local u then positive local v.
+- `ideal_normal_alignment_lower`: a strictly positive lower bound on the dot
+  product with the ideal reference normal, proving matching orientation.
+- `normal_error_upper`: an upper Euclidean unit-vector chord distance from the
+  ideal normal. It is dimensionless, not an angle in radians.
+
+Nonfinite poles/arithmetic, collapsed or reversed nets, hulls unable to prove
+positive area/alignment and precision underflow refuse. Wide hulls may refuse
+valid surfaces; no sampling fallback, repair or normal tolerance is inferred.
+Certificates must be recomputed after changing poles, reference or rectangle.
+No global embedding, exact G1 continuity, support trimming or solid is admitted.
+
+On matching ideal shared boundaries, the sum of the two reference-normal error
+bounds (rounded outward) bounds their normal gap. It does not prove zero gap.
+The existing live native diagnostic now measures actual D1 unit normals and area
+at all 1000 witnesses, checks independent Bernstein/ideal comparisons and all
+quarter-chart seam pairs. Native normal evaluation has an explicit dimensionless
+1e-11 test allowance, distinct from the metre-valued point/derivative allowance;
+area comparisons have a 1e-24 m² absolute allowance and a 1e-11 relative comparison
+allowance against Bernstein evaluation. Neither is an all-parameter native error
+certificate. The all-patch guarantees follow from the mathematical derivative
+hulls and interval arithmetic. Diagnostics continue to report no feature admission.
+
+See [independent normal tests](../../modules/geometry/tests/circular_fillet_normals.rs).

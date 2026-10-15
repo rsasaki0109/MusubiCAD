@@ -103,6 +103,13 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-024 / [ADR-077](../adr/ADR-077-bezier-normal-and-orientation-bounds.md)
+adds current-control-net derivative-hull certificates: positive local Jacobian
+area, ideal-oriented unit normals and bounded normal discrepancy. Native D1
+normal/area and seam witnesses extend the existing isolated SDK diagnostic.
+Position metadata is not trusted by this recomputation. Local immersion and
+bounded normal gaps do not establish G1, global embedding or a closed body.
+
 P16-023 / [ADR-076](../adr/ADR-076-bounded-bezier-reference-patches.md) constructs
 kernel-neutral bicubic reference poles and a Bernstein convex-hull positional
 error bound. An isolated pinned-SDK diagnostic creates actual native surfaces
