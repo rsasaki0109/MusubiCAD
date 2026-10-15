@@ -974,3 +974,11 @@ f32 export certificate or authorable fillet. No new MCP operation/eval applies.
 Global embedding/exact G1/native floating fidelity and production admission remain
 separate. See docs/api/closed-periodic-reference-mesh.md and
 examples/closed_periodic_reference_mesh.md. P16-008 stays planned; no score.
+
+P16-040 / ADR-093: reference meshes can be converted read-only with `grid_solid`
+and explicit final SI position/normal precision. Use its final bounds for the
+actual admitted TriangleSolid; raw mesh bounds exclude grid changes. Admission
+retains existing 10000-triangle/intersection limits, requires bijective ordered
+correspondence, and rejects failed or insufficient-quality conversions without
+coarsening. This is not an authorable variable fillet or new MCP operation.
+See `docs/api/grid-admitted-reference-solid.md`; P16-008 stays planned.

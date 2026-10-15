@@ -61,3 +61,5 @@ The four actual refusal controls (truncated input, wrong units, missing triangle
 reversed winding) must emit no partial stdout. Existing rational/native boundary
 proofs are unchanged. No source/schema/golden/MCP operation/eval or score changes;
 P16-008 remains planned.
+
+ADR-093 adds a separately certified [grid-admitted conversion](grid-admitted-reference-solid.md). The raw bounds above remain unchanged; use the returned grid bounds for the actually stored TriangleSolid.

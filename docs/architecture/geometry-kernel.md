@@ -615,3 +615,11 @@ boundary integrals are separate from global embedding/physical Mock admission.
 An isolated kernel-occt diagnostic builds actual faceted native solids and
 measures current topology/geometry/mass. The existing analytic-support rational
 BREP and certificates remain unchanged; no product/schema/MCP admission or score.
+
+MCAD-P16-040 / ADR-093 connects immutable bounded reference meshes to existing
+TriangleSolid admission. A bijective ordered vertex/facet map and outward actual
+vertex/normal changes preserve final requested quality through its 1e-9 m grid.
+Existing numeric intersection/triangle budgets remain unchanged; no exact global
+embedding, product kernel body, source/history/cache or editable feature admission.
+The pinned native diagnostic checks separate actual grid facets and mass.
+See [the API](../api/grid-admitted-reference-solid.md).

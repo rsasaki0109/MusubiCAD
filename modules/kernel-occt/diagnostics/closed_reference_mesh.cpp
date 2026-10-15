@@ -33,9 +33,9 @@
 namespace {
 void require(bool b,const char* m){if(!b)throw std::runtime_error(m);}
 template<class T>void xyz(std::ostream& o,const T& p,double scale=1e-3){o<<'['<<p.X()*scale<<','<<p.Y()*scale<<','<<p.Z()*scale<<']';}
-void measure(std::ostream& out){
+void measure(std::ostream& out,bool grid){
  int n,nv,nt;require(bool(std::cin>>n>>nv>>nt)&&n>=1&&n<=64&&(n&(n-1))==0&&nv==4*n*(2*n+1)+2&&nt==16*n*n+8*n,"wrong mesh inventory");
- std::vector<gp_Pnt> p;for(int i=0;i<nv;++i){double x,y,z;require(bool(std::cin>>x>>y>>z)&&std::isfinite(x)&&std::isfinite(y)&&std::isfinite(z)&&std::hypot(x,y)<=.010000000001&&z>=-1e-12&&z<=.020000000001,"invalid mesh point/metre units");p.emplace_back(x*1000,y*1000,z*1000);}
+ std::vector<gp_Pnt> p;for(int i=0;i<nv;++i){double x,y,z;require(bool(std::cin>>x>>y>>z)&&std::isfinite(x)&&std::isfinite(y)&&std::isfinite(z)&&std::hypot(x,y)<=.01+(grid?1e-9:1e-12)&&z>=-(grid?1e-9:1e-12)&&z<=.02+(grid?1e-9:1e-12),"invalid mesh point/metre units");p.emplace_back(x*1000,y*1000,z*1000);}
  std::vector<std::array<int,3>> triangles;std::map<std::pair<int,int>,std::vector<bool>> uses;std::map<std::array<int,3>,int> records;
  for(int i=0;i<nt;++i){std::array<int,3> t;require(bool(std::cin>>t[0]>>t[1]>>t[2]),"missing triangle");for(int v:t)require(v>=0&&v<nv,"bad vertex ID");require(t[0]!=t[1]&&t[1]!=t[2]&&t[0]!=t[2],"degenerate IDs");triangles.push_back(t);auto key=t;std::sort(key.begin(),key.end());require(records.emplace(key,i).second,"duplicate triangle");for(int j=0;j<3;++j){int a=t[j],b=t[(j+1)%3];uses[{std::min(a,b),std::max(a,b)}].push_back(a<b);}}
  for(const auto& e:uses)require(e.second.size()==2&&e.second[0]!=e.second[1],"input shell winding/incidence invalid; no repair");
@@ -58,6 +58,6 @@ void measure(std::ostream& out){
  BRepAdaptor_Surface surface(face);require(surface.GetType()==GeomAbs_Plane,"current native mesh face is not planar");gp_Pnt q;gp_Vec du,dv;surface.D1(0,0,q,du,dv);auto normal=du.Crossed(dv);normal.Normalize();if(face.Orientation()==TopAbs_REVERSED)normal.Reverse();if(i>1)out<<',';out<<"{\"triangle\":"<<index<<",\"normal\":";xyz(out,normal,1);out<<'}';}
  out<<"]}";
 }
-void run(){int count;require(bool(std::cin>>count)&&count==2,"expected two actual mesh cases");std::ostringstream out;out<<std::setprecision(17)<<"{\"format_version\":1,\"occt_version\":\""<<OCC_VERSION_COMPLETE<<"\",\"cases\":[";for(int i=0;i<2;++i){if(i)out<<',';measure(out);}std::string extra;require(!(std::cin>>extra),"extra native input");out<<"]}\n";std::cout<<out.str();}
+void run(bool grid){int count;require(bool(std::cin>>count)&&count==2,"expected two actual mesh cases");std::ostringstream out;out<<std::setprecision(17)<<"{\"format_version\":1,\"occt_version\":\""<<OCC_VERSION_COMPLETE<<"\",\"cases\":[";for(int i=0;i<2;++i){if(i)out<<',';measure(out,grid);}std::string extra;require(!(std::cin>>extra),"extra native input");out<<"]}\n";std::cout<<out.str();}
 }
-int main(){try{run();}catch(const Standard_Failure& e){std::cerr<<e.what()<<'\n';return 1;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
+int main(int argc,char** argv){try{require(argc==1||(argc==2&&std::string(argv[1])=="--grid"),"unsupported transport mode");run(argc==2);}catch(const Standard_Failure& e){std::cerr<<e.what()<<'\n';return 1;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

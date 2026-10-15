@@ -31,6 +31,38 @@ pub struct CircularFilletReferenceMesh {
     normal_error: f64,
     integrals: CircularFilletMeshIntegrals,
 }
+/// Final quality after the existing TriangleSolid grid admission (ADR-093).
+#[derive(Debug, Clone, Copy)]
+pub struct CircularFilletGridPrecision {
+    pub maximum_position_error: Length,
+    pub maximum_normal_error: f64,
+}
+/// Immutable conversion certificate, not a document feature or native body.
+#[derive(Debug, Clone)]
+pub struct CircularFilletGridSolid {
+    solid: crate::TriangleSolid,
+    position_error: f64,
+    normal_error: f64,
+    displacement: f64,
+    normal_change: f64,
+}
+impl CircularFilletGridSolid {
+    pub fn solid(&self) -> &crate::TriangleSolid {
+        &self.solid
+    }
+    pub fn position_error_upper_m(&self) -> f64 {
+        self.position_error
+    }
+    pub fn normal_error_upper(&self) -> f64 {
+        self.normal_error
+    }
+    pub fn grid_displacement_upper_m(&self) -> f64 {
+        self.displacement
+    }
+    pub fn grid_normal_change_upper(&self) -> f64 {
+        self.normal_change
+    }
+}
 fn invalid() -> OpenCadError {
     OpenCadError::validation("closed periodic reference mesh or requested quality not certified")
 }
@@ -99,6 +131,46 @@ impl CircularFilletReferenceMesh {
     pub fn boundary_integrals(&self) -> CircularFilletMeshIntegrals {
         self.integrals
     }
+    /// Admit the actual grid solid and certify its final whole-facet quality.
+    /// Existing admission limits and numeric intersection checks are unchanged.
+    /// No refinement, repair, transform or partial result is performed.
+    pub fn grid_solid(&self, p: CircularFilletGridPrecision) -> Result<CircularFilletGridSolid> {
+        let maximum = p.maximum_position_error.meters();
+        if !maximum.is_finite()
+            || maximum <= 0.
+            || !p.maximum_normal_error.is_finite()
+            || p.maximum_normal_error <= 0.
+            || p.maximum_normal_error >= 1.
+            || self.position_error > maximum
+            || self.normal_error > p.maximum_normal_error
+            || self.triangles.len() > crate::triangle_solid::MAX_STL_TRIANGLES
+        {
+            return Err(invalid());
+        }
+        let points: Vec<_> = self
+            .triangles
+            .iter()
+            .map(|t| t.map(|i| self.vertices[i as usize]))
+            .collect();
+        let solid = crate::TriangleSolid::from_triangles(&points)?;
+        let (displacement, normal_change) = grid_changes(self, &solid)?;
+        let position_error = (I::exact(self.position_error) + I::exact(displacement)).hi;
+        let normal_error = (I::exact(self.normal_error) + I::exact(normal_change)).hi;
+        if !position_error.is_finite()
+            || !normal_error.is_finite()
+            || position_error > maximum
+            || normal_error > p.maximum_normal_error
+        {
+            return Err(invalid());
+        }
+        Ok(CircularFilletGridSolid {
+            solid,
+            position_error,
+            normal_error,
+            displacement,
+            normal_change,
+        })
+    }
     fn add(&mut self, t: [u32; 3], group: u8, ideal: [I; 3], maximum: f64) -> Result<()> {
         let (normal, _) = facet(t.map(|i| self.vertices[i as usize]))?;
         let error = norm_upper(std::array::from_fn(|k| normal[k] - ideal[k]));
@@ -166,6 +238,49 @@ impl CircularFilletReferenceMesh {
         };
         Ok(())
     }
+}
+// Ordered face/corner identity, not a tolerance-based nearest-point match.
+fn grid_changes(
+    mesh: &CircularFilletReferenceMesh,
+    solid: &crate::TriangleSolid,
+) -> Result<(f64, f64)> {
+    if mesh.vertices.len() != solid.vertices_m().len()
+        || mesh.triangles.len() != solid.triangles().len()
+    {
+        return Err(invalid());
+    }
+    let mut forward = vec![None; mesh.vertices.len()];
+    let mut reverse = vec![None; solid.vertices_m().len()];
+    let mut displacement = 0_f64;
+    let mut normal_change = 0_f64;
+    for (original, admitted) in mesh.triangles.iter().zip(solid.triangles()) {
+        for (&a, &b) in original.iter().zip(admitted) {
+            let (a, b) = (a as usize, b as usize);
+            if forward[a].is_some_and(|id| id != b) || reverse[b].is_some_and(|id| id != a) {
+                return Err(invalid());
+            }
+            forward[a] = Some(b);
+            reverse[b] = Some(a);
+            let d = norm_upper(std::array::from_fn(|k| {
+                I::exact(solid.vertices_m()[b][k]) - I::exact(mesh.vertices[a][k])
+            }));
+            if !d.is_finite() {
+                return Err(invalid());
+            }
+            displacement = displacement.max(d);
+        }
+        let (a, _) = facet(original.map(|i| mesh.vertices[i as usize]))?;
+        let (b, _) = facet(admitted.map(|i| solid.vertices_m()[i as usize]))?;
+        let d = norm_upper(std::array::from_fn(|k| b[k] - a[k]));
+        if !d.is_finite() {
+            return Err(invalid());
+        }
+        normal_change = normal_change.max(d);
+    }
+    if forward.iter().any(Option::is_none) || reverse.iter().any(Option::is_none) {
+        return Err(invalid());
+    }
+    Ok((displacement, normal_change))
 }
 fn level(
     r: CircularFilletReference,
@@ -342,6 +457,40 @@ impl CircularFilletReference {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn grid_conversion_rejects_unbound_corner_correspondence_and_collapsed_geometry() {
+        let r = CircularFilletReference::new(
+            Length::from_meters(0.01),
+            Length::from_meters(0.02),
+            Length::from_meters(0.0005),
+            Length::from_meters(0.0015),
+        )
+        .unwrap();
+        let mesh = r
+            .closed_reference_mesh(CircularFilletMeshPrecision {
+                maximum_position_error: Length::from_meters(4e-4),
+                maximum_normal_error: 0.8,
+                max_vertices: 33026,
+                max_triangles: 66048,
+            })
+            .unwrap();
+        let mut points: Vec<_> = mesh
+            .triangles
+            .iter()
+            .map(|t| t.map(|i| mesh.vertices[i as usize]))
+            .collect();
+        points[0].rotate_left(1); // Same valid facet, incorrect ordered correspondence.
+        let solid = crate::TriangleSolid::from_triangles(&points).unwrap();
+        assert!(grid_changes(&mesh, &solid).is_err());
+        let mut collapsed = mesh;
+        collapsed.vertices.fill([0.; 3]);
+        assert!(collapsed
+            .grid_solid(CircularFilletGridPrecision {
+                maximum_position_error: Length::from_meters(1e-3),
+                maximum_normal_error: 0.9
+            })
+            .is_err());
+    }
     #[test]
     fn internal_missing_reversed_or_group_malformed_shells_refuse() {
         assert!(facet([[0.; 3]; 3]).is_err());

@@ -1220,3 +1220,32 @@ face connectivity/normal, volume, area, COM and first-moment comparisons pass.
 All four real-process refusal controls emit empty stdout. Fine position bounds
 are 3.907e-5 / 4.297e-5 m for constant/variable laws. Completion requires merge;
 no score, actual52.60 / 95.
+
+PR #139 completed P16-039 at main
+`f14f9dc764c95ff5102d89a60a9b4ec19cea1b47`, after all four exact-head applicable
+workflows and complete job inventories succeeded. The Windows UI startup timed
+out on the first attempt and passed on one same-head failed-job rerun, without
+source/assertion changes. Both merge parents match the tested base/head and the
+merge tree equals the tested head tree. No score: actual52.60 / 95.
+
+MCAD-P16-040 / ADR-093 preserves reference-mesh error bounds through the existing
+TriangleSolid 1e-9 m admission grid. Actual ordered vertex/facet bijection,
+outward vertex movement and facet-normal changes produce separate final-quality
+certificates for the actual stored solid, with unchanged STL/intersection caps.
+The native diagnostic additionally constructs and measures both fine grid cases
+and runs the four empty-stdout refusal controls for both raw and grid modes.
+Independent integer-grid volume/actual area, scales, determinism, correspondence,
+collapse, final-quality and cap refusal tests cover the conversion. API,
+architecture, example, MCP guide and skill updated; no schema/golden/new MCP
+operation/eval or production kernel/source admission. Completion requires merge;
+P16-008 remains planned and no score is assigned, actual52.60 / 95.
+
+P16-040 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1224 passed, 0 failed, 36 ignored),
+and agent plugin contract. Three new public integration tests and one private
+regression test passed; seven Python contract tests, release policy and repository
+hygiene passed. The pinned native probe constructed two raw and two actual grid
+solids and passed all eight empty-stdout refusal controls. Fine constant/variable
+grid movement bounds are 8.075e-10 / 8.392e-10 m; final position bounds
+3.907e-5 / 4.297e-5 m and normal chord bounds 0.121996 / 0.131550 meet the
+requested 1e-4 m / 0.5 quality. No production feature/score admission.
