@@ -326,3 +326,26 @@ Synthetic report tests do not replace these live proofs. Existing surface,
 end/side contact, numerical normal, topology, volume and phase gates remain.
 No production body, editable NURBS, paired-normal/exact G1 or whole-BREP claim
 follows. See [seam API](../docs/api/periodic-fillet-reference.md#current-native-quarter-seam-boundary-certificates-p16-037).
+
+
+P16-038 extends that same native runner with paired normal bounds:
+
+```sh
+python tools/run_rational_reference_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/rational-reference-diagnostic.json
+python tools/test_rational_reference_probe.py
+```
+
+`periodic_fillet_boundary_normals` recomputes both actual four-chart cases and
+bounds all 24 side/end/seam unit-normal chord gaps. Original support axes and
+pcurve angle controls contribute to the bounds; raw data and canonical attached
+maps bind every result. Requests are 1e-12 m position, 2.5e-10 surface normal,
+1e-9 paired normal and 4096 leaves per surface. Eleven actual refusal controls
+include changed plane/cylinder frames, angle, chart, line, units, weights,
+missing controls, input bytes, work and final-case precision without partial
+stdout. `native_boundary_normal_certificates` summarizes the complete evidence.
+Existing surface/edge/position/topology/volume/phase and numerical-normal gates
+remain. This proves finite mathematical normal gaps, not exact G1 or native
+floating evaluation/whole-BREP/production fidelity. See
+[the paired-normal API](../docs/api/periodic-fillet-reference.md#current-native-paired-boundary-normal-bounds-p16-038).

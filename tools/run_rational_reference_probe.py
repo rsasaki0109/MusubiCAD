@@ -229,6 +229,60 @@ def grade_seam_boundary(actual, edge, proof):
     return proof
 
 
+NORMAL_REFUSALS = ("input_limit", "wrong_chart", "wrong_line", "nonunit_weight", "changed_plane", "changed_cylinder", "changed_angle", "wrong_units", "missing_control", "last_request_precision", "exhausted_work")
+NORMAL_GAPS = ("side_normal_gap_upper", "end_normal_gap_upper", "seam_normal_gap_upper")
+
+
+def boundary_normal_request(reference, case, actual):
+    blends = sorted((f for f in actual["surface_faces"] if f["role"]["kind"] == 0), key=lambda f: f["role"]["chart"])
+    plane = next(f for f in actual["surface_faces"] if f["role"]["kind"] == 2)
+    sides = [e for e in contact_edges(actual) if any(r["kind"] == 1 for r in e["roles"])]
+    ends = [e for e in contact_edges(actual) if any(r["kind"] == 2 for r in e["roles"])]
+    cylinders = []
+    for e in sides:
+        frame, pc = e["cylinder_frame"], e["cylindrical_pcurve"]
+        cylinders.append({"chart": next(r["chart"] for r in e["roles"] if r["kind"] == 0), **frame, "poles_rad_mm": pc["poles_rad_mm"], "weights": pc["weights"]})
+    seams = []
+    for e in seam_edges(actual):
+        left, right = seam_layout(e)
+        seams.append({"left_chart": e["roles"][left]["chart"], "right_chart": e["roles"][right]["chart"], "left_line": e["seam_lines"][left], "right_line": e["seam_lines"][right]})
+    return {"cylinder_radius_m": reference["radius_m"], "cylinder_height_m": reference["height_m"], "minimum_radius_m": case["minimum_radius_m"], "maximum_radius_m": case["maximum_radius_m"],
+            "blends": [{"chart": f["role"]["chart"], "poles_mm": f["poles_mm"], "weights": f["weights"]} for f in blends], "cylinders": cylinders,
+            "plane_axes": [plane["plane_x_direction"], plane["plane_y_direction"]], "side_lines": [e["blend_side_line"] for e in sides], "end_lines": [e["blend_end_line"] for e in ends], "seams": seams,
+            "maximum_position_error_m": 1e-12, "maximum_surface_normal_error": 2.5e-10, "maximum_normal_gap": 1e-9, "max_leaves": 4096}
+
+
+def grade_boundary_normals(reference, case, actual, proof):
+    expected = boundary_normal_request(reference, case, actual)
+    echo = proof["request"]
+    require(same_numeric_data(echo, expected) and type(echo["max_leaves"]) is int and all(type(b["chart"]) is int for b in echo["blends"]+echo["cylinders"]) and all(type(b[k]) is int for b in echo["seams"] for k in ("left_chart", "right_chart")), "boundary normal capture/request mismatch")
+    array_keys = ("surfaces", "cylindrical_lifts", "cylinder_frame_normal_error_upper", "cylinder_normal_error_upper", *NORMAL_GAPS)
+    require(all(len(proof[k]) == 4 for k in array_keys), "incomplete boundary normal chart inventory")
+    plane = number(proof["plane_frame_normal_error_upper"])
+    require(0 <= plane <= expected["maximum_normal_gap"], "unresolved plane normal frame")
+    def frame_lower(axes):
+        d = [math.dist(vector(row), [float(j == i) for j in range(3)]) for i, row in enumerate(axes)]
+        err = d[0]+d[1]+d[0]*d[1] if len(d) == 2 else (d[0]+d[1])*(1+d[2])+d[2]
+        return math.nextafter(2*err, -math.inf)
+    require(plane >= frame_lower(expected["plane_axes"]), "underclaimed plane normal frame")
+    for c in range(4):
+        surface, lift = proof["surfaces"][c], proof["cylindrical_lifts"][c]
+        require(0 < number(surface["position_error_upper_m"]) <= expected["maximum_position_error_m"], "unresolved paired surface position")
+        normal_certificate(surface["normal_bounds"], expected["maximum_surface_normal_error"], expected["max_leaves"])
+        values = [number(lift[k]) for k in ("position_error_upper_m", "angle_error_upper_rad", "height_error_upper_m", "support_frame_error_upper_m")]
+        pos, angle, height, frame = values
+        supplied = case["side_pcurves"][c]
+        require(0 < pos <= expected["maximum_position_error_m"] and angle >= number(supplied["angle_error_upper_rad"]) and height >= number(supplied["height_error_upper_m"]) and frame >= 0 and pos >= math.nextafter(frame+math.hypot(number(reference["radius_m"])*angle, height), -math.inf), "unresolved paired cylinder lift components")
+        cf, cn = number(proof["cylinder_frame_normal_error_upper"][c]), number(proof["cylinder_normal_error_upper"][c])
+        require(0 <= cf <= cn <= expected["maximum_normal_gap"] and cf >= frame_lower(expected["cylinders"][c]["directions"]) and cn >= math.nextafter(cf+angle, math.inf), "unresolved cylinder normal frame/angle sum")
+        n = number(surface["normal_bounds"]["normal_error_upper"])
+        adjacent = number(proof["surfaces"][(c+1)%4]["normal_bounds"]["normal_error_upper"])
+        for key, component in zip(NORMAL_GAPS, (cn, plane, adjacent)):
+            bound = number(proof[key][c])
+            require(0 < bound <= expected["maximum_normal_gap"] and bound >= math.nextafter(n+component, math.inf), "unresolved paired normal gap/outward sum")
+    return proof
+
+
 def normal_certificate(certificate, maximum_error, max_leaves):
     values = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
     jlo, jhi, alignment, error, eu, ev = values
@@ -267,6 +321,11 @@ def grade(reference, native):
     seam_proofs = native["seam_boundary_certificates"]
     require(type(seam_proofs["format_version"]) is int and seam_proofs["format_version"] == 1 and len(seam_proofs["certificates"]) == 8 and all(seam_proofs[k] is False for k in ("native_floating_evaluation_certified", "paired_normals_certified", "whole_brep_certified")), "missing/overclaimed seam boundary certificates")
     seam_certificates = []
+    paired_refusals = native["boundary_normal_proof_refusals"]
+    require(set(paired_refusals) == set(NORMAL_REFUSALS) and all(v is True for v in paired_refusals.values()), "missing live boundary normal refusals")
+    paired_proofs = native["boundary_normal_certificates"]
+    require(type(paired_proofs["format_version"]) is int and paired_proofs["format_version"] == 1 and len(paired_proofs["certificates"]) == 2 and all(paired_proofs[k] is False for k in ("native_floating_evaluation_certified", "exact_g1_certified", "whole_brep_certified")), "missing/overclaimed paired normal certificates")
+    paired_certificates = []
     certificates = []
     maxima = {key: 0. for key in ("point_m", "d1_m", "normal", "join_gap_m", "join_normal_gap")}
     phase_mismatches = []
@@ -356,6 +415,8 @@ def grade(reference, native):
                 require(distance(sample["point_m"], ideal) <= bound+POINT_M and distance(sample["normal"], ideal_normal) <= NORMAL, "native rational surface differs from independent sphere envelope")
                 maxima["point_m"], maxima["d1_m"], maxima["normal"] = max(maxima["point_m"], ep), max(maxima["d1_m"], ed), max(maxima["normal"], en)
         require(faces == {0: 4, 1: 4, 2: 1, 3: 1} and set(blends) == set(range(4)), "wrong analytic/blend face inventory")
+        paired = grade_boundary_normals(reference, ref, actual, paired_proofs["certificates"][law])
+        paired_certificates.append(paired)
         require(len(actual["shared_edges"]) == 20, "missing native adjacency/pcurves")
         pairs, seam_pairs, side_contacts, end_contacts = Counter(), [], [], []
         for edge in actual["shared_edges"]:
@@ -453,6 +514,8 @@ def grade(reference, native):
                     if pair == (0, 1): certified_gap += ref["side_pcurves"][next(c for k, c in roles if k == 0)]["angle_error_upper_rad"]
                     if pair in ((0, 0), (0, 1), (0, 2)):
                         require(gap <= certified_gap+NORMAL, "native join normal witness outside mathematical boundary implication")
+                        key, chart = ("seam_normal_gap_upper", seam_chart) if pair == (0, 0) else ("side_normal_gap_upper" if pair == (0, 1) else "end_normal_gap_upper", contact["chart"])
+                        require(gap <= paired[key][chart]+NORMAL, "native join normal witness outside captured paired normal certificate")
                     maxima["join_normal_gap"] = max(maxima["join_normal_gap"], gap)
         require(pairs == {(0, 0): 4, (0, 1): 4, (0, 2): 4, (1, 1): 4, (1, 3): 4} and sorted(seam_pairs) == [(0, 1), (0, 3), (1, 2), (2, 3)] and sorted(side_contacts) == sorted(end_contacts) == [0, 1, 2, 3], "wrong sewn support/seam adjacency")
         require(len(actual["classifications"]) == 8, "missing actual solid/phase classifiers")
@@ -469,6 +532,7 @@ def grade(reference, native):
     require(phase_mismatches[0] == 0 and phase_mismatches[1] >= 2, "constant/variable actual solid phase decoys not distinguished")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
             "native_diagnostic_solids_created": 2, "native_rational_blend_faces_created": 8,
+            "native_boundary_normal_certificates": {"cases": len(paired_certificates), "count": len(paired_certificates)*12, "maximum_normal_gap": max(v for p in paired_certificates for k in NORMAL_GAPS for v in p[k]), "native_floating_evaluation_certified": False, "exact_g1_certified": False, "whole_brep_certified": False},
             "native_seam_boundary_certificates": {"count": len(seam_certificates), "maximum_gap_m": max(c[k] for c in seam_certificates for k in SEAM_GAPS), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "paired_normals_certified": False, "whole_brep_certified": False},
             "native_side_boundary_certificates": {"count": len(side_certificates), "maximum_gap_m": max(c[k] for c in side_certificates for k in ("edge_to_cylinder_gap_upper_m", "edge_to_blend_gap_upper_m", "cylinder_to_blend_gap_upper_m")), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "end_contact_boundaries_certified": False, "whole_brep_certified": False},
             "native_end_boundary_certificates": {"count": len(end_certificates), "maximum_gap_m": max(c[k] for c in end_certificates for k in ("edge_to_plane_gap_upper_m", "edge_to_blend_gap_upper_m", "plane_to_blend_gap_upper_m")), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "side_contact_boundaries_certified": False, "whole_brep_certified": False},
@@ -612,6 +676,33 @@ def run(occt_root, output):
         refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
         require(refused.returncode != 0 and not refused.stdout.strip(), "seam boundary accepted invalid input or emitted partial certificates: "+name)
         native["seam_boundary_proof_refusals"][name] = True
+    requests = [boundary_normal_request(ref, case, actual) for case, actual in zip(ref["cases"], native["cases"])]
+    command = ["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "periodic_fillet_boundary_normals"]
+    payload = json.dumps({"format_version": 1, "requests": requests}, allow_nan=False)
+    proof = subprocess.run(command, input=payload, check=True, cwd=ROOT, capture_output=True, text=True, timeout=180)
+    native["boundary_normal_certificates"] = json.loads(proof.stdout)
+    changes = {}
+    for name in NORMAL_REFUSALS:
+        if name == "input_limit":
+            changes[name] = payload+" "*max(1, 1048577-len(payload.encode("utf-8")))
+            continue
+        data = copy.deepcopy(requests)
+        if name == "wrong_chart": data[0]["blends"][0]["chart"] = 1
+        elif name == "wrong_line": data[0]["seams"][3]["right_line"]["direction"] = [0., -1.]
+        elif name == "nonunit_weight": data[0]["cylinders"][0]["weights"][384] = 1.0000000000000002
+        elif name == "changed_plane": data[0]["plane_axes"][0][2] += 1e-5
+        elif name == "changed_cylinder": data[0]["cylinders"][0]["directions"][2][0] += 1e-5
+        elif name == "changed_angle": data[0]["cylinders"][0]["poles_rad_mm"][384][0] += 1e-5
+        elif name == "wrong_units": data[0]["blends"][0]["poles_mm"] = [[[x/1000 for x in p] for p in row] for row in data[0]["blends"][0]["poles_mm"]]
+        elif name == "missing_control": data[0]["cylinders"][0]["poles_rad_mm"].pop()
+        elif name == "last_request_precision": data[-1]["maximum_normal_gap"] = 1e-30
+        else: data[0]["max_leaves"] = 1
+        changes[name] = json.dumps({"format_version": 1, "requests": data}, allow_nan=False)
+    native["boundary_normal_proof_refusals"] = {}
+    for name, bad_payload in changes.items():
+        refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
+        require(refused.returncode != 0 and not refused.stdout.strip(), "boundary normals accepted invalid input or emitted partial certificates: "+name)
+        native["boundary_normal_proof_refusals"][name] = True
     report = {"format_version": 1, "diagnostic_passed": False, "candidate_admitted": False, "reference": ref, "native": native}
     try: report.update(grade(ref, native))
     except (KeyError, TypeError, ValueError) as error:

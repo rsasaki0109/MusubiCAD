@@ -132,3 +132,8 @@ pub use circular_fillet_snapshot::{
 
 mod circular_fillet_seam_snapshot;
 pub use circular_fillet_seam_snapshot::{CircularFilletSeamBounds, CircularFilletSeamSnapshot};
+
+mod circular_fillet_boundary_normals;
+pub use circular_fillet_boundary_normals::{
+    CircularFilletBoundaryNormalBounds, CircularFilletBoundaryNormalPrecision,
+};

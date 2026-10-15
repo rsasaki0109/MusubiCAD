@@ -4,7 +4,7 @@ from fractions import Fraction as F
 import math
 import unittest
 from test_rational_contact_probe import fixture as contact_fixture
-from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges, end_boundary_request, side_boundary_request, seam_boundary_request, seam_edges, SEAM_REFUSALS, SEAM_GAPS
+from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges, end_boundary_request, side_boundary_request, seam_boundary_request, seam_edges, SEAM_REFUSALS, SEAM_GAPS, boundary_normal_request, NORMAL_REFUSALS, NORMAL_GAPS
 from run_reference_bezier_probe import unit_cross
 from run_rational_contact_probe import rational
 
@@ -141,10 +141,59 @@ def fixture():
     native["seam_boundary_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "paired_normals_certified": False, "whole_brep_certified": False, "certificates": [
         {"request": copy.deepcopy(seam_boundary_request(actual, edge)), **{key: 1e-13 for key in SEAM_GAPS}}
         for actual in native["cases"] for edge in seam_edges(actual)]}
+    native["boundary_normal_proof_refusals"] = {key: True for key in NORMAL_REFUSALS}
+    paired = []
+    for case, actual in zip(reference["cases"], native["cases"]):
+        surfaces = []
+        for patch in case["patches"]:
+            normal = copy.deepcopy(patch["normal_bounds"]);normal["normal_error_upper"] = 1e-10
+            surfaces.append({"position_error_upper_m": 5e-13, "normal_bounds": normal})
+        paired.append({"request": copy.deepcopy(boundary_normal_request(reference, case, actual)), "surfaces": surfaces,
+                       "cylindrical_lifts": [{"position_error_upper_m": 7e-13, "angle_error_upper_rad": 5e-11, "height_error_upper_m": 1e-16 if case["law"] == "constant" else 3e-13, "support_frame_error_upper_m": 1e-18} for _ in range(4)],
+                       "plane_frame_normal_error_upper": 1e-18, "cylinder_frame_normal_error_upper": [1e-18]*4, "cylinder_normal_error_upper": [5.1e-11]*4,
+                       "side_normal_gap_upper": [2e-10]*4, "end_normal_gap_upper": [1.1e-10]*4, "seam_normal_gap_upper": [2.1e-10]*4})
+    native["boundary_normal_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "exact_g1_certified": False, "whole_brep_certified": False, "certificates": paired}
     return reference, native
 
 
 class Contract(unittest.TestCase):
+    def test_paired_normal_echo_frame_and_component_binding_refuse(self):
+        ref, base = fixture()
+        for key, value in (("max_leaves", True), ("maximum_normal_gap", 1e-8), ("maximum_surface_normal_error", 1e-9), ("plane_axes", [[0.,1.,0.],[1.,0.,0.]])):
+            native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"][0]["request"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"][0]["request"]["blends"][0]["chart"] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"][0]["request"]["plane_axes"][0][1] = -0.0
+        with self.assertRaises(ValueError): grade(ref, native)
+        for key in ("plane_frame_normal_error_upper",):
+            native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"][0][key] = -1.
+            with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base)
+        plane = native["cases"][0]["surface_faces"][8];plane["plane_x_direction"][2] = 1e-7
+        native["boundary_normal_certificates"]["certificates"][0]["request"]["plane_axes"][0][2] = 1e-7
+        with self.assertRaisesRegex(ValueError,"underclaimed plane"): grade(ref, native)
+
+    def test_paired_normal_inventories_bounds_outward_sums_and_scope_refuse(self):
+        ref, base = fixture()
+        for key in NORMAL_GAPS:
+            for value in (0.,1e-8,True,float("nan"),1e-12):
+                native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"][0][key][0] = value
+                with self.subTest(key=key,value=value), self.assertRaises(ValueError): grade(ref, native)
+        for key in ("native_floating_evaluation_certified", "exact_g1_certified", "whole_brep_certified"):
+            native = copy.deepcopy(base);native["boundary_normal_certificates"][key] = True
+            with self.assertRaises(ValueError): grade(ref, native)
+        for key in ("surfaces", "cylindrical_lifts", "cylinder_normal_error_upper", "seam_normal_gap_upper"):
+            native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"][0][key].pop()
+            with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"].pop()
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["boundary_normal_proof_refusals"]["last_request_precision"] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["boundary_normal_certificates"]["certificates"][0]["surfaces"][0]["normal_bounds"]["normal_error_upper"] = 1e-8
+        with self.assertRaises(ValueError): grade(ref, native)
+
+
     def test_current_seam_representation_lines_and_echo_binding_refuse(self):
         ref, base = fixture()
         changes = [("degree", True), ("degree", 3), ("kind", "geom_bspline_curve"), ("periodic", True), ("location_identity", False), ("weights", [1.,0.,1.]), ("poles_mm", [[0.,0.,0.]]*2)]
@@ -442,6 +491,7 @@ class Contract(unittest.TestCase):
         ref["cases"][0]["side_pcurves"][0]["control_points_rad_m"] = copy.deepcopy(edge["cylindrical_pcurve"]["poles_rad_m"])
         edge["cylindrical_pcurve"]["poles_rad_mm"] = [[p[0],p[1]*1000] for p in edge["cylindrical_pcurve"]["poles_rad_m"]]
         native["side_boundary_certificates"]["certificates"][0]["request"] = copy.deepcopy(side_boundary_request(ref,ref["cases"][0],native["cases"][0],edge))
+        native["boundary_normal_certificates"]["certificates"][0]["request"] = copy.deepcopy(boundary_normal_request(ref,ref["cases"][0],native["cases"][0]))
         for sample in edge["samples"]:
             side = sample["sides"][1]
             u, v = cubic_pcurve(edge["cylindrical_pcurve"]["poles_rad_m"], sample["t"])
