@@ -298,3 +298,166 @@ fn actual_pcurve_controls_bound_off_knot_angles_heights_and_cylinder_lifts() {
         }
     }
 }
+
+#[test]
+fn rounded_normal_certificates_enclose_independent_sphere_normals_and_jacobians() {
+    // These samples are regression oracles. Complete coverage comes from the
+    // certificate's interval cover, never from the density of this test grid.
+    for scale in [0.001, 1., 1000.] {
+        for variable in [false, true] {
+            let reference = reference(scale, variable);
+            for chart in 0..4 {
+                let patch = reference.rational_patch(chart).unwrap();
+                let bounds = patch.normal_bounds(1e-9, 4096).unwrap();
+                assert!(bounds.jacobian_area_lower_m2 > 0.);
+                assert!(bounds.ideal_normal_alignment_lower > 0.);
+                assert!(bounds.normal_error_upper > 0. && bounds.normal_error_upper <= 1e-9);
+                assert!(bounds.du_error_upper_m > 0. && bounds.dv_error_upper_m > 0.);
+                assert!((1..=4096).contains(&bounds.leaves));
+                for i in 0..=12 {
+                    for j in 0..=12 {
+                        let (u, v) = (i as f64 / 12., j as f64 / 12.);
+                        let theta = chart as f64 * FRAC_PI_2 + 2. * u.atan();
+                        let r = (0.0005
+                            + if variable {
+                                0.0005 * (1. + theta.cos())
+                            } else {
+                                0.
+                            })
+                            * scale;
+                        let k = if variable {
+                            -0.0005 * scale * theta.sin() / (0.01 * scale - r)
+                        } else {
+                            0.
+                        };
+                        let alpha = (2. * v + 2. * k * k * v * v).atan2(1. - v * v);
+                        let ideal = reference
+                            .sample(
+                                Angle::from_radians(theta.min(2. * PI)),
+                                Angle::from_radians(alpha),
+                            )
+                            .unwrap();
+                        let [_, du, dv] = evaluate(&patch, u, v);
+                        let actual = normal(du, dv);
+                        if !variable {
+                            let rho = 0.01 * scale - r + r * alpha.cos();
+                            let tu = 2. / (1. + u * u);
+                            let av = 2. / (1. + v * v);
+                            let exact_du = [-rho * theta.sin() * tu, rho * theta.cos() * tu, 0.];
+                            let exact_dv = [
+                                -r * alpha.sin() * theta.cos() * av,
+                                -r * alpha.sin() * theta.sin() * av,
+                                r * alpha.cos() * av,
+                            ];
+                            assert!(
+                                distance(du, exact_du) <= bounds.du_error_upper_m + 1e-16 * scale
+                            );
+                            assert!(
+                                distance(dv, exact_dv) <= bounds.dv_error_upper_m + 1e-16 * scale
+                            );
+                        }
+                        let area = distance(
+                            std::array::from_fn(|k| {
+                                du[(k + 1) % 3] * dv[(k + 2) % 3]
+                                    - du[(k + 2) % 3] * dv[(k + 1) % 3]
+                            }),
+                            [0.; 3],
+                        );
+                        assert!(
+                            area >= bounds.jacobian_area_lower_m2
+                                && area <= bounds.jacobian_area_upper_m2
+                        );
+                        assert!(
+                            distance(actual, ideal.normal) <= bounds.normal_error_upper + 1e-13
+                        );
+                        let alignment: f64 = actual
+                            .into_iter()
+                            .zip(ideal.normal)
+                            .map(|(x, y)| x * y)
+                            .sum();
+                        assert!(alignment + 1e-14 >= bounds.ideal_normal_alignment_lower);
+                    }
+                }
+                if !variable {
+                    // Exact toroidal chart: theta_u,alpha_v in [1,2], and
+                    // radial distance R-r+r*cos(alpha) in [R-r,R].
+                    let min = (0.01 - 0.0005) * 0.0005 * scale * scale;
+                    let max = 4. * 0.01 * 0.0005 * scale * scale;
+                    assert!(bounds.jacobian_area_lower_m2 <= min);
+                    assert!(bounds.jacobian_area_upper_m2 >= max);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn complete_certificates_imply_support_and_adjacent_chart_normal_bounds() {
+    // Include the exact admission boundary R=4*r_max, H=4*r_max.
+    let reference = CircularFilletReference::new(
+        Length::from_meters(0.004),
+        Length::from_meters(0.004),
+        Length::from_meters(0.0002),
+        Length::from_meters(0.001),
+    )
+    .unwrap();
+    for chart in 0..4 {
+        let patch = reference.rational_patch(chart).unwrap();
+        let next = reference.rational_patch((chart + 1) % 4).unwrap();
+        let a = patch.normal_bounds(1e-9, 4096).unwrap();
+        let b = next.normal_bounds(1e-9, 4096).unwrap();
+        let pc = reference.cylindrical_contact_pcurve(chart).unwrap();
+        for i in 0..=32 {
+            let t = i as f64 / 32.;
+            let theta = chart as f64 * FRAC_PI_2 + 2. * t.atan();
+            let [_, du, dv] = evaluate(&patch, t, 0.);
+            assert!(
+                distance(normal(du, dv), [theta.cos(), theta.sin(), 0.])
+                    <= a.normal_error_upper + 1e-13
+            );
+            let span = (t * 256.).min(255.) as usize;
+            let local = t * 256. - span as f64;
+            let angle: f64 = (0..4)
+                .map(|j| basis(3, j, local) * pc.control_points_rad_m()[3 * span + j][0])
+                .sum();
+            assert!(
+                distance(normal(du, dv), [angle.cos(), angle.sin(), 0.])
+                    <= a.normal_error_upper + pc.angle_error_upper_rad() + 1e-13
+            );
+            let [_, du, dv] = evaluate(&patch, t, 1.);
+            assert!(distance(normal(du, dv), [0., 0., 1.]) <= a.normal_error_upper + 1e-13);
+            let [_, du, dv] = evaluate(&patch, 1., t);
+            let [_, nu, nv] = evaluate(&next, 0., t);
+            assert!(
+                distance(normal(du, dv), normal(nu, nv))
+                    <= a.normal_error_upper + b.normal_error_upper + 1e-13
+            );
+        }
+    }
+}
+
+#[test]
+fn certificate_precision_and_work_refuse_deterministically_without_mutation() {
+    let patch = reference(1., true).rational_patch(0).unwrap();
+    let poles = *patch.control_points_m();
+    let weights = *patch.weights();
+    let before = patch.normal_bounds(1e-9, 4096).unwrap();
+    assert!(before.leaves > 1); // Actually exercises restriction, including D1.
+    for (error, leaves) in [
+        (0., 4096),
+        (-1., 4096),
+        (1., 4096),
+        (f64::NAN, 4096),
+        (f64::INFINITY, 4096),
+        (1e-9, 0),
+        (1e-9, 16385),
+        (1e-9, 1),
+        (1e-30, 64),
+    ] {
+        assert!(patch.normal_bounds(error, leaves).is_err());
+    }
+    let after = patch.normal_bounds(1e-9, 4096).unwrap();
+    assert_eq!(format!("{before:?}"), format!("{after:?}"));
+    assert_eq!(patch.control_points_m(), &poles);
+    assert_eq!(patch.weights(), &weights);
+}

@@ -375,6 +375,14 @@ certificate transfer, global native G1/embedding guarantee, physical Mock/source
 MCP admission or editable NURBS follows. Never invent a circular-fillet command;
 see docs/api/periodic-fillet-reference.md's rational surface scope.
 
+P16-032 / ADR-085 separately certifies unchanged rounded rational charts'
+whole-domain derivative/normal errors, positive Jacobian and outward orientation,
+including mathematical support/seam normal implications. Precision/work refusal
+is deterministic. Live native D1/Jacobian/paired-normal samples are numerical
+regressions, not global native fidelity/G1/embedding certificates. This adds no
+physical Mock/runtime/source, MCP operation/eval or editable NURBS admission;
+P16-008 remains planned. Use only existing documented DesignPatch operations.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

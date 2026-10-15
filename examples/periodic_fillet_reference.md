@@ -236,3 +236,15 @@ quarter-turned solid phase controls. These are two actual diagnostic solids;
 `candidate_admitted` and `product_body_created` stay false. Physical Mock,
 production source and global native G1/embedding are still unadmitted. See
 [rational surface scope](../docs/api/periodic-fillet-reference.md#rational-characteristic-circle-surfaces-p16-031).
+
+
+P16-032 also emits `normal_bounds` for every unchanged rational chart, requesting
+1e-9 dimensionless normal error and 4096 complete-cover leaves per chart. Positive
+Jacobian bounds use m² and derivative errors metres per original u/v parameter.
+The interval proof covers all parameters, including radial/axial support and
+quarter seam boundaries. Tight precision/work requests refuse without changing
+the controls. Run the same example and native probe above: the latter checks
+current native D1/Jacobians/normals against the mathematical certificates with
+separate numerical allowances. Global native G1/embedding, production Mock/source
+and MCP admission remain excluded; see
+[normal certificate API](../docs/api/periodic-fillet-reference.md#rounded-rational-normal-certificates-p16-032).

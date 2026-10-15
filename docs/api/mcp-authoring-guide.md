@@ -397,6 +397,14 @@ production Mock/source/MCP geometry or editable NURBS, and native numerical
 witnesses do not certify global G1/embedding. Do not invent a circular-fillet
 command. See [rational surfaces](periodic-fillet-reference.md#rational-characteristic-circle-surfaces-p16-031).
 
+P16-032 / ADR-085 separately certifies unchanged rounded rational charts'
+whole-domain derivative/normal errors, positive Jacobian and outward orientation,
+including mathematical support/seam normal implications. Precision/work refusal
+is deterministic. Live native D1/Jacobian/paired-normal samples are numerical
+regressions, not global native fidelity/G1/embedding certificates. This adds no
+physical Mock/runtime/source, MCP operation/eval or editable NURBS admission;
+P16-008 remains planned. Use only existing documented DesignPatch operations.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

@@ -16,6 +16,42 @@ fn binomial(n: usize, k: usize) -> f64 {
     out as f64
 }
 impl P {
+    pub(crate) fn split_half(&self, axis: usize) -> (P, P) {
+        let p = self;
+        let mut a = P::zero(p.u, p.v);
+        let mut b = a.clone();
+        let (degree, rows) = if axis == 0 { (p.u, p.v) } else { (p.v, p.u) };
+        for row in 0..=rows {
+            let mut values: Vec<_> = (0..=degree)
+                .map(|i| {
+                    if axis == 0 {
+                        p.at(i, row)
+                    } else {
+                        p.at(row, i)
+                    }
+                })
+                .collect();
+            for level in 0..=degree {
+                let ia = if axis == 0 {
+                    level * (p.v + 1) + row
+                } else {
+                    row * (p.v + 1) + level
+                };
+                let ib = if axis == 0 {
+                    (degree - level) * (p.v + 1) + row
+                } else {
+                    row * (p.v + 1) + degree - level
+                };
+                a.c[ia] = values[0];
+                b.c[ib] = values[degree - level];
+                for i in 0..degree - level {
+                    values[i] = (values[i] + values[i + 1]) * I::exact(0.5);
+                }
+            }
+        }
+        (a, b)
+    }
+
     pub(crate) fn zero(u: usize, v: usize) -> Self {
         Self {
             u,

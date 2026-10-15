@@ -565,7 +565,8 @@ recover the old reference angle as `alpha=atan2(nz,nr)`, **not** `v*pi/2`.
 The ideal charts share smooth support/quarter boundaries. Rounded controls have
 a newly computed positional certificate from actual poles/weights and outward
 homogeneous coefficients; previous polynomial-band certificates are not reused.
-No whole-patch rounded/native derivative or normal certificate follows.
+P16-032 below separately certifies whole-chart rounded derivatives and normals;
+this construction alone does not imply those bounds or native fidelity.
 
 `cylindrical_contact_pcurve(chart)` returns immutable
 `CircularFilletCylindricalPcurve`: 256 cubic Hermite spans, 769 shared controls
@@ -613,11 +614,53 @@ paired normal gap about 5.14e-12, and constant/variable rotated-classifier misma
 counts 0/4. These are numerical observations, not manufacturing accuracy or a
 global native G1/embedding/conversion/sewing/integration certificate.
 
-Five independent Rust geometry tests and nine synthetic report-contract tests
+Eight independent Rust geometry tests, two private control-refusal tests and
+eleven synthetic report-contract tests
 protect the construction and refusals. Synthetic flags/samples are parser tests
 only; CI executes actual native construction and retains its report. Flags remain
 `candidate_admitted: false` and `product_body_created: false`; the report separately
-counts two `native_diagnostic_solids_created`. Global rounded/native normal and
-support fidelity, physical Mock/runtime/mesh and guarded ownership/cache/history/
+counts two `native_diagnostic_solids_created`. Global native normal/support
+fidelity, physical Mock/runtime/mesh and guarded ownership/cache/history/
 reader/source acceptance remain before P16-008. No .ocad schema, migration,
 golden, MCP operation/eval or editable NURBS feature is introduced.
+
+
+## Rounded rational normal certificates (P16-032)
+
+[ADR-085](../adr/ADR-085-rounded-rational-normal-certificates.md) adds
+`CircularFilletRationalPatch::normal_bounds(maximum_normal_error, max_leaves)`.
+The chart is privately bound to its construction reference. This read-only
+method certifies the actual stored poles/weights on the entire closed unit
+square, including all boundaries; it does not change their geometry.
+
+The requested dimensionless unit-normal chord error must be finite and strictly
+between zero and one; work is 1..=16384 cover leaves, with hard depth 28.
+`CircularFilletRationalNormalBounds` contains positive lower/upper Jacobian
+area bounds in m², positive ideal-normal alignment lower bound, dimensionless
+normal error upper bound, u/v derivative error upper bounds in metres per
+original dimensionless parameter, and the complete cover's leaf count.
+
+Outward homogeneous Bernstein differences include stored Cartesian pole times
+weight. Differentiate before restriction, always in original u/v coordinates.
+Positive denominator hulls and quotient identities enclose derivative errors;
+an independently proven ideal Jacobian lower bound makes rounded regularity,
+outward orientation and unit-normal error quantitative. Deterministic left-first
+alternating u/v half-splits refine a complete cover. Invalid precision/work,
+nonfinite/unresolved intervals or exhausted work refuse without partial output.
+
+The certificate also bounds radial/axial support-normal differences at v=0/1.
+Adjacent quarter seam normal gaps are bounded by the sum of both charts' errors;
+add the cylindrical pcurve's angular bound when comparing that supplied support
+parameterization. These are mathematical approximate normal agreements, not
+exact G1 or proof of contact coincidence/global embedding.
+
+The existing example requests 1e-9 normal error with 4096 leaves per chart.
+The live native diagnostic compares actual current D1 cross-product Jacobians,
+normal alignment, constant-chart analytic derivatives and paired boundary normals
+to these bounds. Native numerical allowances remain separate: 1e-16 m² Jacobian,
+1e-12 m per parameter D1 and 1e-9 normal. Sample checks are regression evidence;
+the global mathematical proof is the complete outward interval cover. Native
+conversion/sewing and evaluation errors still lack global certificates. Report
+`rounded_reference_certificates.global_native_certificate` remains false.
+No production Mock/kernel feature, source/schema, MCP operation/eval, mesh policy
+or editable NURBS admission is added; P16-008 remains planned.
