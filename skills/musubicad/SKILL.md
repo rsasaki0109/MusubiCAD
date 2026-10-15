@@ -366,6 +366,15 @@ compatible blend/body, physical Mock/source or MCP admission follows. Never
 invent a circular-fillet command or transfer old polynomial-band certificates
 to new boundaries. See docs/api/periodic-fillet-reference.md's trimming scope.
 
+P16-031 / ADR-084 supplies immutable rational characteristic-circle reference
+surfaces and bounded analytic cylinder pcurves, with actual-control position
+bounds. Native diagnostic solids retain unchanged analytic supports and measure
+current contacts/nets, off-knot paired normals, topology, independent volume and
+transformed-solid phase. Stereographic v is not alpha/(pi/2). No old polynomial
+certificate transfer, global native G1/embedding guarantee, physical Mock/source/
+MCP admission or editable NURBS follows. Never invent a circular-fillet command;
+see docs/api/periodic-fillet-reference.md's rational surface scope.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

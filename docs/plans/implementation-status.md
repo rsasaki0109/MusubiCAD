@@ -939,3 +939,27 @@ construction may copy edges, so no retained TShape/semantic ownership is claimed
 No global pcurve certificate, compatible blend/G1, sewn shell/solid, physical Mock,
 mesh, source/schema/MCP operation or feature admission is supplied. Existing band
 certificates cannot transfer to these contacts. P16-008 stays planned; actual52.60 / 95.
+
+P16-030 is complete in PR #130 (merge 19d3550), after all mandatory local checks
+(1179 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Native analytic support trimming
+and report upload succeeded; PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-031 / ADR-084 directly represents the ideal characteristic circle with
+fixed positive-weight degree-(8,2) rational charts, an orientation-preserving
+stereographic reparameterization of ADR-072. Private immutable actual controls
+have outward whole-patch position bounds. A separate fixed 256-span analytic
+Hermite cylinder pcurve includes fourth-derivative and stored-control rounding
+bounds; it resolves a native projection recipe that passed positional gates but
+failed the unchanged normal gate. Native blend faces retain supplied low-degree
+contact edges with explicit linear blend pcurves, and unchanged cylinder/planar
+supports sew into two actual closed connected positive-volume diagnostic solids.
+Current surfaces/contacts/pcurves, off-knot paired owner normals, two-face edge
+incidence/Euler/orientation, independently bounded ideal/constant volume and
+actual transformed-solid phase/classifier controls are measured. Five independent
+Rust geometry tests and nine synthetic parser tests protect the contract; CI
+performs actual native construction and uploads its report. No global rounded/
+native normal/G1/embedding certificate, physical Mock/production runtime/mesh,
+source/schema/MCP operation or editable NURBS is admitted. Previous polynomial
+certificates do not transfer. P16-008 stays planned; actual52.60 / 95.

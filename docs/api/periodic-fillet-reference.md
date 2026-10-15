@@ -539,3 +539,85 @@ and retains its report. Flags stay `candidate_admitted: false` and
 transfer to new contact boundaries. Compatible blend construction, support/seam
 G1, embedding, physical Mock/runtime/mesh and guarded source/cache/history/reader
 acceptance remain required. No new MCP operation or editable NURBS is exposed.
+
+## Rational characteristic-circle surfaces (P16-031)
+
+[ADR-084](../adr/ADR-084-rational-rolling-sphere-surfaces.md) supplies a direct
+rational representation of the ideal rolling-sphere envelope. This supersedes
+polynomial interpolation only in a new transient reference/diagnostic path;
+it adds no authorable circular fillet or production GeometryKernel/Mock body.
+
+`CircularFilletReference::rational_patch(chart)` returns immutable
+`CircularFilletRationalPatch` with degree `(8,2)`, a 9-by-3 SI control net,
+positive weights and an outward whole-patch positional rounding bound. For
+`k=r'/(R-r)`, its transverse characteristic normal is
+
+```text
+Q = 1+(1+2*k²)*v²
+nr = (1-v²)/Q
+nt = 2*k*v*(1-v)/Q
+nz = (2*v+2*k²*v²)/Q.
+```
+
+These satisfy the sphere/envelope equations and cover the exposed arc. Quarter
+parameter `u` gives `theta=chart*pi/2+2*atan(u)`. Transverse `v` is stereographic;
+recover the old reference angle as `alpha=atan2(nz,nr)`, **not** `v*pi/2`.
+The ideal charts share smooth support/quarter boundaries. Rounded controls have
+a newly computed positional certificate from actual poles/weights and outward
+homogeneous coefficients; previous polynomial-band certificates are not reused.
+No whole-patch rounded/native derivative or normal certificate follows.
+
+`cylindrical_contact_pcurve(chart)` returns immutable
+`CircularFilletCylindricalPcurve`: 256 cubic Hermite spans, 769 shared controls
+in `[angle radians,height metres]`, and angular/height/lifted positional bounds.
+The bounds include the analytic fourth-derivative interpolation remainder and
+outward rounding of every actual control. atan uses bounded half-angle/series
+arithmetic. This is an explicitly admitted diagnostic pcurve approximation,
+not a new mesh sampling or editable NURBS policy. Invalid charts/enclosures
+refuse; both constructions have fixed bounded work.
+
+```sh
+cargo run -p opencad-geometry --example periodic_fillet_rational
+python tools/run_rational_reference_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/rational-reference-diagnostic.json
+python tools/test_rational_reference_probe.py
+```
+
+The native diagnostic builds two actual valid connected closed positive-volume
+solids, one per law. Each has four rational blend charts, four unchanged analytic
+cylinder quadrants and two unchanged planar caps: 10 faces, 20 two-owner edges,
+12 vertices, Euler characteristic 2. Blend faces explicitly use the supplied
+degree-2/4 contact edges with linear blend pcurves and native isoparametric seams.
+Current sewn contact/surface controls and bounded cylinder pcurve controls/knots
+are checked. Native SameParameter requests 1e-9 mm; sewing and edge/vertex
+tolerance ceilings remain 1e-6 mm (1e-9 m).
+
+Measure current surface D1/normals and both owner faces of every shared edge,
+including non-knot pcurve witnesses. The separate native numerical gates are
+1e-14 m control/point, 1e-12 m per local parameter D1, 1e-9 dimensionless normal,
+1e-9 m join and 1e-12 m³ volume allowance. Relative weight ratios use 1e-13.
+Edge UV units are dimensionless on blend charts, rad/m on cylinders and m/m on
+planes. Bottom edges retain the stock's right angle; blend/support/quarter
+tangent-plane witnesses must agree. Independently bounded ADR-073 ideal volume,
+the constant analytic formula and actual inside/outside solid classifiers check
+the result. A real quarter-turned solid preserves mass and constant control,
+while failing the variable law's authored phase.
+
+The initial native projection recipe passed the position gate but failed the
+normal gate. Tightening its request alone did not resolve the variable case;
+the bounded analytic cylinder pcurve preserves the original gates. Initial local
+whole-patch position bounds were at most 1.96e-13 m; supplied cylinder-pcurve
+lift bounds at most 3.73e-13 m. Observed native join gap was about 5.26e-14 m,
+paired normal gap about 5.14e-12, and constant/variable rotated-classifier mismatch
+counts 0/4. These are numerical observations, not manufacturing accuracy or a
+global native G1/embedding/conversion/sewing/integration certificate.
+
+Five independent Rust geometry tests and nine synthetic report-contract tests
+protect the construction and refusals. Synthetic flags/samples are parser tests
+only; CI executes actual native construction and retains its report. Flags remain
+`candidate_admitted: false` and `product_body_created: false`; the report separately
+counts two `native_diagnostic_solids_created`. Global rounded/native normal and
+support fidelity, physical Mock/runtime/mesh and guarded ownership/cache/history/
+reader/source acceptance remain before P16-008. No .ocad schema, migration,
+golden, MCP operation/eval or editable NURBS feature is introduced.

@@ -216,3 +216,23 @@ gates, not whole-curve certificates. Wire construction may copy edge identities;
 current contact geometry is checked explicitly. These faces are not a sewn shell,
 compatible blend or product body. See
 [trimming scope](../docs/api/periodic-fillet-reference.md#native-analytic-support-trimming-p16-030).
+
+P16-031 constructs direct rational characteristic-circle surfaces and sews them
+with unchanged cylinder/top/bottom supports:
+
+```sh
+cargo run -p opencad-geometry --example periodic_fillet_rational
+python tools/run_rational_reference_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/rational-reference-diagnostic.json
+```
+
+Four degree-(8,2) charts cover each law. Transverse v is stereographic, not
+normalized alpha. New whole-patch position bounds accompany actual immutable
+controls; a bounded 256-span cylinder pcurve replaces the native projection
+recipe that failed the existing normal gate. Inspect actual sewn controls,
+off-knot paired pcurves/normals, 10-face closed topology, ideal-volume bounds and
+quarter-turned solid phase controls. These are two actual diagnostic solids;
+`candidate_admitted` and `product_body_created` stay false. Physical Mock,
+production source and global native G1/embedding are still unadmitted. See
+[rational surface scope](../docs/api/periodic-fillet-reference.md#rational-characteristic-circle-surfaces-p16-031).
