@@ -763,3 +763,49 @@ coordinate conversion, rather than sampled agreement alone. It does not certify
 native floating evaluation, derivatives, attached pcurve lifts, full edge-to-face
 gaps, exact G1, embedding or whole-BREP fidelity. The corresponding report flags
 remain false. P16-008 remains planned and no production operation is admitted.
+
+## Current native end boundary certificates (P16-035)
+
+`CircularFilletPlanarContactSnapshot::from_millimeter_controls(origin_mm,
+x_direction, y_direction, &poles_mm, &weights)` captures a fixed five-pole degree-4
+plane pcurve's affine lift. The origin and two-dimensional UV poles use ORIGINAL
+native mm; directions and weights are dimensionless. Outward SI conversion,
+affine lifting and homogeneous multiplication retain every rounding uncertainty.
+No rounded intermediate 3D pole is treated as exact. Native plane type, identity
+Location, clamped unit-span knots, range and nonperiodicity are separate capture
+qualifications. This immutable snapshot builds no body, plane or editable curve.
+
+`reference.certify_end_boundary(chart, &edge, &plane, &blend, precision)` recomputes
+all three definition certificates against their common ideal end contact.
+`CircularFilletEndBoundaryPrecision` contains finite positive `maximum_gap: Length`,
+`maximum_blend_normal_error` strictly in (0,1), and `max_leaves` in 1..=16384.
+`CircularFilletEndBoundaryBounds` returns the three component position errors and
+outward sums `edge_to_plane_gap_upper_m`, `edge_to_blend_gap_upper_m` and
+`plane_to_blend_gap_upper_m`. ALL pairwise gaps must meet the metre budget; invalid
+data, side edge kinds, precision/work exhaustion refuse without a partial result
+or mutation. `blend_normal` retains the existing surface-only normal certificate.
+
+The blend boundary is mathematically B(t,1) for original t in [0,1]. The native
+pipeline captures and qualifies the actual attached Geom2d_Line as exactly (t,1)
+on [0,1]; changed origins, directions, ranges or representations refuse. Fixed
+parameter representation identity is distinct from geometric proximity tests.
+Current plane frames and pcurve controls are captured after sewing, not inferred
+from samples. The bounded-stdin `periodic_fillet_end_boundary` example accepts
+eight requests within 256 KiB, echoes every raw definition/reference/line/budget,
+and emits only after all proofs succeed. Grading binds that echo by exact
+binary64 transport identity, including signed zero and numeric boolean refusal.
+
+The existing live command recomputes all eight end boundary certificates, using
+1e-12 m gap, 1e-9 blend-normal and 4096 leaves. Full records appear under
+`native.end_boundary_certificates`; top-level `native_end_boundary_certificates`
+reports count and maximum pairwise gap. Real-process refusals cover input bytes,
+noncanonical line, wrong UV units, changed frame/pcurve, missing control, final
+precision and exhausted work, all with empty stdout. Synthetic reports test
+parsing only; actual native capture/proof runs in CI with existing gates intact.
+
+This proves corresponding-parameter gaps between current mathematical 3D edge,
+plane pcurve lift and blend end boundary over each COMPLETE unit span. It does
+not prove native floating evaluation, plane/blend normal agreement, exact G1,
+cylindrical side contacts, quarter seams, global embedding or whole-BREP fidelity.
+Those report flags remain false. No production Mock/runtime, source/schema/MCP
+operation/eval or editable NURBS admission follows; P16-008 remains planned.

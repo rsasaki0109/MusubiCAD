@@ -79,6 +79,10 @@ def pcurve(actual, ref, chart, law):
 
 def same_numeric_data(actual, expected):
     """Exact binary64 transport identity, including zero sign; bool is not numeric."""
+    if isinstance(expected, dict):
+        return isinstance(actual, dict) and set(actual) == set(expected) and all(same_numeric_data(actual[k], v) for k, v in expected.items())
+    if isinstance(expected, str):
+        return type(actual) is str and actual == expected
     if isinstance(expected, list):
         return isinstance(actual, list) and len(actual) == len(expected) and all(same_numeric_data(a, b) for a, b in zip(actual, expected))
     return number(actual).hex() == number(expected).hex()
@@ -109,6 +113,38 @@ def contact_edges(case):
                                     next(r["chart"] for r in edge["roles"] if r["kind"] == 0)))
 
 
+def end_boundary_request(reference, case, actual, edge):
+    base = contact_request(reference, case, edge)
+    blend = next(f for f in actual["surface_faces"] if f["role"] == {"kind": 0, "chart": base["chart"]})
+    plane = next(f for f in actual["surface_faces"] if f["role"]["kind"] == 2)
+    return {key: base[key] for key in ("chart", "cylinder_radius_m", "cylinder_height_m", "minimum_radius_m", "maximum_radius_m")} | {
+        "edge_poles_mm": base["poles_mm"], "edge_weights": base["weights"],
+        "plane_origin_mm": plane["plane_origin_mm"], "plane_x_direction": plane["plane_x_direction"], "plane_y_direction": plane["plane_y_direction"],
+        "pcurve_poles_mm": edge["planar_pcurve"]["poles_mm"], "pcurve_weights": edge["planar_pcurve"]["weights"],
+        "blend_poles_mm": blend["poles_mm"], "blend_weights": blend["weights"], "blend_line": edge["blend_end_line"],
+        "maximum_gap_m": 1e-12, "maximum_blend_normal_error": 1e-9, "max_leaves": 4096}
+
+
+def grade_end_boundary(reference, case, actual, edge, proof):
+    pc, line = edge["planar_pcurve"], edge["blend_end_line"]
+    require(type(pc["degree"]) is int and pc["degree"] == 4 and pc["periodic"] is False and len(pc["poles_mm"]) == len(pc["weights"]) == 5 and pc["knots"] == [0, 1] and all(type(k) is not bool for k in pc["knots"]) and pc["multiplicities"] == [5, 5] and all(type(m) is int for m in pc["multiplicities"]), "unsupported planar contact representation")
+    require(pc["range"] == [0, 1] and all(type(x) is not bool and math.isfinite(number(x)) for x in pc["range"]), "unsupported planar contact range")
+    require(set(line) == {"kind", "origin", "direction", "range"} and line["kind"] == "geom2d_line" and line["origin"] == [0, 1] and line["direction"] == [1, 0] and line["range"] == [0, 1] and all(type(x) is not bool and math.isfinite(number(x)) for key in ("origin", "direction", "range") for x in line[key]), "unsupported attached blend end line")
+    for p in pc["poles_mm"]: require(len(p) == 2 and all(math.isfinite(number(x)) for x in p), "invalid planar pcurve controls")
+    require(all(number(w) > 0 for w in pc["weights"]), "nonpositive planar contact weight")
+    expected = end_boundary_request(reference, case, actual, edge)
+    for key in ("plane_origin_mm", "plane_x_direction", "plane_y_direction"): vector(expected[key])
+    echo = proof["request"]
+    require(same_numeric_data(echo, expected) and type(echo["chart"]) is int and type(echo["max_leaves"]) is int, "end boundary capture/reference/request mismatch")
+    components = [number(proof[k]) for k in ("edge_position_error_upper_m", "plane_lift_position_error_upper_m", "blend_position_error_upper_m")]
+    gaps = [number(proof[k]) for k in ("edge_to_plane_gap_upper_m", "edge_to_blend_gap_upper_m", "plane_to_blend_gap_upper_m")]
+    require(all(0 < x <= expected["maximum_gap_m"] for x in components+gaps), "unresolved complete end boundary precision")
+    e, p, b = components
+    require(all(g >= math.nextafter(x+y, math.inf) for g, (x, y) in zip(gaps, ((e, p), (e, b), (p, b)))), "end gap does not enclose outward component sum")
+    normal_certificate(proof["blend_normal_bounds"], expected["maximum_blend_normal_error"], expected["max_leaves"])
+    return proof
+
+
 def normal_certificate(certificate, maximum_error, max_leaves):
     values = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
     jlo, jhi, alignment, error, eu, ev = values
@@ -132,6 +168,11 @@ def grade(reference, native):
     contact_proofs = native["contact_definition_certificates"]
     require(type(contact_proofs["format_version"]) is int and contact_proofs["format_version"] == 1 and len(contact_proofs["certificates"]) == 16 and all(contact_proofs[key] is False for key in ("native_floating_evaluation_certified", "attached_pcurve_lifts_certified", "whole_brep_certified")), "missing/overclaimed contact definition certificates")
     contact_certificates = []
+    end_refusals = native["end_boundary_proof_refusals"]
+    require(set(end_refusals) == {"input_limit", "wrong_line", "wrong_units", "changed_frame", "changed_pcurve", "missing_control", "last_request_precision", "exhausted_work"} and all(v is True for v in end_refusals.values()), "missing live end boundary refusals")
+    end_proofs = native["end_boundary_certificates"]
+    require(type(end_proofs["format_version"]) is int and end_proofs["format_version"] == 1 and len(end_proofs["certificates"]) == 8 and all(end_proofs[k] is False for k in ("native_floating_evaluation_certified", "side_contact_boundaries_certified", "whole_brep_certified")), "missing/overclaimed end boundary certificates")
+    end_certificates = []
     certificates = []
     maxima = {key: 0. for key in ("point_m", "d1_m", "normal", "join_gap_m", "join_normal_gap")}
     phase_mismatches = []
@@ -255,6 +296,7 @@ def grade(reference, native):
                 require(0 < bound <= expected_request["maximum_position_error_m"], "unresolved whole-curve native contact position certificate")
                 contact_certificates.append(proof)
                 if pair == (0, 1): pcurve(edge["cylindrical_pcurve"], ref["side_pcurves"][chart], chart, law)
+                else: end_certificates.append(grade_end_boundary(reference, ref, actual, edge, end_proofs["certificates"][law*4+chart]))
             for j, sample in enumerate(edge["samples"]):
                 t = first+(last-first)*edge_fraction(j)
                 require(abs(number(sample["t"])-t) <= 1e-12 and len(sample["sides"]) == 2, "wrong native edge/pcurve parameter")
@@ -283,6 +325,11 @@ def grade(reference, native):
                     require(gap <= JOIN_M, "native join left its support")
                     maxima["join_gap_m"] = max(maxima["join_gap_m"], gap)
                 a, b = [vector(side["normal"]) for side in sample["sides"]]
+                if pair == (0, 2):
+                    whole = end_proofs["certificates"][law*4+contact["chart"]]
+                    bp = next(side["point_m"] for role, side in zip(roles, sample["sides"]) if role[0] == 0)
+                    pp = next(side["point_m"] for role, side in zip(roles, sample["sides"]) if role[0] == 2)
+                    require(distance(point, pp) <= whole["edge_to_plane_gap_upper_m"]+2*POINT_M and distance(point, bp) <= whole["edge_to_blend_gap_upper_m"]+2*POINT_M and distance(pp, bp) <= whole["plane_to_blend_gap_upper_m"]+2*POINT_M, "native paired witness outside whole end boundary certificate")
                 if pair == (1, 3): require(abs(sum(x*y for x, y in zip(a, b))) <= NORMAL, "bottom edge lost expected right angle")
                 else:
                     gap = distance(a, b);require(gap <= NORMAL, "native support/seam tangent-plane witness failed")
@@ -308,6 +355,7 @@ def grade(reference, native):
     require(phase_mismatches[0] == 0 and phase_mismatches[1] >= 2, "constant/variable actual solid phase decoys not distinguished")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
             "native_diagnostic_solids_created": 2, "native_rational_blend_faces_created": 8,
+            "native_end_boundary_certificates": {"count": len(end_certificates), "maximum_gap_m": max(c[k] for c in end_certificates for k in ("edge_to_plane_gap_upper_m", "edge_to_blend_gap_upper_m", "plane_to_blend_gap_upper_m")), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "side_contact_boundaries_certified": False, "whole_brep_certified": False},
             "native_contact_definition_certificates": {"count": len(contact_certificates), "maximum_position_error_m": max(c["position_error_upper_m"] for c in contact_certificates), "includes_native_coordinate_conversion": True, "native_floating_evaluation_certified": False, "attached_pcurve_lifts_certified": False, "whole_brep_certified": False},
             "rounded_reference_certificates": {"count": len(certificates), "maximum_normal_error": max(c["normal_error_upper"] for c in certificates), "minimum_jacobian_m2": min(c["jacobian_area_lower_m2"] for c in certificates), "total_cover_leaves": sum(c["leaves"] for c in certificates), "global_native_certificate": False},
             "native_surface_definition_certificates": {"count": len(native_certificates), "maximum_position_error_m": max(c["position_error_upper_m"] for c in native_certificates), "maximum_normal_error": max(c["normal_bounds"]["normal_error_upper"] for c in native_certificates), "minimum_jacobian_m2": min(c["normal_bounds"]["jacobian_area_lower_m2"] for c in native_certificates), "total_cover_leaves": sum(c["normal_bounds"]["leaves"] for c in native_certificates), "includes_native_coordinate_conversion": True, "native_floating_evaluation_certified": False, "whole_brep_certified": False},
@@ -375,6 +423,28 @@ def run(occt_root, output):
         refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
         require(refused.returncode != 0 and not refused.stdout.strip(), "contact proof accepted invalid input or emitted partial certificates: "+name)
         native["contact_definition_proof_refusals"][name] = True
+    requests = [end_boundary_request(ref, case, actual, edge) for case, actual in zip(ref["cases"], native["cases"]) for edge in contact_edges(actual) if any(r["kind"] == 2 for r in edge["roles"])]
+    command = ["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "periodic_fillet_end_boundary"]
+    payload = json.dumps({"format_version": 1, "requests": requests}, allow_nan=False)
+    proof = subprocess.run(command, input=payload, check=True, cwd=ROOT, capture_output=True, text=True, timeout=180)
+    native["end_boundary_certificates"] = json.loads(proof.stdout)
+    changes = {}
+    for name in ("wrong_line", "wrong_units", "changed_frame", "changed_pcurve", "missing_control", "last_request_precision", "exhausted_work"):
+        data = copy.deepcopy(requests)
+        if name == "wrong_line": data[0]["blend_line"]["origin"][1] = 1.0000000000000002
+        elif name == "wrong_units": data[0]["pcurve_poles_mm"] = [[x/1000 for x in p] for p in data[0]["pcurve_poles_mm"]]
+        elif name == "changed_frame": data[0]["plane_origin_mm"][2] += .001
+        elif name == "changed_pcurve": data[0]["pcurve_poles_mm"][2][0] += .001
+        elif name == "missing_control": data[0]["pcurve_poles_mm"].pop()
+        elif name == "last_request_precision": data[-1]["maximum_gap_m"] = 1e-30
+        else: data[0]["max_leaves"] = 1
+        changes[name] = json.dumps({"format_version": 1, "requests": data}, allow_nan=False)
+    changes["input_limit"] = payload+" "*max(1, 262145-len(payload.encode("utf-8")))
+    native["end_boundary_proof_refusals"] = {}
+    for name, bad_payload in changes.items():
+        refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
+        require(refused.returncode != 0 and not refused.stdout.strip(), "end boundary accepted invalid input or emitted partial certificates: "+name)
+        native["end_boundary_proof_refusals"][name] = True
     report = {"format_version": 1, "diagnostic_passed": False, "candidate_admitted": False, "reference": ref, "native": native}
     try: report.update(grade(ref, native))
     except (KeyError, TypeError, ValueError) as error:

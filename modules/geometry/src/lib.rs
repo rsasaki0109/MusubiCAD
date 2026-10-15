@@ -110,6 +110,8 @@ pub use circular_fillet_contacts::{CircularFilletContactCurve, CircularFilletCon
 mod circular_fillet_contact_snapshot;
 pub use circular_fillet_contact_snapshot::{
     CircularFilletContactSnapshot, CircularFilletContactSnapshotBounds,
+    CircularFilletEndBoundaryBounds, CircularFilletEndBoundaryPrecision,
+    CircularFilletPlanarContactSnapshot,
 };
 
 mod circular_fillet_rational;

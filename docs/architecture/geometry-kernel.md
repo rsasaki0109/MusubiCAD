@@ -555,3 +555,14 @@ read-only Rust process recomputes sixteen proofs with exact transport binding.
 No OCCT types leave kernel-occt. This is a definition certificate, not attached
 pcurve lift/contact-gap, G1 or whole-BREP admission. Existing sampled pcurve and
 surface/topology/volume gates remain independent; P16-008 is still planned.
+
+P16-035 / [ADR-088](../adr/ADR-088-native-end-boundary-certificates.md) adds
+immutable affine plane-pcurve lift snapshots using original native frame/UV data
+and outward SI arithmetic. Recomputed current edge, lifted pcurve and blend
+definition certificates share the ideal end contact; outward pairwise sums bound
+the complete corresponding-parameter end boundary. Actual attached blend lines
+are separately qualified as canonical (t,1), not inferred from samples. A bounded
+Rust diagnostic binds all eight proofs to current captures. No OCCT types or
+ownership enter geometry, and no external certificate can authorize a body.
+Side contacts, quarter seams, exact G1, floating native evaluation, global embedding
+and whole-BREP/production admission remain separate obligations.

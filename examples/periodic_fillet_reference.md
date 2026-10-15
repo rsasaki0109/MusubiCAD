@@ -278,3 +278,15 @@ summarizes whole-curve position errors. Attached pcurve lifts, full edge-to-face
 gaps, native floating evaluation and whole-BREP fidelity remain unproved; this
 adds no authored operation. See
 [contact snapshot API](../docs/api/periodic-fillet-reference.md#current-native-3d-contact-definition-certificates-p16-034).
+
+P16-035 extends that same live command with whole END/PLANE boundary certificates.
+Current attached degree-4 pcurves and raw plane origins/axes are lifted outward
+to SI, and current attached blend lines must be canonical (t,1) on [0,1]. The
+read-only `periodic_fillet_end_boundary` example recomputes edge/lift/surface
+certificates for eight requests within 256 KiB; all three pairwise gap bounds
+must meet 1e-12 m. Echoed definitions and budgets bind each proof to its actual
+post-sewing capture. `native_end_boundary_certificates` summarizes complete-span
+gaps. All eight malformed/precision/work refusal processes emit no partial stdout.
+These end-contact definition proofs do not certify cylindrical side contacts,
+native floating evaluation, paired normal agreement, exact G1 or whole-BREP
+fidelity. See [end boundary API](../docs/api/periodic-fillet-reference.md#current-native-end-boundary-certificates-p16-035).

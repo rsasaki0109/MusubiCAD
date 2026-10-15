@@ -4,7 +4,7 @@ from fractions import Fraction as F
 import math
 import unittest
 from test_rational_contact_probe import fixture as contact_fixture
-from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges
+from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges, end_boundary_request
 from run_reference_bezier_probe import unit_cross
 from run_rational_contact_probe import rational
 
@@ -66,6 +66,7 @@ def fixture():
             ref["side_pcurves"].append(pc)
         for kind in (1, 1, 1, 1, 2, 3):
             actual["surface_faces"].append({"role": {"kind": kind, "chart": -1}, "forward": kind != 3, "location_identity": True, "support_origin_m": [0, 0, .02 if kind == 2 else 0], "support_axis": [0, 0, 1], "support_x": [1, 0, 0], "support_radius_m": .01 if kind == 1 else 0.})
+            if kind == 2: actual["surface_faces"][-1].update(plane_origin_mm=[0., 0., 20.], plane_x_direction=[1., 0., 0.], plane_y_direction=[0., 1., 0.])
         def side_sample(kind, chart, uv):
             u, v = uv
             if kind == 0:
@@ -81,6 +82,9 @@ def fixture():
                     contact = ref["contacts"][(0 if category == 1 else 4)+chart]
                     edge["contact_curve"] = {"degree": contact["degree"], "location_identity": True, "periodic": False, "poles_mm": [[x*1000 for x in p] for p in contact["control_points_m"]], "poles_m": copy.deepcopy(contact["control_points_m"]), "weights": contact["weights"][:], "knots": [0, 1], "multiplicities": [contact["degree"]+1]*2}
                     if category == 1: edge["cylindrical_pcurve"] = {"degree": 3, "rational": False, "periodic": False, "poles_rad_m": copy.deepcopy(ref["side_pcurves"][chart]["control_points_rad_m"]), "knots": [i/256 for i in range(257)], "multiplicities": [4]+[3]*255+[4]}
+                    else:
+                        edge["planar_pcurve"] = {"degree": 4, "periodic": False, "range": [0., 1.], "poles_mm": [p[:2] for p in edge["contact_curve"]["poles_mm"]], "weights": contact["weights"][:], "knots": [0., 1.], "multiplicities": [5, 5]}
+                        edge["blend_end_line"] = {"kind": "geom2d_line", "origin": [0., 1.], "direction": [1., 0.], "range": [0., 1.]}
                 for j in range(9):
                     t = edge_fraction(j)
                     if category == 0: p, _, _ = tensor(ref["patches"][chart]["control_points_m"], ref["patches"][chart]["weights"], 1., t);uvs = [[1., t], [0., t]]
@@ -109,10 +113,55 @@ def fixture():
     native["contact_definition_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "attached_pcurve_lifts_certified": False, "whole_brep_certified": False, "certificates": [
         {"request": copy.deepcopy(contact_request(reference, case, edge)), "position_error_upper_m": 5e-13}
         for case, actual in zip(reference["cases"], native["cases"]) for edge in contact_edges(actual)]}
+    native["end_boundary_proof_refusals"] = {key: True for key in ("input_limit", "wrong_line", "wrong_units", "changed_frame", "changed_pcurve", "missing_control", "last_request_precision", "exhausted_work")}
+    native["end_boundary_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "side_contact_boundaries_certified": False, "whole_brep_certified": False, "certificates": [
+        {"request": copy.deepcopy(end_boundary_request(reference, case, actual, edge)),
+         "edge_position_error_upper_m": 1e-13, "plane_lift_position_error_upper_m": 1e-13, "blend_position_error_upper_m": 5e-13,
+         "edge_to_plane_gap_upper_m": 3e-13, "edge_to_blend_gap_upper_m": 7e-13, "plane_to_blend_gap_upper_m": 7e-13,
+         "blend_normal_bounds": copy.deepcopy(case["patches"][next(r["chart"] for r in edge["roles"] if r["kind"] == 0)]["normal_bounds"])}
+        for case, actual in zip(reference["cases"], native["cases"]) for edge in contact_edges(actual) if any(r["kind"] == 2 for r in edge["roles"])]}
     return reference, native
 
 
 class Contract(unittest.TestCase):
+    def test_current_end_pcurve_line_frame_and_echo_binding_refuse(self):
+        ref, base = fixture()
+        for key, value in (("degree", 3), ("periodic", True), ("range", [0, 1.0000000000000002]), ("knots", [False, True]), ("multiplicities", [4, 4]), ("weights", [0.]*5), ("poles_mm", [[0,0]]*4)):
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][8]["planar_pcurve"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("kind", "other"), ("origin", [0, 1.0000000000000002]), ("direction", [-1, 0]), ("range", [0, 2]), ("origin", [False, 1])):
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][8]["blend_end_line"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("plane_origin_mm", [0.,0.,21.]), ("plane_x_direction", [0.,1.,0.]), ("plane_y_direction", [1.,0.,0.])):
+            native = copy.deepcopy(base);native["cases"][0]["surface_faces"][8][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("chart", False), ("chart", 1), ("max_leaves", True), ("max_leaves", 1), ("maximum_gap_m", 1e-8), ("plane_origin_mm", [0.,0.,21.]), ("blend_weights", [[1.]*3]*9)):
+            native = copy.deepcopy(base);native["end_boundary_certificates"]["certificates"][0]["request"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for value in (False, -0.0, .001):
+            native = copy.deepcopy(base);native["end_boundary_certificates"]["certificates"][0]["request"]["pcurve_poles_mm"][0][1] = value
+            with self.subTest(value=value), self.assertRaises(ValueError): grade(ref, native)
+
+    def test_incomplete_end_bounds_gap_sums_and_overclaims_refuse(self):
+        ref, base = fixture()
+        for key in ("native_floating_evaluation_certified", "side_contact_boundaries_certified", "whole_brep_certified"):
+            native = copy.deepcopy(base);native["end_boundary_certificates"][key] = True
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key in ("edge_position_error_upper_m", "plane_lift_position_error_upper_m", "blend_position_error_upper_m", "edge_to_plane_gap_upper_m", "edge_to_blend_gap_upper_m", "plane_to_blend_gap_upper_m"):
+            for value in (0., 1e-10, float("nan"), True):
+                native = copy.deepcopy(base);native["end_boundary_certificates"]["certificates"][0][key] = value
+                with self.subTest(key=key,value=value), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["end_boundary_certificates"]["certificates"][0]["edge_to_plane_gap_upper_m"] = 1e-13
+        with self.assertRaisesRegex(ValueError, "outward component sum"): grade(ref, native)
+        native = copy.deepcopy(base);native["end_boundary_certificates"]["certificates"].pop()
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);del native["end_boundary_certificates"]
+        with self.assertRaises(KeyError): grade(ref, native)
+        native = copy.deepcopy(base);native["end_boundary_proof_refusals"]["last_request_precision"] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["end_boundary_certificates"]["certificates"][0]["blend_normal_bounds"]["leaves"] = 4097
+        with self.assertRaises(ValueError): grade(ref, native)
+
     def test_current_contact_definition_and_transport_binding_refuse(self):
         ref, base = fixture()
         for key, value in (("location_identity", False), ("periodic", True), ("poles_mm", [[0.,0.,0.]]*3), ("knots", [False, True]), ("multiplicities", [True, True])):
