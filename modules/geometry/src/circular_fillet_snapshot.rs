@@ -19,6 +19,13 @@ pub struct CircularFilletRationalSnapshotBounds {
     pub normal: CircularFilletRationalNormalBounds,
 }
 impl CircularFilletRationalSnapshot {
+    // Closed u-boundary in the ORIGINAL transverse parameter; no rounded lift.
+    pub(crate) fn seam_boundary(&self, end: bool) -> [[I; 3]; 4] {
+        std::array::from_fn(|axis| {
+            std::array::from_fn(|j| self.homogeneous_m[axis].at(if end { 8 } else { 0 }, j))
+        })
+    }
+
     /// Read raw binary64 native poles before rounded SI export. Enclose the
     /// exact physical coordinate q_mm/1000, including conversion roundoff.
     pub fn from_millimeter_controls(

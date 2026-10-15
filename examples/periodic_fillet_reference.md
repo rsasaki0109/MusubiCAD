@@ -303,3 +303,26 @@ complete-span gaps, with existing end-boundary and other certificates retained.
 This is mathematical definition evidence, not native floating evaluation, paired
 normals/G1, quarter seams or whole-BREP/production admission. See
 [side boundary API](../docs/api/periodic-fillet-reference.md#current-native-cylindrical-side-boundary-certificates-p16-036).
+
+
+P16-037 also captures all eight current native quarter seams in the same probe:
+
+```sh
+python tools/run_rational_reference_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/rational-reference-diagnostic.json
+python tools/test_rational_reference_probe.py
+```
+
+Current raw quadratic Bezier edges, both attached lines and owning surface
+boundary rows feed `periodic_fillet_seam_boundary`. Direct outward homogeneous
+comparisons bound edge/left, edge/right and left/right over the entire original
+unit span, including the chart3-to-0 seam. All three gaps must fit 1e-12 m.
+`native_seam_boundary_certificates` summarizes eight proofs;
+`native.seam_boundary_proof_refusals` records ten actual process refusals with
+empty stdout, including internal edge/weight/surface deformation, wrong units,
+chart/line mismatch, missing controls, input bytes and final-request precision.
+Synthetic report tests do not replace these live proofs. Existing surface,
+end/side contact, numerical normal, topology, volume and phase gates remain.
+No production body, editable NURBS, paired-normal/exact G1 or whole-BREP claim
+follows. See [seam API](../docs/api/periodic-fillet-reference.md#current-native-quarter-seam-boundary-certificates-p16-037).

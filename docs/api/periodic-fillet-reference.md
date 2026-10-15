@@ -869,3 +869,48 @@ boundary definitions. Native floating evaluation, quarter seams, paired normal/
 G1 agreement, global embedding and whole-BREP fidelity remain separate obligations.
 No production Mock/runtime, mesh, source/schema/MCP operation/eval or editable
 NURBS admission follows; P16-008 remains planned and scores unchanged.
+
+
+## Current native quarter seam boundary certificates (P16-037)
+
+[ADR-090](../adr/ADR-090-native-seam-boundary-certificates.md) adds immutable
+`CircularFilletSeamSnapshot::from_millimeter_controls(&[[f64;3];3], &[f64;3])`
+for a descriptive degree-2 Bernstein edge. Raw finite native millimetre poles
+are enclosed as I(q)/1000 BEFORE multiplication by positive weights. This is
+neither editable NURBS nor a native constructor.
+
+`edge.certify_boundary(&left_surface, &right_surface, maximum_gap: Length)`
+compares the complete original [0,1] edge to CURRENT left u=1 and right u=0
+surface boundary rows. Capture must establish adjacent chart identities and
+actual attached canonical lines (1,t)/(0,t), identity Locations, fixed native
+surface/edge type, degrees, ranges and nonperiodicity. No external certificate
+is accepted. The method uses existing immutable current surface snapshots.
+
+For each pair A/W, B/V, normalize a positive common weight gauge and enclose
+`(deltaA - (A/W)*deltaW)/V`. Differences precede whole-span coefficient hulls;
+positive denominators and outward SI norms bound all parameters, including
+endpoints. This DIRECT comparison does not assume adjacent rounded ideal charts
+are identical. All three fields of `CircularFilletSeamBounds`:
+`edge_to_left_gap_upper_m`, `edge_to_right_gap_upper_m`,
+`left_to_right_gap_upper_m`, must meet the finite positive SI gap budget.
+Fixed three-control work needs no sampling/subdivision budget. Invalid data,
+overflow, unresolved weights and unattainable precision refuse without partial
+results or native mutation.
+
+The bounded read-only `periodic_fillet_seam_boundary` example accepts exactly
+eight requests in 256 KiB. It qualifies chart adjacency (including chart3-to-0)
+and both line representations, echoes every raw input/budget, and emits only
+if all eight proofs succeed. The existing actual-native runner captures these
+post-sewing definitions and strictly binds round-trip binary64 echoes, including
+signed zero. Full certificates/refusals are `native.seam_boundary_certificates`
+and `native.seam_boundary_proof_refusals`; top-level
+`native_seam_boundary_certificates` reports count and maximum gap. The fixture
+requests 1e-12 m. Existing surface/end/side proofs and topology/volume/phase/
+numerical normal gates remain required; native numerical witnesses have the
+existing explicit floating-evaluation allowance, not a floating-kernel proof.
+
+This proves mathematical quarter seam POSITION gaps only. Native floating
+evaluation, paired normals/exact G1, global embedding, unchanged support seams
+and whole-BREP fidelity remain separate. No production fillet, Mock/runtime,
+mesh, source/schema/DesignPatch or new MCP operation/eval is admitted; P16-008
+remains planned and maturity scores stay unchanged.

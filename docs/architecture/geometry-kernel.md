@@ -578,3 +578,15 @@ qualifications. All eight proofs bind to raw definitions and budgets. Geometry
 contains no OCCT types, source ownership or body construction; floating native
 evaluation, quarter seams, paired normals/G1, embedding and whole-BREP/production
 admission remain separate gates before P16-008.
+
+
+P16-037 / [ADR-090](../adr/ADR-090-native-seam-boundary-certificates.md) adds a
+fixed immutable quadratic current-edge snapshot and direct outward homogeneous
+comparisons with both actual surface boundary rows. Current native Bezier type,
+Locations, unit spans, chart adjacency and attached (1,t)/(0,t) lines are qualified
+from captures, never inferred from samples. All three whole-span pairwise
+position bounds must meet explicit SI precision. No ideal-chart identity,
+external certificate, sampling or native mutation enters the proof. Bounded
+transport emits all eight proofs together and binds every raw input/budget.
+Surface/end/side proofs remain intact. Paired normals/G1, floating evaluation,
+global embedding and whole-BREP/production admission remain separate; no score.

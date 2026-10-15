@@ -4,7 +4,7 @@ from fractions import Fraction as F
 import math
 import unittest
 from test_rational_contact_probe import fixture as contact_fixture
-from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges, end_boundary_request, side_boundary_request
+from run_rational_reference_probe import cubic_pcurve, edge_fraction, envelope, grade, tensor, snapshot_request, contact_request, contact_edges, end_boundary_request, side_boundary_request, seam_boundary_request, seam_edges, SEAM_REFUSALS, SEAM_GAPS
 from run_reference_bezier_probe import unit_cross
 from run_rational_contact_probe import rational
 
@@ -78,6 +78,11 @@ def fixture():
             for chart in range(4):
                 pair = [(0, chart), (0, (chart+1)%4)] if category == 0 else [(0, chart), (1, -1)] if category == 1 else [(0, chart), (2, -1)] if category == 2 else [(1, -1), (1, -1)] if category == 3 else [(1, -1), (3, -1)]
                 edge = {"roles": [{"kind": k, "chart": c} for k, c in pair], "same_parameter": True, "same_range": True, "tolerance_m": 1e-10, "range": [0., 1.], "samples": []}
+                if category == 0:
+                    patch = ref["patches"][chart]
+                    poles = patch["control_points_m"][-1]
+                    edge["seam_curve"] = {"kind": "geom_bezier_curve", "degree": 2, "location_identity": True, "periodic": False, "poles_mm": [[x*1000 for x in p] for p in poles], "poles_m": copy.deepcopy(poles), "weights": patch["weights"][-1][:]}
+                    edge["seam_lines"] = [{"kind": "geom2d_line", "origin": [end,0.], "direction": [0.,1.], "range": [0.,1.]} for end in (1.,0.)]
                 if category in (1, 2):
                     contact = ref["contacts"][(0 if category == 1 else 4)+chart]
                     edge["contact_curve"] = {"degree": contact["degree"], "location_identity": True, "periodic": False, "poles_mm": [[x*1000 for x in p] for p in contact["control_points_m"]], "poles_m": copy.deepcopy(contact["control_points_m"]), "weights": contact["weights"][:], "knots": [0, 1], "multiplicities": [contact["degree"]+1]*2}
@@ -132,10 +137,56 @@ def fixture():
          "edge_to_cylinder_gap_upper_m": 9e-13, "edge_to_blend_gap_upper_m": 3e-13, "cylinder_to_blend_gap_upper_m": 9e-13,
          "blend_normal_bounds": copy.deepcopy(case["patches"][next(r["chart"] for r in edge["roles"] if r["kind"] == 0)]["normal_bounds"])}
         for case, actual in zip(reference["cases"], native["cases"]) for edge in contact_edges(actual) if any(r["kind"] == 1 for r in edge["roles"])]}
+    native["seam_boundary_proof_refusals"] = {key: True for key in SEAM_REFUSALS}
+    native["seam_boundary_certificates"] = {"format_version": 1, "native_floating_evaluation_certified": False, "paired_normals_certified": False, "whole_brep_certified": False, "certificates": [
+        {"request": copy.deepcopy(seam_boundary_request(actual, edge)), **{key: 1e-13 for key in SEAM_GAPS}}
+        for actual in native["cases"] for edge in seam_edges(actual)]}
     return reference, native
 
 
 class Contract(unittest.TestCase):
+    def test_current_seam_representation_lines_and_echo_binding_refuse(self):
+        ref, base = fixture()
+        changes = [("degree", True), ("degree", 3), ("kind", "geom_bspline_curve"), ("periodic", True), ("location_identity", False), ("weights", [1.,0.,1.]), ("poles_mm", [[0.,0.,0.]]*2)]
+        for key, value in changes:
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][0]["seam_curve"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("origin", [1.,1e-16]), ("direction", [0.,-1.]), ("range", [0.,2.]), ("kind", "other"), ("origin", [True,0.])):
+            native = copy.deepcopy(base);native["cases"][0]["shared_edges"][0]["seam_lines"][0][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        for key, value in (("left_chart", False), ("left_chart", 1), ("right_chart", 2), ("maximum_gap_m", 1e-10), ("edge_weights", [1.]*3)):
+            native = copy.deepcopy(base);native["seam_boundary_certificates"]["certificates"][0]["request"][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["seam_boundary_certificates"]["certificates"][0]["request"]["left_line"]["origin"][1] = -0.0
+        with self.assertRaises(ValueError): grade(ref, native)
+
+    def test_seam_owner_order_and_wrap_preserve_binding(self):
+        ref, native = fixture()
+        for case in native["cases"]:
+            for edge in seam_edges(case):
+                edge["roles"].reverse();edge["seam_lines"].reverse()
+                for sample in edge["samples"]: sample["sides"].reverse()
+        summary = grade(ref, native)["native_seam_boundary_certificates"]
+        self.assertEqual(summary["count"], 8)
+        self.assertFalse(summary["paired_normals_certified"])
+
+    def test_missing_seam_evidence_overclaims_and_bounds_refuse(self):
+        ref, base = fixture()
+        for key in SEAM_GAPS:
+            for value in (0.,1e-11,float("nan"),True):
+                native = copy.deepcopy(base);native["seam_boundary_certificates"]["certificates"][0][key] = value
+                with self.subTest(key=key,value=value), self.assertRaises(ValueError): grade(ref, native)
+        for key in ("native_floating_evaluation_certified", "paired_normals_certified", "whole_brep_certified"):
+            native = copy.deepcopy(base);native["seam_boundary_certificates"][key] = True
+            with self.subTest(key=key), self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["seam_boundary_certificates"]["certificates"].pop()
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["seam_boundary_proof_refusals"]["last_request_precision"] = False
+        with self.assertRaises(ValueError): grade(ref, native)
+        native = copy.deepcopy(base);native["cases"][0]["shared_edges"][0]["range"] = [0.,1.0000000000000002]
+        with self.assertRaises(ValueError): grade(ref, native)
+
+
     def test_current_side_pcurve_frame_line_and_echo_binding_refuse(self):
         ref, base = fixture()
         for key, value in (("range", [0.,1.0000000000000002]), ("weights", [1.]*768), ("weights", [True]*769), ("poles_rad_mm", [[0.,0.]]*769)):

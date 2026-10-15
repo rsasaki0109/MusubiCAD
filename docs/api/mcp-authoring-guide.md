@@ -1421,3 +1421,14 @@ measure the actual screw phase. Left/right mass alone cannot grade hand.
 Preview/review are read-only and failed batches preserve canonical history and
 artifacts. Production fits, rounded roots, partial/internal/multi-start threads,
 runout and general downstream thread-face editing remain unsupported.
+
+
+P16-037 / ADR-090 additionally bounds complete current quarter seam POSITION
+gaps directly between each captured quadratic Bezier edge and the two actual
+surface boundary rows. Capture qualifies adjacent chart roles and attached
+(1,t)/(0,t) lines, fixed types/degrees/unit ranges and identity Locations.
+Eight bounded read-only proofs echo all raw inputs/budgets; ten real-process
+refusals emit no partial stdout. This adds no authored operation or runnable MCP
+eval: never invent create_curved_fillet or infer production admission from the
+diagnostic. Paired normals/G1, native floating evaluation, global embedding and
+whole-BREP fidelity remain separate. P16-008 stays planned; scores unchanged.

@@ -1127,3 +1127,31 @@ complete side-boundary certificates with maximum pairwise gap bound 3.741e-13 m
 against 1e-12 m requested. All eleven real-process refusal controls emit no
 partial stdout. Existing reference, surface, 3D contact and end-boundary
 certificates are unchanged. Completion requires merge; no score, actual52.60 / 95.
+
+
+PR #136 completed P16-036 at main
+`eb3cbc5c426b61988e00c1eb6376a181d558dd37`, after all four applicable exact-head
+workflows/full job inventories succeeded (PR publisher intentionally skipped).
+Native side proofs/contract/upload succeeded; merge tree equals tested head tree.
+No score: actual52.60 / 95.
+
+MCAD-P16-037 / ADR-090 registers complete current quarter seam POSITION gaps.
+Actual post-sewing quadratic Bezier edge definitions and canonical attached
+(1,t)/(0,t) lines bind current adjacent surface boundary rows. Direct outward
+homogeneous comparisons cover the full original unit span and include raw mm-to-m
+conversion and positive common weight gauges. All three pairwise gaps must meet
+explicit SI precision; bounded read-only transport emits no partial result.
+No paired-normal/G1, floating native evaluation, embedding, unchanged support seam,
+whole-BREP, production Mock/runtime/mesh/source/schema/MCP operation admission.
+P16-008 remains planned; no score, actual52.60 / 95.
+
+
+P16-037 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1212 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Four new independent geometry tests, one private
+exact-fraction conversion test, twenty-two synthetic report tests, seven support
+report tests and repository hygiene pass. Actual pinned native capture yields
+eight complete seam certificates with maximum gap bound 8.268e-17 m against
+1e-12 m requested. All ten real-process refusal controls emit empty stdout.
+Existing reference, surface, 3D contact, end and side certificates are exactly
+unchanged. Completion requires merge; no score, actual52.60 / 95.
