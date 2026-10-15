@@ -400,6 +400,13 @@ pcurve lifts/full edge-to-face gaps, derivatives, native floating evaluation and
 whole-BREP fidelity remain unproved. This adds no source, Mock/runtime or MCP
 operation/eval; P16-008 stays planned. Author only documented DesignPatch operations.
 
+P16-035 / ADR-088 additionally certifies complete END/PLANE boundary position
+gaps among current 3D edges, lifted attached planar pcurves and blend end charts.
+Actual raw frames/UV controls and canonical attached blend lines are captured and
+bound to eight recomputed proofs. This does not certify cylindrical side contacts,
+paired normals/exact G1, floating evaluation or whole-BREP fidelity. No production
+Mock/runtime/source or MCP operation/eval is admitted; P16-008 stays planned.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

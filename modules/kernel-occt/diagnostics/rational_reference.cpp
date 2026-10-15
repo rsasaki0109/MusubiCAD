@@ -168,6 +168,11 @@ void measure(std::ostream& out,int law) {
       const auto cylinder=Handle(Geom_CylindricalSurface)::DownCast(surface);const auto plane=Handle(Geom_Plane)::DownCast(surface);require(r.kind==1 ? !cylinder.IsNull() : !plane.IsNull(),"analytic support type lost");
       out << ",\"support_origin_m\":";xyz(out,r.kind==1 ? cylinder->Location() : plane->Location());out << ",\"support_axis\":";xyz(out,r.kind==1 ? cylinder->Axis().Direction() : plane->Axis().Direction(),1);
       out << ",\"support_x\":";xyz(out,r.kind==1 ? cylinder->Position().XDirection() : plane->Position().XDirection(),1);out << ",\"support_radius_m\":" << (r.kind==1 ? cylinder->Radius()*1e-3 : 0.);
+      if (r.kind==2) {
+        out << ",\"plane_origin_mm\":" << std::showpoint;xyz(out,plane->Location(),1);
+        out << ",\"plane_x_direction\":";xyz(out,plane->Position().XDirection(),1);
+        out << ",\"plane_y_direction\":";xyz(out,plane->Position().YDirection(),1);out << std::noshowpoint;
+      }
     }
     out << '}';
   }
@@ -192,6 +197,18 @@ void measure(std::ostream& out,int law) {
       out << "],\"weights\":[";for (int i=1;i<=contact->NbPoles();++i) {if (i>1) out << ',';out << contact->Weight(i);}
       out << "],\"knots\":[";for (int i=1;i<=contact->NbKnots();++i) {if (i>1) out << ',';out << contact->Knot(i);}
       out << "],\"multiplicities\":[";for (int i=1;i<=contact->NbKnots();++i) {if (i>1) out << ',';out << contact->Multiplicity(i);}out << "]}";
+    }
+    if ((r0.kind==0 && r1.kind==2) || (r0.kind==2 && r1.kind==0)) {
+      const auto& plane_face=pair[r0.kind==2 ? 0 : 1];const auto& blend_face=pair[r0.kind==0 ? 0 : 1];
+      double pf,pl,bf,bl;auto pc=Handle(Geom2d_BSplineCurve)::DownCast(BRep_Tool::CurveOnSurface(edge,plane_face,pf,pl));
+      auto line=Handle(Geom2d_Line)::DownCast(BRep_Tool::CurveOnSurface(edge,blend_face,bf,bl));
+      require(!pc.IsNull() && !line.IsNull(),"end contact pcurve representation replaced");
+      out << ",\"planar_pcurve\":{\"degree\":" << pc->Degree() << ",\"periodic\":" << (pc->IsPeriodic() ? "true" : "false") << ",\"range\":[" << pf << ',' << pl << "],\"poles_mm\":[" << std::showpoint;
+      for (int i=1;i<=pc->NbPoles();++i) {if (i>1) out << ',';out << '[' << pc->Pole(i).X() << ',' << pc->Pole(i).Y() << ']';}
+      out << "],\"weights\":[";for (int i=1;i<=pc->NbPoles();++i) {if (i>1) out << ',';out << pc->Weight(i);}
+      out << "],\"knots\":[";for (int i=1;i<=pc->NbKnots();++i) {if (i>1) out << ',';out << pc->Knot(i);}
+      out << "],\"multiplicities\":[";for (int i=1;i<=pc->NbKnots();++i) {if (i>1) out << ',';out << pc->Multiplicity(i);}out << "]}";
+      out << ",\"blend_end_line\":{\"kind\":\"geom2d_line\",\"origin\":[" << line->Location().X() << ',' << line->Location().Y() << "],\"direction\":[" << line->Direction().X() << ',' << line->Direction().Y() << "],\"range\":[" << bf << ',' << bl << "]}" << std::noshowpoint;
     }
     out << ",\"samples\":[";
     for (int j=0;j<=8;++j) {

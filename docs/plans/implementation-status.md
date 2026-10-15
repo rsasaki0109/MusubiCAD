@@ -1062,3 +1062,34 @@ sixteen complete current 3D curve-definition certificates with maximum position
 bound 1.070e-15 m against 1e-12 m requested. All six real-process refusal controls
 emit no partial stdout. Existing reference data and eight surface certificates
 are unchanged. Completion requires merge; no score, actual52.60 / 95.
+
+PR #134 completed P16-034 at main
+`0f3957e31be000ad07781223670418c00caab8c6`, after all four applicable exact-head
+workflows and their full job inventories succeeded (PR publisher intentionally
+skipped). Actual native capture/proof and diagnostic upload succeeded. The merge
+tree equals the tested head tree. No score: actual52.60 / 95.
+
+MCAD-P16-035 / ADR-088 certifies complete current END/PLANE contact boundary
+position gaps. An immutable planar pcurve snapshot lifts raw native mm UV controls
+through the current raw plane frame with outward SI/homogeneous arithmetic.
+Recomputed whole edge/lift/surface definition certificates share their ideal end
+contact, yielding outward pairwise gap sums under explicit precision/work refusal.
+The actual attached blend line must be canonical (t,1) over [0,1], established
+from current representation metadata rather than samples. A bounded Rust process
+qualifies lines and recomputes eight proofs with strict capture/reference/request
+binding and no partial stdout on refusal. Independent affine/analytic scale/gauge/
+deformation tests and actual native capture complement synthetic parser checks.
+Side contacts, quarter seams, floating native evaluation, paired normal agreement,
+exact G1, global embedding and whole-BREP fidelity remain separate. No production
+Mock/runtime, mesh, source/schema/MCP operation/eval or editable NURBS admission;
+P16-008 stays planned. Completion requires merge; no score, actual52.60 / 95.
+
+P16-035 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1202 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Four new geometry integration tests, a private
+exact-fraction affine conversion/overflow test, seventeen synthetic report tests
+and seven support-report tests pass. Actual pinned native capture/proof yields
+eight complete end-boundary certificates with maximum pairwise gap bound
+2.377e-15 m against 1e-12 m requested. All eight real-process refusal controls
+emit no partial stdout. Existing reference, eight native surface certificates
+and sixteen 3D contact certificates are unchanged. No score: actual52.60 / 95.
