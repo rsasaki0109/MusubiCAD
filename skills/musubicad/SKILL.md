@@ -339,6 +339,12 @@ polynomial side skirts and caps. Skirts are not exact cylinder supports. Native
 solidity/volume refinement cannot enable product/Mock bodies, source/MCP
 creation or claims of G1/support trimming. Circular authoring remains unsupported.
 
+P16-027 / ADR-080 independently bounds signed volume/first moments of the
+mathematical diagnostic boundary and compares actual native COM/moments. It
+adds no MCP operation or source feature. Polynomial integral bounds and native
+numerical comparisons do not prove embedding, G1, unchanged cylindrical support
+or all native mass error; circular authoring remains unsupported.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

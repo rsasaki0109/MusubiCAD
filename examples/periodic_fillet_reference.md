@@ -163,3 +163,13 @@ skirt as an exact cylindrical support. Successful results never enable a product
 fillet, physical Mock body or `.ocad` source; support/G1/embedding and independently
 bounded mass properties remain admission gates. See
 [API and measured limits](../docs/api/periodic-fillet-reference.md#closed-native-diagnostic-approximations-p16-026).
+
+P16-027 extends the same command with independent polynomial boundary integrals.
+`boundary_integrals` in each Rust fixture contains outward volume (m³) and first
+moment (m⁴) intervals for the current control points, ruled skirts and caps.
+The native report contains actual GProp COM (m) and first moments, compared to
+those intervals using separately named numerical allowances. Its interval COM
+comes from dividing moment intervals by a positive volume interval. These are
+bounds for the mathematical polynomial boundary, not ideal stock or all native
+sewing/integration error. No product feature is enabled. See
+[independent integral contract](../docs/api/periodic-fillet-reference.md#independent-closed-boundary-integrals-p16-027).

@@ -39,6 +39,12 @@ def fixture():
                     for b in range(3):
                         row["samples"].append({"u": a/2, "v": b/2, "point_m": [0.001*(k*n+a/2), 0., 0.02*b/2]})
                 actual["surface_cells"].append(row)
+            volume = actual["volume_m3"]
+            center = [0.0001, 0., 0.01]
+            moments = [volume*x for x in center]
+            actual.update(center_of_mass_m=center, first_moments_m4=moments)
+            ref["boundary_integrals"] = {"volume_m3": [volume-1e-20, volume+1e-20],
+                                         "first_moments_m4": [[x-1e-22, x+1e-22] for x in moments]}
             reference["cases"].append(ref)
             native["cases"].append(actual)
     return reference, native
@@ -81,6 +87,19 @@ class Contract(unittest.TestCase):
             if corruption == "missing": surfaces.pop()
             elif corruption == "duplicate": surfaces[0] = copy.deepcopy(surfaces[1])
             else: surfaces[0]["samples"][0]["point_m"][0] += 1e-4
+            with self.assertRaises(ValueError): grade(ref, native)
+
+    def test_corrupted_boundary_integrals_native_moments_and_center_refuse(self):
+        for corruption in ("reversed", "broad", "nan", "volume", "moment", "center", "missing"):
+            ref, native = fixture()
+            bounds = ref["cases"][0]["boundary_integrals"]
+            if corruption == "reversed": bounds["volume_m3"].reverse()
+            elif corruption == "broad": bounds["volume_m3"][1] += 1e-9
+            elif corruption == "nan": bounds["first_moments_m4"][0][0] = float("nan")
+            elif corruption == "volume": bounds["volume_m3"] = [1e-7, 1e-7]
+            elif corruption == "moment": native["cases"][0]["first_moments_m4"][0] += 1e-12
+            elif corruption == "center": native["cases"][0]["center_of_mass_m"][0] += 0.001
+            else: bounds["first_moments_m4"].pop()
             with self.assertRaises(ValueError): grade(ref, native)
 
     def test_absent_or_worsening_refinement_refuses(self):
