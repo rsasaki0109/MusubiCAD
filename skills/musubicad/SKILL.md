@@ -334,6 +334,11 @@ quality/budget refusal and a measured native open-shell sewing diagnostic.
 Two remaining boundary loops mean this is not a closed solid. Do not infer
 G1, support trimming, physical Mock bodies or curved variable-fillet authoring.
 
+P16-026 / ADR-079 measures closed native diagnostic approximations with
+polynomial side skirts and caps. Skirts are not exact cylinder supports. Native
+solidity/volume refinement cannot enable product/Mock bodies, source/MCP
+creation or claims of G1/support trimming. Circular authoring remains unsupported.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

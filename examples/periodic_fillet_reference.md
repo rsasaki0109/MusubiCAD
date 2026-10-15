@@ -143,3 +143,23 @@ and budget refusal. The [native sewing diagnostic](../docs/api/periodic-fillet-r
 constructs one open shell per fixture and verifies two closed boundary loops,
 actual face/edge incidence, face connectivity and independent surface values.
 Support trimming, exact tangent continuity, closed solids and mass remain pending.
+
+
+P16-026 closes diagnostic bands with explicit polynomial skirts and planar caps:
+
+```sh
+cargo run -p opencad-geometry --example closed_periodic_reference
+python tools/run_closed_reference_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/closed-reference-diagnostic.json
+```
+
+Both constant/nonconstant laws are built at two explicit refinement levels. The
+native diagnostic checks real closed positive-volume solids, connected two-face
+edge incidence and outward caps, compares actual surfaces to independent
+polynomials, and compares native volume estimates to the matching bounded ideal
+reference. It records the skirt's cylinder deviation rather than treating the
+skirt as an exact cylindrical support. Successful results never enable a product
+fillet, physical Mock body or `.ocad` source; support/G1/embedding and independently
+bounded mass properties remain admission gates. See
+[API and measured limits](../docs/api/periodic-fillet-reference.md#closed-native-diagnostic-approximations-p16-026).
