@@ -727,3 +727,39 @@ Raw native pole JSON uses showpoint so signed zero remains a floating value
 through Python transport. Echo comparison rejects booleans as numeric values
 and checks binary64 identity including zero sign; geometry comparisons retain
 their separate explicit tolerances.
+
+## Current native 3D contact definition certificates (P16-034)
+
+`CircularFilletContactSnapshot::from_millimeter_controls(kind, poles_mm, weights)`
+is an immutable descriptive degree-2 side / degree-4 end contact snapshot. It
+requires respectively three / five finite Cartesian poles and positive finite
+weights; raw native mm-to-m conversion and homogeneous multiplication are
+outward. The caller separately establishes the actual fixed clamped [0,1]
+single-span representation, nonperiodicity and identity Location. Constructor
+acceptance creates no geometry and is not a certificate.
+
+`reference.certify_contact_snapshot(chart, &snapshot, maximum_position_error)`
+returns `CircularFilletContactSnapshotBounds { position_error_upper_m }` for
+the complete closed curve against the ideal corresponding-chart contact. The
+requested Length must be finite positive metres. Common weight gauge is
+normalized with outward uncertainty. Bernstein coefficient differences and
+positive denominator hulls bound the native-to-stored-reference difference;
+the existing supplied-reference-to-ideal bound is added outward. Fixed at most
+five controls, no sampling or subdivision. Invalid data, overflow and precision
+failure refuse without partial result or mutation; charts never wrap.
+
+The same live native probe exports current edge raw `poles_mm`, weights, degree,
+knots/multiplicities, periodicity, identity Location and range. A separate
+`periodic_fillet_native_contacts` example accepts exactly sixteen requests within
+64 KiB and emits only after all proofs succeed. It echoes the entire request
+for strict binary64 capture/reference/kind/chart/budget binding. Fixture precision
+is 1e-12 m. Full records are `native.contact_definition_certificates`; summary
+`native_contact_definition_certificates` reports count and maximum position bound.
+Live refusal executions cover input bytes, chart, wrong units, nonuniform weight,
+missing control and unattainable last-request precision with empty stdout.
+
+This certifies mathematical CURRENT 3D contact curve definitions, including
+coordinate conversion, rather than sampled agreement alone. It does not certify
+native floating evaluation, derivatives, attached pcurve lifts, full edge-to-face
+gaps, exact G1, embedding or whole-BREP fidelity. The corresponding report flags
+remain false. P16-008 remains planned and no production operation is admitted.

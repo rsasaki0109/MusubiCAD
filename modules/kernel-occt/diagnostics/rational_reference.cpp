@@ -174,7 +174,7 @@ void measure(std::ostream& out,int law) {
   out << "],\"shared_edges\":[";
   for (int e=1;e<=20;++e) {
     if (e>1) out << ',';const auto edge=TopoDS::Edge(edges(e));const auto& owners=incidence.FindFromKey(edge);const std::array<TopoDS_Face,2> pair={TopoDS::Face(owners.First()),TopoDS::Face(owners.Last())};
-    double first,last;auto curve=BRep_Tool::Curve(edge,first,last);require(!curve.IsNull(),"missing sewn edge curve");
+    TopLoc_Location curve_location;double first,last;auto curve=BRep_Tool::Curve(edge,curve_location,first,last);require(!curve.IsNull() && curve_location.IsIdentity(),"missing or placed sewn edge curve");
     out << "{\"tolerance_m\":" << BRep_Tool::Tolerance(edge)*1e-3 << ",\"same_parameter\":" << (BRep_Tool::SameParameter(edge) ? "true" : "false") << ",\"same_range\":" << (BRep_Tool::SameRange(edge) ? "true" : "false") << ",\"roles\":[";role(out,identify(pair[0],records));out << ',';role(out,identify(pair[1],records));out << "],\"range\":[" << first << ',' << last << ']';
     const auto r0=identify(pair[0],records),r1=identify(pair[1],records);
     if ((r0.kind==0 && r1.kind==1) || (r0.kind==1 && r1.kind==0)) {
@@ -186,8 +186,9 @@ void measure(std::ostream& out,int law) {
     }
     if ((r0.kind==0 && (r1.kind==1 || r1.kind==2)) || (r1.kind==0 && (r0.kind==1 || r0.kind==2))) {
       auto contact=Handle(Geom_BSplineCurve)::DownCast(curve);require(!contact.IsNull(),"contact representation replaced");
-      out << ",\"contact_curve\":{\"degree\":" << contact->Degree() << ",\"poles_m\":[";
+      out << ",\"contact_curve\":{\"location_identity\":true,\"periodic\":" << (contact->IsPeriodic() ? "true" : "false") << ",\"degree\":" << contact->Degree() << ",\"poles_m\":[";
       for (int i=1;i<=contact->NbPoles();++i) {if (i>1) out << ',';xyz(out,contact->Pole(i));}
+      out << "],\"poles_mm\":[" << std::showpoint;for (int i=1;i<=contact->NbPoles();++i) {if (i>1) out << ',';xyz(out,contact->Pole(i),1);}out << std::noshowpoint;
       out << "],\"weights\":[";for (int i=1;i<=contact->NbPoles();++i) {if (i>1) out << ',';out << contact->Weight(i);}
       out << "],\"knots\":[";for (int i=1;i<=contact->NbKnots();++i) {if (i>1) out << ',';out << contact->Knot(i);}
       out << "],\"multiplicities\":[";for (int i=1;i<=contact->NbKnots();++i) {if (i>1) out << ',';out << contact->Multiplicity(i);}out << "]}";

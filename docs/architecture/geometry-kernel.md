@@ -544,3 +544,14 @@ old readers refuse. CLI/MCP force native candidate validation; Tauri retains its
 verified shared backend path. Independent physical source tests, file/history
 round trips and actual stdio evaluation protect failures and canonical Undo/Redo.
 No sampling scheme, OCCT type leakage or legacy golden change is introduced.
+
+P16-034 / [ADR-087](../adr/ADR-087-native-contact-curve-certificates.md) adds
+immutable descriptive native 3D contact snapshots in geometry, with original
+millimetre controls converted outward to SI homogeneous intervals. Whole-curve
+Bernstein differences and common positive gauge bound all corresponding side/end
+contact positions. The kernel diagnostic captures the CURRENT post-sewing curve
+with explicit identity Location and fixed representation metadata; a bounded
+read-only Rust process recomputes sixteen proofs with exact transport binding.
+No OCCT types leave kernel-occt. This is a definition certificate, not attached
+pcurve lift/contact-gap, G1 or whole-BREP admission. Existing sampled pcurve and
+surface/topology/volume gates remain independent; P16-008 is still planned.

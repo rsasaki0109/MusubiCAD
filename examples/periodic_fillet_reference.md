@@ -266,3 +266,15 @@ The live snapshot example also rejects inputs over 256 KiB, an invalid quarter
 and an unattainable precision on the last of eight requests. All three must
 return failure with no partial certificate stdout, after the same real native
 capture; synthetic parser tests do not substitute for these executions.
+
+P16-034 additionally certifies all sixteen CURRENT native side/end 3D contact
+curve definitions through `periodic_fillet_native_contacts`. The existing live
+command above captures original millimetre poles, current weights and fixed
+representation metadata after sewing, requests a complete 1e-12 m position bound
+against each ideal contact and binds the echoed request to the capture. The
+bounded 64 KiB input contains sixteen requests; even a last-request failure
+emits no partial certificate. Report `native_contact_definition_certificates`
+summarizes whole-curve position errors. Attached pcurve lifts, full edge-to-face
+gaps, native floating evaluation and whole-BREP fidelity remain unproved; this
+adds no authored operation. See
+[contact snapshot API](../docs/api/periodic-fillet-reference.md#current-native-3d-contact-definition-certificates-p16-034).
