@@ -345,6 +345,12 @@ adds no MCP operation or source feature. Polynomial integral bounds and native
 numerical comparisons do not prove embedding, G1, unchanged cylindrical support
 or all native mass error; circular authoring remains unsupported.
 
+P16-028 / ADR-081 bounds diagnostic band/skirt parametric area with explicit SI
+precision and work limits and compares actual native curved-face areas. Caps are
+excluded from this independent certificate. Refinement changes integration
+partitions, not geometry or native topology. Area agreement does not prove
+embedding/G1 or admit circular source/Mock/MCP creation.
+
 ### Existing-body Boolean features (MCAD-P11-006)
 
 Use `body_boolean` with `source_feature`, `target_feature` and `operation`

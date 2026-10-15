@@ -103,6 +103,12 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-028 / [ADR-081](../adr/ADR-081-curved-reference-area-enclosures.md)
+reuses private outward Bernstein arithmetic for band/skirt parametric-area
+bounds. Deterministic cross-product subdivision changes integration partitions,
+not geometry. Native per-face curved areas are independent measured outputs;
+planar caps, embedding and native error guarantees remain outside the certificate.
+
 P16-027 / [ADR-080](../adr/ADR-080-closed-reference-boundary-integrals.md)
 independently integrates actual mathematical band/skirt/cap boundary polynomials
 with outward Bernstein arithmetic for signed volume/first moments. Native GProp

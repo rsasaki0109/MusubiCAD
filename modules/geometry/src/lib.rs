@@ -100,3 +100,7 @@ pub use circular_fillet_band::{CircularFilletBandCell, CircularFilletBezierBand}
 
 mod circular_fillet_integrals;
 pub use circular_fillet_integrals::CircularFilletBoundaryIntegrals;
+
+mod bernstein;
+mod circular_fillet_area;
+pub use circular_fillet_area::CircularFilletAreaBounds;

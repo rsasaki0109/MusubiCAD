@@ -234,3 +234,141 @@ fn signed_flux_never_repairs_a_reversed_boundary() {
     check(bounds.first_moments_m4[1], -36., 1e-12);
     check(bounds.first_moments_m4[2], -48., 1e-12);
 }
+
+#[test]
+fn analytic_prism_curved_area_excludes_caps_and_scales_without_orientation() {
+    for scale in [0.001, 1., 10.] {
+        let mut band = prism(scale, -5. * scale, 7. * scale);
+        let expected = 40. * scale * scale;
+        let area = band
+            .curved_diagnostic_area_bounds(expected * 1e-10, 64)
+            .unwrap();
+        check(
+            [area.curved_lower_m2, area.curved_upper_m2],
+            expected,
+            expected * 1e-14,
+        );
+        assert_eq!(area.leaves, 8);
+        for cell in &mut band.cells {
+            for row in &mut cell.patch.control_points_m {
+                for p in row {
+                    p[0] = -p[0];
+                }
+            }
+        }
+        let reflected = band
+            .curved_diagnostic_area_bounds(expected * 1e-10, 64)
+            .unwrap();
+        check(
+            [reflected.curved_lower_m2, reflected.curved_upper_m2],
+            expected,
+            expected * 1e-14,
+        );
+    }
+}
+#[test]
+fn area_refuses_missing_width_work_precision_and_shared_boundary() {
+    let band = prism(1., 0., 0.);
+    for (width, budget) in [
+        (0., 64),
+        (-1., 64),
+        (f64::NAN, 64),
+        (1., 7),
+        (1., 262145),
+        (1e-30, 8),
+    ] {
+        assert!(band.curved_diagnostic_area_bounds(width, budget).is_err());
+    }
+    let mut bad = band;
+    bad.cells[0].patch.control_points_m[3][1][0] += 1e-5;
+    assert!(bad.curved_diagnostic_area_bounds(1e-7, 64).is_err());
+}
+fn curved_area_quadrature(band: &CircularFilletBezierBand) -> f64 {
+    let mut sum = 0.;
+    let n = band.divisions_per_chart_axis;
+    let mut integrate = |poles: &[[[f64; 3]; 4]; 4]| {
+        for (u, wu) in QUAD {
+            for (v, wv) in QUAD {
+                let (_, du, dv) = evaluate(poles, (u + 1.) / 2., (v + 1.) / 2.);
+                let cross: [f64; 3] = std::array::from_fn(|i| {
+                    du[(i + 1) % 3] * dv[(i + 2) % 3] - du[(i + 2) % 3] * dv[(i + 1) % 3]
+                });
+                sum += cross.iter().map(|x| x * x).sum::<f64>().sqrt() * wu * wv / 4.;
+            }
+        }
+    };
+    for (index, cell) in band.cells.iter().enumerate() {
+        let poles = cell.patch.control_points_m;
+        integrate(&poles);
+        if index % n == 0 {
+            let skirt = std::array::from_fn(|i| {
+                std::array::from_fn(|j| {
+                    [
+                        poles[i][0][0],
+                        poles[i][0][1],
+                        if j == 3 {
+                            poles[i][0][2]
+                        } else {
+                            poles[i][0][2] * j as f64 / 3.
+                        },
+                    ]
+                })
+            });
+            integrate(&skirt);
+        }
+    }
+    sum
+}
+#[test]
+fn real_curved_area_enclosures_refine_and_match_independent_quadrature() {
+    for maximum in [0.0005, 0.0015] {
+        let reference = CircularFilletReference::new(
+            Length::from_meters(0.01),
+            Length::from_meters(0.02),
+            Length::from_meters(0.0005),
+            Length::from_meters(maximum),
+        )
+        .unwrap();
+        let band = reference
+            .bezier_band(Length::from_meters(1e-4), 0.8, 4096)
+            .unwrap();
+        let coarse = band.curved_diagnostic_area_bounds(2e-7, 32768).unwrap();
+        let fine = band.curved_diagnostic_area_bounds(5e-8, 32768).unwrap();
+        let independent = curved_area_quadrature(&band);
+        for a in [coarse, fine] {
+            assert!(
+                a.curved_lower_m2 <= independent + 1e-12
+                    && independent - 1e-12 <= a.curved_upper_m2
+            );
+        }
+        assert!(coarse.curved_upper_m2 - coarse.curved_lower_m2 <= 2e-7);
+        assert!(fine.curved_upper_m2 - fine.curved_lower_m2 <= 5e-8);
+        assert!(fine.leaves > coarse.leaves);
+        assert!(band
+            .curved_diagnostic_area_bounds(
+                5e-8,
+                band.cells.len() + 4 * band.divisions_per_chart_axis
+            )
+            .is_err());
+        let repeat = band.curved_diagnostic_area_bounds(2e-7, 32768).unwrap();
+        assert_eq!(
+            [
+                repeat.curved_lower_m2.to_bits(),
+                repeat.curved_upper_m2.to_bits(),
+                repeat.leaves as u64
+            ],
+            [
+                coarse.curved_lower_m2.to_bits(),
+                coarse.curved_upper_m2.to_bits(),
+                coarse.leaves as u64
+            ]
+        );
+    }
+}
+#[test]
+fn area_recomputes_current_interior_poles_without_stored_quality_metadata() {
+    let mut band = prism(1., 0., 0.);
+    band.cells[0].patch.control_points_m[1][1][1] = -0.5;
+    let area = band.curved_diagnostic_area_bounds(0.01, 32768).unwrap();
+    assert!(area.curved_lower_m2 > 40.);
+}

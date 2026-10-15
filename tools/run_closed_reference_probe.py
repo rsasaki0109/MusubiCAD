@@ -14,6 +14,7 @@ ALLOWANCE_M = 1e-12
 MASS_ALLOWANCE_M3 = 1e-15  # Comparison/stability allowance, not certified native error.
 MOMENT_ALLOWANCE_M4 = 1e-17
 COM_ALLOWANCE_M = 1e-10
+AREA_ALLOWANCE_M2 = 1e-12  # Native comparison, not a certified native area error.
 NAMES = ("constant-coarse", "constant-fine", "variable-coarse", "variable-fine")
 
 
@@ -73,6 +74,17 @@ def grade(reference: dict, native: dict) -> dict:
         surfaces = actual["surface_cells"]
         expected_ids = {(i, -1) for i in range(count)} | {(-1, i) for i in range(skirts)}
         require(len(surfaces) == count+skirts and {(s["band_cell"], s["skirt_index"]) for s in surfaces} == expected_ids, "missing or duplicate sewn surfaces")
+        area_bounds = ref["curved_area_bounds"]
+        alo, ahi = number(area_bounds["lower_m2"]), number(area_bounds["upper_m2"])
+        require(number(area_bounds["absolute_width_m2"]) == 1e-7 and type(area_bounds["max_leaves"]) is int and area_bounds["max_leaves"] == 32768, "wrong area precision/work request")
+        require(0 < alo <= ahi and ahi-alo <= 1e-7 and type(area_bounds["leaves"]) is int and count+skirts <= area_bounds["leaves"] <= 32768, "invalid or unresolved curved area enclosure")
+        native_area = number(actual["curved_surface_area_m2"])
+        require(alo-AREA_ALLOWANCE_M2 <= native_area <= ahi+AREA_ALLOWANCE_M2, "native curved area outside independent enclosure comparison")
+        face_areas = [number(s["area_m2"]) for s in surfaces]
+        require(all(a > 0 for a in face_areas) and abs(sum(face_areas)-native_area) <= AREA_ALLOWANCE_M2, "inconsistent native curved face areas")
+        cap_areas = actual["planar_cap_areas_m2"]
+        require(isinstance(cap_areas, list) and len(cap_areas) == 2 and all(number(a) > 0 for a in cap_areas), "missing native cap area inventory")
+        require(abs(number(actual["total_surface_area_m2"])-native_area-sum(cap_areas)) <= AREA_ALLOWANCE_M2, "inconsistent native total/curved/cap area inventory")
         max_error = 0.
         for surface in surfaces:
             cell, skirt = surface["band_cell"], surface["skirt_index"]
@@ -91,6 +103,7 @@ def grade(reference: dict, native: dict) -> dict:
                 max_error = max(max_error, error)
         findings.append({"name": name, "divisions": n, "native_volume_m3": volume, "polynomial_boundary_volume_m3": [vlo, vhi],
                          "polynomial_boundary_first_moments_m4": integrals["first_moments_m4"], "polynomial_boundary_center_m": center_bounds,
+                         "curved_area_enclosure_m2": [alo, ahi], "native_curved_area_m2": native_area, "area_leaves": area_bounds["leaves"],
                          "native_first_moments_m4": moments, "native_center_of_mass_m": center,
                          "native_minus_ideal_interval_m3": [math.nextafter(volume-hi, -math.inf), math.nextafter(volume-lo, math.inf)],
                          "distance_to_ideal_interval_m3": max(lo-volume, volume-hi, 0.),
@@ -103,7 +116,7 @@ def grade(reference: dict, native: dict) -> dict:
         improves = fine_gap < coarse_gap-MASS_ALLOWANCE_M3 if coarse_gap > MASS_ALLOWANCE_M3 else fine_gap <= coarse_gap+MASS_ALLOWANCE_M3
         require(improves and fine["sampled_skirt_cylinder_error_m"] < coarse["sampled_skirt_cylinder_error_m"], "native approximation refinement changed")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
-            "native_diagnostic_solids_created": 4, "evaluation_allowance_m": ALLOWANCE_M, "mass_comparison_allowance_m3": MASS_ALLOWANCE_M3, "moment_comparison_allowance_m4": MOMENT_ALLOWANCE_M4, "center_comparison_allowance_m": COM_ALLOWANCE_M, "findings": findings}
+            "native_diagnostic_solids_created": 4, "evaluation_allowance_m": ALLOWANCE_M, "mass_comparison_allowance_m3": MASS_ALLOWANCE_M3, "moment_comparison_allowance_m4": MOMENT_ALLOWANCE_M4, "center_comparison_allowance_m": COM_ALLOWANCE_M, "area_comparison_allowance_m2": AREA_ALLOWANCE_M2, "findings": findings}
 
 
 def run(occt_root: Path, output: Path) -> None:
@@ -113,7 +126,7 @@ def run(occt_root: Path, output: Path) -> None:
     include, lib = occt_root/"include/opencascade", occt_root/"lib"
     libraries = ["TKTopAlgo", "TKShHealing", "TKGeomAlgo", "TKBRep", "TKGeomBase", "TKG3d", "TKG2d", "TKMath", "TKernel"]
     require((include/"BRepBuilderAPI_MakeSolid.hxx").is_file() and all((lib/f"lib{x}.a").is_file() for x in libraries), "prepared native SDK missing")
-    reference = json.loads(subprocess.run(["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "closed_periodic_reference"], check=True, cwd=ROOT, capture_output=True, text=True, timeout=180).stdout)
+    reference = json.loads(subprocess.run(["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "closed_periodic_reference"], check=True, cwd=ROOT, capture_output=True, text=True, timeout=300).stdout)
     values = ["4"]
     for case in reference["cases"]:
         values.append(str(case["divisions"]))

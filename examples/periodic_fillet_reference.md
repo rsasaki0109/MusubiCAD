@@ -173,3 +173,11 @@ comes from dividing moment intervals by a positive volume interval. These are
 bounds for the mathematical polynomial boundary, not ideal stock or all native
 sewing/integration error. No product feature is enabled. See
 [independent integral contract](../docs/api/periodic-fillet-reference.md#independent-closed-boundary-integrals-p16-027).
+
+P16-028 adds `curved_area_bounds` to the same Rust fixture and diagnostic command.
+It encloses only band/skirt parametric area, excluding planar caps, with a 1e-7 m²
+absolute-width request and 32768-leaf budget. Integration refinement preserves
+the original poles and native topology. Native reports contain actual per-face,
+curved, cap and total areas; only the curved sum has the independent mathematical
+area enclosure. Reported 1e-12 m² native comparison allowance is separate from
+that certificate. See [area scope and work limits](../docs/api/periodic-fillet-reference.md#curved-parametric-area-bounds-p16-028).

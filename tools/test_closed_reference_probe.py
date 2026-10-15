@@ -45,6 +45,10 @@ def fixture():
             actual.update(center_of_mass_m=center, first_moments_m4=moments)
             ref["boundary_integrals"] = {"volume_m3": [volume-1e-20, volume+1e-20],
                                          "first_moments_m4": [[x-1e-22, x+1e-22] for x in moments]}
+            area = 0.0012
+            actual.update(curved_surface_area_m2=area, planar_cap_areas_m2=[0.0003,0.00025], total_surface_area_m2=area+0.0003+0.00025)
+            for surface in actual["surface_cells"]: surface["area_m2"] = area/(count+skirts)
+            ref["curved_area_bounds"] = {"lower_m2":area-1e-8,"upper_m2":area+1e-8,"leaves":count+skirts,"absolute_width_m2":1e-7,"max_leaves":32768}
             reference["cases"].append(ref)
             native["cases"].append(actual)
     return reference, native
@@ -100,6 +104,22 @@ class Contract(unittest.TestCase):
             elif corruption == "moment": native["cases"][0]["first_moments_m4"][0] += 1e-12
             elif corruption == "center": native["cases"][0]["center_of_mass_m"][0] += 0.001
             else: bounds["first_moments_m4"].pop()
+            with self.assertRaises(ValueError): grade(ref, native)
+
+    def test_corrupted_or_unresolved_area_enclosures_and_native_areas_refuse(self):
+        for corruption in ("native", "reversed", "width", "budget", "leaf", "face", "cap", "total", "nan"):
+            ref, native = fixture()
+            bounds = ref["cases"][0]["curved_area_bounds"]
+            actual = native["cases"][0]
+            if corruption == "native": actual["curved_surface_area_m2"] += 0.0001
+            elif corruption == "reversed": bounds["lower_m2"] = bounds["upper_m2"]+1e-9
+            elif corruption == "width": bounds["upper_m2"] += 1e-6
+            elif corruption == "budget": bounds["max_leaves"] = 1000000000
+            elif corruption == "leaf": bounds["leaves"] = 0
+            elif corruption == "face": actual["surface_cells"][0]["area_m2"] = -1.
+            elif corruption == "cap": actual["planar_cap_areas_m2"].pop()
+            elif corruption == "total": actual["total_surface_area_m2"] += 1e-5
+            else: bounds["lower_m2"] = float("nan")
             with self.assertRaises(ValueError): grade(ref, native)
 
     def test_absent_or_worsening_refinement_refuses(self):

@@ -1,5 +1,5 @@
 //! ADR-080: mathematical boundary flux, not a native/Mock mass certificate.
-use crate::{interval::I, CircularFilletBezierBand};
+use crate::{bernstein::P, interval::I, CircularFilletBezierBand};
 use opencad_core::{OpenCadError, Result};
 
 /// Outward enclosures for the actual mathematical polynomial boundary.
@@ -13,88 +13,6 @@ pub struct CircularFilletBoundaryIntegrals {
 fn invalid() -> OpenCadError {
     OpenCadError::validation("closed diagnostic boundary or integral not certified")
 }
-#[derive(Clone)]
-struct P {
-    u: usize,
-    v: usize,
-    c: Vec<I>,
-}
-fn binomial(n: usize, k: usize) -> f64 {
-    // Degrees are <=11, hence these integer coefficients are exactly binary64.
-    let mut out = 1_usize;
-    for j in 0..k.min(n - k) {
-        out = out * (n - j) / (j + 1);
-    }
-    out as f64
-}
-impl P {
-    fn zero(u: usize, v: usize) -> Self {
-        Self {
-            u,
-            v,
-            c: vec![I::exact(0.); (u + 1) * (v + 1)],
-        }
-    }
-    fn at(&self, i: usize, j: usize) -> I {
-        self.c[i * (self.v + 1) + j]
-    }
-    fn derivative(&self, axis: usize) -> Self {
-        let mut out = Self::zero(
-            self.u - usize::from(axis == 0),
-            self.v - usize::from(axis == 1),
-        );
-        let degree = I::exact(if axis == 0 { self.u } else { self.v } as f64);
-        for i in 0..=out.u {
-            for j in 0..=out.v {
-                out.c[i * (out.v + 1) + j] = (self
-                    .at(i + usize::from(axis == 0), j + usize::from(axis == 1))
-                    - self.at(i, j))
-                    * degree;
-            }
-        }
-        out
-    }
-    fn product(&self, other: &Self) -> Self {
-        let mut out = Self::zero(self.u + other.u, self.v + other.v);
-        let weights = |a: usize, b: usize| -> Vec<Vec<I>> {
-            (0..=a)
-                .map(|i| {
-                    (0..=b)
-                        .map(|j| {
-                            I::exact(binomial(a, i)) * I::exact(binomial(b, j))
-                                / I::exact(binomial(a + b, i + j))
-                        })
-                        .collect()
-                })
-                .collect()
-        };
-        let wu = weights(self.u, other.u);
-        let wv = weights(self.v, other.v);
-        for (i, row_u) in wu.iter().enumerate() {
-            for (j, row_v) in wv.iter().enumerate() {
-                for (k, weight_u) in row_u.iter().enumerate() {
-                    for (l, weight_v) in row_v.iter().enumerate() {
-                        let index = (i + k) * (out.v + 1) + j + l;
-                        out.c[index] =
-                            out.c[index] + self.at(i, j) * other.at(k, l) * *weight_u * *weight_v;
-                    }
-                }
-            }
-        }
-        out
-    }
-    fn difference(&self, other: &Self) -> Self {
-        let mut out = self.clone();
-        for (a, b) in out.c.iter_mut().zip(&other.c) {
-            *a = *a - *b;
-        }
-        out
-    }
-    fn integral(&self) -> I {
-        self.c.iter().fold(I::exact(0.), |s, x| s + *x)
-            / I::exact(((self.u + 1) * (self.v + 1)) as f64)
-    }
-}
 fn same(a: [f64; 3], b: [f64; 3]) -> bool {
     // Exact representation identity is the shared-boundary contract, not a
     // floating-point proximity test. Signed zeros describe the same polynomial.
@@ -103,10 +21,7 @@ fn same(a: [f64; 3], b: [f64; 3]) -> bool {
         .all(|(x, y)| x.to_bits() == y.to_bits() || (x == 0. && y == 0.))
 }
 impl CircularFilletBezierBand {
-    /// ADR-080: enclose signed flux integrals of the current band, ruled side
-    /// skirts down to z=0 and planar caps. At most 4096 cells; shared edges and
-    /// a common positive top height are required. No embedding or body admission.
-    pub fn closed_diagnostic_integrals(&self) -> Result<CircularFilletBoundaryIntegrals> {
+    pub(crate) fn diagnostic_top_height(&self) -> Result<f64> {
         let n = self.divisions_per_chart_axis;
         if n == 0 || n > 32 || !n.is_power_of_two() || self.cells.len() != 4 * n * n {
             return Err(invalid());
@@ -155,6 +70,15 @@ impl CircularFilletBezierBand {
                 }
             }
         }
+        Ok(height)
+    }
+
+    /// ADR-080: enclose signed flux integrals of the current band, ruled side
+    /// skirts down to z=0 and planar caps. At most 4096 cells; shared edges and
+    /// a common positive top height are required. No embedding or body admission.
+    pub fn closed_diagnostic_integrals(&self) -> Result<CircularFilletBoundaryIntegrals> {
+        let height = self.diagnostic_top_height()?;
+        let n = self.divisions_per_chart_axis;
         let mut sums = [I::exact(0.); 4];
         let h = I::exact(height);
         let two = I::exact(2.);
