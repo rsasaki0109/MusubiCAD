@@ -290,3 +290,16 @@ gaps. All eight malformed/precision/work refusal processes emit no partial stdou
 These end-contact definition proofs do not certify cylindrical side contacts,
 native floating evaluation, paired normal agreement, exact G1 or whole-BREP
 fidelity. See [end boundary API](../docs/api/periodic-fillet-reference.md#current-native-end-boundary-certificates-p16-035).
+
+P16-036 additionally certifies all eight cylindrical SIDE boundaries in that
+same live command. It captures original angle_rad/height_mm pcurve controls,
+unit weights, fixed basis/range, actual owning cylinder origin/axes/radius and
+attached blend lines (t,0). `periodic_fillet_side_boundary` recomputes eight
+whole edge/lift/blend proofs within 1 MiB bounded stdin; all pairwise gaps must
+meet 1e-12 m. The lifted pcurve bound includes control conversion, reference
+Hermite remainder and actual frame/radius errors. Eleven real-process refusal
+controls emit no partial stdout. `native_side_boundary_certificates` summarizes
+complete-span gaps, with existing end-boundary and other certificates retained.
+This is mathematical definition evidence, not native floating evaluation, paired
+normals/G1, quarter seams or whole-BREP/production admission. See
+[side boundary API](../docs/api/periodic-fillet-reference.md#current-native-cylindrical-side-boundary-certificates-p16-036).

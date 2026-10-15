@@ -809,3 +809,63 @@ not prove native floating evaluation, plane/blend normal agreement, exact G1,
 cylindrical side contacts, quarter seams, global embedding or whole-BREP fidelity.
 Those report flags remain false. No production Mock/runtime, source/schema/MCP
 operation/eval or editable NURBS admission follows; P16-008 remains planned.
+
+## Current native cylindrical side boundary certificates (P16-036)
+
+`CircularFilletCylindricalContactSnapshot::from_millimeter_controls(origin_mm,
+directions, radius_mm, &poles_rad_mm)` describes the current cylindrical pcurve
+lift. Directions are [X,Y,Z], each dimensionless; controls are [angle_rad,height_mm].
+It requires 769 finite controls, finite frame data and a positive resolved radius.
+Original lengths convert outward to SI. Constructor acceptance builds no geometry.
+The caller separately establishes actual owning cylinder type/identity Location
+and the fixed nonperiodic degree-3 unit-weight basis: knots j/256, internal
+multiplicity three, endpoint multiplicity four and range [0,1]. No arbitrary
+native B-spline or editable NURBS is admitted.
+
+`reference.certify_cylindrical_contact_snapshot(chart, &snapshot, maximum_position_error)`
+recomputes supplied Hermite remainder bounds and adds complete control-difference
+convex hulls on the same fixed basis. It returns
+`CircularFilletCylindricalContactBounds`: `angle_error_upper_rad`,
+`height_error_upper_m`, `support_frame_error_upper_m`, `position_error_upper_m`.
+For frame O,Rn,X,Y,Z, the global frame contribution is norm(O)+abs(Rn)*(dx+dy)
++zmax*dz, where dx/dy/dz are direction deviations from canonical axes. Add the
+outward norm of horizontal abs(Rn-R)+R*angle_error and vertical height_error.
+Thus the actual raw radius/frame discrepancies are included rather than assuming
+rounded SI exports describe exact canonical geometry. No native trigonometric
+evaluation or geometric samples are used by the proof.
+
+`reference.certify_side_boundary(chart, &edge, &cylinder, &blend, precision)`
+recomputes edge/lift/blend definition certificates against their common ideal
+side contact. `CircularFilletSideBoundaryPrecision` has finite positive
+`maximum_gap: Length`, `maximum_blend_normal_error` strictly in (0,1), and
+`max_leaves` in 1..=16384. `CircularFilletSideBoundaryBounds` returns edge/blend
+position errors, `cylindrical_lift`, all three outward pairwise gap sums and
+surface-only `blend_normal`. ALL pairwise gaps must meet the SI budget. Wrong
+kind/chart, invalid data, overflow, precision or work exhaustion refuse without
+external certificate acceptance, partial result or geometry mutation.
+
+The blend boundary is B(t,0). The native pipeline qualifies the actual attached
+Geom2d_Line as exactly (t,0) on [0,1] and verifies all 769 stored weights are one
+in addition to IsRational=false. These fixed parameter/representation data gates
+are distinct from geometric proximity checks. Raw owning frame/radius, raw
+angle_rad/height_mm controls and current line definitions are captured after
+sewing with 17-digit showpoint transport. The bounded-stdin
+`periodic_fillet_side_boundary` example accepts eight requests within 1 MiB,
+echoes all raw/reference/line/weight/budget data and emits only after all proofs
+succeed. Strict binary64 echo binding rejects numeric booleans and mismatched
+signed zeros. Existing rounded SI and numerical normal witnesses remain separate.
+
+Run the existing live native command: gap 1e-12 m, blend-normal 1e-9 and 4096
+leaves. Full results appear under `native.side_boundary_certificates`; top-level
+`native_side_boundary_certificates` reports count and maximum pairwise gap.
+Eleven real-process refusal controls cover byte limit, line, unit weights,
+units, frame, radius, angular/height controls, missing control, final precision
+and exhausted work with empty stdout. Synthetic reports test parsing only;
+CI executes actual native capture/proof and retains the existing gates.
+
+P16-035/036 now certify complete corresponding-parameter END/SIDE position gaps
+between current mathematical edge, attached support-pcurve lift and blend
+boundary definitions. Native floating evaluation, quarter seams, paired normal/
+G1 agreement, global embedding and whole-BREP fidelity remain separate obligations.
+No production Mock/runtime, mesh, source/schema/MCP operation/eval or editable
+NURBS admission follows; P16-008 remains planned and scores unchanged.

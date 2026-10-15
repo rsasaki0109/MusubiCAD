@@ -1093,3 +1093,37 @@ eight complete end-boundary certificates with maximum pairwise gap bound
 2.377e-15 m against 1e-12 m requested. All eight real-process refusal controls
 emit no partial stdout. Existing reference, eight native surface certificates
 and sixteen 3D contact certificates are unchanged. No score: actual52.60 / 95.
+
+PR #135 completed P16-035 at main
+`b345f1b386f8cf7a9e0ee269a5df6728e19c6eaa`, after all four applicable exact-head
+workflows/full job inventories succeeded (PR publisher intentionally skipped).
+Actual native boundary proofs and report upload succeeded; merge tree equals
+tested head tree. No score: actual52.60 / 95.
+
+MCAD-P16-036 / ADR-089 certifies complete current cylindrical SIDE position
+gaps among native 3D edge, attached cylindrical-pcurve lift and blend boundary.
+An immutable descriptive snapshot encloses original angle_rad/height_mm controls
+and the actual owning cylinder's raw origin/axes/radius. Complete fixed-basis
+control-difference hulls, supplied Hermite remainders, global circle Lipschitz
+and outward frame/radius error bounds certify the whole lift without sampling.
+Recomputed edge/lift/blend certificates share the ideal side contact; all three
+outward pairwise gap sums must meet explicit precision/work budgets. Current
+unit weights/basis/range and canonical attached blend lines (t,0) are qualified
+from actual data. A bounded read-only Rust process proves eight captures and
+echoes every input/budget for strict binding, with no partial stdout on refusal.
+Independent analytic/cubic/frame scale/deformation tests complement actual native
+proof/refusal controls and synthetic parser tests. Existing end-boundary and
+surface/edge certificates remain intact. Floating native evaluation, quarter
+seams, paired normals/G1, embedding and whole-BREP fidelity remain separate.
+No production Mock/runtime, mesh, source/schema/MCP operation/eval or editable
+NURBS admission. P16-008 stays planned; no score, actual52.60 / 95.
+
+P16-036 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1207 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Four new geometry integration tests, a private
+exact-fraction conversion test, nineteen synthetic report tests and seven
+support-report tests pass. Actual pinned native capture/proof yields eight
+complete side-boundary certificates with maximum pairwise gap bound 3.741e-13 m
+against 1e-12 m requested. All eleven real-process refusal controls emit no
+partial stdout. Existing reference, surface, 3D contact and end-boundary
+certificates are unchanged. Completion requires merge; no score, actual52.60 / 95.

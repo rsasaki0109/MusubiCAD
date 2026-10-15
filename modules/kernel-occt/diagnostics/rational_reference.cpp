@@ -184,8 +184,17 @@ void measure(std::ostream& out,int law) {
     const auto r0=identify(pair[0],records),r1=identify(pair[1],records);
     if ((r0.kind==0 && r1.kind==1) || (r0.kind==1 && r1.kind==0)) {
       const auto& cylinder_face=pair[r0.kind==1 ? 0 : 1];double pf,pl;auto pc=Handle(Geom2d_BSplineCurve)::DownCast(BRep_Tool::CurveOnSurface(edge,cylinder_face,pf,pl));require(!pc.IsNull(),"bounded cylindrical pcurve replaced by unknown type");
+      auto cylinder=Handle(Geom_CylindricalSurface)::DownCast(BRep_Tool::Surface(cylinder_face));require(!cylinder.IsNull(),"owning cylinder type lost");
+      out << ",\"cylinder_frame\":{\"origin_mm\":" << std::showpoint;xyz(out,cylinder->Location(),1);
+      out << ",\"directions\":[";xyz(out,cylinder->Position().XDirection(),1);out << ',';xyz(out,cylinder->Position().YDirection(),1);out << ',';xyz(out,cylinder->Position().Direction(),1);
+      out << "],\"radius_mm\":" << cylinder->Radius() << '}';
+      const auto& blend_face=pair[r0.kind==0 ? 0 : 1];double bf,bl;auto line=Handle(Geom2d_Line)::DownCast(BRep_Tool::CurveOnSurface(edge,blend_face,bf,bl));require(!line.IsNull(),"attached side blend line replaced");
+      out << ",\"blend_side_line\":{\"kind\":\"geom2d_line\",\"origin\":[" << line->Location().X() << ',' << line->Location().Y() << "],\"direction\":[" << line->Direction().X() << ',' << line->Direction().Y() << "],\"range\":[" << bf << ',' << bl << "]}" << std::noshowpoint;
       out << ",\"cylindrical_pcurve\":{\"degree\":" << pc->Degree() << ",\"rational\":" << (pc->IsRational() ? "true" : "false") << ",\"periodic\":" << (pc->IsPeriodic() ? "true" : "false") << ",\"poles_rad_m\":[";
       for (int i=1;i<=pc->NbPoles();++i) {if (i>1) out << ',';out << '[' << pc->Pole(i).X() << ',' << pc->Pole(i).Y()*1e-3 << ']';}
+      out << "],\"poles_rad_mm\":[" << std::showpoint;for (int i=1;i<=pc->NbPoles();++i) {if (i>1) out << ',';out << '[' << pc->Pole(i).X() << ',' << pc->Pole(i).Y() << ']';}
+      out << "],\"weights\":[";for (int i=1;i<=pc->NbPoles();++i) {if (i>1) out << ',';out << pc->Weight(i);}out << std::noshowpoint;
+      out << "],\"range\":[" << pf << ',' << pl;
       out << "],\"knots\":[";for (int i=1;i<=pc->NbKnots();++i) {if (i>1) out << ',';out << pc->Knot(i);}
       out << "],\"multiplicities\":[";for (int i=1;i<=pc->NbKnots();++i) {if (i>1) out << ',';out << pc->Multiplicity(i);}out << "]}";
     }

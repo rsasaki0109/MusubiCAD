@@ -145,6 +145,45 @@ def grade_end_boundary(reference, case, actual, edge, proof):
     return proof
 
 
+def side_boundary_request(reference, case, actual, edge):
+    base = contact_request(reference, case, edge)
+    blend = next(f for f in actual["surface_faces"] if f["role"] == {"kind": 0, "chart": base["chart"]})
+    cylinder = edge["cylinder_frame"]
+    return {key: base[key] for key in ("chart", "cylinder_radius_m", "cylinder_height_m", "minimum_radius_m", "maximum_radius_m")} | {
+        "edge_poles_mm": base["poles_mm"], "edge_weights": base["weights"],
+        "cylinder_origin_mm": cylinder["origin_mm"], "cylinder_directions": cylinder["directions"], "cylinder_radius_mm": cylinder["radius_mm"],
+        "pcurve_poles_rad_mm": edge["cylindrical_pcurve"]["poles_rad_mm"], "pcurve_weights": edge["cylindrical_pcurve"]["weights"],
+        "blend_poles_mm": blend["poles_mm"], "blend_weights": blend["weights"], "blend_line": edge["blend_side_line"],
+        "maximum_gap_m": 1e-12, "maximum_blend_normal_error": 1e-9, "max_leaves": 4096}
+
+
+def grade_side_boundary(reference, case, actual, edge, proof):
+    pc, line = edge["cylindrical_pcurve"], edge["blend_side_line"]
+    # Degree/knots/multiplicities/nonperiodicity are also required by pcurve().
+    require(all(type(k) is not bool for k in pc["knots"]) and all(type(m) is int for m in pc["multiplicities"]), "invalid cylindrical basis metadata types")
+    require(pc["range"] == [0, 1] and all(type(x) is not bool and math.isfinite(number(x)) for x in pc["range"]), "unsupported cylindrical pcurve range")
+    require(len(pc["weights"]) == len(pc["poles_rad_mm"]) == 769 and all(number(w) == 1 for w in pc["weights"]), "unsupported cylindrical pcurve weight representation")
+    for raw, si in zip(pc["poles_rad_mm"], pc["poles_rad_m"]):
+        require(len(raw) == len(si) == 2 and abs(number(raw[0])-number(si[0])) <= 1e-14 and abs(number(raw[1])/1000-number(si[1])) <= POINT_M, "raw cylindrical controls disagree with SI witnesses")
+    require(set(line) == {"kind", "origin", "direction", "range"} and line["kind"] == "geom2d_line" and line["origin"] == [0, 0] and line["direction"] == [1, 0] and line["range"] == [0, 1] and all(type(x) is not bool and math.isfinite(number(x)) for key in ("origin", "direction", "range") for x in line[key]), "unsupported attached blend side line")
+    expected = side_boundary_request(reference, case, actual, edge)
+    vector(expected["cylinder_origin_mm"])
+    require(len(expected["cylinder_directions"]) == 3 and number(expected["cylinder_radius_mm"]) > 0, "invalid actual cylinder frame")
+    for d in expected["cylinder_directions"]: vector(d)
+    echo = proof["request"]
+    require(same_numeric_data(echo, expected) and type(echo["chart"]) is int and type(echo["max_leaves"]) is int, "side boundary capture/reference/request mismatch")
+    components = [number(proof[k]) for k in ("edge_position_error_upper_m", "cylindrical_lift_position_error_upper_m", "blend_position_error_upper_m")]
+    gaps = [number(proof[k]) for k in ("edge_to_cylinder_gap_upper_m", "edge_to_blend_gap_upper_m", "cylinder_to_blend_gap_upper_m")]
+    require(all(0 < x <= expected["maximum_gap_m"] for x in components+gaps), "unresolved complete side boundary precision")
+    e, p, b = components
+    require(all(g >= math.nextafter(x+y, math.inf) for g, (x, y) in zip(gaps, ((e, p), (e, b), (p, b)))), "side gap does not enclose outward component sum")
+    angle, height, frame = [number(proof[k]) for k in ("angle_error_upper_rad", "height_error_upper_m", "support_frame_error_upper_m")]
+    supplied = case["side_pcurves"][expected["chart"]]
+    require(angle >= number(supplied["angle_error_upper_rad"]) and height >= number(supplied["height_error_upper_m"]) and frame >= 0 and p >= math.nextafter(frame+math.hypot(number(reference["radius_m"])*angle, height), -math.inf), "unresolved cylindrical component bounds")
+    normal_certificate(proof["blend_normal_bounds"], expected["maximum_blend_normal_error"], expected["max_leaves"])
+    return proof
+
+
 def normal_certificate(certificate, maximum_error, max_leaves):
     values = [number(certificate[key]) for key in ("jacobian_area_lower_m2", "jacobian_area_upper_m2", "ideal_normal_alignment_lower", "normal_error_upper", "du_error_upper_m", "dv_error_upper_m")]
     jlo, jhi, alignment, error, eu, ev = values
@@ -173,6 +212,11 @@ def grade(reference, native):
     end_proofs = native["end_boundary_certificates"]
     require(type(end_proofs["format_version"]) is int and end_proofs["format_version"] == 1 and len(end_proofs["certificates"]) == 8 and all(end_proofs[k] is False for k in ("native_floating_evaluation_certified", "side_contact_boundaries_certified", "whole_brep_certified")), "missing/overclaimed end boundary certificates")
     end_certificates = []
+    side_refusals = native["side_boundary_proof_refusals"]
+    require(set(side_refusals) == {"input_limit", "wrong_line", "nonunit_weight", "wrong_units", "changed_frame", "changed_radius", "changed_angle", "changed_height", "missing_control", "last_request_precision", "exhausted_work"} and all(v is True for v in side_refusals.values()), "missing live side boundary refusals")
+    side_proofs = native["side_boundary_certificates"]
+    require(type(side_proofs["format_version"]) is int and side_proofs["format_version"] == 1 and len(side_proofs["certificates"]) == 8 and all(side_proofs[k] is False for k in ("native_floating_evaluation_certified", "end_contact_boundaries_certified", "whole_brep_certified")), "missing/overclaimed side boundary certificates")
+    side_certificates = []
     certificates = []
     maxima = {key: 0. for key in ("point_m", "d1_m", "normal", "join_gap_m", "join_normal_gap")}
     phase_mismatches = []
@@ -295,7 +339,9 @@ def grade(reference, native):
                 bound = number(proof["position_error_upper_m"])
                 require(0 < bound <= expected_request["maximum_position_error_m"], "unresolved whole-curve native contact position certificate")
                 contact_certificates.append(proof)
-                if pair == (0, 1): pcurve(edge["cylindrical_pcurve"], ref["side_pcurves"][chart], chart, law)
+                if pair == (0, 1):
+                    pcurve(edge["cylindrical_pcurve"], ref["side_pcurves"][chart], chart, law)
+                    side_certificates.append(grade_side_boundary(reference, ref, actual, edge, side_proofs["certificates"][law*4+chart]))
                 else: end_certificates.append(grade_end_boundary(reference, ref, actual, edge, end_proofs["certificates"][law*4+chart]))
             for j, sample in enumerate(edge["samples"]):
                 t = first+(last-first)*edge_fraction(j)
@@ -330,6 +376,11 @@ def grade(reference, native):
                     bp = next(side["point_m"] for role, side in zip(roles, sample["sides"]) if role[0] == 0)
                     pp = next(side["point_m"] for role, side in zip(roles, sample["sides"]) if role[0] == 2)
                     require(distance(point, pp) <= whole["edge_to_plane_gap_upper_m"]+2*POINT_M and distance(point, bp) <= whole["edge_to_blend_gap_upper_m"]+2*POINT_M and distance(pp, bp) <= whole["plane_to_blend_gap_upper_m"]+2*POINT_M, "native paired witness outside whole end boundary certificate")
+                if pair == (0, 1):
+                    whole = side_proofs["certificates"][law*4+contact["chart"]]
+                    bp = next(side["point_m"] for role, side in zip(roles, sample["sides"]) if role[0] == 0)
+                    cp = next(side["point_m"] for role, side in zip(roles, sample["sides"]) if role[0] == 1)
+                    require(distance(point, cp) <= whole["edge_to_cylinder_gap_upper_m"]+2*POINT_M and distance(point, bp) <= whole["edge_to_blend_gap_upper_m"]+2*POINT_M and distance(cp, bp) <= whole["cylinder_to_blend_gap_upper_m"]+2*POINT_M, "native paired witness outside whole side boundary certificate")
                 if pair == (1, 3): require(abs(sum(x*y for x, y in zip(a, b))) <= NORMAL, "bottom edge lost expected right angle")
                 else:
                     gap = distance(a, b);require(gap <= NORMAL, "native support/seam tangent-plane witness failed")
@@ -355,6 +406,7 @@ def grade(reference, native):
     require(phase_mismatches[0] == 0 and phase_mismatches[1] >= 2, "constant/variable actual solid phase decoys not distinguished")
     return {"diagnostic_passed": True, "candidate_admitted": False, "product_body_created": False,
             "native_diagnostic_solids_created": 2, "native_rational_blend_faces_created": 8,
+            "native_side_boundary_certificates": {"count": len(side_certificates), "maximum_gap_m": max(c[k] for c in side_certificates for k in ("edge_to_cylinder_gap_upper_m", "edge_to_blend_gap_upper_m", "cylinder_to_blend_gap_upper_m")), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "end_contact_boundaries_certified": False, "whole_brep_certified": False},
             "native_end_boundary_certificates": {"count": len(end_certificates), "maximum_gap_m": max(c[k] for c in end_certificates for k in ("edge_to_plane_gap_upper_m", "edge_to_blend_gap_upper_m", "plane_to_blend_gap_upper_m")), "native_coordinate_conversion_included": True, "native_floating_evaluation_certified": False, "side_contact_boundaries_certified": False, "whole_brep_certified": False},
             "native_contact_definition_certificates": {"count": len(contact_certificates), "maximum_position_error_m": max(c["position_error_upper_m"] for c in contact_certificates), "includes_native_coordinate_conversion": True, "native_floating_evaluation_certified": False, "attached_pcurve_lifts_certified": False, "whole_brep_certified": False},
             "rounded_reference_certificates": {"count": len(certificates), "maximum_normal_error": max(c["normal_error_upper"] for c in certificates), "minimum_jacobian_m2": min(c["jacobian_area_lower_m2"] for c in certificates), "total_cover_leaves": sum(c["leaves"] for c in certificates), "global_native_certificate": False},
@@ -445,6 +497,31 @@ def run(occt_root, output):
         refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
         require(refused.returncode != 0 and not refused.stdout.strip(), "end boundary accepted invalid input or emitted partial certificates: "+name)
         native["end_boundary_proof_refusals"][name] = True
+    requests = [side_boundary_request(ref, case, actual, edge) for case, actual in zip(ref["cases"], native["cases"]) for edge in contact_edges(actual) if any(r["kind"] == 1 for r in edge["roles"])]
+    command = ["cargo", "run", "--quiet", "-p", "opencad-geometry", "--example", "periodic_fillet_side_boundary"]
+    payload = json.dumps({"format_version": 1, "requests": requests}, allow_nan=False)
+    proof = subprocess.run(command, input=payload, check=True, cwd=ROOT, capture_output=True, text=True, timeout=180)
+    native["side_boundary_certificates"] = json.loads(proof.stdout)
+    changes = {}
+    for name in ("wrong_line", "nonunit_weight", "wrong_units", "changed_frame", "changed_radius", "changed_angle", "changed_height", "missing_control", "last_request_precision", "exhausted_work"):
+        data = copy.deepcopy(requests)
+        if name == "wrong_line": data[0]["blend_line"]["origin"][1] = 1e-16
+        elif name == "nonunit_weight": data[0]["pcurve_weights"][384] = 1.0000000000000002
+        elif name == "wrong_units": data[0]["pcurve_poles_rad_mm"] = [[p[0], p[1]/1000] for p in data[0]["pcurve_poles_rad_mm"]]
+        elif name == "changed_frame": data[0]["cylinder_origin_mm"][2] += .001
+        elif name == "changed_radius": data[0]["cylinder_radius_mm"] += .001
+        elif name == "changed_angle": data[0]["pcurve_poles_rad_mm"][384][0] += 1e-5
+        elif name == "changed_height": data[0]["pcurve_poles_rad_mm"][384][1] += .001
+        elif name == "missing_control": data[0]["pcurve_poles_rad_mm"].pop()
+        elif name == "last_request_precision": data[-1]["maximum_gap_m"] = 1e-30
+        else: data[0]["max_leaves"] = 1
+        changes[name] = json.dumps({"format_version": 1, "requests": data}, allow_nan=False)
+    changes["input_limit"] = payload+" "*max(1, 1048577-len(payload.encode("utf-8")))
+    native["side_boundary_proof_refusals"] = {}
+    for name, bad_payload in changes.items():
+        refused = subprocess.run(command, input=bad_payload, cwd=ROOT, capture_output=True, text=True, timeout=180)
+        require(refused.returncode != 0 and not refused.stdout.strip(), "side boundary accepted invalid input or emitted partial certificates: "+name)
+        native["side_boundary_proof_refusals"][name] = True
     report = {"format_version": 1, "diagnostic_passed": False, "candidate_admitted": False, "reference": ref, "native": native}
     try: report.update(grade(ref, native))
     except (KeyError, TypeError, ValueError) as error:
