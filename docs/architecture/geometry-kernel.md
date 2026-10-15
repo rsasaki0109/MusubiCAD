@@ -103,6 +103,15 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-030 / [ADR-083](../adr/ADR-083-native-contact-support-trimming.md) constructs
+separate diagnostic retained faces on the unchanged analytic cylinder and top
+plane using rational contacts and native projected pcurves. Current support,
+contact representation, ranges, tolerances, topology, region classification and
+independent area/phase controls are measured. Approximate cylindrical pcurves
+and native integration have explicit numerical gates, not global certificates.
+Wire builders may copy edge identities; no semantic ownership is inferred.
+No compatible blend, shell, solid, physical Mock, source or MCP admission follows.
+
 P16-029 / [ADR-082](../adr/ADR-082-rational-support-contact-curves.md) supplies
 immutable fixed-degree rational side/end contact curves with positive weights,
 encoded support identities and outward positional error bounds. Native SDK

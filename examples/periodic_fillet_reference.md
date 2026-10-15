@@ -199,3 +199,20 @@ physical phase, including a quarter-turn decoy that keeps scalar wire length.
 These are not trimmed supports or fillet bodies and cannot replace the old band
 boundaries without rebuilding/re-certifying surfaces. See
 [rational contact scope](../docs/api/periodic-fillet-reference.md#rational-support-contact-curves-p16-029).
+
+P16-030 trims retained regions on the unchanged native cylinder and top plane:
+
+```sh
+python tools/run_trimmed_support_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/trimmed-support-diagnostic.json
+```
+
+The same rational-contact fixture creates ten actual analytic faces, with current
+pcurve/3D/tolerance checks, independent retained-area expressions, native region
+classification and a quarter-turn phase decoy. Report UV units are rad/m on
+cylinders and m/m on planes. Projection and integration allowances are numerical
+gates, not whole-curve certificates. Wire construction may copy edge identities;
+current contact geometry is checked explicitly. These faces are not a sewn shell,
+compatible blend or product body. See
+[trimming scope](../docs/api/periodic-fillet-reference.md#native-analytic-support-trimming-p16-030).

@@ -920,3 +920,22 @@ the contract; CI runs actual construction. No support trimming, compatible blend
 surface/G1, global embedding, physical Mock/product/source/MCP body or feature
 admission is added. Existing band certificates cannot be retained after swapping
 new boundaries. P16-008 remains planned; actual52.60 / 95.
+
+P16-029 is complete in PR #129 (merge 235d0f4), after all mandatory local checks
+(1179 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Native rational edge/wire
+construction and report upload succeeded; PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-030 / ADR-083 constructs actual retained cylinder quadrants and top-plane
+faces from rational contact edges on unchanged analytic supports. Native projected
+pcurves and forced SameParameter use explicit numerical gates, with current
+support frames, contact controls/ranges, edge/vertex tolerances, boundary witnesses,
+valid closed face topology, retained-region classification and independent area
+expressions. A real quarter-turn transform preserves constant-law regions and
+fails variable-law authored phase. Seven synthetic report tests exercise negative
+parsing gates; live CI constructs the faces and uploads its measurements. Wire
+construction may copy edges, so no retained TShape/semantic ownership is claimed.
+No global pcurve certificate, compatible blend/G1, sewn shell/solid, physical Mock,
+mesh, source/schema/MCP operation or feature admission is supplied. Existing band
+certificates cannot transfer to these contacts. P16-008 stays planned; actual52.60 / 95.
