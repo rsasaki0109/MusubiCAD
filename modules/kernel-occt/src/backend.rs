@@ -1851,6 +1851,12 @@ impl GeometryKernel for OcctGeometryKernel {
             }
             let solids = collect_body_solids(&self.store.borrow(), body.0)?;
             let source_ids = collect_body_member_ids(&self.store.borrow(), body.0)?;
+            if source_ids
+                .iter()
+                .any(|id| self.store.borrow().circular_grid_bodies.contains(id))
+            {
+                opencad_geometry::cubic_bezier::validate_rigid_transform(transform)?;
+            }
             let threads: Vec<_> = source_ids
                 .iter()
                 .map(|id| {
@@ -1864,7 +1870,9 @@ impl GeometryKernel for OcctGeometryKernel {
                 })
                 .collect::<Result<_>>()?;
             let mut members = Vec::with_capacity(solids.len());
-            for (mut transformed, thread) in solids.into_iter().zip(threads) {
+            for ((mut transformed, thread), source_id) in
+                solids.into_iter().zip(threads).zip(source_ids)
+            {
                 if !transform.is_identity_rotation() {
                     let (axis, angle) = rotation_matrix_to_axis_angle(transform.rotation);
                     if angle.abs() > 1e-12 {
@@ -1879,7 +1887,15 @@ impl GeometryKernel for OcctGeometryKernel {
                     ));
                 }
                 let cubic = self.store.borrow().cubic_bodies.contains(&body.0);
+                let circular_grid = self
+                    .store
+                    .borrow()
+                    .circular_grid_bodies
+                    .contains(&source_id);
                 let id = self.store.borrow_mut().insert_body(transformed);
+                if circular_grid {
+                    self.store.borrow_mut().circular_grid_bodies.insert(id);
+                }
                 if cubic {
                     self.store.borrow_mut().cubic_bodies.insert(id);
                 }
@@ -1948,6 +1964,16 @@ impl GeometryKernel for OcctGeometryKernel {
                 "STEP import requires the occt feature".into(),
             ))
         }
+    }
+
+    fn import_circular_fillet_grid(
+        &self,
+        grid: &opencad_geometry::CircularFilletGridSolid,
+    ) -> Result<KernelBody> {
+        let body = self.import_triangle_solid(grid.solid())?;
+        #[cfg(feature = "occt")]
+        self.store.borrow_mut().circular_grid_bodies.insert(body.0);
+        Ok(body)
     }
 
     fn import_triangle_solid(&self, solid: &opencad_geometry::TriangleSolid) -> Result<KernelBody> {

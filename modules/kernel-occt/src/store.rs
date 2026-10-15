@@ -20,6 +20,9 @@ pub struct KernelStore {
     pub cubic_wires: HashMap<u64, opencad_geometry::CubicBezierFrame>,
     #[cfg(feature = "occt")]
     pub cubic_bodies: std::collections::HashSet<u64>,
+    /// ADR-094: actual grid reference bodies; placement must remain proper rigid.
+    #[cfg(feature = "occt")]
+    pub circular_grid_bodies: std::collections::HashSet<u64>,
     #[cfg(feature = "occt")]
     pub nominal_threads: HashMap<u64, opencad_geometry::NominalThreadGeometry>,
     #[cfg(feature = "occt")]

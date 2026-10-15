@@ -623,3 +623,13 @@ Existing numeric intersection/triangle budgets remain unchanged; no exact global
 embedding, product kernel body, source/history/cache or editable feature admission.
 The pinned native diagnostic checks separate actual grid facets and mass.
 See [the API](../api/grid-admitted-reference-solid.md).
+
+MCAD-P16-041 / ADR-094 adds typed `import_circular_fillet_grid` to GeometryKernel.
+Analytic Mock opts into actual facet records with physical mass/bounds and owned
+face IDs; its generic mesh import and legacy Mock fallback remain unsupported.
+OCCT constructs a genuine faceted BREP using the existing triangle bridge and
+retains body-local face indices. Native reference markers require proper rigid
+placement, including compound members and repeated placement. No input error
+certificate extends to placed/native/f32 geometry. See
+[physical reference bodies](../api/physical-grid-reference-bodies.md); this is
+not authored stock/rim consumption or P16-008 feature admission.

@@ -260,6 +260,17 @@ pub trait GeometryKernel {
         true
     }
 
+    /// Construct an actual faceted reference body from an ADR-093 certificate.
+    /// This is not an authored cylinder fillet or a native conversion certificate.
+    fn import_circular_fillet_grid(
+        &self,
+        _grid: &crate::CircularFilletGridSolid,
+    ) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "this kernel does not support certified circular reference bodies",
+        ))
+    }
+
     /// Import an already admitted closed triangle shell in metres.
     fn import_triangle_solid(&self, _solid: &crate::TriangleSolid) -> Result<KernelBody> {
         Err(OpenCadError::validation(
@@ -647,6 +658,17 @@ impl MockGeometryKernel {
 }
 
 impl GeometryKernel for MockGeometryKernel {
+    fn import_circular_fillet_grid(
+        &self,
+        grid: &crate::CircularFilletGridSolid,
+    ) -> Result<KernelBody> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow_mut()
+            .circular_fillet_grid(grid)
+    }
+
     fn has_exact_rigid_placement(&self, body: &KernelBody) -> bool {
         if let Some(analytic) = &self.analytic {
             return analytic.borrow().contains(body);
