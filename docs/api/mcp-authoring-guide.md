@@ -1442,3 +1442,14 @@ are strictly bound. This is finite normal agreement, NOT exact G1 or native
 floating evaluation/embedding/whole-BREP fidelity. Existing position proofs remain
 mandatory. No authored operation or runnable MCP eval is added: never infer
 create_curved_fillet or production admission. P16-008 stays planned; no score.
+
+
+P16-039 / ADR-092 constructs closed f64 reference triangle shells with explicit
+periodic/contact/cap vertex IDs, whole-cell position/facet-normal bounds and
+vertex/triangle budget refusal. A separate pinned native probe constructs and
+measures real faceted solids. Actual triangle integrals and ideal mass remain
+distinct; these arrays are not a physical Mock body, semantic/native face IDs,
+f32 export certificate or authorable fillet. No new MCP operation/eval applies.
+Global embedding/exact G1/native floating fidelity and production admission remain
+separate. See docs/api/closed-periodic-reference-mesh.md and
+examples/closed_periodic_reference_mesh.md. P16-008 stays planned; no score.

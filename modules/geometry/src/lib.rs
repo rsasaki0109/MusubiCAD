@@ -137,3 +137,8 @@ mod circular_fillet_boundary_normals;
 pub use circular_fillet_boundary_normals::{
     CircularFilletBoundaryNormalBounds, CircularFilletBoundaryNormalPrecision,
 };
+
+mod circular_fillet_mesh;
+pub use circular_fillet_mesh::{
+    CircularFilletMeshIntegrals, CircularFilletMeshPrecision, CircularFilletReferenceMesh,
+};
