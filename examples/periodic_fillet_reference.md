@@ -181,3 +181,21 @@ the original poles and native topology. Native reports contain actual per-face,
 curved, cap and total areas; only the curved sum has the independent mathematical
 area enclosure. Reported 1e-12 m² native comparison allowance is separate from
 that certificate. See [area scope and work limits](../docs/api/periodic-fillet-reference.md#curved-parametric-area-bounds-p16-028).
+
+P16-029 constructs separate immutable rational support contacts:
+
+```sh
+cargo run -p opencad-geometry --example periodic_fillet_contacts
+python tools/run_rational_contact_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/rational-contact-diagnostic.json
+```
+
+The encoded side curves preserve their circle identity; end curves have a
+constant encoded plane height. Positive weights, shared endpoint tables and
+outward whole-curve position bounds accompany the actual stored data. The native
+diagnostic constructs real closed wires and compares actual positions/D1 and
+physical phase, including a quarter-turn decoy that keeps scalar wire length.
+These are not trimmed supports or fillet bodies and cannot replace the old band
+boundaries without rebuilding/re-certifying surfaces. See
+[rational contact scope](../docs/api/periodic-fillet-reference.md#rational-support-contact-curves-p16-029).

@@ -104,3 +104,6 @@ pub use circular_fillet_integrals::CircularFilletBoundaryIntegrals;
 mod bernstein;
 mod circular_fillet_area;
 pub use circular_fillet_area::CircularFilletAreaBounds;
+
+mod circular_fillet_contacts;
+pub use circular_fillet_contacts::{CircularFilletContactCurve, CircularFilletContactKind};

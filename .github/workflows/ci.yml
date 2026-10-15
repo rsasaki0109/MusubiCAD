@@ -56,6 +56,9 @@ jobs:
       - name: Verify closed reference diagnostic report contract
         run: python tools/test_closed_reference_probe.py
 
+      - name: Verify rational contact diagnostic report contract
+        run: python tools/test_rational_contact_probe.py
+
       - name: Verify repository Python cache hygiene
         run: python tools/test_repo_hygiene.py
 
@@ -127,6 +130,12 @@ jobs:
           --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu
           --output target/closed-reference-diagnostic.json
 
+      - name: Construct rational native support contact wires
+        run: >-
+          python tools/run_rational_contact_probe.py
+          --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu
+          --output target/rational-contact-diagnostic.json
+
       - name: Upload native reference diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -137,6 +146,7 @@ jobs:
             target/reference-bezier-diagnostic.json
             target/reference-band-diagnostic.json
             target/closed-reference-diagnostic.json
+            target/rational-contact-diagnostic.json
           if-no-files-found: warn
 
       - name: Execute reproducible MCP editing tutorial
