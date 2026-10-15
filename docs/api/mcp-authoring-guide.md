@@ -354,6 +354,11 @@ open-shell diagnostic. The cover has explicit position/normal/work budgets;
 a connected shell with two boundary loops is not a closed fillet body. No MCP
 operation, physical Mock solid, G1 or support-trimming admission is introduced.
 
+P16-026 / ADR-079 creates closed native solids only in an isolated diagnostic,
+using an explicitly approximate polynomial skirt and planar caps. It adds no
+MCP operation or product/Mock body; measured refinement and native solidity do
+not admit exact support/G1 fidelity or circular variable-fillet source creation.
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

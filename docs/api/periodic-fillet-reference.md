@@ -252,3 +252,62 @@ feature support. Successful diagnostics retain `candidate_admitted: false` and
 
 See [band tests](../../modules/geometry/tests/circular_fillet_band.rs) and
 [runnable fixtures](../../modules/geometry/examples/periodic_fillet_bezier_bands.rs).
+
+
+## Closed native diagnostic approximations (P16-026)
+
+[ADR-079](../adr/ADR-079-closed-native-reference-diagnostic.md) extends the isolated
+investigation to actual closed native solids. It adds a runnable diagnostic,
+not a product GeometryKernel operation or circular-fillet feature:
+
+```sh
+python tools/run_closed_reference_probe.py \
+  --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu \
+  --output target/closed-reference-diagnostic.json
+```
+
+The actual Rust fixture supplies constant/nonconstant bands at explicit 1e-4 m
+and 2e-5 m position requests, 0.8 normal chord error and 4096-patch budget. For
+these fixtures they produce n=16 and n=32. Each transverse alpha=0 boundary A(u)
+receives a ruled polynomial skirt down to z=0, with top poles preserved exactly.
+Planar caps close the top and bottom wires; the bottom orientation is explicitly
+outward. Coordinates convert metres to millimetres, with 1e-6 mm sewing tolerance.
+
+The skirt follows the polynomial contact curve's x/y coordinates. It is an
+approximation of the cylinder side, and does not satisfy the original unchanged
+cylindrical-support gate. Measured skirt/cylinder radial deviations are retained
+in the report (about 18.9 nm coarse and 1.19 nm fine for these samples). Do not
+substitute this representation for an authored cylinder or claim support trimming.
+
+Check actual native validity/closure, one solid and shell, connected faces,
+zero free edges, two-face incidence, Euler 2, two outward planar caps and positive
+native mass. Counts are 4*n*n+4*n+2 faces, 4*n*(n+2) vertices and 4*n*(2*n+3)
+edges. Actual band/skirt surface witnesses use independent polynomial evaluation
+with a 1e-12 m numerical allowance. No negative-volume orientation repair occurs.
+
+For each law, ADR-073's actual ideal-volume API uses matching radii and a 1e-12 m³
+absolute-width request. Native GProp volume estimates use epsilons 1e-9 and
+1e-11; their delta is recorded as a stability observation, not a certified error.
+The report subtracts the bounded ideal interval from the native estimate using
+outward subtraction. Example signed differences, in mm³:
+
+| Law | Coarse estimate minus ideal | Fine estimate minus ideal |
+|---|---|---|
+| Constant 0.5 mm | approximately -0.00437218 | approximately -0.000273497 |
+| Variable 0.5–1.5 mm | approximately [-0.00489114, -0.00389114] | approximately [-0.000774674, 0.000225322] |
+
+Interval overlap does not prove equality. These comparison intervals hold the
+native estimate fixed; they do not certify all native integration error or
+whole-solid fidelity. Two-level improvement is evidence for these fixtures, not
+a general convergence theorem or manufacturing tolerance. Constant analytic
+volume is an independent control. Missing closure/orientation, nonpositive or
+unstable mass, altered surfaces, inconsistent references or missing/resolvably
+worsening refinement refuse. CI runs actual construction and saves its report.
+Synthetic contract tests do not establish native geometry.
+
+The report distinguishes `native_diagnostic_solids_created: 4` from
+`product_body_created: false` and `candidate_admitted: false`. Physical Mock
+runtime/mesh, exact or separately admitted support/G1 fidelity, global embedding,
+independent solid area/volume/moment bounds and guarded source/cache/history
+remain unresolved. No schema, migration, editable NURBS or MCP operation is added.
+See [runnable fixture](../../modules/geometry/examples/closed_periodic_reference.rs).

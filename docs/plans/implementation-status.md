@@ -848,3 +848,21 @@ connectivity, incidence, two boundary cycles, Euler characteristic and sewn face
 surfaces are measured. No exact G1/global embedding, support trimming, physical
 Mock/native solid, mass, mesh policy, source/schema/MCP operation or feature
 admission is introduced. P16-008 remains planned; actual52.60 / 95.
+
+
+P16-025 is complete in PR #125 (merge e6ca7b7), after all mandatory local checks
+(1166 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Native band sewing diagnostic
+and artifact upload succeeded; the PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-026 / ADR-079 closes actual diagnostic bands with polynomial side skirts
+and planar caps, producing valid connected closed native positive-volume solids
+at two refinement levels for constant/nonconstant laws. Actual incidence/closure,
+cap orientation, surface witnesses, native GProp stability and volume differences
+against matching bounded ideal references are measured. Skirt/cylinder error is
+explicit: these skirts are not exact trimmed stock supports. Six synthetic report
+contract tests preserve negative gates; live CI performs actual native construction.
+No production GeometryKernel/Mock body, G1/global embedding/independent solid mass
+certificate, mesh, source/schema/MCP operation or feature admission is supplied.
+P16-008 remains planned; actual52.60 / 95.

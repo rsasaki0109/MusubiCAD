@@ -103,6 +103,13 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-026 / [ADR-079](../adr/ADR-079-closed-native-reference-diagnostic.md) closes
+diagnostic bands using ruled polynomial skirts and planar caps, and measures
+actual native solids/refinement against bounded ideal volume. Skirts approximate
+the cylinder side; they do not implement exact support trimming. This separate
+pinned-SDK investigation introduces no production body, Mock record or source
+feature. Native mass is measured independently, never replaced by ideal mass.
+
 P16-025 / [ADR-078](../adr/ADR-078-bounded-periodic-bezier-bands.md) assembles a
 conforming complete four-chart reference band with explicit position/normal and
 patch-count budgets. Uniform dyadic refinement preserves shared control nets;
