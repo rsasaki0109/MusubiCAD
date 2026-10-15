@@ -363,3 +363,53 @@ not measure geometric approximation error or prove convergence. The variable
 fine case's actual native COM was approximately (-1.00088037e-5,
 -3.21070960e-13, 9.97712089e-3) m. These fixture observations are not universal
 native accuracy guarantees.
+
+## Curved parametric area bounds (P16-028)
+
+[ADR-081](../adr/ADR-081-curved-reference-area-enclosures.md) adds
+`CircularFilletBezierBand::curved_diagnostic_area_bounds(absolute_width_m2,
+max_leaves)`. `CircularFilletAreaBounds` returns `curved_lower_m2`,
+`curved_upper_m2` and the number of integration `leaves`. The scope is the
+current mathematical band plus ruled skirts down to z=0, explicitly excluding
+the two planar caps. It counts parametric area with multiplicity; it does not
+establish global embedding, regularity or a physical solid.
+
+Use the current poles and shared-band validation, ignoring mutable quality
+metadata. Form outward degree-(5,5) Bernstein coefficients of S_u cross S_v.
+The norm of their integrated vector gives a lower area bound; the mean of their
+norm upper bounds gives an upper area bound by convexity. If the total interval
+is too wide, deterministically refine the largest-width leaf (insertion order
+breaks ties) with outward half-parameter de Casteljau restrictions and quarter
+area weights. These are integration partitions, not geometry/mesh edits or
+extra native faces. Replace endpoint sums with outward arithmetic so removing
+a parent does not retain its uncertainty. Reflection preserves unsigned area.
+Degenerate mathematical patches may contribute zero; that is no native admission.
+
+Require a finite positive absolute width in m² and a leaf budget from 8 through
+262144. Initial leaves must cover every band/skirt patch; insufficient work or
+uncertifiable precision refuses rather than returning a partial certificate.
+The existing live diagnostic requests 1e-7 m² with at most 32768 leaves per case.
+This is mathematical integration precision, not a geometric approximation or
+manufacturing tolerance.
+
+The native report measures every actual sewn curved face's area in m², their
+curved sum, both planar cap areas and total native area. Compare the curved sum
+to the independent enclosure with a separately reported 1e-12 m² numerical
+allowance, and check face/curved/cap/total inventories. Caps are native measured
+values, outside this independent area certificate. Native SI/mm conversion,
+sewing and integration error are not certified by the mathematical enclosure.
+The runner allows up to 300 seconds for the larger Rust fixture calculation;
+construction and comparison remain mandatory and bounded.
+
+Analytic prism side-area, XY translation, SI scaling, reflection, current-pole,
+width/work/precision/refinement and independent quadrature regressions accompany
+the actual OCCT comparison. Existing signed mass/moment controls still apply.
+This adds no MCP/source/Mock body, schema, editable NURBS or feature admission.
+Unchanged support, G1, global embedding and whole-solid fidelity remain gates.
+
+The local four-case probe measured approximately 1273.67208 / 1273.67252 mm²
+constant coarse/fine curved areas and 1288.47848 / 1288.47895 mm² variable
+coarse/fine curved areas. Every native value lay inside its mathematical area
+interval before the numerical allowance. Interval widths were below 0.1 mm²;
+leaf counts were 1949, 4410, 2780 and 4437, respectively. These fixture
+observations neither certify all native error nor prove geometric fidelity.

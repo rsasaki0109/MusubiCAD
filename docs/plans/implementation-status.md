@@ -883,3 +883,22 @@ translation/scaling/orientation/current-pole and high-order quadrature controls
 plus invalid-boundary/report refusals exercise the contract. No embedding/G1,
 unchanged cylindrical support, physical Mock/product body, source/schema/MCP
 operation or feature admission is added. P16-008 remains planned; actual52.60 / 95.
+
+
+P16-027 is complete in PR #127 (merge 6fbb201), after all mandatory local checks
+(1171 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Native independent mass/COM
+comparison and artifact upload succeeded; PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-028 / ADR-081 bounds current mathematical band/skirt parametric area
+with outward Bernstein cross-product integration, deterministic restriction
+refinement and explicit SI width/work refusal. Planar caps and global embedding
+are excluded. Shared private polynomial arithmetic and band validation preserve
+ADR-080 mass controls. Four additional geometry regressions cover analytic
+side-area/scaling/reflection, actual-pole/refinement/independent quadrature and
+refusals; eight synthetic report tests include corrupted area inventories. Live
+native diagnostics measure each curved face, separate caps and total area and
+compare the curved sum independently. No physical Mock/product/source/MCP body,
+G1/support/whole-solid fidelity or native-error admission is added. P16-008 remains
+planned; actual52.60 / 95.

@@ -121,9 +121,13 @@ void measure(std::ostream& out) {
   const auto center=fine.CentreOfMass();
   out << ",\"center_of_mass_m\":";point(out,center);
   out << ",\"first_moments_m4\":[" << fine.Mass()*center.X()*1e-12 << ',' << fine.Mass()*center.Y()*1e-12 << ',' << fine.Mass()*center.Z()*1e-12 << "],\"surface_cells\":[";
-  int planes=0, emitted=0;double radial_error=0;
+  int planes=0, emitted=0;double radial_error=0, curved_area=0;double cap_areas[2]={0,0};
+  GProp_GProps total_area;BRepGProp::SurfaceProperties(solid,total_area,1e-11);
   for (int f=1;f<=faces.Extent();++f) {
     auto face=TopoDS::Face(faces(f));BRepAdaptor_Surface adaptor(face);
+    GProp_GProps face_area;BRepGProp::SurfaceProperties(face,face_area,1e-11);
+    const double area=face_area.Mass()*1e-6;
+    require(std::isfinite(area) && area>0,"nonpositive native face area");
     if (adaptor.GetType()==GeomAbs_Plane) {
       ++planes;
       const auto plane=adaptor.Plane();const double z=plane.Location().Z();
@@ -131,13 +135,14 @@ void measure(std::ostream& out) {
       auto normal=plane.Axis().Direction();
       if (face.Orientation()==TopAbs_REVERSED) normal.Reverse();
       require((z<10 && normal.Z()<-0.99) || (z>10 && normal.Z()>0.99),"wrong cap orientation");
+      cap_areas[z<10 ? 0 : 1]=area;
       continue;
     }
     require(face.Orientation()==TopAbs_FORWARD,"wrong band/skirt orientation");
     TopLoc_Location location;auto s=BRep_Tool::Surface(face,location);
     require(location.IsIdentity() && records.count(s.get()),"unrecognized sewn surface");
-    const auto record=records.at(s.get());if (emitted++) out << ',';
-    out << "{\"band_cell\":" << record.band_cell << ",\"skirt_index\":" << record.skirt_index << ",\"samples\":[";
+    const auto record=records.at(s.get());curved_area+=area;if (emitted++) out << ',';
+    out << "{\"band_cell\":" << record.band_cell << ",\"skirt_index\":" << record.skirt_index << ",\"area_m2\":" << area << ",\"samples\":[";
     for (int i=0;i<3;++i) for (int j=0;j<3;++j) {
       if (i || j) out << ',';const auto p=adaptor.Value(i/2.,j/2.);
       out << "{\"u\":" << i/2. << ",\"v\":" << j/2. << ",\"point_m\":";point(out,p);out << '}';
@@ -146,7 +151,9 @@ void measure(std::ostream& out) {
     out << "]}";
   }
   require(planes==2,"wrong native cap count");
-  out << "],\"planar_caps\":2,\"cap_normals_outward\":true,\"max_sampled_skirt_cylinder_error_m\":" << radial_error << '}';
+  out << "],\"planar_caps\":2,\"cap_normals_outward\":true,\"max_sampled_skirt_cylinder_error_m\":" << radial_error
+      << ",\"curved_surface_area_m2\":" << curved_area << ",\"planar_cap_areas_m2\":[" << cap_areas[0] << ',' << cap_areas[1]
+      << "],\"total_surface_area_m2\":" << total_area.Mass()*1e-6 << '}';
 }
 }
 int main() {
