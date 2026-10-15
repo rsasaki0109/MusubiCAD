@@ -387,6 +387,16 @@ ownership. This is not a blend/body or physical Mock/source/MCP feature. Do not
 invent a circular-fillet command or reuse old polynomial-band certificates for
 the new boundaries. See [support trimming](periodic-fillet-reference.md#native-analytic-support-trimming-p16-030).
 
+P16-031 / ADR-084 constructs direct rational characteristic-circle reference
+surfaces with actual-control position bounds and bounded analytic cylinder
+pcurves. Native diagnostic solids retain unchanged cylinder/plane supports;
+current contacts/nets, off-knot paired normals, topology, independent volume and
+actual transformed-solid phase controls are measured. Stereographic v is not
+alpha/(pi/2); old polynomial certificates cannot transfer. This is still not
+production Mock/source/MCP geometry or editable NURBS, and native numerical
+witnesses do not certify global G1/embedding. Do not invent a circular-fillet
+command. See [rational surfaces](periodic-fillet-reference.md#rational-characteristic-circle-surfaces-p16-031).
+
 ### Operations between existing bodies (MCAD-P11-006)
 
 Create a `body_boolean` feature through `add_feature`:

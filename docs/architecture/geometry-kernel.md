@@ -103,6 +103,19 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-031 / [ADR-084](../adr/ADR-084-rational-rolling-sphere-surfaces.md) supplies
+immutable degree-(8,2) rational characteristic-circle charts, a direct
+reparameterization of the ideal envelope with outward actual-control position
+bounds. A separate bounded 256-span analytic Hermite cylinder pcurve includes
+fourth-derivative interpolation and stored-control rounding errors. Native
+construction retains supplied contact edges/linear blend pcurves and unchanged
+analytic supports, yielding closed diagnostic solids. Actual current controls,
+paired pcurves/normals, topology, independent volume and transformed physical
+phase are checked. Native numerical evidence does not certify global rounded
+G1/embedding or admit physical Mock, production geometry, mesh or guarded source.
+Old polynomial-band certificates are not transferred; no editable NURBS or OCCT
+types enter the graph/source API.
+
 P16-030 / [ADR-083](../adr/ADR-083-native-contact-support-trimming.md) constructs
 separate diagnostic retained faces on the unchanged analytic cylinder and top
 plane using rational contacts and native projected pcurves. Current support,
