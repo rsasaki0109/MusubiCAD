@@ -1186,3 +1186,37 @@ produces two complete cases / 24 paired normal gap bounds with maximum
 empty stdout. Existing reference and surface/contact/end/side/seam position
 certificate records are exactly unchanged. Completion requires merge; no score,
 actual52.60 / 95.
+
+
+PR #138 completed P16-038 at main
+`411491a53dfc4ad2f65cbb08dafd29f7c724aebb`, after all four exact-head applicable
+workflows/full job inventories succeeded (PR publisher intentionally skipped).
+Native proof/Test/contract/upload succeeded; merge tree equals tested head tree.
+No score: actual52.60 / 95.
+
+MCAD-P16-039 / ADR-092 constructs bounded closed indexed reference triangle
+shells for ideal fillet plus original cylinder/caps, sharing canonical vertex IDs
+without tolerance welding. Whole Taylor/interpolation bounds include current
+rounding; outward actual facet normals must align with complete ideal cell
+normal enclosures. Deterministic complete dyadic refinement obeys explicit
+position/normal/vertex/triangle budgets with no partial result. Immutable f64
+arrays and signed boundary integrals do not authorize physical Mock/runtime.
+Actual pinned native faceted solids independently match current vertices,
+triangular connectivity/normals, volume/area/COM; all four native refusal controls
+emit no partial stdout. Constant polygon-frustum volume/area/z moment and
+variable ideal-volume refinement are independently tested. Global embedding,
+exact G1, native floating fidelity and production/source ownership remain
+separate. Existing rational-BREP proofs are unchanged. No schema/golden/new MCP
+operation/eval or score admission; P16-008 stays planned, actual52.60 / 95.
+
+
+P16-039 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with warnings denied, 1220 successful Rust tests (0 failed, 36 ignored),
+and agent-plugin validation. Three independent geometry tests plus a private
+malformed-shell test, four synthetic report tests, desktop workflow policy and
+repository hygiene pass. Actual pinned native re-run also qualifies every current
+face as planar; both fine solids have 2114 vertices / 4224 faces. Current vertex,
+face connectivity/normal, volume, area, COM and first-moment comparisons pass.
+All four real-process refusal controls emit empty stdout. Fine position bounds
+are 3.907e-5 / 4.297e-5 m for constant/variable laws. Completion requires merge;
+no score, actual52.60 / 95.

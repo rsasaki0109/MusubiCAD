@@ -65,6 +65,9 @@ jobs:
       - name: Verify rational reference and native snapshot certificate contract
         run: python tools/test_rational_reference_probe.py
 
+      - name: Verify closed reference mesh diagnostic contract
+        run: python tools/test_closed_reference_mesh_probe.py
+
       - name: Verify repository Python cache hygiene
         run: python tools/test_repo_hygiene.py
 
@@ -154,6 +157,12 @@ jobs:
           --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu
           --output target/rational-reference-diagnostic.json
 
+      - name: Construct bounded closed reference meshes as native solids
+        run: >-
+          python tools/run_closed_reference_mesh_probe.py
+          --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu
+          --output target/closed-reference-mesh-diagnostic.json
+
       - name: Upload native reference diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -167,6 +176,7 @@ jobs:
             target/rational-contact-diagnostic.json
             target/trimmed-support-diagnostic.json
             target/rational-reference-diagnostic.json
+            target/closed-reference-mesh-diagnostic.json
           if-no-files-found: warn
 
       - name: Execute reproducible MCP editing tutorial

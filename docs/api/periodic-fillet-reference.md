@@ -969,3 +969,10 @@ Earlier position-only certificates keep their own narrower scope flags. This
 finite normal-gap certificate is NOT exact G1, global embedding, untouched
 support seam, whole-BREP or production admission. P16-008 remains planned;
 no editable NURBS, Mock/runtime/mesh/source/schema/MCP operation/eval or score.
+
+
+P16-039 adds [closed reference triangle shells](closed-periodic-reference-mesh.md)
+with shared periodic/contact/cap IDs, full position/facet-normal bounds and
+explicit budgets. Actual faceted native measurements are separate from the
+existing analytic-support rational BREP and its certificates. No physical
+Mock/source/embedding or score admission follows.

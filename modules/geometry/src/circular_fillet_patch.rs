@@ -239,7 +239,7 @@ pub(super) fn corner_derivatives(
     ])
 }
 
-fn corner(
+pub(super) fn corner(
     reference: CircularFilletReference,
     mut chart: u8,
     mut u: f64,

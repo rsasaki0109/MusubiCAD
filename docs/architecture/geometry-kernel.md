@@ -603,3 +603,15 @@ explicit precision/work requirements. Bounded transport binds actual raw data
 and canonical attached maps; existing position proofs remain mandatory. Finite
 normal agreement is separate from exact G1, native floating evaluation, embedding
 and whole-BREP/production fidelity; no maturity credit follows.
+
+
+P16-039 / [ADR-092](../adr/ADR-092-closed-periodic-reference-mesh.md) adds an
+immutable indexed f64 reference triangle shell with explicit periodic/contact/cap
+vertex sharing. Whole-cell Taylor and facet-normal interval bounds govern
+complete dyadic refinement under vertex/triangle budgets. The old corner
+interval evaluator is shared within geometry; no new writable source/NURBS or
+native types enter the module. Connected opposed-edge sphere topology and signed
+boundary integrals are separate from global embedding/physical Mock admission.
+An isolated kernel-occt diagnostic builds actual faceted native solids and
+measures current topology/geometry/mass. The existing analytic-support rational
+BREP and certificates remain unchanged; no product/schema/MCP admission or score.
