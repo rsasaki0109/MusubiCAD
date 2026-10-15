@@ -94,3 +94,6 @@ pub use circular_fillet_bezier::CircularFilletBezierPatch;
 
 mod circular_fillet_normals;
 pub use circular_fillet_normals::CircularFilletNormalBounds;
+
+mod circular_fillet_band;
+pub use circular_fillet_band::{CircularFilletBandCell, CircularFilletBezierBand};

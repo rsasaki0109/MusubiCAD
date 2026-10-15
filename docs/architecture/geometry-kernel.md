@@ -103,6 +103,14 @@ TopoRef fallback tolerances are documented and unit-labelled in
 
 ## Native variable-fillet bridge
 
+P16-025 / [ADR-078](../adr/ADR-078-bounded-periodic-bezier-bands.md) assembles a
+conforming complete four-chart reference band with explicit position/normal and
+patch-count budgets. Uniform dyadic refinement preserves shared control nets;
+failed quality never returns a partial cover. An isolated native diagnostic
+sews actual faces and validates connected open-shell/boundary topology. Native
+coordinates convert SI to millimetres explicitly. No GeometryKernel body or
+solid/mesh/source admission follows from this transient reference cover.
+
 P16-024 / [ADR-077](../adr/ADR-077-bezier-normal-and-orientation-bounds.md)
 adds current-control-net derivative-hull certificates: positive local Jacobian
 area, ideal-oriented unit normals and bounded normal discrepancy. Native D1

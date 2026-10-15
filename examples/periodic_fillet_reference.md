@@ -123,3 +123,23 @@ refusals (collapsed/reversed/interior-corrupted nets and underflow). The existin
 native diagnostic also checks actual unit normals/area and shared seam gaps.
 Whole-patch bounds prove local immersion/orientation only; support trimming,
 global embedding, tangent-continuous assembly and a closed solid remain pending.
+
+
+P16-025 covers the entire periodic reference with conforming bounded patches:
+
+```rust
+let band = reference.bezier_band(Length::from_meters(1e-4), 0.8, 4096)?;
+assert_eq!(band.cells.len(), 4 * band.divisions_per_chart_axis.pow(2));
+assert!(band.position_error_upper_m <= 1e-4);
+assert!(band.normal_error_upper <= 0.8);
+// Explicit coarse demonstration requests; no manufacturing defaults or solid.
+```
+
+Run `cargo run -p opencad-geometry --example periodic_fillet_bezier_bands` for
+constant/nonconstant covers, and
+`cargo test -p opencad-geometry --test circular_fillet_band` for exact coverage,
+shared edge poles, independent contact dimensions, refinement, scale, determinism
+and budget refusal. The [native sewing diagnostic](../docs/api/periodic-fillet-reference.md#complete-periodic-reference-bands-p16-025)
+constructs one open shell per fixture and verifies two closed boundary loops,
+actual face/edge incidence, face connectivity and independent surface values.
+Support trimming, exact tangent continuity, closed solids and mass remain pending.

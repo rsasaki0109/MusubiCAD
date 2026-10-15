@@ -830,3 +830,21 @@ diagnostic measures normals/area at all 1000 samples and full-cycle seam normal
 gaps; its numerical allowances remain separate from mathematical bounds. No
 G1, support trimming, global embedding, physical Mock/native solid, source/schema
 or MCP operation is admitted. P16-008 remains planned; actual52.60 / 95.
+
+
+P16-024 is complete in PR #124 (merge ea822ab), after all mandatory local checks
+(1162 passed, 0 failed, 36 ignored, plugin passed) and all applicable exact-head
+CI/Design Review/Desktop/Release jobs succeeded. Native normal/area diagnostic
+and artifact upload succeeded; the PR publisher was intentionally skipped.
+No score: actual52.60 / 95.
+
+MCAD-P16-025 / ADR-078 builds a deterministic conforming full-period reference
+band by uniform dyadic refinement, with explicit SI position and dimensionless
+normal-error requests and bounded patch-count refusal. All cells require current
+position/normal certificates; no partial band or sample-based fallback is returned.
+Independent coverage/shared-edge/contact/refinement/scale/budget tests and a live
+native sewing diagnostic check the implementation. Actual native open-shell face
+connectivity, incidence, two boundary cycles, Euler characteristic and sewn face
+surfaces are measured. No exact G1/global embedding, support trimming, physical
+Mock/native solid, mass, mesh policy, source/schema/MCP operation or feature
+admission is introduced. P16-008 remains planned; actual52.60 / 95.
