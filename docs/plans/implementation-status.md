@@ -1249,3 +1249,31 @@ solids and passed all eight empty-stdout refusal controls. Fine constant/variabl
 grid movement bounds are 8.075e-10 / 8.392e-10 m; final position bounds
 3.907e-5 / 4.297e-5 m and normal chord bounds 0.121996 / 0.131550 meet the
 requested 1e-4 m / 0.5 quality. No production feature/score admission.
+
+PR #140 completed P16-040 at main
+`fbf86df4630fb71eda1d4c8fc783584a6720c7c7`, after all four exact-head applicable
+workflows and complete job inventories succeeded. Both merge parents match the
+tested base/head and the merge tree equals the tested head tree. Windows native
+UI passed without reruns. No score: actual52.60 / 95.
+
+MCAD-P16-041 / ADR-094 adds typed certified-grid reference-body import through
+GeometryKernel: actual analytic Mock facet records and native triangle BREP.
+Both query actual mass/area/COM/bounds and facets and support proper placement;
+native markers enforce proper rigid transforms through repeated/compound
+placement. Legacy Mock and analytic-mode generic mesh import refuse. Analytic
+Mock unsupported edits/support witnesses refuse without replacing physical
+geometry with synthetic plumbing. Native face identity retains its body handle
+and local index. Independent integer-grid mass, facet geometry/closure, owned
+IDs, placement and refusal tests plus a runnable both-kernel example accompany
+API/architecture/MCP-guide/skill updates. Input error bounds do not extend to
+placed/native/f32 coordinates; no source/schema/golden/MCP operation/eval or
+P16-008 feature/score admission. Completion requires merge, actual52.60 / 95.
+
+P16-041 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1227 passed, 0 failed, 36 ignored),
+and agent plugin contract. Three new real backend integration tests passed both
+standalone and in the full workspace; the both-kernel example created constant
+and variable coarse bodies with 1088 triangles/faces each. Independent integer-
+grid volume, actual area/centroid/bounds, closed/current facets and proper
+placement agree. Release policy and repository hygiene checks passed. No score
+is assigned; completion requires merge, actual52.60 / 95.

@@ -13,6 +13,7 @@ pub(super) enum FaceKey {
     Frustum(usize),
     Rib(usize),
     Thread(usize),
+    CircularReference(usize),
 }
 fn wall(a: f64, b: f64, r: f64, end_radius: f64) -> FaceKey {
     if (r - end_radius).abs() <= roundoff(r.max(end_radius)) {
@@ -36,6 +37,9 @@ pub(super) fn validate_frame(frame: Frame) -> Result<()> {
 }
 pub(super) fn keys(body: &Body) -> Result<Vec<FaceKey>> {
     match body {
+        Body::CircularReference(g) => Ok((0..g.triangles().len())
+            .map(FaceKey::CircularReference)
+            .collect()),
         Body::Thread(_) => Ok((0..6).map(FaceKey::Thread).collect()),
         Body::RibbedStock { .. } => Ok((0..3)
             .flat_map(|i| [FaceKey::Outer(i, false), FaceKey::Outer(i, true)])
@@ -142,6 +146,13 @@ impl AnalyticMock {
         }
         let body_record = self.body(body)?;
         let face_ids = &self.faces[&body.0];
+        if let Body::CircularReference(g) = body_record {
+            let mut mesh = g.tessellate();
+            for (i, id) in mesh.triangle_face_ids.iter_mut().enumerate() {
+                *id = face_ids[&FaceKey::CircularReference(i)];
+            }
+            return Ok(mesh);
+        }
         if let Body::Thread(g) = body_record {
             return super::thread::mesh(*g, face_ids, quality);
         }
@@ -154,7 +165,7 @@ impl AnalyticMock {
             return ribbed_mesh(*frame, *dimensions, rib, face_ids, linear);
         }
         let radius = match body_record {
-            Body::Thread(_) => return Err(unsupported()),
+            Body::CircularReference(_) | Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock { .. } => 0.,
             Body::Stock { cuts, .. } => cuts
                 .iter()
@@ -179,7 +190,7 @@ impl AnalyticMock {
             .collect();
         let mut builder = Builder::new();
         match body_record {
-            Body::Thread(_) => return Err(unsupported()),
+            Body::CircularReference(_) | Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock {
                 frame,
                 dimensions,

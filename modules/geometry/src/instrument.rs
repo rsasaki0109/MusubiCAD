@@ -37,6 +37,14 @@ impl<'a, K: GeometryKernel> CountingGeometryKernel<'a, K> {
 }
 
 impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
+    fn import_circular_fillet_grid(
+        &self,
+        grid: &crate::CircularFilletGridSolid,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.import_circular_fillet_grid(grid)
+    }
+
     fn import_triangle_solid(&self, solid: &crate::TriangleSolid) -> Result<KernelBody> {
         self.record();
         self.inner.import_triangle_solid(solid)

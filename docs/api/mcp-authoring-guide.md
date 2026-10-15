@@ -1461,3 +1461,12 @@ admission and outward grid displacement/facet-normal differences. Existing
 never reuse raw bounds for rounded coordinates. This is no new MCP operation or
 DesignPatch feature; P16-008 remains planned. See
 [grid conversion scope](grid-admitted-reference-solid.md).
+
+P16-041 / ADR-094 provides developer-only physical reference bodies via
+`GeometryKernel::import_circular_fillet_grid(&CircularFilletGridSolid)`: actual
+analytic Mock facet records and native faceted BREP, with physical mass/bounds,
+owned facets and proper placement. Native face identity includes its body handle.
+Do not claim smooth cylinder supports, a transformed/native/f32 error certificate,
+or an authored variable-fillet operation. No source/MCP operation or eval is
+introduced; P16-008 stays planned. See
+[scope and example](physical-grid-reference-bodies.md).

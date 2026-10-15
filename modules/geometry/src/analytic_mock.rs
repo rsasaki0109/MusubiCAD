@@ -262,6 +262,7 @@ impl Cut {
 }
 #[derive(Clone, Debug)]
 enum Body {
+    CircularReference(crate::TriangleSolid),
     Thread(crate::NominalThreadGeometry),
     RibbedStock {
         frame: Frame,
@@ -418,6 +419,10 @@ impl Body {
             return Err(invalid("density must be finite and positive in kg/m^3"));
         }
         let (volume, area, center) = match self {
+            Self::CircularReference(g) => {
+                let m = g.mass_properties(density)?;
+                (m.volume_m3, m.area_m2, m.center_of_mass)
+            }
             Self::Thread(g) => {
                 let m = g.mass_properties(density)?;
                 (m.volume_m3, m.area_m2, m.center_of_mass)
@@ -519,6 +524,7 @@ impl Body {
     }
     pub(crate) fn bounds(&self) -> BoundingBox {
         match self {
+            Self::CircularReference(g) => g.bounding_box(),
             Self::Thread(g) => g.bounding_box(),
             Self::RibbedStock {
                 frame,
@@ -609,6 +615,7 @@ impl Body {
             return Err(invalid("transform must be a finite proper rigid rotation"));
         }
         Ok(match self {
+            Self::CircularReference(g) => Self::CircularReference(g.transformed(transform)?),
             Self::Thread(g) => Self::Thread(g.transformed(transform)?),
             Self::RibbedStock {
                 frame,
@@ -866,6 +873,12 @@ impl AnalyticMock {
         })
     }
 
+    pub(crate) fn circular_fillet_grid(
+        &mut self,
+        grid: &crate::CircularFilletGridSolid,
+    ) -> Result<KernelBody> {
+        self.store(Body::CircularReference(grid.solid().clone()), None, false)
+    }
     pub(crate) fn nominal_thread(
         &mut self,
         body: KernelBody,

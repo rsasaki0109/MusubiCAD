@@ -44,3 +44,7 @@ The CI diagnostic report carries `grid_native` and independently graded
 `grid_cases`; a grid failure must fail the entire run.
 
 See [the runnable example](../../examples/closed_periodic_reference_mesh.md).
+
+ADR-094 adds [physical reference-body construction](physical-grid-reference-bodies.md)
+from this typed certificate through analytic Mock and OCCT. The input bounds do
+not certify subsequent placement/native/f32 conversions.

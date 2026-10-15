@@ -982,3 +982,11 @@ retains existing 10000-triangle/intersection limits, requires bijective ordered
 correspondence, and rejects failed or insufficient-quality conversions without
 coarsening. This is not an authorable variable fillet or new MCP operation.
 See `docs/api/grid-admitted-reference-solid.md`; P16-008 stays planned.
+
+P16-041 / ADR-094 adds developer-only typed physical reference-body import through
+GeometryKernel. Analytic Mock explicitly stores actual grid facets; legacy Mock
+refuses and generic mesh import stays unsupported in analytic mode. Native
+identities are (body handle, local face index). Input bounds do not certify
+placement/native/f32 conversions. This is not a source fillet or smooth support
+admission; P16-008 stays planned. See `docs/api/physical-grid-reference-bodies.md`
+and `examples/physical_grid_reference_bodies.md`; no new MCP operation/eval.
