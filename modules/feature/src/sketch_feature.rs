@@ -74,14 +74,13 @@ pub(crate) fn admits_unconsumed_editor_draft(
     };
     if !sketch.profiles.is_empty()
         || !admitted_plane
-        || sketch.entities.iter().any(|e| {
-            !matches!(
-                e,
-                SketchEntity::Point(_)
-                    | SketchEntity::Line(_)
-                    | SketchEntity::Circle(_)
-                    | SketchEntity::Ellipse(_)
-            )
+        || sketch.entities.iter().any(|e| match e {
+            SketchEntity::Point(_)
+            | SketchEntity::Line(_)
+            | SketchEntity::Circle(_)
+            | SketchEntity::Ellipse(_) => false,
+            SketchEntity::Arc(arc) => !admitted_arc_draft(sketch, arc),
+            _ => true,
         })
     {
         return false;
@@ -102,4 +101,58 @@ pub(crate) fn admits_unconsumed_editor_draft(
     // No-parameter regeneration can skip apply_parameters' solver. Do not turn
     // that shortcut into admission of contradictory or invalid source drafts.
     crate::param_apply::solved_sketch_copy(sketch, &indexmap::IndexMap::new()).is_ok()
+}
+
+/// ADR-104: only a resolved explicit-endpoint arc in the existing portable
+/// subset may extend the profile-free construction draft admission.
+fn admitted_arc_draft(sketch: &Sketch, arc: &opencad_sketch::ArcEntity) -> bool {
+    use opencad_geometry::{ProfileSegment, SolvedSketch};
+    use opencad_sketch::{Coord, SketchEntity};
+    let check = || -> Option<()> {
+        let point = |id: &opencad_core::EntityId| match sketch.find_entity(id.as_str())? {
+            SketchEntity::Point(p) => match (&p.x, &p.y) {
+                (Coord::Literal(x), Coord::Literal(y)) => Some([*x, *y]),
+                _ => None,
+            },
+            _ => None,
+        };
+        let center = point(&arc.center)?;
+        let start = point(arc.start_point.as_ref()?)?;
+        let end = point(arc.end_point.as_ref()?)?;
+        let Coord::Literal(radius) = arc.radius else {
+            return None;
+        };
+        let (a, b) = opencad_sketch::solve::arc_angles(arc).ok()?;
+        let sweep = (b - a).rem_euclid(std::f64::consts::TAU);
+        let mid = a + sweep / 2.;
+        opencad_geometry::validate_arc_sector_profile(&SolvedSketch {
+            profile_ref: "editor construction arc admission".into(),
+            points: Vec::new(),
+            closed: true,
+            circle: None,
+            ellipse: None,
+            cubic_bezier: None,
+            placement: None,
+            segments: vec![
+                ProfileSegment::Arc {
+                    start_m: start,
+                    mid_m: [
+                        center[0] + radius * mid.cos(),
+                        center[1] + radius * mid.sin(),
+                    ],
+                    end_m: end,
+                },
+                ProfileSegment::Line {
+                    start_m: end,
+                    end_m: center,
+                },
+                ProfileSegment::Line {
+                    start_m: center,
+                    end_m: start,
+                },
+            ],
+        })
+        .ok()
+    };
+    check().is_some()
 }

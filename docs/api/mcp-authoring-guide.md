@@ -1700,3 +1700,28 @@ fail source/placement grading. Actual MCP/Agent regression covers five planes,
 verified read-only preview, atomic six-entity Undo/Redo and invalid/stale refusal.
 No mouse gesture, external model-host session or new GUI maturity is claimed;
 arc pointer controls follow separately in P17-006.
+
+## Atomic pointer arcs (MCAD-P17-006)
+
+Inspect sketches and use the existing `plan_sketch_edit` / `apply_sketch_edit`
+with current document identity/revision. The creation-only `arc` operation
+requires a fresh `id`, constant explicit-unit `center_x`, `center_y`, `start_x`,
+`start_y`, `end_direction_x`, `end_direction_y` and boolean `clockwise`,
+`close_sector`, `construction`. See [typed example](../../examples/agent/create_pointer_arc.json)
+and [API](sketch-editing.md#pointer-arc-intent-mcad-p17-006).
+
+The backend projects the end direction onto the centre/start circle, expands
+three points plus one ordinary Arc, and optionally two shared-ID radial lines.
+CW uses swapped endpoint references in the existing CCW source; it can select
+the major branch. Never pre-expand a guessed short arc or publish endpoints
+separately. Four/six additions Undo/Redo as one guarded edit, with the existing
+64 expanded-operation limit. Named parameter coordinates are outside this
+constant creation form; no associative helper or schema tag is invented.
+
+Open/construction drafts keep strict solve/assertion/consumer gates. Preserve
+datum references, unrelated source and opaque history. Both physical Mock and
+OCCT validate the closed sector. Evals `create_pointer_arc` and
+`create_pointer_arc_clockwise_major` check exact source/branch plus fresh native
+SI bounds, centroid, volume and oriented closure. Actual ten-case protocol
+parity is distinct from new actual Linux/Windows pointer acceptance and from
+external model-host verification. No new sampler or NURBS editing is admitted.

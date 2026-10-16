@@ -159,3 +159,20 @@ derived IDs, one-entry eight-entity Undo/Redo and upstream/stale-command refusal
 The stored geometry is four ordinary authored points and four lines, without
 a Rectangle helper or implied rectangle constraints. Linux execution and the
 required exact-head Windows WebView2 step remain separate evidence.
+
+## Arc pointer acceptance (P17-006)
+
+Choose Draw arc, set CW/CCW and optionally Close arc with radii, then click
+centre, start point and end direction. The third point selects direction on
+the fixed-radius circle. Review/apply is one backend source/history edit.
+Escape/Discard and control/reload/upstream changes cancel the draft; incomplete
+or discarded arcs cannot submit the unrelated numeric form. Open construction
+arcs remain valid drafts; consumers still require an admitted closed profile.
+
+Both native drivers execute [the arc helper](../../tools/pointer_arc_ui_checks.mjs)
+unconditionally after existing controls. Six new groups test real coordinate
+events, 10 mm radius projection, CCW 90° / CW 270° native volumes, open and
+closed construction, one-edit history, fresh IDs, cancellation, and actual stale
+refusal after datum motion. Linux now runs 32 groups; Windows uses the same
+helper through actual WebView2. This is separate from the ten-case MCP/Agent
+parity regression and does not establish an external model-host session.

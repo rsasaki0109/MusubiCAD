@@ -6,6 +6,7 @@ import {checkSketchCreation} from './sketch_creation_ui_checks.mjs';
 import {checkDatumSketches} from './datum_sketch_ui_checks.mjs';
 import {checkPointerCircles} from './pointer_circle_ui_checks.mjs';
 import {checkPointerRectangles} from './pointer_rectangle_ui_checks.mjs';
+import {checkPointerArcs} from './pointer_arc_ui_checks.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -97,5 +98,6 @@ try {
   results.push(...await checkDatumSketches({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkPointerCircles({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkPointerRectangles({evaluate,until,source,logicalSource,partPath}));
+  results.push(...await checkPointerArcs({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_tauri_editor_interactions_match_verified_backend_results:'passed',results}, null, 2));
 } finally { socket.close(); }

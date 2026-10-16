@@ -157,3 +157,58 @@ tolerances; a translated equal-volume mesh fails. Real Linux/Windows pointer
 checks are separate from protocol parity and external host verification.
 See [the typed example](../../examples/agent/create_pointer_rectangle.json)
 and eval create_pointer_rectangle. No persisted schema or new sampler is added.
+
+## Pointer arc intent (MCAD-P17-006)
+
+[ADR-104](../adr/ADR-104-pointer-arc-intent.md) adds one creation-only form to
+existing `plan_sketch_edit` / `apply_sketch_edit` commands. Pass current
+`document_id`, `revision` and owned `sketch_id`, with one operation:
+
+```json
+{"operation":"arc","id":"ent:arc_1","center_x":"2.000 mm","center_y":"-3.000 mm","start_x":"12.000 mm","start_y":"-3.000 mm","end_direction_x":"2.000 mm","end_direction_y":"17.000 mm","clockwise":false,"close_sector":true,"construction":false}
+```
+
+All coordinates are explicit local lengths. This creation form accepts constant
+unit-bearing expressions; named parameters refuse because deriving ordinary
+source does not create an associative helper. Existing parametric Arc source
+through DesignPatch remains available under ADR-024. Identity is required even
+on global planes. Keep the source-bound datum association and opaque history.
+
+The centre/start click fixes the radius; the third click specifies direction
+only. Here it is 20 mm from the centre, while the actual endpoint is (2,7) mm
+on the 10 mm circle. Backend computation and ADR-103 admission determine the
+source. Refuse zero/full/ambiguous turns, collapsed points, bad units, stale
+source/identity, any generated-ID collision or unsupported values. No shortest
+arc guess, snapping tolerance, new sampler or spline/NURBS admission is added.
+
+One patch creates `_center`, `_start`, `_end` points and the Arc at `id`.
+Centre/start expressions are preserved; endpoint/radius use fixed explicit-mm
+strings and angles explicit radians. For `clockwise:true`, the existing CCW
+source swaps Arc endpoint references/angles. `_start` remains the first clicked
+point. `close_sector:true` adds `_start_ray` from centre to canonical Arc start
+and `_end_ray` from Arc end to centre, sharing actual endpoint IDs. Four source
+operations for an open arc, six for a sector; the expanded batch cap stays 64.
+Construction marks the Arc/radii, with ordinary nonconstruction points.
+
+Open arcs and bounded unconsumed construction drafts can be reviewed without
+invented solids. Closed-profile consumers stay strict; assertions and native
+verification still gate publication. The returned solved sketch transports
+numeric radians for display separately from the original source. One
+apply/Undo/Redo covers all additions. Cancel/Escape, branch/closure/view/tool/
+sketch/file/upstream changes and late IPC replies cannot restore an old review.
+An empty arc tool cannot fall back to an unrelated numeric form.
+
+The [example](../../examples/agent/create_pointer_arc.json) gives a CCW quarter
+sector V=150*pi mm³, A=80*pi+120 mm² at depth 6 mm; `clockwise:true` gives the
+270° major sector V=450*pi, A=240*pi+120. On +5 mm XY datum the respective
+bounds are (2,-3,5)..(12,7,11) and (-8,-13,5)..(12,7,11) mm. Centroids are
+(2+d,-3+d,8) and (2-d/3,-3-d/3,8) mm, d=40/(3*pi). Both kernels verify
+physical placement/mesh/source/history, including 0° wrap. Native analytic
+tolerances remain 1e-12 m³, 1e-10 m² and 3e-7 m; fresh SI STL grading retains
+0.1 mm placement, 1% volume and 1 nm oriented closure.
+
+Eval `create_pointer_arc` and `create_pointer_arc_clockwise_major` independently
+grade exact source, prior graph/parameters and a fresh native export. Actual
+MCP/Agent regression covers both branches on five placements without model
+calls. New native Linux/Windows pointer controls have separate acceptance;
+MCP expresses typed intent rather than simulating a mouse.

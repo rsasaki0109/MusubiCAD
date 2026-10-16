@@ -85,9 +85,11 @@ registered roadmap order. Blank-document file creation and arbitrary custom/
 face-plane editing are not implicitly included. Acceptance requires actual new
 Linux Tauri/Windows WebView2 interactions and independent both-kernel physical
 results, including absolute placement and equal-volume wrong-placement controls.
-Existing Phase 14 operations receive no duplicate credit. After P17-005 /
-PR #153, actual weighted CAD is 53.50 and agent operation 95. Further feature
-credit requires its own main merge and explicit justified evidence ledger.
+Existing Phase 14 operations receive no duplicate credit. P17-005 /
+PR #153 established weighted CAD 53.50 and agent operation 95. P17-006
+changes weighted CAD to 53.65 only on its qualifying main merge, under the
+new native arc acceptance and explicit evidence ledger below. Further
+feature credit requires its own main merge and justified evidence ledger.
 
 ## Following phase: associative sketch and drawing coverage
 
@@ -243,3 +245,15 @@ P17-020 closes physical analytic Mock arc-sector parity needed by P17-006.
 OCCT already supports exact line/arc extrusion, so this prerequisite receives
 no CAD or agent-operation increment. Current scores remain weighted CAD 53.50,
 GUI 51 and agent operation 95 until a later qualifying feature main merge.
+
+## P17-006 conditional evidence ledger
+
+Baseline before P17-006 is GUI 51, weighted CAD 53.50 and agent operation 95.
+Only after its main merge with complete new Linux/Windows native arc acceptance,
+independent both-kernel physical/source/history evidence and all required
+checks/exact-head CI: GUI 51→52, weighted CAD 53.50→53.65 (about 54%), agent
+operation 95 unchanged. Credit covers the usable three-click arc lifecycle,
+explicit minor/major/CW/CCW choice, optional radial closure, cancellation and
+atomic reviewed source/history. Existing exact arc/sector geometry, P17-020
+physical parity, workplanes and old numeric/pointer forms earn no repeat credit.
+The fixed rubric and weights are unchanged; no external host increment.

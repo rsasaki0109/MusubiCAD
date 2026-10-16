@@ -52,9 +52,11 @@
             <button id="sketch-new-apply" type="button">Create reviewed sketch</button>
             <button id="sketch-new-cancel" type="button">Cancel</button>
           </div>
-          <p>Global or admitted datum workplane, local coordinates in mm. Select a point to move it, click twice for a line, choose a circle centre and radius point, or choose two opposite rectangle corners. Review before applying. Escape discards the draft.</p>
+          <p>Global or admitted datum workplane, local coordinates in mm. Click twice for a line, circle or rectangle. For an arc, choose its centre, start point, then end direction; the radius stays fixed. Choose the direction and optional radial closure before drawing. Review before applying. Escape discards the draft.</p>
           <select id="sketch-select" aria-label="Authored sketch"></select>
-          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="line">Draw line</option><option value="circle">Draw circle</option><option value="rectangle">Draw rectangle</option></select>
+          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="line">Draw line</option><option value="circle">Draw circle</option><option value="rectangle">Draw rectangle</option><option value="arc">Draw arc</option></select>
+          <label>Arc direction <select id="sketch-arc-direction"><option value="ccw">Counterclockwise</option><option value="cw">Clockwise</option></select></label>
+          <label><input id="sketch-arc-sector" type="checkbox" /> Close arc with radii</label>
           <label>View span (mm) <input id="sketch-span" type="number" min="1" max="1000000" value="120" /></label>
           <svg id="sketch-canvas" viewBox="-60 -40 120 80" aria-label="Sketch in local mm"></svg>
           <p id="sketch-diagnostics"></p>

@@ -1,0 +1,74 @@
+{
+  "task": "MCAD-P17-006",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Same typed intent as native centre/start/end-direction clicks; backend owns all derived source. The direction click is at radius 20 mm, the actual arc remains radius 10 mm.",
+  "steps": [
+    "Inspect/create one source-owned sketch on existing feature:datum with current identity/revision.",
+    "Inspect sketches, plan_sketch_edit with the operation below; preview is read-only.",
+    "apply_sketch_edit with the same edit and current opaque history; require native verification.",
+    "Create feature:pointer_body as a 6 mm NewBody extrusion using the owned closed profile.",
+    "Independently grade exact source and fresh native SI export, including absolute placement, centroid, closure and selected arc branch.",
+    "One Undo/Redo removes/restores every generated point/arc/radius."
+  ],
+  "operations": [
+    {
+      "operation": "arc",
+      "id": "ent:arc_1",
+      "center_x": "2.000 mm",
+      "center_y": "-3.000 mm",
+      "start_x": "12.000 mm",
+      "start_y": "-3.000 mm",
+      "end_direction_x": "2.000 mm",
+      "end_direction_y": "17.000 mm",
+      "clockwise": false,
+      "close_sector": true,
+      "construction": false
+    }
+  ],
+  "analytic_final": {
+    "volume_mm3": "150*pi",
+    "area_mm2": "80*pi+120",
+    "bounds_mm": {
+      "min": [
+        2,
+        -3,
+        5
+      ],
+      "max": [
+        12,
+        7,
+        11
+      ]
+    },
+    "centroid_mm": [
+      "2+40/(3*pi)",
+      "-3+40/(3*pi)",
+      8
+    ]
+  },
+  "clockwise_variant": {
+    "operation_change": {
+      "clockwise": true
+    },
+    "volume_mm3": "450*pi",
+    "area_mm2": "240*pi+120",
+    "bounds_mm": {
+      "min": [
+        -8,
+        -13,
+        5
+      ],
+      "max": [
+        12,
+        7,
+        11
+      ]
+    },
+    "centroid_mm": [
+      "2-40/(9*pi)",
+      "-3-40/(9*pi)",
+      8
+    ]
+  },
+  "compatibility": "ADR-104: constant explicit-unit creation only, no associative helper. Three points + one ordinary CCW Arc (swap endpoint references for CW), optional two shared-ID radial lines. 4 or 6 source operations; expanded cap 64. No schema/tool-count/sampler/NURBS change; model changes use verified DesignPatch/history. MCP expresses typed intent and does not simulate a mouse."
+}
