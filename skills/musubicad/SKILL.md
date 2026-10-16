@@ -1016,3 +1016,13 @@ Request finite positive ideal full-width and absolute-error budgets in m², plus
 Area is counted with multiplicity, not a union/embedding or native/placed/f32
 certificate. Actual Mock/OCCT area is unchanged. See
 `docs/api/grid-reference-area-difference.md`; no new MCP operation/eval or score.
+
+
+P16-045 / ADR-098: `reference.moment_bounds(CircularFilletMomentPrecision)`
+bounds IDEAL volume, first moments in m⁴ and centroid in metres. Explicit full
+width requests apply to volume and EVERY moment/centroid coordinate, including
+roundoff and outward division. `max_cells` is 4..=262144 PER volume/moment pass;
+return both counts. Canonical y symmetry (and constant x symmetry) is exact.
+Do not silently tighten a loose volume request, use midpoints as mass, or replace
+actual Mock/OCCT centroid. See `docs/api/ideal-periodic-reference-moments.md`.
+No grid-moment/native/placed/f32/source/MCP-operation/eval admission or score.

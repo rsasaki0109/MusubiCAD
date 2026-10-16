@@ -1364,3 +1364,37 @@ work checks and a high-precision constant-area oracle. At 1e-7 m² ideal full
 width, coarse constant/variable absolute grid-area discrepancy upper bounds are
 6.81745e-6 / 6.91599e-6 m² (relative 0.00364305 / 0.00372338). Actual kernel
 areas stay separate. These certify input-grid mathematics, not native conversion.
+
+
+PR #144 completed P16-044 at main
+`01bfc76ed05f6194a0b91c333cc1f68d80eb8941`, after all four exact-head applicable
+workflows and complete job inventories succeeded. Merge parents match tested
+base/head and the merge tree equals the tested head tree. No score: 52.60 / 95.
+
+MCAD-P16-045 / accepted ADR-098 adds canonical ideal first-moment/centroid
+enclosures. Degree-four characteristic integration and deterministic outward
+rational charts bound removed Mx/axial correction; independent volume and stock
+intervals complete body moments and positive-volume division yields centroid.
+Explicit SI full widths for volume/EACH moment/EACH centroid and separate per-pass
+leaf caps fail closed. Independent original point/tangent divergence integrals
+and constant meridional integrals, SI scales, radius boundary, signed x/exact y,
+refinement/determinism/tiny-amplitude and protected precision/work refusals cover
+the contract. Both physical kernels retain actual mass/centroid; example/CI shows
+ideal intervals separately. API/architecture/guide/skill/example updated. No
+actual-grid moment/native/placed/f32/source/schema/migration/golden/MCP-operation/
+eval admission; P16-008 stays planned. Completion requires merge; no score, 52.60 / 95.
+
+P16-045 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1246 passed, 0 failed, 36 ignored),
+and agent plugin contract. Four new independent geometry tests and one new actual
+both-kernel mass/centroid retention regression passed (current backend suite:
+6 tests). Release policy/hygiene passed. No score.
+
+The fresh both-kernel example passed independent widths/work/symmetry/outward-
+quotient checks and a high-precision constant-moment oracle. The variable case
+uses 23535 volume leaves and 7944 moment leaves at 1e-11 m³ / 1e-12 m⁴ /
+1e-6 m requested full widths. Ideal centroid x is
+[-1.0088551874924314e-5, -9.92901510337542e-6] m and z is
+[0.009977095338815828, 0.009977146449501754] m; exact y is zero. Actual
+faceted z remains approximately 0.009976556160260556 m in both kernels.
+These are separate ideal and actual measurements, not a native/grid-moment certificate.

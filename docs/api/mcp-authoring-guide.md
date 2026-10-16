@@ -1496,3 +1496,12 @@ the positive ideal lower bound. Native/placed/f32 conversion and exact embedding
 are excluded; actual kernel area stays actual. See
 [area difference API](grid-reference-area-difference.md). No MCP operation/eval
 or authored variable-fillet admission follows.
+
+
+P16-045 / ADR-098 adds developer-only `reference.moment_bounds(precision)` for
+ideal first moments (m⁴) and centroid (m). Request finite positive FULL volume
+(m³), per-coordinate moment (m⁴) and centroid (Length) widths and 4..=262144
+leaves PER pass. A coarse volume enclosure may prevent a tight centroid; failure
+returns no partial result or midpoint. Canonical y symmetry is exact; no actual
+kernel mass is substituted. See [moment API](ideal-periodic-reference-moments.md).
+No MCP operation/eval, native/placed/f32 or production/source admission follows.

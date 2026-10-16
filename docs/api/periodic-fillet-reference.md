@@ -978,3 +978,8 @@ with shared periodic/contact/cap IDs, full position/facet-normal bounds and
 explicit budgets. Actual faceted native measurements are separate from the
 existing analytic-support rational BREP and its certificates. No physical
 Mock/source/embedding or score admission follows.
+
+
+P16-045 separately adds [ideal first-moment and centroid enclosures](ideal-periodic-reference-moments.md)
+with explicit SI volume/moment/centroid full widths and two integration budgets.
+These are canonical ideal values; actual kernel mass and centroid remain separate.

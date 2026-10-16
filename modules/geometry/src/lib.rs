@@ -85,6 +85,9 @@ pub use tapered_rib::{TaperedRibGeometry, TaperedRibInput};
 mod circular_fillet_volume;
 pub use circular_fillet_volume::CircularFilletVolumeBounds;
 
+mod circular_fillet_moments;
+pub use circular_fillet_moments::{CircularFilletMomentBounds, CircularFilletMomentPrecision};
+
 mod circular_fillet_reference_area;
 pub use circular_fillet_reference_area::CircularFilletReferenceAreaBounds;
 
