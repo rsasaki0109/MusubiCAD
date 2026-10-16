@@ -143,7 +143,7 @@ pub use circular_fillet_boundary_normals::{
 
 mod circular_fillet_mesh;
 pub use circular_fillet_mesh::{
-    CircularFilletGridPrecision, CircularFilletGridSolid, CircularFilletGridVolumeComparison,
-    CircularFilletGridVolumePrecision, CircularFilletMeshIntegrals, CircularFilletMeshPrecision,
-    CircularFilletReferenceMesh,
+    CircularFilletGridAreaComparison, CircularFilletGridAreaPrecision, CircularFilletGridPrecision,
+    CircularFilletGridSolid, CircularFilletGridVolumeComparison, CircularFilletGridVolumePrecision,
+    CircularFilletMeshIntegrals, CircularFilletMeshPrecision, CircularFilletReferenceMesh,
 };

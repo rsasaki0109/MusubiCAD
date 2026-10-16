@@ -1334,3 +1334,33 @@ area is [0.001857449956914607, 0.0018575499518287903] m² using 6672 leaves;
 actual faceted area remains approximately 0.001850633968 m² in BOTH kernels.
 Constant ideal area is approximately 0.001871360554477447 m² (zero cells).
 These remain separate measurements, not a native area discrepancy certificate.
+
+
+PR #143 completed P16-043 at main
+`0133c2545598a71a23979e37780a8e2e22f3f6c0`, after all four exact-head applicable
+workflows and complete job inventories succeeded. Merge parents match tested
+base/head and the merge tree equals the tested head tree. No score: 52.60 / 95.
+
+MCAD-P16-044 / accepted ADR-097 adds immutable stored-grid unsigned area versus
+privately bound ideal-area comparisons. Outward actual facet areas, ideal total
+width/work and absolute discrepancy budgets fail closed; relative bounds divide
+by the positive ideal lower bound. Independent exact dyadic box/integer-grid
+areas, analytic constant/scales, variable binding/refinement/determinism and
+precision/work/discrepancy/refusal tests cover the contract. Both kernels retain
+actual area with a separate numerical conversion allowance; the existing
+example/CI reports full comparison intervals and scope flags. API/architecture/
+guide/skill/example updated. No embedding/native/placed/f32, ideal first-moment,
+source/schema/migration/golden/MCP operation/eval admission. P16-008 stays planned;
+completion requires merge; no score, actual52.60 / 95.
+
+P16-044 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1241 passed, 0 failed, 36 ignored),
+and agent plugin contract. Three new geometry tests, one exact dyadic-box unit
+test and the extended actual both-kernel area comparison regression passed
+(current backend suite: 5 tests). Release policy/hygiene passed. No score.
+
+The fresh both-kernel example passed independent area/difference/component/width/
+work checks and a high-precision constant-area oracle. At 1e-7 m² ideal full
+width, coarse constant/variable absolute grid-area discrepancy upper bounds are
+6.81745e-6 / 6.91599e-6 m² (relative 0.00364305 / 0.00372338). Actual kernel
+areas stay separate. These certify input-grid mathematics, not native conversion.

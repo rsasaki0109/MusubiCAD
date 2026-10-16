@@ -306,7 +306,7 @@ fn volume_comparison_encloses_actual_backend_mass_without_substituting_ideal_val
 }
 
 #[test]
-fn ideal_area_never_replaces_actual_faceted_area_in_either_kernel() {
+fn area_comparison_keeps_actual_faceted_area_and_bounds_differences_in_either_kernel() {
     for variable in [false, true] {
         let g = grid(variable, false);
         let r = CircularFilletReference::new(
@@ -317,6 +317,12 @@ fn ideal_area_never_replaces_actual_faceted_area_in_either_kernel() {
         )
         .unwrap();
         let ideal = r.surface_area_bounds_m2(1e-7, 262144).unwrap();
+        let p = opencad_geometry::CircularFilletGridAreaPrecision {
+            maximum_reference_interval_width_m2: 1e-7,
+            maximum_absolute_difference_m2: 1e-5,
+            max_cells: 262144,
+        };
+        let comparison = g.area_comparison(p).unwrap();
         let actual_grid_area = independent(&g).1;
         let mock = MockGeometryKernel::with_analytic_primitives();
         let native = OcctGeometryKernel::new();
@@ -325,9 +331,17 @@ fn ideal_area_never_replaces_actual_faceted_area_in_either_kernel() {
             let before = kernel.mass_properties(&body, 1.).unwrap();
             // Numerical native conversion allowance; not an area certificate.
             assert!((before.area_m2 - actual_grid_area).abs() < 1e-10);
+            let [lo, hi] = comparison.grid_unsigned_area_m2();
+            assert!(lo - 1e-10 <= before.area_m2 && before.area_m2 <= hi + 1e-10);
             for bound in [ideal.body_lower_m2, ideal.body_upper_m2] {
                 assert!((before.area_m2 - bound).abs() > 1e-7);
+                let delta = before.area_m2 - bound;
+                let [lo, hi] = comparison.signed_difference_m2();
+                assert!(lo - 1e-10 <= delta && delta <= hi + 1e-10);
             }
+            let mut tight = p;
+            tight.maximum_absolute_difference_m2 = 1e-12;
+            assert!(g.area_comparison(tight).is_err());
             assert!(r.surface_area_bounds_m2(f64::from_bits(1), 4).is_err());
             let after = kernel.mass_properties(&body, 1.).unwrap();
             assert!((before.area_m2 - after.area_m2).abs() < 1e-18);

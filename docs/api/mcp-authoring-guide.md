@@ -1487,3 +1487,12 @@ ideal envelope, never a backend mass query. Invalid/unattainable requests refuse
 The both-kernel example/CI reports ideal and actual faceted areas separately.
 See [area API](ideal-periodic-reference-area.md). No MCP operation/eval or
 authored variable-fillet admission follows; P16-008 remains planned.
+
+
+P16-044 / ADR-097 adds developer-only `grid.area_comparison(precision)` for actual
+stored-grid unsigned triangle area minus the privately bound ideal area. Explicit
+SI full-width/work/absolute-error budgets fail closed. Relative error divides by
+the positive ideal lower bound. Native/placed/f32 conversion and exact embedding
+are excluded; actual kernel area stays actual. See
+[area difference API](grid-reference-area-difference.md). No MCP operation/eval
+or authored variable-fillet admission follows.

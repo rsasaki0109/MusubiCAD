@@ -1007,3 +1007,12 @@ unattainable precision refuses. Actual Mock/OCCT faceted-body area stays actual
 and separate in the example/CI report. Do not substitute ideal mass or claim
 production fillets, native conversion, first moments or source admission. See
 `docs/api/ideal-periodic-reference-area.md`; no MCP operation/eval or score.
+
+
+P16-044 / ADR-097: `grid.area_comparison(CircularFilletGridAreaPrecision)` bounds
+actual stored binary64 unsigned triangle area minus its privately bound ideal.
+Request finite positive ideal full-width and absolute-error budgets in m², plus
+4..=262144 reference leaves; failures return no comparison or geometry mutation.
+Area is counted with multiplicity, not a union/embedding or native/placed/f32
+certificate. Actual Mock/OCCT area is unchanged. See
+`docs/api/grid-reference-area-difference.md`; no new MCP operation/eval or score.
