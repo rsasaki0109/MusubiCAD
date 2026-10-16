@@ -805,6 +805,60 @@ impl GeometryKernel for OcctGeometryKernel {
         }
     }
 
+    fn grid_faceted_periodic_cosine(
+        &self,
+        body: KernelBody,
+        input: &opencad_geometry::FacetedCircularFilletInput,
+    ) -> Result<KernelBody> {
+        #[cfg(feature = "occt")]
+        {
+            let rims = self.cylindrical_stock_rims(&body, input.axis)?;
+            let plan = input.prepare(&rims)?;
+            let grid = plan.grid().solid();
+            let bytes = crate::ffi::native::triangle_solid(
+                &grid.vertices_m().concat(),
+                &grid.triangles().concat(),
+                grid.mass_properties(1.)?.volume_m3,
+            )
+            .map_err(|e| OpenCadError::validation(format!("faceted periodic fillet: {e}")))?;
+            let placement = plan.placement();
+            let matrix: Vec<f64> = (0..3)
+                .flat_map(|i| {
+                    placement.rotation[i]
+                        .into_iter()
+                        .chain([placement.translation_m[i]])
+                })
+                .collect();
+            let bytes = crate::ffi::native::place_faceted_solid(
+                &bytes,
+                &matrix,
+                grid.mass_properties(1.)?.volume_m3,
+            )
+            .map_err(|e| {
+                OpenCadError::validation(format!("placed faceted periodic fillet: {e}"))
+            })?;
+            let mut solids =
+                Solid::read_brep_text(&mut std::io::Cursor::new(bytes)).map_err(map_occt_error)?;
+            if solids.len() != 1 {
+                return Err(OpenCadError::validation(
+                    "faceted periodic fillet requires one placed solid",
+                ));
+            }
+            let solid = solids.remove(0);
+            let mut store = self.store.borrow_mut();
+            let id = store.insert_body(solid);
+            store.circular_grid_bodies.insert(id);
+            Ok(KernelBody::new(id))
+        }
+        #[cfg(not(feature = "occt"))]
+        {
+            let _ = (body, input);
+            Err(OpenCadError::validation(
+                "faceted periodic fillet requires OCCT",
+            ))
+        }
+    }
+
     fn draft_cylindrical_stock(
         &self,
         body: KernelBody,

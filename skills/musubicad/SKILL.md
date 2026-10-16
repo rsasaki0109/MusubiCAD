@@ -1034,3 +1034,13 @@ per-axis signed/absolute differences. Require explicit ideal widths/work and bot
 absolute error budgets; any axis exceeding a budget refuses. Never treat this as
 embedding/native/source admission or replace actual Mock/OCCT mass. See
 `docs/api/grid-reference-moment-difference.md`.
+
+P16-047 / ADR-100: developer-only `grid_faceted_periodic_cosine` checks the
+current physical cylinder/end-rim and explicit proper phase frame, then all
+canonical position/normal/volume/area/moment/centroid budgets before allocation.
+Both physical kernels rebuild ALL faces as new planar facets and preserve stock;
+legacy Mock refuses. No source/MCP operation or eval is added. Do not claim
+unchanged analytic supports or native/placed/f32 certificates from canonical
+bounds. See `docs/api/faceted-circular-fillet-runtime.md` and
+`examples/faceted_circular_fillet.md`; source/reader/cache/history/actual MCP
+admission remains P16-008.

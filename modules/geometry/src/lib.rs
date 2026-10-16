@@ -152,3 +152,6 @@ pub use circular_fillet_mesh::{
     CircularFilletGridVolumePrecision, CircularFilletMeshIntegrals, CircularFilletMeshPrecision,
     CircularFilletReferenceMesh,
 };
+
+mod faceted_circular_fillet;
+pub use faceted_circular_fillet::{FacetedCircularFilletInput, FacetedCircularFilletPlan};

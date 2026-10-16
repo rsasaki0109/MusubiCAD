@@ -1,5 +1,7 @@
 #include "cpp/variable_fillet.h"
 #include <BRepBuilderAPI_MakePolygon.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <gp_Trsf.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_Sewing.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
@@ -398,6 +400,39 @@ rust::Vec<std::uint8_t> ellipse_prism(rust::Slice<const double> frame, rust::Sli
         std::ostringstream stream;BRepTools::Write(solid,stream);auto bytes=stream.str();rust::Vec<std::uint8_t> result;
         for (auto byte:bytes) {result.push_back(static_cast<std::uint8_t>(byte));}
         return result;
+    } catch (const Standard_Failure& failure) {throw std::runtime_error(failure.what());}
+}
+
+// ADR-100: matrix placement of the already admitted actual faceted BREP.
+// All checks precede insertion into the Rust body store.
+rust::Vec<std::uint8_t> place_faceted_solid(rust::Slice<const std::uint8_t> brep, rust::Slice<const double> p, double expected_volume) {
+    try {
+        if (p.size()!=12 || !std::isfinite(expected_volume) || expected_volume<=0)
+            throw std::runtime_error("invalid placed faceted solid input");
+        for (double x:p) if (!std::isfinite(x)) throw std::runtime_error("non-finite faceted placement");
+        for (std::size_t i=0;i<3;++i) for (std::size_t j=0;j<=i;++j) {
+            double dot=0;for (std::size_t k=0;k<3;++k) dot+=p[4*i+k]*p[4*j+k];
+            if (std::abs(dot-(i==j?1.:0.))>1e-12) throw std::runtime_error("non-rigid faceted placement");
+        }
+        double determinant=p[0]*(p[5]*p[10]-p[6]*p[9])-p[1]*(p[4]*p[10]-p[6]*p[8])+p[2]*(p[4]*p[9]-p[5]*p[8]);
+        if (std::abs(determinant-1.)>1e-12) throw std::runtime_error("improper faceted placement");
+        std::istringstream stream(std::string(reinterpret_cast<const char*>(brep.data()),brep.size()));
+        TopoDS_Shape shape;BRep_Builder builder;BRepTools::Read(shape,stream,builder);
+        if (shape.IsNull() || shape.ShapeType()!=TopAbs_SOLID) throw std::runtime_error("faceted placement requires one solid");
+        gp_Trsf transform;transform.SetValues(p[0],p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8],p[9],p[10],p[11]);
+        BRepBuilderAPI_Transform conversion(shape,transform,true);
+        if (!conversion.IsDone()) throw std::runtime_error("faceted matrix placement failed");
+        auto result=conversion.Shape();
+        if (result.IsNull() || result.ShapeType()!=TopAbs_SOLID || !BRepCheck_Analyzer(result,true).IsValid())
+            throw std::runtime_error("invalid placed faceted solid");
+        BOPAlgo_ArgumentAnalyzer check;check.SetShape1(result);check.SelfInterMode()=true;check.StopOnFirstFaulty()=true;check.Perform();
+        if (check.HasFaulty()) throw std::runtime_error("self-intersecting placed faceted solid");
+        GProp_GProps mass;BRepGProp::VolumeProperties(result,mass);
+        if (!std::isfinite(mass.Mass()) || mass.Mass()<=0 || std::abs(mass.Mass()-expected_volume)>std::max(1e-18,expected_volume*1e-8))
+            throw std::runtime_error("placed faceted volume differs from actual grid");
+        std::ostringstream output;BRepTools::Write(result,output);auto bytes=output.str();rust::Vec<std::uint8_t> out;
+        for (auto byte:bytes) out.push_back(static_cast<std::uint8_t>(byte));
+        return out;
     } catch (const Standard_Failure& failure) {throw std::runtime_error(failure.what());}
 }
 

@@ -987,3 +987,8 @@ These are canonical ideal values; actual kernel mass and centroid remain separat
 P16-046 / ADR-099 adds [stored-grid signed first-moment and centroid
 comparisons](grid-reference-moment-difference.md), with explicit SI per-axis
 discrepancy refusal. No native/source admission.
+
+P16-047 / ADR-100 adds a [guarded grid-faceted cylinder runtime](faceted-circular-fillet-runtime.md)
+that checks actual stock/rim and explicit phase before creating real bodies in
+both kernels. All supports are rebuilt facets. Canonical bounds remain distinct
+from native/placed/f32 measurements; source P16-008 remains planned.

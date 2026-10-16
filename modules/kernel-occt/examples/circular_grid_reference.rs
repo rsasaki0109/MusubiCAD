@@ -8,6 +8,8 @@ use opencad_geometry::{
 };
 use opencad_kernel_occt::OcctGeometryKernel;
 use serde_json::json;
+#[path = "support/faceted_circular_fillet.rs"]
+mod guarded_operation;
 fn main() -> opencad_core::Result<()> {
     let mut cases = Vec::new();
     for (law, maximum) in [("constant", 0.0005), ("variable", 0.0015)] {
@@ -108,7 +110,7 @@ fn main() -> opencad_core::Result<()> {
     }
     println!(
         "{}",
-        json!({"format_version":1,"physical_reference_bodies_created":true,"authored_fillet_created":false,"native_conversion_certified":false,"cases":cases})
+        json!({"format_version":1,"physical_reference_bodies_created":true,"authored_fillet_created":false,"native_conversion_certified":false,"cases":cases,"guarded_operations":guarded_operation::report()?})
     );
     Ok(())
 }

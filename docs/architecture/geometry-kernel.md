@@ -677,3 +677,12 @@ centroid quotient arithmetic in geometry. Immutable comparisons bind the origina
 ideal privately and reject per-coordinate SI error excess; kernel mass stays
 actual. This adds no embedding/native/placed/f32/source admission. See
 `docs/api/grid-reference-moment-difference.md`.
+
+P16-047 / ADR-100 adds `grid_faceted_periodic_cosine`: the geometry module
+validates an explicit proper phase frame, actual cylinder/end-rim witness and
+all canonical mesh/integral discrepancy budgets before body allocation. Analytic
+Mock stores/transforms actual facets; OCCT places a validated BREP with the full
+SI matrix and rechecks its solid/self-intersection/actual volume before insertion.
+All output facets are new, stock remains immutable, counting forwards and legacy
+Mock refuses. Canonical certificates do not propagate to native/placed/f32;
+source/schema/cache/history/MCP admission remains separate.

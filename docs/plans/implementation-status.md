@@ -1433,3 +1433,43 @@ errors are 1.363093368143831e-7 m (constant) and 5.902892433531927e-7 m
 budgets. Ideal work remains 23535 volume / 7944 moment leaves for the variable
 case. These are signed boundary-integral/quotient comparisons, not native or
 exact global embedding certificates. Actual backend mass/centroid stay separate.
+
+PR #146 completed P16-046 at main
+`73eff3a795b86ecada2e760bae1b03c2e275afef`, with parents matching tested
+base/head and an identical merge/tested-head tree. All four exact-head workflows
+and full job inventories succeeded (release publisher skipped as expected).
+Scores remain 52.60 / 95; P16-008 stays planned.
+
+MCAD-P16-047 is registered before implementation under accepted ADR-100:
+a guarded physical grid-faceted periodic fillet operation on an actual current
+cylinder/end-rim pair with explicit phase, quality and discrepancy budgets.
+Source/history/schema/MCP admission remains a separate P16-008 gate.
+
+P16-047 implements the named numerical `grid_faceted_periodic_cosine` runtime.
+Current cylinder/end-rim and explicit proper phase precede privately generated
+canonical grids and all quality/integral error gates. Analytic Mock stores actual
+facets; OCCT builds the actual BREP and applies a full SI matrix, then rechecks
+placed solid validity/self-intersection/actual volume before final insertion.
+Stock stays immutable and all output facets are new; default Mock refuses and
+counting forwards. Independent integer-grid/constant analytic mass, physical
+contacts, scaled/placed/small-phase/seam controls and protected failures cover
+both kernels. Dedicated example plus existing CI report, API/architecture,
+guide and skill document the numerical scope. Canonical bounds do not certify
+native/placed/f32 conversion. No source/schema/golden/MCP-operation/eval or
+maturity credit; P16-008 stays planned pending its separate source contract.
+
+P16-047 mandatory pre-push checks passed: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1257 passed, 0 failed, 36 ignored)
+and agent plugin contract; release policy/hygiene also passed. Six new shared
+physical regressions passed (3 analytic Mock, 3 OCCT), covering independent mass,
+contacts/placement/phase, stock/face ownership and protected refusals.
+
+Both documented example entry points executed successfully. Independent checks
+validated unchanged canonical arithmetic, all explicit budgets and scope flags,
+constant analytic moments, actual both-kernel mass/area/placed centroid, four
+contact vertices, owned facets and stock preservation. The placed variable case
+retains actual volume approximately 6.22297048807090e-6 m³ and 1088 new facets;
+maximum measured contact-vertex discrepancy is 3.649659129610206e-9 m, below the
+separate 1e-8 m numerical allowance. Its canonical volume discrepancy bound is
+4.54712916126606e-8 m³ (1e-11 m³ ideal width). These measurements do not certify
+native/placed/f32 conversion. No score: 52.60 / 95.

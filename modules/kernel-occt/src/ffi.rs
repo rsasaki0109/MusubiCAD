@@ -27,6 +27,11 @@ pub(crate) mod native {
         fn tight_bounds(brep: &[u8]) -> Result<Vec<f64>>;
         fn cubic_prism(controls: &[f64], delta: &[f64]) -> Result<Vec<u8>>;
         fn ellipse_prism(frame: &[f64], delta: &[f64]) -> Result<Vec<u8>>;
+        fn place_faceted_solid(
+            brep: &[u8],
+            placement: &[f64],
+            expected_volume: f64,
+        ) -> Result<Vec<u8>>;
         fn triangle_solid(
             vertices: &[f64],
             indices: &[u32],

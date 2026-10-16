@@ -1512,3 +1512,13 @@ ideal. Require explicit ideal widths/work and finite positive per-coordinate
 moment (m⁴)/centroid (Length) error budgets. Reject excess; never substitute ideal
 kernel mass or claim embedding/native/source admission. No new MCP operation/eval.
 See [comparison API](grid-reference-moment-difference.md).
+
+P16-047 / ADR-100 is a developer-only numerical kernel runtime:
+`grid_faceted_periodic_cosine(body, &FacetedCircularFilletInput)`. Require the
+current full cylinder/end rim, explicit authored phase frame and SI canonical
+quality/discrepancy budgets. All support faces become new planar facets. Do not
+publish a legacy `fillet` patch or infer source ownership/phase from native IDs:
+no new source tag, MCP operation or eval is admitted. Canonical bounds are not
+native/placed/f32 certificates. See [runtime API](faceted-circular-fillet-runtime.md)
+and `examples/faceted_circular_fillet.md`. P16-008 still owns source, transaction,
+reader/cache/phase and independently graded MCP gates.
