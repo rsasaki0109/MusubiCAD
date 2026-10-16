@@ -527,6 +527,21 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_arc_sector" in task:
+        from arc_sector_eval import source_problems, placed_problems, graph_source
+        desired=task['expected_arc_sector']
+        problems.extend(source_problems(document,desired,graph_source(ROOT/task['source'])))
+        if musubicad is None:
+            problems.append("arc sector grader requires fresh native physical export")
+        elif not problems:
+            try:
+                with tempfile.TemporaryDirectory(prefix="musubicad-arc-sector-grade-") as folder:
+                    target=Path(folder)/"actual.stl"
+                    result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                    problems.extend(placed_problems(target.read_bytes(),desired['case'])
+                        if result.returncode==0 else ["arc sector physical export failed"])
+            except (OSError,subprocess.TimeoutExpired):
+                problems.append("arc sector physical export unavailable")
     if "expected_pointer_rectangle" in task:
         from pointer_rectangle_eval import source_problems, placed_problems, graph_source
         desired=task['expected_pointer_rectangle']

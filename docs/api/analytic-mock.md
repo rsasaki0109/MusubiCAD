@@ -11,13 +11,13 @@ Supported `GeometryKernel` operations:
 
 | Operation | Admission |
 |---|---|
-| `make_wire_from_sketch` | Closed right rectangle (four corners; optional matching line segments), or exact single circle; finite orthonormal sketch placement |
+| `make_wire_from_sketch` | Closed right rectangle (four corners; optional matching line segments), exact single circle, or ADR-103 one-arc/two-radii sector; finite orthonormal sketch placement |
 | `extrude` | Distance or symmetric normal extrusion; `NewBody` without a target, or circle `Cut` with admitted stock target |
 | `boolean` / `body_boolean` | Subtract a strictly radially contained, axially bounded cylinder from rectangular stock; one concentric chain only |
 | `mass_properties` | Independent SI volume, surface area, positive-density mass and centre of mass |
-| `bounding_box` | Actual stock corners or analytic cylindrical support bounds |
+| `bounding_box` | Actual stock corners, analytic cylindrical support bounds or sector branch extrema |
 | `transform_body` / `translate_body` | Finite proper rigid rotation and signed translation, with immutable input records |
-| `tessellate` | Actual outward closed stock, cylinder and concentric-cut meshes; strict quality and output budgets (ADR-063) |
+| `tessellate` | Actual outward closed stock, cylinder, sector and concentric-cut meshes; strict quality and output budgets (ADR-063) |
 | `rectangular_stock_geometry` | Unique outward in-face pick on uncut tracked cuboid; OCCT verifies actual BREP types/topology privately |
 | `assign_face_ref` / `face_derivation_history` | Body-owned actual face IDs, retained outer faces on cuts, split-wall ancestry and new IDs/history on transforms |
 | `has_exact_rigid_placement` | True only for an actual tracked analytic body in this mode |
@@ -40,6 +40,12 @@ use the admitted proper `transform_body` for rotation. Unknown handles never
 yield synthetic measurements, meshes, face membership or identity transforms.
 
 ## Physical mesh and face witness (P16-010 / ADR-063)
+
+P17-020 / [ADR-103](../adr/ADR-103-physical-arc-sector-parity.md) adds exact
+one-arc/two-radii sector records to this explicit physical mode, with analytic
+mass, selected-branch world bounds, five-face closed meshes and rigid placement.
+See [arc-sector admission and tests](arc-sectors.md) for the bounded contract.
+This does not admit sectors as cuboid/cylinder stock or generic Boolean inputs.
 
 `TessellationSettings` requires positive finite linear deflection in metres and
 angular deflection in degrees (at most 180). A uniform half-gap grid has at least

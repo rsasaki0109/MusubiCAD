@@ -11,7 +11,7 @@ use opencad_solver::SolverOptions;
 use crate::feature::{FeatureDefinition, FeatureNode};
 use crate::regenerate::PartModel;
 
-/// Unit-bearing point/circle forms need solving even with an empty parameter graph.
+/// Unit-bearing point/circle/arc forms need solving even with an empty parameter graph.
 /// Only the disposable regeneration model is resolved; authored source stays intact.
 pub(crate) fn has_sketch_form_source(model: &PartModel) -> bool {
     use opencad_sketch::{Coord, SketchEntity};
@@ -21,6 +21,9 @@ pub(crate) fn has_sketch_form_source(model: &PartModel) -> bool {
                 matches!(point.x, Coord::Expr(_)) || matches!(point.y, Coord::Expr(_))
             }
             SketchEntity::Circle(circle) => matches!(circle.radius, Coord::Expr(_)),
+            SketchEntity::Arc(arc) => [&arc.radius, &arc.start_angle, &arc.end_angle]
+                .iter()
+                .any(|coord| matches!(coord, Coord::Expr(_))),
             _ => false,
         })
     })
@@ -408,13 +411,24 @@ pub(crate) fn resolve_sketch_constraints(
         let opencad_sketch::SketchEntity::Arc(arc) = entity else {
             continue;
         };
+        // ADR-103: invalid radius units must fail before the solver's optional
+        // radius seed can discard a parse error and fit a different radius.
+        // This only resolves the disposable regeneration/inspection copy.
+        if let opencad_sketch::Coord::Expr(expr) = &arc.radius {
+            arc.radius = opencad_sketch::Coord::Literal(opencad_graph::eval_length_expr_strict(
+                expr.as_str(),
+                scope,
+            )?);
+        }
         let parametric = [&arc.start_angle, &arc.end_angle]
             .iter()
             .any(|angle| matches!(angle, opencad_sketch::entity::Coord::Expr(_)));
         arc.resolved_angles_rad = if parametric {
             let resolve = |angle: &opencad_sketch::entity::Coord| match angle {
                 opencad_sketch::entity::Coord::Literal(value) => Ok(*value),
-                opencad_sketch::entity::Coord::Expr(expr) => eval_angle_expr(expr.as_str(), scope),
+                opencad_sketch::entity::Coord::Expr(expr) => {
+                    opencad_graph::eval_angle_expr_strict(expr.as_str(), scope)
+                }
             };
             Some([resolve(&arc.start_angle)?, resolve(&arc.end_angle)?])
         } else {

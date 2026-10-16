@@ -437,6 +437,9 @@ impl GeometryKernel for OcctGeometryKernel {
             }
             let edges = sketch_to_edges(sketch)?;
             let id = self.store.borrow_mut().insert_wire(edges);
+            if opencad_geometry::validate_arc_sector_profile(sketch).is_ok() {
+                self.store.borrow_mut().sector_wires.insert(id);
+            }
             Ok(KernelWire::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -573,6 +576,9 @@ impl GeometryKernel for OcctGeometryKernel {
             }
 
             let id = self.store.borrow_mut().insert_body(solid);
+            if self.store.borrow().sector_wires.contains(&profile.0) {
+                self.store.borrow_mut().sector_bodies.insert(id);
+            }
             if cubic.is_some() {
                 self.store.borrow_mut().cubic_bodies.insert(id);
             }
@@ -1186,7 +1192,9 @@ impl GeometryKernel for OcctGeometryKernel {
             let member_ids = collect_body_member_ids(&store, body.0)?;
             let grid_members: Vec<bool> = member_ids
                 .iter()
-                .map(|id| store.circular_grid_bodies.contains(id))
+                .map(|id| {
+                    store.circular_grid_bodies.contains(id) || store.sector_bodies.contains(id)
+                })
                 .collect();
             let mut thread = false;
             for id in member_ids {
@@ -1196,6 +1204,8 @@ impl GeometryKernel for OcctGeometryKernel {
                 }
             }
             drop(store);
+            // ADR-103: portable arc-sector display faces also use oriented
+            // triangle normals; the exact analytic native solid stays intact.
             // ADR-101: marked grid members are actual planar facets. Their
             // display normals come from the oriented physical triangles, not
             // the legacy +Z placeholder or smoothing across adjacent facets.
@@ -1956,10 +1966,10 @@ impl GeometryKernel for OcctGeometryKernel {
             }
             let solids = collect_body_solids(&self.store.borrow(), body.0)?;
             let source_ids = collect_body_member_ids(&self.store.borrow(), body.0)?;
-            if source_ids
-                .iter()
-                .any(|id| self.store.borrow().circular_grid_bodies.contains(id))
-            {
+            if source_ids.iter().any(|id| {
+                let store = self.store.borrow();
+                store.circular_grid_bodies.contains(id) || store.sector_bodies.contains(id)
+            }) {
                 opencad_geometry::cubic_bezier::validate_rigid_transform(transform)?;
             }
             let threads: Vec<_> = source_ids
@@ -1997,7 +2007,11 @@ impl GeometryKernel for OcctGeometryKernel {
                     .borrow()
                     .circular_grid_bodies
                     .contains(&source_id);
+                let sector = self.store.borrow().sector_bodies.contains(&source_id);
                 let id = self.store.borrow_mut().insert_body(transformed);
+                if sector {
+                    self.store.borrow_mut().sector_bodies.insert(id);
+                }
                 if circular_grid {
                     self.store.borrow_mut().circular_grid_bodies.insert(id);
                 }

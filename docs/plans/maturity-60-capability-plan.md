@@ -85,8 +85,8 @@ registered roadmap order. Blank-document file creation and arbitrary custom/
 face-plane editing are not implicitly included. Acceptance requires actual new
 Linux Tauri/Windows WebView2 interactions and independent both-kernel physical
 results, including absolute placement and equal-volume wrong-placement controls.
-Existing Phase 14 operations receive no duplicate credit. After P17-004 /
-PR #152, actual weighted CAD is 53.35 and agent operation 95. Further feature
+Existing Phase 14 operations receive no duplicate credit. After P17-005 /
+PR #153, actual weighted CAD is 53.50 and agent operation 95. Further feature
 credit requires its own main merge and explicit justified evidence ledger.
 
 ## Following phase: associative sketch and drawing coverage
@@ -226,13 +226,20 @@ numeric circle forms, workplane creation and prior pointer line editing earn
 no repeat credit. Independent placed Mock/OCCT physical results and actual new
 native pointer interactions are required. No external model-host increment.
 
-## P17-005 merge-conditioned evidence ledger
+## P17-005 merged evidence ledger
 
-Current merged scores are GUI 50, weighted CAD 53.35, agent operation 95.
-Only after P17-005 main merge with all applicable exact-head CI and new actual
-Linux/Windows pointer acceptance: GUI 50→51, weighted CAD 53.35→53.50 (about
-54%); agent operation remains 95. Partial credit is the usable opposite-corner
-gesture, reviewed backend expansion, cancellation and atomic source/history.
-Existing rectangle geometry, point/line forms, workplane creation and previous
-pointer tools earn no repeat credit. Independent both-kernel placed physical
-results and native interactions are required. Fixed rubric/weights are unchanged.
+P17-005 merged in PR #153 with complete exact-head CI and actual new Linux
+Tauri / Windows WebView2 rectangle interactions: GUI 50→51, weighted CAD
+53.35→53.50 (about 54%), agent operation 95 unchanged. Partial credit covers
+the usable opposite-corner gesture, reviewed backend four-point/four-line
+expansion, cancellation and atomic source/history. Existing rectangle geometry,
+point/line forms, workplanes and prior pointer tools receive no repeat credit.
+Both-kernel placed physical measurements and independent actual MCP grading
+passed. No external model-host increment; original weights remain unchanged.
+
+## P17-020 prerequisite ledger
+
+P17-020 closes physical analytic Mock arc-sector parity needed by P17-006.
+OCCT already supports exact line/arc extrusion, so this prerequisite receives
+no CAD or agent-operation increment. Current scores remain weighted CAD 53.50,
+GUI 51 and agent operation 95 until a later qualifying feature main merge.

@@ -11,6 +11,7 @@ use crate::{
 
 mod mesh;
 mod rib;
+mod sector;
 mod thread;
 use rib::Rib;
 
@@ -100,6 +101,7 @@ impl Frame {
 
 #[derive(Clone, Debug)]
 enum Profile {
+    Sector(sector::SectorProfile),
     Rectangle {
         frame: Frame,
         sides: [f64; 2],
@@ -114,7 +116,7 @@ impl Profile {
     fn from_sketch(sketch: &SolvedSketch) -> Result<Self> {
         if !sketch.closed || sketch.ellipse.is_some() || sketch.cubic_bezier.is_some() {
             return Err(invalid(
-                "only exact closed rectangle/circle profiles are admitted",
+                "only exact closed rectangle/circle/sector profiles are admitted",
             ));
         }
         let plane = sketch.placement.unwrap_or(SketchPlacement::global_xy());
@@ -141,6 +143,13 @@ impl Profile {
                 normal: unit(cross(plane.x_axis_m, plane.y_axis_m))?,
                 radius: circle.radius_m,
             });
+        }
+        if sketch
+            .segments
+            .iter()
+            .any(|s| matches!(s, ProfileSegment::Arc { .. }))
+        {
+            return sector::SectorProfile::from_sketch(sketch).map(Self::Sector);
         }
         if sketch.points.len() != 4 || sketch.points.iter().flatten().any(|v| !v.is_finite()) {
             return Err(invalid("rectangle requires four finite corners"));
@@ -210,6 +219,7 @@ impl Profile {
         dimension(length)?;
         let direction = unit(direction)?;
         let normal = match self {
+            Self::Sector(profile) => profile.frame.axes[2],
             Self::Rectangle { frame, .. } => frame.axes[2],
             Self::Circle { normal, .. } => *normal,
         };
@@ -223,6 +233,7 @@ impl Profile {
             [0.; 3]
         };
         Ok(match self {
+            Self::Sector(profile) => Body::Sector(profile.extruded(length, direction, shift)),
             Self::Rectangle { frame, sides } => Body::Stock {
                 frame: Frame {
                     origin: add(frame.origin, shift),
@@ -262,6 +273,7 @@ impl Cut {
 }
 #[derive(Clone, Debug)]
 enum Body {
+    Sector(sector::Sector),
     CircularReference(crate::TriangleSolid),
     Thread(crate::NominalThreadGeometry),
     RibbedStock {
@@ -419,6 +431,7 @@ impl Body {
             return Err(invalid("density must be finite and positive in kg/m^3"));
         }
         let (volume, area, center) = match self {
+            Self::Sector(g) => g.mass()?,
             Self::CircularReference(g) => {
                 let m = g.mass_properties(density)?;
                 (m.volume_m3, m.area_m2, m.center_of_mass)
@@ -524,6 +537,7 @@ impl Body {
     }
     pub(crate) fn bounds(&self) -> BoundingBox {
         match self {
+            Self::Sector(g) => g.bounds(),
             Self::CircularReference(g) => g.bounding_box(),
             Self::Thread(g) => g.bounding_box(),
             Self::RibbedStock {
@@ -615,6 +629,7 @@ impl Body {
             return Err(invalid("transform must be a finite proper rigid rotation"));
         }
         Ok(match self {
+            Self::Sector(g) => Self::Sector(g.transformed(transform)),
             Self::CircularReference(g) => Self::CircularReference(g.transformed(transform)?),
             Self::Thread(g) => Self::Thread(g.transformed(transform)?),
             Self::RibbedStock {

@@ -86,6 +86,19 @@ regeneration; no schema rewrite is required solely to adopt this contract.
 
 `MockGeometryKernel` enables tests and headless CI without OCCT installed.
 
+## Portable physical arc-sector subset
+
+P17-020 / [ADR-103](../adr/ADR-103-physical-arc-sector-parity.md) shares a
+kernel-neutral validator for ordered one-arc/two-radii closed profiles. The
+explicit analytic Mock stores independent exact sector measurements and uses
+the existing ADR-063 manifold mesh builder. Native retains exact OCCT edges;
+private validated-sector wire/body records select oriented triangle-derived
+display normals and propagate through proper rigid placements. The records
+are transient kernel cache, never document ownership or serialized source.
+No native types enter geometry, and no new trait method or persisted tag is
+introduced. Wider native arc admission remains unchanged. See the
+[arc-sector API](../api/arc-sectors.md).
+
 ## Tolerances
 
 All geometry comparisons use explicit tolerances. Never compare raw `f64` with `==`.

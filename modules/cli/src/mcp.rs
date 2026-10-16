@@ -65,7 +65,8 @@ fn patch_schema() -> Value {
         "properties": {
             "path": { "type": "string", "description": "Path to a .ocad file or .ocad.d directory" },
             "patch": { "type": "object", "description": format!("DesignPatch; see resource {PATCH_SCHEMA_URI}") },
-            "verify": { "type": "boolean", "description": "Regenerate and check expected effects (default true). Set false only for a staged authoring step that cannot regenerate yet." }
+            "verify": { "type": "boolean", "description": "Regenerate and check expected effects (default true). Set false only for a staged authoring step that cannot regenerate yet." },
+            "history": { "type": ["object","null"], "description": "Opaque backend document history returned by a previous verified edit; preserve it unchanged." }
         },
         "required": ["path", "patch"]
     })

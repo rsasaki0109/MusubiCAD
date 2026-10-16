@@ -1,0 +1,111 @@
+{
+  "task": "MCAD-P17-020",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Author an exact quarter-sector profile on an existing source-bound datum and verify physical Mock/native parity. This is typed patch authoring; no arc pointer gesture is claimed.",
+  "steps": [
+    "inspect_sketch_creation; create sketch:new_1 owned by feature:sketch_new_1 on feature:datum with current identity/revision",
+    "inspect_sketches; copy current revision into a revision_equals precondition (algorithm sha256, version musubicad.design-state.v2)",
+    "patch_dry_run the six operations; require verification.passed without writing; keep verify=true",
+    "patch_apply those same six operations with current opaque history; require native verification",
+    "list_features; review/apply a 6 mm NewBody extrusion feature:sector_body using the closed profile owned by feature:sketch_new_1",
+    "export fresh SI STL; independently verify volume, centroid, absolute placement and oriented closure",
+    "Agent history Undo/Redo restores all six entities in one source edit"
+  ],
+  "operations": [
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:new_1",
+      "entity": {
+        "type": "point",
+        "id": "ent:sector_center",
+        "construction": false,
+        "x": "2.000 mm",
+        "y": "-3.000 mm"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:new_1",
+      "entity": {
+        "type": "point",
+        "id": "ent:sector_start",
+        "construction": false,
+        "x": "12.000 mm",
+        "y": "-3.000 mm"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:new_1",
+      "entity": {
+        "type": "point",
+        "id": "ent:sector_end",
+        "construction": false,
+        "x": "2.000 mm",
+        "y": "7.000 mm"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:new_1",
+      "entity": {
+        "type": "arc",
+        "id": "ent:sector_arc",
+        "construction": false,
+        "center": "ent:sector_center",
+        "radius": "10.000 mm",
+        "start_angle": "0 deg",
+        "end_angle": "90 deg",
+        "start_point": "ent:sector_start",
+        "end_point": "ent:sector_end"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:new_1",
+      "entity": {
+        "type": "line",
+        "id": "ent:sector_start_ray",
+        "construction": false,
+        "start": "ent:sector_center",
+        "end": "ent:sector_start"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:new_1",
+      "entity": {
+        "type": "line",
+        "id": "ent:sector_end_ray",
+        "construction": false,
+        "start": "ent:sector_end",
+        "end": "ent:sector_center"
+      }
+    }
+  ],
+  "analytic_final": {
+    "radius_mm": 10,
+    "sweep_deg": 90,
+    "depth_mm": 6,
+    "volume_mm3": "150*pi",
+    "area_mm2": "80*pi+120",
+    "bounds_mm": {
+      "min": [
+        2,
+        -3,
+        5
+      ],
+      "max": [
+        12,
+        7,
+        11
+      ]
+    },
+    "centroid_mm": [
+      "2+40/(3*pi)",
+      "-3+40/(3*pi)",
+      8
+    ]
+  },
+  "compatibility": "Existing Arc/Point/Line source and exact OCCT edges. Physical analytic Mock admits one arc and two radial lines only; other mixed outlines, oblique/through-all/boolean operations and new stock witnesses refuse in that mode. No schema/tool-count/GUI change or maturity credit; ADR-103."
+}
