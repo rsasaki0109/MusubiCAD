@@ -732,7 +732,9 @@ Use `inspect_selection_frame` (native scene, no rasterization/write) or `pick_do
 Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
 `apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
 and atomic history publication. Use explicit units, stable authored IDs and the
-current revision; review never writes. Existing global-workplane sketches only;
+current revision; review never writes. Authored global sketches and the
+ADR-102 admitted datum-plane sketches are supported; datum edits require
+current document identity and a regenerated display frame;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 `docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.
 
@@ -1085,5 +1087,31 @@ Check absolute world bounds and direction as well as volume: XZ extrudes toward
 -Y. Example: `examples/agent/create_global_sketch.json`; API:
 `docs/api/sketch-creation.md`; actual protocol regression:
 `python tools/test_sketch_creation_mcp.py --musubicad target/debug/musubicad`.
-No new blank-file creation, datum/custom/face-plane editor, generated-source or
+No new blank-file creation, arbitrary custom/face-plane editor, generated-source or
 NURBS editing is admitted. UI drafts never own source IDs, graph or solver state.
+
+## Source-bound datum sketches (MCAD-P17-003)
+
+Inspect `datum_planes` from `inspect_sketch_creation` on a CLI built from this
+checkout. Use exactly one non-null `plane` or listed `datum_plane` feature ID in
+the same reviewed creation commands; preserve document identity/revision and
+backend ID suggestions. Do not submit a cached frame. The atomic patch creates
+one sketch/owner and its actual datum dependency, preserving the datum source
+association. Active acyclic global/custom-rooted construction chains are
+admitted; missing/suppressed/wrong-kind/cyclic/misordered/invalid/face-rooted
+chains refuse. Datum creation/reparenting and arbitrary custom/face editing
+remain separately gated.
+
+`inspect_sketches` returns document identity, original source, solved local
+entities, label and regenerated SI display frame. Datum edits require that
+`document_id` plus the current `revision`; use explicit local mm/angle units in
+the existing typed sketch forms. After an upstream parameter edit inspect/plan
+again; old reviews refuse. Never flatten a datum to a copied custom frame.
+Verify source dependency, absolute world bounds/centroid and volume. Use opaque
+history for canonical Undo/Redo. No schema change, new sampler or NURBS admission.
+
+See `examples/agent/create_datum_sketch.json`, `docs/api/sketch-creation.md`, eval
+`create_datum_sketch` and actual five-case regression:
+`python tools/test_datum_sketch_mcp.py --musubicad target/debug/musubicad`.
+Real Linux Tauri and Windows WebView2 controls have separate native gates; these
+protocol checks do not establish another external model-host session.

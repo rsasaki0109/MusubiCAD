@@ -1,0 +1,36 @@
+{
+  "task": "MCAD-P17-003",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Inspect admitted datum planes and create a new named sketch on feature:datum using the typed sketch creation tools. Keep its authored datum association. Create ent:new_center at local 0 mm, 0 mm and an ellipse ent:new_ellipse with semiaxes 20 mm / 10 mm and angle 0 deg through the typed sketch editor. Extrude it as a 6 mm new body feature:new_datum_body. Set param:offset to 15 mm through a DesignPatch, then edit the center to local 2 mm, -3 mm with current document identity/revision. Preserve all prior feature/sketch/semantic source and other parameters. Use sketch:new_1 and feature:sketch_new_1; verify source, world placement and Undo/Redo. Do not copy a custom frame over the datum reference.",
+  "steps": [
+    "inspect_sketch_creation",
+    "plan_sketch_create with datum_plane:feature:datum and no plane or frame",
+    "apply_sketch_create with current document_id and revision",
+    "inspect_sketches; plan_sketch_edit / apply_sketch_edit with document_id and explicit local units",
+    "plan_feature_edit / apply_feature_edit for the 6 mm new body",
+    "patch_apply param:offset=15 mm; inspect again before the local point edit",
+    "export_document; independently grade exact source association, world bounds, centroid and volume",
+    "Agent opencad.history_undo_document / opencad.history_redo_document or native UI Undo/Redo restore original parameter expressions, IDs and datum dependencies"
+  ],
+  "analytic_final": {
+    "volume_mm3": "1200*pi",
+    "bounds_mm": {
+      "min": [
+        -18,
+        -13,
+        15
+      ],
+      "max": [
+        22,
+        7,
+        21
+      ]
+    },
+    "centroid_mm": [
+      2,
+      -3,
+      18
+    ]
+  },
+  "compatibility": "Source fields/tags unchanged. Datum editing requires document identity. Use a build from this checkout; published v0.3.1 predates these typed APIs."
+}

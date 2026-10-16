@@ -292,7 +292,7 @@
       "id": "drawing_polygonal_section",
       "source": "examples/section_plate_drawing.ocad.d",
       "document": "section_drawing.ocad.d",
-      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m\u00b2, two loops and eight edges; never store contour caches.",
+      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m², two loops and eight edges; never store contour caches.",
       "expected_views": [
         "front"
       ],
@@ -2036,7 +2036,7 @@
       "id": "tapered_rib_height",
       "source": "examples/tapered_rib_plate.ocad.d",
       "document": "tapered_rib_plate.ocad.d",
-      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm\u00b3. Do not substitute a constant-width rib or change source sketches/order.",
+      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm³. Do not substitute a constant-width rib or change source sketches/order.",
       "expected_volume_mm3": 13224,
       "required_parameters": [
         "rib_height",
@@ -2078,6 +2078,28 @@
         "feature_id": "feature:sketch_new_1",
         "body_feature": "feature:new_body",
         "plane": "XZ"
+      }
+    },
+    {
+      "id": "create_datum_sketch",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "created_datum_sketch.ocad.d",
+      "prompt": "In {document}, Inspect admitted datum planes and create a new named sketch on feature:datum using the typed sketch creation tools. Keep its authored datum association. Create ent:new_center at local 0 mm, 0 mm and an ellipse ent:new_ellipse with semiaxes 20 mm / 10 mm and angle 0 deg through the typed sketch editor. Extrude it as a 6 mm new body feature:new_datum_body. Set param:offset to 15 mm through a DesignPatch, then edit the center to local 2 mm, -3 mm with current document identity/revision. Preserve all prior feature/sketch/semantic source and other parameters. Use sketch:new_1 and feature:sketch_new_1; verify source, world placement and Undo/Redo. Do not copy a custom frame over the datum reference.",
+      "expected_volume_mm3": 3769.9111843077517,
+      "required_parameters": [],
+      "expected_datum_sketch_creation": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:new_datum_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "center": [
+          "2 mm",
+          "-3 mm"
+        ],
+        "case": "seeded_XY"
       }
     }
   ]

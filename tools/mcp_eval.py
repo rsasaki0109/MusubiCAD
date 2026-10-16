@@ -527,6 +527,20 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_datum_sketch_creation" in task:
+        from datum_sketch_eval import task_source_problems, placed_problems
+        problems.extend(task_source_problems(document,task,ROOT))
+        if musubicad is None:
+            problems.append("datum sketch grader requires fresh native physical export")
+        elif not problems:
+            try:
+                with tempfile.TemporaryDirectory(prefix="musubicad-datum-grade-") as folder:
+                    target=Path(folder)/"actual.stl"
+                    result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                    problems.extend(placed_problems(target.read_bytes(),task['expected_datum_sketch_creation']['case'])
+                        if result.returncode==0 else ["datum sketch physical export failed"])
+            except (OSError,subprocess.TimeoutExpired):
+                problems.append("datum sketch physical export unavailable")
     if "expected_global_sketch_creation" in task:
         from sketch_creation_eval import source_problems, physical_problems
         desired = task["expected_global_sketch_creation"]

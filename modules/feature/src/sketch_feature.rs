@@ -58,15 +58,22 @@ pub fn validate_sketch(sketch: &Sketch) -> Result<()> {
     Ok(())
 }
 
-/// ADR-102: an unconsumed authored global sketch may still be a draft with no
+/// ADR-102: an unconsumed authored admitted sketch may still be a draft with no
 /// profiles. Keep profile-consuming and unsupported sketch admission unchanged.
-pub(crate) fn admits_unconsumed_global_draft(
+pub(crate) fn admits_unconsumed_editor_draft(
     sketch: &Sketch,
     nodes: &indexmap::IndexMap<String, FeatureNode>,
 ) -> bool {
     use opencad_sketch::{SketchEntity, Workplane};
+    let admitted_plane = match &sketch.workplane {
+        Workplane::Global { .. } => true,
+        Workplane::DatumPlane { feature_id } => {
+            crate::datum::admitted_sketch_datum_chain(feature_id, nodes.values()).is_ok()
+        }
+        _ => false,
+    };
     if !sketch.profiles.is_empty()
-        || !matches!(sketch.workplane, Workplane::Global { .. })
+        || !admitted_plane
         || sketch.entities.iter().any(|e| {
             !matches!(
                 e,

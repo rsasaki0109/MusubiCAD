@@ -79,9 +79,22 @@ Prepare a disposable ellipse_plate copy under `examples/bracket.ocad.d` using th
 Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
 `apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
 and atomic history publication. Use explicit units, stable authored IDs and the
-current revision; review never writes. Existing global-workplane sketches only;
+current revision; review never writes. Authored global sketches and the
+ADR-102 admitted datum-plane sketches are supported; datum edits require
+current document identity and a regenerated display frame;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 `docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.
+
+P17-003's shared `tools/datum_sketch_ui_checks.mjs` runs from both actual OS
+native editor scripts, after the global checks. It copies the canonical datum
+plate into the disposable fixture, loads it through the actual backend and uses
+product controls to review/cancel/create a source-bound datum sketch, author a
+local point/ellipse, create its physical prism, change the upstream offset,
+refuse a stale real command and restore parameter/source association with
+Undo/Redo. It fakes no IPC/backend result or frontend model. The helper path is
+part of Desktop PR triggers and the release-policy contract; the required
+Windows gate executes these newly introduced interactions, separate from Linux,
+protocol or external-host evidence. See the API's analytic and mesh tolerances.
 
 Actual Linux Tauri sketch evidence (disposable ellipse fixture, Inspector runtime
 as documented above):

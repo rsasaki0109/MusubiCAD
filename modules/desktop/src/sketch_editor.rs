@@ -3,6 +3,9 @@ use crate::editor::{
     feature_tree, verify_editor_document, verify_editor_document_native, EditorEvidence,
     FeatureEditResult,
 };
+use crate::sketch_workplanes::{
+    admitted_datum_planes_with_kernel, resolved_frame, ResolvedSketchFrame,
+};
 use opencad_ai::{DesignPatch, PatchOperation};
 use opencad_core::{ConstraintId, EntityId, Expression, OpenCadError, Result};
 use opencad_feature::FeatureDefinition;
@@ -19,6 +22,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SketchEditorState {
+    pub document_id: String,
     pub revision: String,
     pub sketches: Vec<SketchEditorRow>,
 }
@@ -26,10 +30,14 @@ pub struct SketchEditorState {
 pub struct SketchEditorRow {
     pub source: Sketch,
     pub solved: Sketch,
+    pub workplane_label: String,
+    pub resolved_frame: ResolvedSketchFrame,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SketchEdit {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub document_id: Option<String>,
     pub revision: String,
     pub sketch_id: String,
     pub operations: Vec<SketchForm>,
@@ -119,15 +127,36 @@ fn authored<'a>(doc: &'a OcadDocument, id: &str) -> Result<&'a Sketch> {
                 && matches!(&n.definition, FeatureDefinition::Sketch(s) if s.sketch_id==id)
         })
         .count();
-    if owners != 1 || !matches!(sketch.workplane, Workplane::Global { .. }) {
+    if owners != 1 {
         return Err(OpenCadError::validation(
-            "sketch editor requires one active authored owner and a global XY/XZ/YZ workplane",
+            "sketch editor requires one active authored owner",
         ));
+    }
+    match &sketch.workplane {
+        Workplane::Global { .. } => {}
+        Workplane::DatumPlane { feature_id } => {
+            opencad_feature::datum::admitted_sketch_datum_chain(
+                feature_id,
+                doc.feature_nodes.iter(),
+            )?;
+        }
+        _ => {
+            return Err(OpenCadError::validation(
+                "unsupported sketch editor workplane",
+            ))
+        }
     }
     Ok(sketch)
 }
 pub fn sketch_editor_state(doc: &OcadDocument) -> Result<SketchEditorState> {
+    sketch_editor_state_with_kernel(doc, &opencad_kernel_occt::OcctGeometryKernel::new())
+}
+pub fn sketch_editor_state_with_kernel<K: GeometryKernel>(
+    doc: &OcadDocument,
+    kernel: &K,
+) -> Result<SketchEditorState> {
     let values = opencad_graph::evaluate_param_graph_strict(&doc.parameters)?;
+    let datums = admitted_datum_planes_with_kernel(doc, kernel)?;
     let mut sketches = Vec::new();
     for sketch in &doc.sketches {
         if authored(doc, sketch.id.as_str()).is_ok() {
@@ -140,13 +169,35 @@ pub fn sketch_editor_state(doc: &OcadDocument) -> Result<SketchEditorState> {
                     e.axis_angle = Coord::Literal(angle);
                 }
             }
+            let (workplane_label, resolved_frame) = match &sketch.workplane {
+                Workplane::Global { plane } => {
+                    (format!("{plane:?}"), resolved_frame(&sketch.workplane)?)
+                }
+                Workplane::DatumPlane { feature_id } => {
+                    let plane = datums
+                        .iter()
+                        .find(|p| &p.feature_id == feature_id)
+                        .ok_or_else(|| {
+                            OpenCadError::validation("sketch datum frame unavailable")
+                        })?;
+                    (format!("Datum · {}", plane.name), plane.frame.clone())
+                }
+                _ => {
+                    return Err(OpenCadError::validation(
+                        "unsupported sketch editor workplane",
+                    ))
+                }
+            };
             sketches.push(SketchEditorRow {
                 source: sketch.clone(),
                 solved,
+                workplane_label,
+                resolved_frame,
             });
         }
     }
     Ok(SketchEditorState {
+        document_id: doc.metadata.id.as_str().into(),
         revision: feature_tree(doc)?.revision,
         sketches,
     })
@@ -202,7 +253,18 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
     if feature_tree(doc)?.revision != edit.revision {
         return Err(OpenCadError::validation("stale sketch source revision"));
     }
-    authored(doc, &edit.sketch_id)?;
+    let sketch = authored(doc, &edit.sketch_id)?;
+    if edit
+        .document_id
+        .as_deref()
+        .is_some_and(|id| id != doc.metadata.id.as_str())
+        || (matches!(sketch.workplane, Workplane::DatumPlane { .. })
+            && edit.document_id.as_deref() != Some(doc.metadata.id.as_str()))
+    {
+        return Err(OpenCadError::validation(
+            "sketch edit document identity required or mismatched",
+        ));
+    }
     if edit.operations.is_empty() || edit.operations.len() > 64 {
         return Err(OpenCadError::validation(
             "sketch form batch must contain 1..64 operations",
@@ -407,7 +469,7 @@ pub fn plan_sketch_edit_with_kernel<K: GeometryKernel>(
         }
     }
     // Explicitly solve every admitted sketch, including unconsumed construction geometry.
-    let state = sketch_editor_state(&candidate)?;
+    let state = sketch_editor_state_with_kernel(&candidate, kernel)?;
     let evidence = if dry.impact.no_op {
         EditorEvidence {
             no_op: true,
@@ -473,7 +535,8 @@ pub fn apply_document_sketch_edit(
     if !result.evidence.no_op {
         verify_editor_document_native(&doc)?;
     }
-    if feature_tree(&read_ocad(path)?)?.revision != before {
+    let current = read_ocad(path)?;
+    if current.metadata.id != doc.metadata.id || feature_tree(&current)?.revision != before {
         return Err(OpenCadError::validation(
             "document changed during sketch verification",
         ));

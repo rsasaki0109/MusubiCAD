@@ -19,7 +19,8 @@ fn request(doc: &OcadDocument, plane: GlobalPlane) -> SketchCreate {
         sketch_id: s.suggested_sketch_id,
         feature_id: s.suggested_feature_id,
         name: "Manufacturing sketch".into(),
-        plane,
+        plane: Some(plane),
+        datum_plane: None,
     }
 }
 
@@ -142,6 +143,7 @@ fn sketch_only_review_preserves_source_and_required_assertions_still_refuse() {
     let create = request(&doc, GlobalPlane::XY);
     apply_sketch_create_with_kernel(&mut doc, &create, &mut history, &kernel).unwrap();
     let edit = SketchEdit {
+        document_id: None,
         revision: feature_tree(&doc).unwrap().revision,
         sketch_id: create.sketch_id.clone(),
         operations: vec![SketchForm::Point {
@@ -216,6 +218,7 @@ fn physical<K: GeometryKernel>(kernel: &K) {
         let create = request(&doc, plane);
         apply_sketch_create_with_kernel(&mut doc, &create, &mut history, kernel).unwrap();
         let edit = SketchEdit {
+            document_id: None,
             revision: feature_tree(&doc).unwrap().revision,
             sketch_id: create.sketch_id.clone(),
             operations: vec![
