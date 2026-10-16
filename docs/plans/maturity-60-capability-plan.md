@@ -186,3 +186,17 @@ also facets; exact smooth/G1 support and general variable contours remain
 outside this bounded admission. This PR assigns no additional fixed-rubric or
 agent-operation points. Keep 52.60 / 95, including after its source merge, until
 further independently accepted capabilities justify an increment.
+
+## P17-002 merge-conditioned evidence ledger
+
+Current scores remain GUI 45, weighted CAD 52.60 and agent operation 95.
+Only after P17-002 merges with its required Linux/Windows native interactions
+and all applicable CI passed: GUI 45→47, weighted CAD 52.60→52.90 (about 53%).
+Partial credit is for the new usable name/plane sketch creation lifecycle,
+backend source/owner atomicity, reviewed apply and canonical history, actual
+sketch-only behavior and independent placed physical results. Existing geometry
+and old editing forms earn no repeat credit. No additional agent-operation or
+ecosystem credit: generic authoring already existed, and protocol/UI automation
+does not establish a new external model-host session. Datums, new pointer tools,
+blank-document creation and the full GUI 65 target remain further work. Fixed
+rubric weights and the additional approximately 60% objective are unchanged.

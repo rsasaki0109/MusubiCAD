@@ -23,6 +23,29 @@ fn map_error(err: opencad_core::OpenCadError) -> String {
 }
 
 #[tauri::command]
+fn inspect_sketch_creation_cmd(
+    path: String,
+) -> Result<opencad_desktop::sketch_creation::SketchCreationState, String> {
+    opencad_desktop::sketch_creation::inspect_document_sketch_creation(&path).map_err(map_error)
+}
+#[tauri::command]
+fn plan_sketch_create_cmd(
+    path: String,
+    create: opencad_desktop::sketch_creation::SketchCreate,
+) -> Result<opencad_desktop::sketch_creation::SketchCreatePlan, String> {
+    opencad_desktop::sketch_creation::plan_document_sketch_create(&path, &create).map_err(map_error)
+}
+#[tauri::command]
+fn apply_sketch_create_cmd(
+    path: String,
+    create: opencad_desktop::sketch_creation::SketchCreate,
+    history: Option<DocumentHistory>,
+) -> Result<opencad_desktop::FeatureEditResult, String> {
+    opencad_desktop::sketch_creation::apply_document_sketch_create(&path, &create, history)
+        .map_err(map_error)
+}
+
+#[tauri::command]
 fn inspect_sketches_cmd(
     path: String,
 ) -> Result<opencad_desktop::sketch_editor::SketchEditorState, String> {
@@ -299,6 +322,9 @@ fn run_gui() {
             plan_feature_edit_cmd,
             apply_feature_edit_cmd,
             inspect_sketches_cmd,
+            inspect_sketch_creation_cmd,
+            plan_sketch_create_cmd,
+            apply_sketch_create_cmd,
             plan_sketch_edit_cmd,
             apply_sketch_edit_cmd,
             plan_selection_edit_cmd,

@@ -1,0 +1,22 @@
+{
+  "task": "MCAD-P17-002",
+  "source": "examples/ellipse_plate.ocad.d",
+  "workflow": ["inspect_sketch_creation", "plan_sketch_create", "apply_sketch_create", "inspect_sketches", "plan_sketch_edit", "apply_sketch_edit", "list_features", "plan_feature_edit", "apply_feature_edit", "export_document"],
+  "create": {
+    "document_id": "Read document_id from inspect_sketch_creation",
+    "revision": "Read revision from inspect_sketch_creation",
+    "sketch_id": "sketch:new_1",
+    "feature_id": "feature:sketch_new_1",
+    "name": "New manufacturing sketch",
+    "plane": "XZ"
+  },
+  "sketch_operations": [
+    {"operation":"point","id":"ent:new_center","x":"0 mm","y":"0 mm","create":true},
+    {"operation":"ellipse","id":"ent:new_ellipse","center":"ent:new_center","major_radius":"20 mm","minor_radius":"10 mm","axis_angle":"0 deg","construction":false,"create":true}
+  ],
+  "extrude": {"operation":"create_extrude","id":"feature:new_body","name":"New ellipse prism","sketch_feature":"feature:sketch_new_1","profile_ref":"Use the exact closed_profiles ID returned by list_features for this owner","length_expr":"6 mm"},
+  "expected_volume_mm3": 3769.9111843077517,
+  "expected_world_bounds_mm": [[-20,-6,-10],[20,0,10]],
+  "preserve_original_source": true,
+  "history": "Pass each returned history.history unchanged; refresh revision before each operation"
+}

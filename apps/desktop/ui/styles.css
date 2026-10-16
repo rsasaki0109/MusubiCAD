@@ -319,3 +319,7 @@ button:disabled:hover {
 .sketch-point { fill: #ffbe70; cursor: pointer; }
 #sketch-form { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; }
 #sketch-form label { display: grid; gap: .2rem; }
+#sketch-new-form { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; padding-bottom: .75rem; }
+#sketch-new-form h3 { width: 100%; margin: 0; }
+#sketch-new-form label { display: grid; gap: .2rem; }
+#sketch-new-preview { border: 1px solid #596574; padding: .75rem; margin-bottom: .75rem; }

@@ -223,6 +223,9 @@ fn tools() -> Vec<Tool> {
             handler: Handler::Agent("opencad.apply_feature_edit"),
             schema: feature_edit_schema,
         },
+        Tool { name: "inspect_sketch_creation", description: "Read part document identity, source revision, deterministic free sketch/owner ID suggestions and admitted global planes without writing.", handler: Handler::Agent("opencad.inspect_sketch_creation"), schema: path_schema },
+        Tool { name: "plan_sketch_create", description: "Review atomic empty sketch and owning feature creation on explicit XY/XZ/YZ. Require current document identity/revision and stable IDs; verify candidate without writes.", handler: Handler::Agent("opencad.plan_sketch_create"), schema: sketch_create_schema },
+        Tool { name: "apply_sketch_create", description: "Reverify and atomically create the reviewed global-plane sketch/owner through DesignPatch and history. Refuse stale identity/revision or ID collisions without writes.", handler: Handler::Agent("opencad.apply_sketch_create"), schema: sketch_create_schema },
         Tool { name: "inspect_sketches", description: "Read authored global-workplane sketches and backend solved SI entities, profiles and solve diagnostics without writing.", handler: Handler::Agent("opencad.inspect_sketches"), schema: path_schema },
         Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, circle, ellipse, construction and basic constraints. Inputs require explicit units. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
         Tool { name: "apply_sketch_edit", description: "Reverify and atomically apply the same sketch commands as Tauri; preserve source/history on stale, unit, solve, profile or geometry failure.", handler: Handler::Agent("opencad.apply_sketch_edit"), schema: sketch_edit_schema },
@@ -400,6 +403,10 @@ fn feature_edit_schema() -> Value {
 
 fn selection_edit_schema() -> Value {
     json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","required":["source_revision","scene_revision","target","field","expr"],"properties":{"source_revision":{"type":"string"},"scene_revision":{"type":"string"},"target":{"type":"object","description":"{kind:face_reference,ref_id} or {kind:sketch_entity,sketch_id,entity_id}, from selection_frame.bindings"},"field":{"type":"string"},"expr":{"type":"string"}},"additionalProperties":false},"history":{"type":"object"}},"required":["path","edit"],"additionalProperties":false})
+}
+
+fn sketch_create_schema() -> Value {
+    json!({"type":"object","properties":{"path":{"type":"string"},"create":{"type":"object","required":["document_id","revision","sketch_id","feature_id","name","plane"],"properties":{"document_id":{"type":"string"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"feature_id":{"type":"string"},"name":{"type":"string","minLength":1},"plane":{"type":"string","enum":["XY","XZ","YZ"]}},"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","create"],"additionalProperties":false})
 }
 
 fn sketch_edit_schema() -> Value {
@@ -748,7 +755,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 36);
+        assert_eq!(tools.len(), 39);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

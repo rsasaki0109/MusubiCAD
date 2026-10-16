@@ -91,4 +91,5 @@ mod tests {
     }
 }
 
+pub mod sketch_creation;
 pub mod sketch_editor;

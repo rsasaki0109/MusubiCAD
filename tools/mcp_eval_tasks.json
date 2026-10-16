@@ -2065,6 +2065,20 @@
       "required_parameters": [],
       "expected_faceted_fillet": "feature:fillet",
       "expected_maximum_radius_m": 0.001
+    },
+    {
+      "id": "create_global_sketch",
+      "source": "examples/ellipse_plate.ocad.d",
+      "document": "created_global_sketch.ocad.d",
+      "prompt": "In {document}, use inspect_sketch_creation then plan_sketch_create/apply_sketch_create with the current document_id/revision to create sketch:new_1, owner feature:sketch_new_1, name New manufacturing sketch, on explicit global XZ. Review before applying and retain returned opaque history. Then use the shared sketch edit tools to create ent:new_center at explicit 0 mm/0 mm and ent:new_ellipse centered there with major_radius 20 mm, minor_radius 10 mm, axis_angle 0 deg. Use list_features and reviewed feature-edit tools to extrude the newly created owner/profile into feature:new_body as a 6 mm NewBody. Preserve every original parameter, sketch, semantic reference and feature. Verify native volume 1200*pi mm3 and fresh SI STL absolute bounds x[-20,20], y[-6,0], z[-10,10] mm; volume alone cannot prove the workplane. Do not write source directly. See examples/agent/create_global_sketch.json.",
+      "expected_volume_mm3": 3769.9111843077517,
+      "required_parameters": [],
+      "expected_global_sketch_creation": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:new_body",
+        "plane": "XZ"
+      }
     }
   ]
 }

@@ -1572,3 +1572,52 @@ documentation-only change adds no executable test, schema, example or golden.
 Changed-document links and all Phase 17 registration sections/IDs were checked.
 Completion requires applicable exact-head CI and the design task's main merge;
 no new GUI or host capability and no maturity increment are claimed.
+
+P17-001 completed in PR #149, merge commit
+`189f1b4ff8e44e106f1aea30495f7aa0f6e01c8c`, tested head
+`68817fa909e9186fd8caaa1091d2abed5315f66e`, based on
+`5f08c6a19217cf61c561ea7eae786a750a5094d0`. Merge and tested-head trees
+are identical. The two applicable exact-head workflows and full three-job
+inventories passed: CI 38873024523 and Design Review 38873024481. The
+documentation paths did not trigger Desktop/Release. No feature or maturity
+credit: 52.60 / 95. P17-002 starts under accepted ADR-102.
+
+P17-002 implements atomic global-plane sketch creation in the shared backend,
+typed Agent/MCP and native Tauri name/plane form. Backend document identity and
+revision checks, deterministic free IDs, native candidate verification and
+existing transaction/history publication protect one AddSketch/AddFeature
+batch. Empty and point-only solved global drafts require one active owner and
+no active consumer; unsupported workplanes/entities, ambiguous/suppressed
+owners and contradictory drafts still fail in both cold and cached preflight.
+Closed-profile consumers remain strict. No source schema or sampling changes.
+
+Six targeted backend tests passed, including independent exact ellipse-prism
+volume/absolute bounds/centroid in Mock and OCCT on XY/XZ/YZ, null sketch-only
+evidence, required assertions, late collision rollback, packed/expanded round
+trips and canonical Undo/Redo. The actual MCP/Agent regression passed for all
+three planes and an existing-part seed; fresh STL/source grading rejects a
+same-volume cyclic-axis decoy. Current guide, skill, example and eval include
+the new commands. Existing sketch/parity tests and all-target Clippy passed.
+
+Actual Linux Tauri/WebKit execution passed the extended native editor script:
+11 checks, including five new creation groups (review/cancel/late reply,
+identity/collision refusal preserving source/history/preview, all three planes
+and canonical history, sketch-only creation, and recovery after a display
+failure following a successful backend commit). This found and fixed the
+omitted empty profiles array display assumption. A committed creation now
+reports view-refresh failure separately from backend refusal. The same new
+checks run in the required real Windows WebView2 CI gate; completion still
+requires that exact-head CI, full mandatory checks and the feature main merge.
+No Windows completion or maturity increment is claimed before those gates.
+
+P17-002's four mandatory pre-push checks passed: workspace formatting,
+all-target Clippy with denied warnings, the complete unfiltered workspace
+suite (1,271 passed, zero failed, 37 unchanged ignored across 184 suites), and
+the agent-plugin contract. This includes the new actual MCP four-case
+regression and the existing long native fillet/thread physical regressions.
+The locked native Tauri build, desktop workflow policy, MCP eval self-test,
+documentation links and whitespace checks also passed. Implementation is
+ready for review; completion and the conditional GUI 45→47 / weighted CAD
+52.60→52.90 credit require the feature main merge and all applicable exact-head
+CI, including the actual Windows native interaction gate. Agent operation
+remains 95; no new external-host or production geometry claim is made.

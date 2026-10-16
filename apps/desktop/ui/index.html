@@ -41,6 +41,17 @@
         </p>
         <section id="sketch-editor">
           <h2>Sketch editor</h2>
+          <form id="sketch-new-form">
+            <h3>New sketch</h3>
+            <label>Name <input id="sketch-new-name" value="New sketch" required /></label>
+            <label>Workplane <select id="sketch-new-plane" aria-label="New sketch workplane"></select></label>
+            <button id="sketch-new-review" type="submit" disabled>Review new sketch</button>
+          </form>
+          <div id="sketch-new-preview" hidden>
+            <p id="sketch-new-effect"></p>
+            <button id="sketch-new-apply" type="button">Create reviewed sketch</button>
+            <button id="sketch-new-cancel" type="button">Cancel</button>
+          </div>
           <p>Global workplane, local coordinates in mm. Select a point to move it, or click twice to draft a line. Review solves and verifies the draft before applying.</p>
           <select id="sketch-select" aria-label="Authored sketch"></select>
           <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="line">Draw line</option></select>
