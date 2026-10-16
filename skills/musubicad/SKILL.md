@@ -1026,3 +1026,11 @@ return both counts. Canonical y symmetry (and constant x symmetry) is exact.
 Do not silently tighten a loose volume request, use midpoints as mass, or replace
 actual Mock/OCCT centroid. See `docs/api/ideal-periodic-reference-moments.md`.
 No grid-moment/native/placed/f32/source/MCP-operation/eval admission or score.
+
+P16-046 / ADR-099: developer-only
+`grid.moment_comparison(CircularFilletGridMomentPrecision)` reports actual signed
+boundary moments (m⁴), positive-volume centroid quotients (m), ideal values and
+per-axis signed/absolute differences. Require explicit ideal widths/work and both
+absolute error budgets; any axis exceeding a budget refuses. Never treat this as
+embedding/native/source admission or replace actual Mock/OCCT mass. See
+`docs/api/grid-reference-moment-difference.md`.

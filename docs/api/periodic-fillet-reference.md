@@ -983,3 +983,7 @@ Mock/source/embedding or score admission follows.
 P16-045 separately adds [ideal first-moment and centroid enclosures](ideal-periodic-reference-moments.md)
 with explicit SI volume/moment/centroid full widths and two integration budgets.
 These are canonical ideal values; actual kernel mass and centroid remain separate.
+
+P16-046 / ADR-099 adds [stored-grid signed first-moment and centroid
+comparisons](grid-reference-moment-difference.md), with explicit SI per-axis
+discrepancy refusal. No native/source admission.

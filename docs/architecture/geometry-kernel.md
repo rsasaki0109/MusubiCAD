@@ -671,3 +671,9 @@ otherwise refuse without mutation or partial output. Existing volume/area
 algorithms remain unchanged. See [API](../api/ideal-periodic-reference-moments.md).
 Actual kernel mass/centroid stays separate; no actual-grid/native/placed/f32 or
 production/source certificate and no score.
+
+P16-046 / ADR-099 keeps actual stored-grid signed moment flux and positive-volume
+centroid quotient arithmetic in geometry. Immutable comparisons bind the original
+ideal privately and reject per-coordinate SI error excess; kernel mass stays
+actual. This adds no embedding/native/placed/f32/source admission. See
+`docs/api/grid-reference-moment-difference.md`.

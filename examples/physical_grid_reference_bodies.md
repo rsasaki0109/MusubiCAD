@@ -75,3 +75,11 @@ intervals, requested widths and separate leaf counts. `bodies[*].volume_m3` and
 exact; constant radii also give exact x symmetry and analytic zero-cell results.
 No midpoint/native mass substitution or grid-moment discrepancy certificate.
 See [API](../docs/api/ideal-periodic-reference-moments.md).
+
+P16-046 extends the same executable/CI JSON with `moment_comparison`: actual
+stored-grid signed first moments and positive-volume centroid quotients versus the
+privately bound ideal, signed differences and per-axis absolute upper bounds. The
+example uses 1e-9 m⁴ and 2e-6 m maximum error per coordinate; ideal full widths
+remain 1e-11 m³ / 1e-12 m⁴ / 1e-6 m with unchanged per-pass caps. Native/embedding
+flags remain false; actual `bodies` measurements stay separate. See
+`docs/api/grid-reference-moment-difference.md`.

@@ -1398,3 +1398,38 @@ uses 23535 volume leaves and 7944 moment leaves at 1e-11 m³ / 1e-12 m⁴ /
 [0.009977095338815828, 0.009977146449501754] m; exact y is zero. Actual
 faceted z remains approximately 0.009976556160260556 m in both kernels.
 These are separate ideal and actual measurements, not a native/grid-moment certificate.
+
+PR #145 completed P16-045 at main
+`f5401964f751315ec2712781ab4efa0170cec299`, after all four exact-head
+workflows and complete job inventories passed (release publisher skipped as
+expected). The merge tree equals tested head `6c503608745d265d392cdc4bbc33aece25bd5e41`.
+Scores remain 52.60/95; P16-008 remains planned.
+
+MCAD-P16-046 is registered before implementation under accepted ADR-099:
+compare actual stored-grid signed first moments and positive-volume centroid
+quotients with the privately bound ideal. No source feature admission or score.
+
+P16-046 implements signed tetrahedral fluxes from actual stored-f64 triangles,
+positive-volume outward centroid quotients and privately bound ideal differences.
+Both finite positive SI budgets apply to each coordinate; invalid precision/work,
+nonfinite/invalid division or any excess refuses without mutation. Independent
+exact dyadic tetrahedron/translated-box endpoint comparisons and integer-grid
+moments cover scales, analytic constants, variable binding/refinement/replay and
+protected failures. A separate physical both-kernel regression and example/CI
+report preserve actual measured mass/centroid. No schema/golden/new MCP operation
+or eval, native/embedding/source admission or score; P16-008 stays planned.
+
+P16-046 mandatory pre-push checks passed: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1251 passed, 0 failed, 36 ignored)
+and agent plugin contract. Release policy/hygiene passed. New tests comprise
+one exact dyadic unit test, three independent geometry tests and one physical
+both-kernel comparison regression (current backend suite: 7 passed).
+
+The fresh example passed independent high-precision constant and outward
+interval quotient/difference/budget/work checks. Maximum per-coordinate centroid
+errors are 1.363093368143831e-7 m (constant) and 5.902892433531927e-7 m
+(variable); maximum first-moment errors are 4.53248010261894e-10 m⁴ and
+4.5724731845054467e-10 m⁴ respectively, below explicit 2e-6 m / 1e-9 m⁴
+budgets. Ideal work remains 23535 volume / 7944 moment leaves for the variable
+case. These are signed boundary-integral/quotient comparisons, not native or
+exact global embedding certificates. Actual backend mass/centroid stay separate.
