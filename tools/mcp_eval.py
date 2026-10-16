@@ -527,6 +527,21 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_pointer_circle" in task:
+        from pointer_circle_eval import source_problems, placed_problems, graph_source
+        desired=task['expected_pointer_circle']
+        problems.extend(source_problems(document,desired,graph_source(ROOT/task['source'])))
+        if musubicad is None:
+            problems.append("pointer circle grader requires fresh native physical export")
+        elif not problems:
+            try:
+                with tempfile.TemporaryDirectory(prefix="musubicad-pointer-grade-") as folder:
+                    target=Path(folder)/"actual.stl"
+                    result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                    problems.extend(placed_problems(target.read_bytes(),desired['case'])
+                        if result.returncode==0 else ["pointer circle physical export failed"])
+            except (OSError,subprocess.TimeoutExpired):
+                problems.append("pointer circle physical export unavailable")
     if "expected_datum_sketch_creation" in task:
         from datum_sketch_eval import task_source_problems, placed_problems
         problems.extend(task_source_problems(document,task,ROOT))

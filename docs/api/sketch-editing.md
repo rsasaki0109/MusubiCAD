@@ -66,6 +66,40 @@ Stale source, unsupported targets, unit, profile, solve and geometry failures
 retain source/history and the published scene. Drafts/reviews discard stale
 asynchronous replies. Undo/Redo uses existing verified backend history.
 
+## Pointer circle intent (MCAD-P17-004)
+
+Choose Draw circle, click a centre, move to preview and click a radius point.
+Coordinates are local mm (rounded to 0.001 mm); radius is the local distance
+rounded to six decimal places in mm. The preview is disposable input, not an
+authoritative solved shape. Review/apply uses the same two-form batch through
+Tauri and typed Agent/MCP:
+
+```json
+[
+  {"operation":"point","id":"ent:circle_1_center","x":"2.000 mm","y":"-3.000 mm","create":true},
+  {"operation":"circle","id":"ent:circle_1","center":"ent:circle_1_center","radius":"5.000000 mm","construction":false,"create":true}
+]
+```
+
+The UI selects fresh source IDs before review; later collisions refuse without
+publishing an orphan centre. One successful apply is one Undo/Redo entry.
+Half gestures cannot submit the numeric form. Escape/Discard, tool/sketch/view/
+file changes and upstream parameter edits invalidate drafts and late reviews.
+Zero radius after coordinate rounding refuses. The backend still checks finite
+explicit units, positive radius, source identity/revision, solves, required
+assertions and native publication. Construction circles remain construction
+geometry; empty parameter graphs resolve unit-bearing circle source without a
+dummy parameter or rewriting authored source. Cold and cached regeneration
+share this path.
+
+Independent physical fixtures use r=5 mm, depth=6 mm: V=150*pi mm³ and
+area=110*pi mm². Analytic Mock primitives and OCCT check absolute bounds and
+centroid on XY/YZ/XZ and a tilted datum (3e-7 m bounds/centroid tolerance,
+1e-12 m³ volume). Fresh native SI STL grading retains 0.1 mm placement and 1%
+volume tolerances, numerical oriented closure at 1 nm and rejects an actual
+translated equal-volume mesh. Actual native Linux/Windows event tests are
+separate from typed parity; no external host session or new sampler is claimed.
+
 No `.ocad` schema, migration, kernel primitive, sampling policy or dependency is
 changed. Native SVG circles/ellipses are presentation only; no polygon replaces
 analytic CAD geometry. Arc/rectangle/cubic/NURBS editing, arbitrary/custom/face

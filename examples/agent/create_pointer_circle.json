@@ -1,0 +1,52 @@
+{
+  "task": "MCAD-P17-004",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Create a source-bound datum sketch and atomically author the typed equivalent of a center/radius pointer circle. Preserve all prior source and parameters.",
+  "steps": [
+    "inspect_sketch_creation; plan/apply sketch:new_1 owned by feature:sketch_new_1 on feature:datum",
+    "inspect_sketches; keep current document_id and revision",
+    "plan_sketch_edit with the two operations below; review without writing",
+    "apply_sketch_edit once with the same two operations and current opaque history",
+    "create 6 mm new-body extrusion feature:pointer_body from the admitted closed profile",
+    "export fresh SI STL; independently verify absolute placement, centroid and volume",
+    "Agent history Undo/Redo or native controls restore the center/circle in one source edit"
+  ],
+  "operations": [
+    {
+      "operation": "point",
+      "id": "ent:circle_1_center",
+      "x": "2.000 mm",
+      "y": "-3.000 mm",
+      "create": true
+    },
+    {
+      "operation": "circle",
+      "id": "ent:circle_1",
+      "center": "ent:circle_1_center",
+      "radius": "5.000000 mm",
+      "construction": false,
+      "create": true
+    }
+  ],
+  "analytic_final": {
+    "volume_mm3": "150*pi",
+    "bounds_mm": {
+      "min": [
+        -3,
+        -8,
+        5
+      ],
+      "max": [
+        7,
+        2,
+        11
+      ]
+    },
+    "centroid_mm": [
+      2,
+      -3,
+      8
+    ]
+  },
+  "compatibility": "Existing source tags and typed sketch commands; no schema or tool-count change. Empty parameter graphs need no dummy parameter. Native GUI tests separately exercise pointer events; MCP expresses equivalent source intent."
+}

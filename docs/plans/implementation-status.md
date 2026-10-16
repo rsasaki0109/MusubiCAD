@@ -1643,3 +1643,63 @@ whitespace checks passed. Completion and GUI 47→49 / weighted CAD
 52.90→53.20 credit remain conditional on the feature main merge and all
 applicable exact-head CI, including the actual Windows native interaction
 step. Agent operation remains 95; no external-host credit is added.
+
+P17-003 completed in PR #151, merge commit
+`1956514704f9ab337fa1572149819e045e5a9301`, tested head
+`4e763ca9231430c92d43324c4e33a3046fab04a4`, base
+`71773f73d18d3ad5c9a1569510baebd0457dc11b`. Merge parents and the
+identical tested/merged trees were verified. All four exact-head workflows and
+their full eleven-job inventory passed (ten successes and the expected skipped
+PR publisher): CI 38897216640, Design Review 38897216668, Desktop 38897216501,
+Release 38897216201. Actual Linux and Windows native datum interaction gates
+passed. Partial fixed-rubric credit is GUI 47→49, weighted CAD 52.90→53.20;
+agent operation remains 95. The increment covers the usable source-bound datum
+choice/edit/parameter lifecycle, without repeat geometry or external-host credit.
+
+P17-004 starts under ADR-102: center/radius pointer intent uses the existing
+typed atomic point/circle sketch form batch. Review stays read-only; cancel,
+invalid radius, stale replies and failed apply preserve source/history/output.
+No additional score before its feature main merge and new native acceptance.
+
+P17-004 implements the native center/radius circle tool using a disposable SVG
+preview and the existing two-operation typed Point/Circle batch. The backend
+retains source IDs, workplane association, native verification and one-entry
+history. Half gestures cannot submit an unrelated numeric form. Escape/Discard,
+tool/sketch/view/reload/upstream changes invalidate drafts/reviews and late
+responses. Degenerate radius, stale/foreign requests and late ID collisions
+leave no orphan point. No transport, persisted schema or kernel primitive is
+added. An existing empty-parameter shortcut now resolves unit-bearing circle
+source on disposable models in cold/cached regeneration, including a missing
+parameter argument; no dummy parameter or authored literalization is used.
+
+Five targeted backend regressions passed: independent placed circle prisms in
+analytic Mock and OCCT on XY/YZ/XZ and a tilted datum, cold/warm/no-parameter
+source preservation, volume/area/bounds/centroid, atomic invalid/collision
+rollback, construction-only null mass, required assertions and packed/expanded
+one-entry history. The actual typed MCP/Agent regression passed five cases,
+with independent source/fresh SI STL grading, wrong-placement equal-volume
+control and canonical Undo/Redo. Example, authoring guide, skill, eval and
+API/architecture updates are supplied.
+
+The locked Tauri build and actual Linux WebKit script passed all 21 checks,
+including five new pointer groups: preview/half/Escape/discard/late real IPC;
+zero radius and actual control/reload changes; construction atomic Undo/Redo;
+free IDs and native 150*pi mm³ prism; upstream invalidation and actual stale
+command refusal. The test aligns only the SVG viewport origin to CSS pixels
+for WebKit's integer mouse coordinates; input properties, product helpers,
+IPC and model results are not replaced. The same helper runs unconditionally
+in required Windows native CI. Whole-workspace mandatory checks, exact-head
+Windows/all applicable CI and main merge still gate completion/credit. Actual
+merged maturity remains 53.20 / 95.
+
+P17-004's four mandatory pre-push checks passed: workspace formatting,
+all-target Clippy with denied warnings, the complete unfiltered workspace
+suite (1,284 passed, zero failed, 37 unchanged ignored across 188 suites), and
+the agent-plugin contract. This includes the new five backend regressions and
+actual five-case circle MCP/Agent test, plus existing long native fillet/thread
+checks. The locked Tauri build, actual Linux 21-check native script, Desktop
+policy, MCP eval self-test, 102 changed-document local links and whitespace
+checks passed. Completion and GUI 49→50 / weighted CAD 53.20→53.35 credit
+remain conditional on feature main merge and all applicable exact-head CI,
+including the actual Windows native pointer step. Agent operation remains 95;
+no new external-host or circle-geometry credit is claimed.

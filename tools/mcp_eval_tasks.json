@@ -2101,6 +2101,24 @@
         ],
         "case": "seeded_XY"
       }
+    },
+    {
+      "id": "create_pointer_circle",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "created_pointer_circle.ocad.d",
+      "prompt": "In {document}, create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum through typed sketch creation. Then review and apply one typed sketch-edit batch with two operations: create point ent:circle_1_center at local 2.000 mm, -3.000 mm and create nonconstruction circle ent:circle_1 with that center and radius 5.000000 mm. This is the same source intent as the native center/radius pointer gesture; do not claim an MCP mouse gesture. Extrude the circle as a 6 mm new body feature:pointer_body. Preserve authored datum association, all prior source and parameters. Use current document identity/revision, verify the physical placement, and do not add dummy parameters.",
+      "expected_volume_mm3": 471.23889803846896,
+      "required_parameters": [],
+      "expected_pointer_circle": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:pointer_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
     }
   ]
 }

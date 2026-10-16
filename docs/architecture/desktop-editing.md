@@ -103,3 +103,15 @@ document identity/revision. Thin Tauri/Agent/MCP adapters keep shared verificati
 required assertions, transactions and history. The native product only renders
 backend choices/labels/frames; source or parameter changes invalidate drafts and
 reviews. No new `.ocad` schema or geometry/sampling admission is introduced.
+
+P17-004 implementation: the canvas converts prescribed local-mm pointer positions
+into the existing typed Point/Circle batch, with a disposable preview and fresh
+source IDs. It owns no solver, physical mass or world-frame authority. The same
+plan/apply sketch gateway serves Tauri and Agent/MCP; no additional transport or
+persisted entity is introduced. The empty-parameter optimization now resolves
+unit-bearing circle radius/center source on disposable regeneration models in
+both cold/cached paths, including a missing parameter argument. Authored strings
+and workplane references remain unchanged. Half gestures, Escape, invalid radius,
+stale replies, source changes and failed verification cannot publish a point
+without its circle. Actual native interaction evidence is required separately
+for Linux and Windows.

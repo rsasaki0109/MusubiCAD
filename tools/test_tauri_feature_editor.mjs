@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import {checkSketchCreation} from './sketch_creation_ui_checks.mjs';
 import {checkDatumSketches} from './datum_sketch_ui_checks.mjs';
+import {checkPointerCircles} from './pointer_circle_ui_checks.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -93,5 +94,6 @@ try {
   results.push('invalid dependency and unit retain source/history');
   results.push(...await checkSketchCreation({evaluate,until,source,logicalSource}));
   results.push(...await checkDatumSketches({evaluate,until,source,logicalSource,partPath}));
+  results.push(...await checkPointerCircles({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_tauri_editor_interactions_match_verified_backend_results:'passed',results}, null, 2));
 } finally { socket.close(); }

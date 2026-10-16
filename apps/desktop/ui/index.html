@@ -52,9 +52,9 @@
             <button id="sketch-new-apply" type="button">Create reviewed sketch</button>
             <button id="sketch-new-cancel" type="button">Cancel</button>
           </div>
-          <p>Global or admitted datum workplane, local coordinates in mm. Select a point to move it, or click twice to draft a line. Review solves and verifies the draft before applying.</p>
+          <p>Global or admitted datum workplane, local coordinates in mm. Select a point to move it, click twice for a line, or choose a circle centre and a radius point. Review before applying. Escape discards the draft.</p>
           <select id="sketch-select" aria-label="Authored sketch"></select>
-          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="line">Draw line</option></select>
+          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="line">Draw line</option><option value="circle">Draw circle</option></select>
           <label>View span (mm) <input id="sketch-span" type="number" min="1" max="1000000" value="120" /></label>
           <svg id="sketch-canvas" viewBox="-60 -40 120 80" aria-label="Sketch in local mm"></svg>
           <p id="sketch-diagnostics"></p>

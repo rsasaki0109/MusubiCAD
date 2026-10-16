@@ -160,3 +160,14 @@ current revision; review never writes. Global and ADR-102 admitted datum sketche
 are supported, with separate source associations and regenerated frames;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 [sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.
+
+## Pointer circle drafting (MCAD-P17-004)
+
+Choose Draw circle, click its centre and then a radius point in local mm. Pointer
+motion displays a disposable circle; Review solves/verifies and Apply commits
+one typed point/circle batch. A half gesture cannot submit the numeric form.
+Escape/Discard and tool/sketch/view/file/upstream changes cancel drafts/reviews;
+late IPC replies cannot revive them. Existing source IDs are avoided when
+drafting, and the backend rejects collisions or stale intent without an orphan
+point. Construction circles use the same checkbox and gateway. See
+[sketch editing](sketch-editing.md#pointer-circle-intent-mcad-p17-004).

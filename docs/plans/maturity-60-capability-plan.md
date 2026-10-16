@@ -85,8 +85,8 @@ registered roadmap order. Blank-document file creation and arbitrary custom/
 face-plane editing are not implicitly included. Acceptance requires actual new
 Linux Tauri/Windows WebView2 interactions and independent both-kernel physical
 results, including absolute placement and equal-volume wrong-placement controls.
-Existing Phase 14 operations receive no duplicate credit. After P17-002 /
-PR #150, actual weighted CAD is 52.90 and agent operation 95. Further feature
+Existing Phase 14 operations receive no duplicate credit. After P17-003 /
+PR #151, actual weighted CAD is 53.20 and agent operation 95. Further feature
 credit requires its own main merge and explicit justified evidence ledger.
 
 ## Following phase: associative sketch and drawing coverage
@@ -192,21 +192,20 @@ further independently accepted capabilities justify an increment.
 
 P17-002 merged in PR #150 with required Linux/Windows native interactions
 and all applicable exact-head CI passed: GUI 45→47, weighted CAD
-52.60→52.90 (about 53%). Current scores are GUI 47, weighted CAD 52.90
+52.60→52.90 (about 53%). Scores at that merge were GUI 47, weighted CAD 52.90
 and agent operation 95.
 Partial credit is for the new usable name/plane sketch creation lifecycle,
 backend source/owner atomicity, reviewed apply and canonical history, actual
 sketch-only behavior and independent placed physical results. Existing geometry
 and old editing forms earn no repeat credit. No additional agent-operation or
 ecosystem credit: generic authoring already existed, and protocol/UI automation
-does not establish a new external model-host session. Datums, new pointer tools,
-blank-document creation and the full GUI 65 target remain further work. Fixed
+does not establish a new external model-host session. At that merge, datums,
+new pointer tools, blank-document creation and the full GUI 65 target remained further work. Fixed
 rubric weights and the additional approximately 60% objective are unchanged.
 
-## P17-003 merge-conditioned evidence ledger
+## P17-003 merged evidence ledger
 
-Current merged scores remain GUI 47, weighted CAD 52.90, agent operation 95.
-Only after P17-003 merges with all applicable exact-head CI and its new Linux
+P17-003 merged in PR #151 with all applicable exact-head CI and its new Linux
 Tauri / Windows WebView2 interaction acceptance: GUI 47→49, weighted CAD
 52.90→53.20 (about 53%); agent operation remains 95. Partial credit is the new
 usable datum choice/local-edit lifecycle with source association, regenerated
@@ -215,3 +214,15 @@ ellipse geometry, global sketch creation and prior basic forms earn no repeat
 credit. Independent both-kernel absolute placement and actual native controls
 are required; protocol automation does not establish a new external model-host
 session. Fixed weights and comparison targets remain unchanged.
+
+## P17-004 merge-conditioned evidence ledger
+
+Current merged scores are GUI 49, weighted CAD 53.20, agent operation 95.
+Only after P17-004 merges with all applicable exact-head CI and its new Linux
+Tauri / Windows WebView2 pointer acceptance: GUI 49→50, weighted CAD
+53.20→53.35 (about 53%); agent operation remains 95. Partial credit is the
+usable center/radius pointer gesture with disposable preview, atomic reviewed
+source publication, cancellation and protected history. Existing circle geometry,
+numeric circle forms, workplane creation and prior pointer line editing earn
+no repeat credit. Independent placed Mock/OCCT physical results and actual new
+native pointer interactions are required. No external model-host increment.

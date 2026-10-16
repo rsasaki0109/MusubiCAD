@@ -125,3 +125,22 @@ and unsigned desktop trust remain unchanged. No manual user session, installatio
 wizard, code signing, Cursor or authenticated Gemini session is inferred from
 this automated native GUI check. Record the exact CI/head before claiming
 Windows evidence. The cloud Linux environment cannot execute this Windows test.
+
+## Actual pointer circle checks (P17-004)
+
+Both native editor scripts unconditionally run
+`tools/pointer_circle_ui_checks.mjs` after their existing creation/datum checks.
+The helper loads the canonical datum fixture into the disposable copy, creates
+a sketch through product controls and dispatches coordinate-bearing click/move
+events in the actual WebView. It does not call the product radius/draft helper,
+replace IPC, fake backend results or claim a physical mouse session. The
+prescribed centre (2,-3) mm and radius point (5,1) mm define an independent
+3-4-5 triangle. The test aligns only the SVG viewport origin to CSS pixels at
+the product's 120 mm span: WebKit truncates mouse coordinates to integer pixels.
+No event coordinate property, draft helper or model result is replaced.
+Checks cover moving preview, half-review refusal, Escape/Discard,
+canceling a real pending IPC, zero radius, actual view/tool/sketch changes and
+reload, construction flags, free IDs, one-entry Undo/Redo, a native 150*pi mm³
+prism and upstream-parameter/stale-command refusal. The helper path is enforced
+by Desktop PR triggers and the policy test. Successful Linux execution does not
+establish Windows completion; record its exact-head required native step too.
