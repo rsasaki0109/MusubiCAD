@@ -1143,7 +1143,9 @@ Use `inspect_selection_frame` or `pick_document` to obtain backend source/scene 
 Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
 `apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
 and atomic history publication. Use explicit units, stable authored IDs and the
-current revision; review never writes. Existing global-workplane sketches only;
+current revision; review never writes. Authored global sketches and the
+ADR-102 admitted datum-plane sketches are supported; datum edits require
+current document identity and a regenerated display frame;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 [sketch editing](sketch-editing.md) and `examples/agent/interactive_sketch_edit.json`.
 
@@ -1569,9 +1571,48 @@ Continue with existing `inspect_sketches` / reviewed sketch-edit commands and
 drafts are editable; a solid consumer still requires an admitted closed profile.
 A sketch-only part reports null mass/bounds, not a placeholder solid; existing
 parts retain evidence for their current active body. No blank-file creation,
-datum/custom/face-plane editing, inferred workplane, direct graph writes or
+arbitrary custom/face-plane editing, inferred workplane, direct graph writes or
 NURBS editing is added. See [creation API](sketch-creation.md) and
 `examples/agent/create_global_sketch.json`. Eval `create_global_sketch` checks
 source ownership/plane and fresh physical output; a correct volume with wrong
 placement fails. `tools/test_sketch_creation_mcp.py` runs actual MCP/Agent stdio
 with zero model turns; real Tauri form evidence is tested separately.
+
+## Source-bound datum sketch controls (MCAD-P17-003)
+
+Use a build from this checkout; published v0.3.1 predates the typed admission.
+`inspect_sketch_creation` now also returns `datum_planes`: existing active
+source identities/names and regenerated SI frames. Pick exactly one `plane`
+(the existing global form) or `datum_plane` (a listed feature ID). Neither
+explicit null, both choices, arbitrary frames nor unknown fields are accepted.
+The backend re-admits the complete chain and regenerates on plan/apply.
+
+```json
+{"path":"part.ocad.d","create":{"document_id":"doc:part",
+ "revision":"<inspect revision>","sketch_id":"sketch:new_1",
+ "feature_id":"feature:sketch_new_1","name":"Datum manufacturing sketch",
+ "datum_plane":"feature:datum"}}
+```
+
+Send this intent to `plan_sketch_create`, inspect the patch/state/evidence, then
+`apply_sketch_create`; retain opaque history. Source remains a datum reference
+and the new owner gets the derived datum dependency. Allowed chains terminate
+in global or valid custom construction bases. Missing/suppressed/wrong-kind,
+cyclic, misordered, invalid-frame and face-rooted chains refuse. Datum creation,
+reparenting and arbitrary custom/face sketch editing are outside these controls.
+
+Use `inspect_sketches` after each source/parameter change. For datum edits, send
+its current `document_id`, `revision`, exact `sketch_id` and typed local-unit
+operations to `plan_sketch_edit` / `apply_sketch_edit`. Rows expose unchanged
+authored `source`, local `solved`, human-readable `workplane_label` and disposable
+`resolved_frame` (`origin_m` in metres, dimensionless unit axes/normal). Never
+submit that frame as mutation intent or copy it over the datum association.
+Changing an upstream offset moves the sketch/solid and invalidates reviews.
+
+Example `examples/agent/create_datum_sketch.json`; API [sketch creation](sketch-creation.md).
+Eval `create_datum_sketch` requires exact source association/dependency and
+preservation of old source, changes only the requested offset parameter, and
+grades fresh native STL absolute bounds, centroid, volume and numerical closure.
+`tools/test_datum_sketch_mcp.py` runs five actual MCP/Agent cases with no model
+turns and rejects equal-volume wrong placement/flattened association. New actual
+Linux/Windows native form checks are separate from protocol or external-host evidence.

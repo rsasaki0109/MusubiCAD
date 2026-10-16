@@ -223,10 +223,10 @@ fn tools() -> Vec<Tool> {
             handler: Handler::Agent("opencad.apply_feature_edit"),
             schema: feature_edit_schema,
         },
-        Tool { name: "inspect_sketch_creation", description: "Read part document identity, source revision, deterministic free sketch/owner ID suggestions and admitted global planes without writing.", handler: Handler::Agent("opencad.inspect_sketch_creation"), schema: path_schema },
-        Tool { name: "plan_sketch_create", description: "Review atomic empty sketch and owning feature creation on explicit XY/XZ/YZ. Require current document identity/revision and stable IDs; verify candidate without writes.", handler: Handler::Agent("opencad.plan_sketch_create"), schema: sketch_create_schema },
-        Tool { name: "apply_sketch_create", description: "Reverify and atomically create the reviewed global-plane sketch/owner through DesignPatch and history. Refuse stale identity/revision or ID collisions without writes.", handler: Handler::Agent("opencad.apply_sketch_create"), schema: sketch_create_schema },
-        Tool { name: "inspect_sketches", description: "Read authored global-workplane sketches and backend solved SI entities, profiles and solve diagnostics without writing.", handler: Handler::Agent("opencad.inspect_sketches"), schema: path_schema },
+        Tool { name: "inspect_sketch_creation", description: "Read part identity/revision, deterministic free sketch/owner IDs, global planes and source-bound regenerated datum-plane choices without writing.", handler: Handler::Agent("opencad.inspect_sketch_creation"), schema: path_schema },
+        Tool { name: "plan_sketch_create", description: "Review atomic empty sketch/owner creation on exactly one global or admitted existing datum plane. Require current document identity/revision and stable IDs; verify candidate without writes.", handler: Handler::Agent("opencad.plan_sketch_create"), schema: sketch_create_schema },
+        Tool { name: "apply_sketch_create", description: "Reverify and atomically create the reviewed source-bound sketch/owner through DesignPatch and history. Refuse stale identity/revision or ID collisions without writes.", handler: Handler::Agent("opencad.apply_sketch_create"), schema: sketch_create_schema },
+        Tool { name: "inspect_sketches", description: "Read admitted authored global/datum sketches, solved local SI entities, original source associations and regenerated display frames without writing.", handler: Handler::Agent("opencad.inspect_sketches"), schema: path_schema },
         Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, circle, ellipse, construction and basic constraints. Inputs require explicit units. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
         Tool { name: "apply_sketch_edit", description: "Reverify and atomically apply the same sketch commands as Tauri; preserve source/history on stale, unit, solve, profile or geometry failure.", handler: Handler::Agent("opencad.apply_sketch_edit"), schema: sketch_edit_schema },
         Tool {
@@ -406,7 +406,7 @@ fn selection_edit_schema() -> Value {
 }
 
 fn sketch_create_schema() -> Value {
-    json!({"type":"object","properties":{"path":{"type":"string"},"create":{"type":"object","required":["document_id","revision","sketch_id","feature_id","name","plane"],"properties":{"document_id":{"type":"string"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"feature_id":{"type":"string"},"name":{"type":"string","minLength":1},"plane":{"type":"string","enum":["XY","XZ","YZ"]}},"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","create"],"additionalProperties":false})
+    json!({"type":"object","properties":{"path":{"type":"string"},"create":{"type":"object","required":["document_id","revision","sketch_id","feature_id","name"],"oneOf":[{"required":["plane"]},{"required":["datum_plane"]}],"properties":{"document_id":{"type":"string"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"feature_id":{"type":"string"},"name":{"type":"string","minLength":1},"plane":{"type":"string","enum":["XY","XZ","YZ"]},"datum_plane":{"type":"string","description":"Existing admitted datum feature_id from inspect_sketch_creation; do not submit a cached frame"}},"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","create"],"additionalProperties":false})
 }
 
 fn sketch_edit_schema() -> Value {
@@ -438,7 +438,7 @@ fn sketch_edit_schema() -> Value {
         for field in booleans { properties.insert(field.into(),json!({"type":"boolean"}));required.push(field); }
         json!({"type":"object","properties":properties,"required":required,"additionalProperties":false})
     }).collect();
-    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","properties":{"revision":{"type":"string"},"sketch_id":{"type":"string"},"operations":{"type":"array","minItems":1,"maxItems":64,"items":{"oneOf":operations}}},"required":["revision","sketch_id","operations"],"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","edit"],"additionalProperties":false})
+    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","properties":{"document_id":{"type":"string","description":"Required for datum-plane edits; match inspect_sketches.document_id"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"operations":{"type":"array","minItems":1,"maxItems":64,"items":{"oneOf":operations}}},"required":["revision","sketch_id","operations"],"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","edit"],"additionalProperties":false})
 }
 
 #[cfg(test)]

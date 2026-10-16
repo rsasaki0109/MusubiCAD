@@ -2,6 +2,7 @@
 // Node >=22; run through tools/test_windows_desktop_ui.ps1 on a disposable fixture.
 import assert from 'node:assert/strict';
 import {checkSketchCreation} from './sketch_creation_ui_checks.mjs';
+import {checkDatumSketches} from './datum_sketch_ui_checks.mjs';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -109,5 +110,6 @@ try {
   assert.equal(await evaluate('JSON.stringify(documentHistoryState)'), restoredHistory, 'Refusal must retain opaque UI history');
   results.push('invalid dependency and unit retain source/history');
   results.push(...await checkSketchCreation({evaluate,until,source,logicalSource}));
+  results.push(...await checkDatumSketches({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_windows_tauri_webview2_forms:'passed',webview_url:pages[0].url,results}, null, 2));
 } finally { socket.close(); }

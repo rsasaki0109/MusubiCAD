@@ -30,6 +30,66 @@ pub enum DatumGeometry {
         direction: [f64; 3],
     },
 }
+
+/// ADR-102 editor admission only: existing active planes rooted in global or
+/// valid custom construction geometry. Actual frames still require regeneration.
+/// Iterate with a visited set so hostile source cannot recurse indefinitely.
+pub fn admitted_sketch_datum_chain<'a>(
+    feature_id: &str,
+    nodes: impl IntoIterator<Item = &'a FeatureNode>,
+) -> Result<Vec<String>> {
+    let mut by_id = std::collections::BTreeMap::new();
+    for node in nodes {
+        if by_id.insert(node.id.as_str(), node).is_some() {
+            return Err(OpenCadError::validation(
+                "duplicate datum source feature identity",
+            ));
+        }
+    }
+    let mut visited = std::collections::BTreeSet::new();
+    let mut chain = Vec::new();
+    let mut current = feature_id;
+    loop {
+        if !visited.insert(current) {
+            return Err(OpenCadError::validation("cyclic sketch datum chain"));
+        }
+        let node = by_id
+            .get(current)
+            .filter(|node| !node.suppressed)
+            .ok_or_else(|| OpenCadError::validation("missing or suppressed sketch datum"))?;
+        let FeatureDefinition::DatumPlane(def) = &node.definition else {
+            return Err(OpenCadError::validation("sketch datum must be a plane"));
+        };
+        if !def.offset.meters().is_finite() {
+            return Err(OpenCadError::validation("datum offset must be finite (m)"));
+        }
+        chain.push(current.to_owned());
+        match &def.base {
+            Workplane::DatumPlane { feature_id } => current = feature_id,
+            Workplane::Global { .. } => return Ok(chain),
+            Workplane::Custom {
+                origin,
+                normal,
+                x_axis,
+            } => {
+                finite_origin(*origin)?;
+                let n = normalized(*normal)?;
+                let x = normalized(*x_axis)?;
+                if n.iter().zip(x).map(|(a, b)| a * b).sum::<f64>().abs() > 1e-9 {
+                    return Err(OpenCadError::validation(
+                        "datum plane normal and x_axis must be orthogonal",
+                    ));
+                }
+                return Ok(chain);
+            }
+            Workplane::FaceRef { .. } => {
+                return Err(OpenCadError::validation(
+                    "face-rooted datum chains are outside sketch editor admission",
+                ))
+            }
+        }
+    }
+}
 pub(crate) fn normalized(vector: [f64; 3]) -> Result<[f64; 3]> {
     let norm = vector.iter().map(|v| v * v).sum::<f64>().sqrt();
     if !norm.is_finite() || norm < 1e-12 {

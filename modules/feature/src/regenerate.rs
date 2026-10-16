@@ -343,7 +343,7 @@ impl PartModel {
         for sketch in self.sketches.values_mut() {
             prepare_sketch(sketch)?;
             if !crate::tapered_rib::admits_profile_free_sketch(sketch, &self.nodes)
-                && !crate::sketch_feature::admits_unconsumed_global_draft(sketch, &self.nodes)
+                && !crate::sketch_feature::admits_unconsumed_editor_draft(sketch, &self.nodes)
             {
                 validate_sketch(sketch)?;
             }
@@ -424,7 +424,7 @@ impl PartModel {
             progress.enter(RegenerationStage::Sketch, Some(sketch.id.as_str()));
             prepare_sketch(sketch)?;
             if !crate::tapered_rib::admits_profile_free_sketch(sketch, &self.nodes)
-                && !crate::sketch_feature::admits_unconsumed_global_draft(sketch, &self.nodes)
+                && !crate::sketch_feature::admits_unconsumed_editor_draft(sketch, &self.nodes)
             {
                 validate_sketch(sketch)?;
             }

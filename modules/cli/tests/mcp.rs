@@ -343,6 +343,7 @@ fn actual_mcp_sketch_editor_matches_tauri_backend_source_and_history() {
         serde_json::to_value(inspect_document_sketches(desktop).unwrap()).unwrap()
     );
     let edit = SketchEdit {
+        document_id: None,
         revision: state["revision"].as_str().unwrap().into(),
         sketch_id: "sketch:ellipse".into(),
         operations: vec![SketchForm::Ellipse {

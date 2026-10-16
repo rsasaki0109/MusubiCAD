@@ -10,6 +10,7 @@ fn fixture() -> OcadDocument {
 }
 fn edit(doc: &OcadDocument, operations: Vec<SketchForm>) -> SketchEdit {
     SketchEdit {
+        document_id: None,
         revision: sketch_editor_state(doc).unwrap().revision,
         sketch_id: "sketch:ellipse".into(),
         operations,
@@ -168,6 +169,7 @@ fn interactive_sketch_failures_retain_source_and_history() {
         assert!(!DocumentHistoryState::new(history.clone()).can_undo);
     }
     let stale = SketchEdit {
+        document_id: None,
         revision: "old".into(),
         ..edit(&doc, vec![ellipse()])
     };

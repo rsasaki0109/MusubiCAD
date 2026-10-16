@@ -51,7 +51,9 @@ The exact document used for scene generation creates a disposable SelectionFrame
 Interactive sketch forms (P14-004): `inspect_sketches`, `plan_sketch_edit`,
 `apply_sketch_edit` share Tauri/Agent/MCP backend solve, DesignPatch verification
 and atomic history publication. Use explicit units, stable authored IDs and the
-current revision; review never writes. Existing global-workplane sketches only;
+current revision; review never writes. Authored global sketches and the
+ADR-102 admitted datum-plane sketches are supported; datum edits require
+current document identity and a regenerated display frame;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 `docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.
 
@@ -60,7 +62,8 @@ unsupported/ambiguous/stale/failed-solve candidates refuse. See
 [ADR-102](../adr/ADR-102-desktop-creation-workplanes.md) extends ADR-058's
 accepted architecture for new-sketch controls and a bounded existing-datum
 workplane lifecycle. P17-001 registers the contract; it adds no command, form,
-persisted schema or change to the currently global-only sketch editor.
+persisted schema; its design-only merge did not change the then global-only
+sketch editor.
 
 P17-002 must atomically create a source sketch and its owning sketch feature
 through one revision-guarded DesignPatch, first for explicit global planes.
@@ -86,3 +89,17 @@ is limited to solved, uniquely owned, unconsumed authored global drafts; actual
 consumers retain strict profile admission. Sketch-only null physical evidence
 is distinct from existing-body evidence. No source schema or sampler changes.
 See [API and exact scope](../api/sketch-creation.md).
+
+P17-003 implementation: `sketch_workplanes` inspects admissible active source
+chains and obtains disposable frames from complete current regeneration. The
+feature module supplies bounded iterative global/custom-rooted datum-chain
+admission; cold/cached preflight only extends profile-free drafts to that same
+source scope. Each datum owner still resolves actual construction output during
+execution. Graph derivation supplies and validates the datum dependency/order.
+Source keeps its `DatumPlane` association and local expressions; `SketchEditorRow`
+returns the resolved frame separately, never a replacement authored custom plane.
+Creation accepts exactly one global/datum identity; datum local edits require
+document identity/revision. Thin Tauri/Agent/MCP adapters keep shared verification,
+required assertions, transactions and history. The native product only renders
+backend choices/labels/frames; source or parameter changes invalidate drafts and
+reviews. No new `.ocad` schema or geometry/sampling admission is introduced.

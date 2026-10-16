@@ -1021,12 +1021,12 @@ function clearSketchDraft() {
 function renderSketchEditor(state) {
   sketchEditorState = state;
   const select = document.getElementById("sketch-select"); const old = select.value; select.replaceChildren();
-  state?.sketches.forEach(row => { const o=document.createElement("option"); o.value=row.source.id; o.textContent=`${row.source.name} · ${row.source.workplane.plane}`; select.append(o); });
+  state?.sketches.forEach(row => { const o=document.createElement("option"); o.value=row.source.id; o.textContent=`${row.source.name} · ${row.workplane_label}`; select.append(o); });
   if ([...select.options].some(o=>o.value===old)) select.value=old;
   drawSketch();
 }
 function drawSketch(row = sketchRow()) {
-  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted global-workplane sketch."; return; }
+  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; return; }
   const span=Number(document.getElementById("sketch-span").value); if (!Number.isFinite(span)||span<=0) return;
   sketchCanvas.setAttribute("viewBox", `${-span/2} ${-span/3} ${span} ${span*2/3}`);
   const entities=row.solved.entities;
@@ -1043,7 +1043,7 @@ function drawSketch(row = sketchRow()) {
   }
   const authored=new Set(row.source.entities.filter(e=>e.type==="point").map(e=>e.id));
   for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:"sketch-point"},p.id);
-  document.getElementById("sketch-diagnostics").textContent=`${row.source.workplane.plane} · ${row.solved.solve_state.status} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arc/rectangle/cubic editing is outside this form scope.`;
+  document.getElementById("sketch-diagnostics").textContent=`${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${row.solved.solve_state.status} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arc/rectangle/cubic editing is outside this form scope.`;
 }
 function draftPoint(event) {
   const p=sketchCanvas.createSVGPoint(); p.x=event.clientX;p.y=event.clientY;const local=p.matrixTransform(sketchCanvas.getScreenCTM().inverse());
@@ -1090,7 +1090,7 @@ function sketchForm() {
 document.getElementById("sketch-form").addEventListener("submit",async event=> {
   event.preventDefault();if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
   cancelFeatureReview();const seq=++sketchReviewSequence,path=currentPath;
-  const edit={revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations:sketchDraft??[sketchForm()]};sketchBusy=true;
+  const edit={document_id:sketchEditorState.document_id,revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations:sketchDraft??[sketchForm()]};sketchBusy=true;
   try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
     reviewedSketch={path,edit}; const row=plan.state.sketches.find(r=>r.source.id===edit.sketch_id);drawSketch(row);
     document.getElementById("sketch-effect").textContent=`${row.solved.solve_state.status}. Verified volume: ${plan.evidence.volume_m3==null?"—":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}. ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
@@ -1126,6 +1126,10 @@ function renderSketchCreation(state) {
     const option = document.createElement("option");
     option.value = plane; option.textContent = plane; select.append(option);
   });
+  state?.datum_planes.forEach(plane => {
+    const option = document.createElement("option");
+    option.value = `datum:${plane.feature_id}`; option.textContent = `Datum · ${plane.name}`; select.append(option);
+  });
   if ([...select.options].some(option => option.value === previous)) select.value = previous;
   document.getElementById("sketch-new-review").disabled = !state || state.revision !== featureTree?.revision;
 }
@@ -1137,20 +1141,22 @@ document.getElementById("sketch-new-form").addEventListener("submit", async even
   if (!currentPath || !sketchCreationState || sketchCreateBusy || sketchBusy || featureBusy || documentMutationBusy) return;
   cancelFeatureReview(); clearSketchDraft();
   const sequence = ++sketchCreationSequence, path = currentPath, load = documentLoadSequence;
+  const choice = document.getElementById("sketch-new-plane").value;
+  const workplane = choice.startsWith("datum:") ? {datum_plane:choice.slice(6)} : {plane:choice};
   const create = {
     document_id: sketchCreationState.document_id, revision: sketchCreationState.revision,
     sketch_id: sketchCreationState.suggested_sketch_id, feature_id: sketchCreationState.suggested_feature_id,
     name: document.getElementById("sketch-new-name").value.trim(),
-    plane: document.getElementById("sketch-new-plane").value,
+    ...workplane,
   };
   sketchCreateBusy = true;
   try {
     const plan = await invoke("plan_sketch_create_cmd", {path, create});
     if (sequence !== sketchCreationSequence || path !== currentPath || load !== documentLoadSequence || documentMutationBusy || create.revision !== featureTree?.revision) return;
-    reviewedSketchCreation = {path, create: plan.create, load};
+    reviewedSketchCreation = {path, create: plan.create, load, choice};
     const row = plan.state.sketches.find(row => row.source.id === create.sketch_id);
     const physical = plan.evidence.volume_m3 == null ? "No solid yet" : `Part volume ${(plan.evidence.volume_m3 * 1e9).toFixed(3)} mm³`;
-    document.getElementById("sketch-new-effect").textContent = `${create.name} · ${create.plane} · ${row.solved.solve_state.status} · ${physical}. Source unchanged until Create.`;
+    document.getElementById("sketch-new-effect").textContent = `${create.name} · ${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${row.solved.solve_state.status} · ${physical}. Source unchanged until Create.`;
     document.getElementById("sketch-new-preview").hidden = false;
   } catch (error) {
     if (sequence === sketchCreationSequence && path === currentPath && load === documentLoadSequence) {
@@ -1163,7 +1169,7 @@ document.getElementById("sketch-new-apply").addEventListener("click", async () =
   const reviewed = reviewedSketchCreation;
   if (reviewed.path !== currentPath || reviewed.load !== documentLoadSequence || reviewed.create.revision !== featureTree?.revision
       || reviewed.create.name !== document.getElementById("sketch-new-name").value.trim()
-      || reviewed.create.plane !== document.getElementById("sketch-new-plane").value) {
+      || reviewed.choice !== document.getElementById("sketch-new-plane").value) {
     cancelSketchCreationReview(); return;
   }
   sketchCreateBusy = true; documentMutationBusy = true;

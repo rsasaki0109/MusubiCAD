@@ -1621,3 +1621,25 @@ ready for review; completion and the conditional GUI 45→47 / weighted CAD
 52.60→52.90 credit require the feature main merge and all applicable exact-head
 CI, including the actual Windows native interaction gate. Agent operation
 remains 95; no new external-host or production geometry claim is made.
+
+P17-002 completed in PR #150, merge commit `71773f73d18d3ad5c9a1569510baebd0457dc11b`, tested head `9b91f7f9605901caa4a960c1bac62f5419e65a85`, base `189f1b4ff8e44e106f1aea30495f7aa0f6e01c8c`. Merge parents match that base/head and the tested and merged trees are identical. All four exact-head workflows and their full eleven-job inventories passed (ten successes and the expected skipped PR publisher): CI 38885414759, Design Review 38885414741, Desktop 38885414766 and Release 38885414733. Actual Linux and Windows native creation interaction gates passed. Partial fixed-rubric credit is GUI 45→47, weighted CAD 52.60→52.90; agent operation remains 95. The increment is solely the new usable sketch creation lifecycle and verified atomic source/owner/history, without duplicate geometry, form or external-host credit.
+
+P17-003 starts under accepted ADR-102: preserve existing datum associations, regenerate source-bound display frames and refuse unsupported chains. No new score before its feature main merge and required native acceptance.
+
+P17-003 implements existing datum-plane choices in the shared creation/editing gateways. Inspection regenerates admitted active acyclic global/custom-rooted chains and returns SI display frames separately from unchanged authored datum references. Creation preserves the legacy global JSON form, requires exactly one non-null global/datum choice and atomically derives the owner dependency. Datum edits require expected document identity and revision; upstream edits invalidate reviews. Unsupported chains, malformed/foreign/stale input and required assertions preserve source/history/output. Cold/cached profile-free drafts keep strict solve, ownership and consumer guards. No persisted schema, new geometry family or sampler is introduced.
+
+Six targeted backend regressions passed, including both kernels on global XY/XZ/YZ roots and a tilted custom root with signed chained offsets, independent exact volume/absolute bounds/centroid, parameter and local-coordinate motion, cached/cold refusal, no-parameter contradiction guards, required assertions and packed/expanded canonical history. The actual typed MCP/Agent regression passed five cases including an existing-part seed; fresh SI STL grading checks bounds/centroid/volume/closure and rejects equal-volume wrong placement. Source catalogues are compared by stable ID and authored feature order is checked separately and exactly. Example, authoring guide, skill, API/architecture and independently graded eval are supplied.
+
+The locked native Tauri build and actual Linux WebKit interaction script passed all 16 checks, including five new datum groups: labelled regenerated choice and cancel, atomic association/local point-ellipse edits, analytic physical prism, upstream parameter motion plus stale-command refusal without source/history/preview change, and canonical parameter Undo/Redo with subsequent local edits. The same new helper runs unconditionally in the required Windows WebView2 native gate, with its path enforced by workflow triggers and the policy contract. Linux/protocol evidence does not establish Windows completion. Whole-workspace mandatory checks, exact-head Windows/all applicable CI and main merge still gate completion/credit. Actual merged maturity remains 52.90 / 95.
+
+P17-003's four mandatory pre-push checks passed: workspace formatting,
+all-target Clippy with denied warnings, the complete unfiltered workspace
+suite (1,278 passed, zero failed, 37 unchanged ignored across 186 suites), and
+the agent-plugin contract. This includes the actual five-case datum MCP/Agent
+regression, six new backend regressions and existing long native fillet/thread
+physical checks. The locked Tauri build, actual Linux native interactions,
+desktop workflow policy, MCP eval self-test, changed-document links and
+whitespace checks passed. Completion and GUI 47→49 / weighted CAD
+52.90→53.20 credit remain conditional on the feature main merge and all
+applicable exact-head CI, including the actual Windows native interaction
+step. Agent operation remains 95; no external-host credit is added.

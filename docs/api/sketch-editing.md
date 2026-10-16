@@ -1,9 +1,10 @@
 # Interactive sketch editing (MCAD-P14-004)
 
-Create a new empty global-plane sketch and its source owner with the separate
-[P17-002 creation commands](sketch-creation.md), then edit it through these
+Create a new empty global/datum sketch and its source owner with the separate
+[P17-002/003 creation commands](sketch-creation.md), then edit it through these
 existing forms. Successful unconsumed point-only drafts need no closed profile;
-solid consumers still do. Datum/custom/face workplanes remain separately gated.
+solid consumers still do. Datum admission follows ADR-102; arbitrary custom/face
+workplane editing remains separately gated.
 
 Tauri, Agent JSON-RPC and MCP share `modules/desktop/src/sketch_editor.rs`.
 The backend owns authored entities, solve/profile diagnostics, DesignPatch,
@@ -12,7 +13,7 @@ local-plane presentation and unit-labelled form drafts only (ADR-058).
 
 | MCP tool / Agent method suffix | Request | Result |
 | --- | --- | --- |
-| `inspect_sketches` | `path` | `revision`, rows containing unchanged `source` and disposable SI `solved` sketches |
+| `inspect_sketches` | `path` | `document_id`, `revision`, rows with unchanged `source`, disposable SI `solved`, `workplane_label` and regenerated `resolved_frame` |
 | `plan_sketch_edit` | `path`, `edit` | Concrete guarded `patch`, solved candidate `state`, verified SI `evidence`; no writes |
 | `apply_sketch_edit` | `path`, `edit`, optional opaque `history` | Shared feature tree, opaque history and verified SI evidence |
 
@@ -20,6 +21,12 @@ Agent methods use the `opencad.` prefix. `edit` contains the current `revision`,
 exact authored `sketch_id` and a batch of 1–64 typed `operations`. Unknown fields
 refuse. Source IDs remain stable; clients cannot substitute generated rectangle
 points, projected entities or kernel indices.
+
+Datum-plane edits additionally require exact `edit.document_id` from inspection.
+When supplied on global edits it is checked too; legacy global requests may
+omit it. A foreign document with identical source revision still refuses datum
+edits. A parameter change invalidates reviews; inspect and plan again. Display
+frames are never accepted as mutation intent or written over source references.
 
 | `operation` | Fields besides `operation` |
 | --- | --- |
@@ -43,7 +50,7 @@ Point replacement preserves its construction flag. Primitive replacements
 preserve primitive kind; constraints are added/removed by stable ID.
 
 Only existing authored sketches with exactly one active Sketch feature owner and
-global XY/XZ/YZ workplanes are admitted. The canvas labels the selected plane and
+global XY/XZ/YZ or admitted source-bound datum workplanes are admitted. The canvas labels the selected plane, SI-derived origin and
 local mm scale. Select points/curves by backend-authored IDs; a background click
 sets an explicit-unit point draft. Two clicks draft a line with new stable point
 IDs; pointer motion displays a construction-style draft overlay. A form can
@@ -63,7 +70,7 @@ No `.ocad` schema, migration, kernel primitive, sampling policy or dependency is
 changed. Native SVG circles/ellipses are presentation only; no polygon replaces
 analytic CAD geometry. Arc/rectangle/cubic/NURBS editing, arbitrary/custom/face
 workplanes, new sketch/feature creation, trim/offset, constraint replacement,
-assembly editing and cross-process file locking remain outside this form scope.
+datum creation/reparenting, assembly editing and cross-process file locking remain outside this form scope.
 Required physical nonempty BodyCount still refuses when unavailable.
 
 Evidence: both Mock and OCCT match ellipse volume `pi*40*15*6 mm³`, dimensions

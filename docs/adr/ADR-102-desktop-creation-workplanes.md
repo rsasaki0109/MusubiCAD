@@ -189,6 +189,15 @@ ambiguous owners and active consumers keep strict refusal. Both cold and cached
 regeneration use this predicate. Existing source fields/tags are unchanged;
 older regeneration can refuse a profile-free draft rather than invent a solid.
 
+P17-003 implementation keeps the global JSON creation form and adds exactly-one
+`plane` / `datum_plane` selection. Inspection returns actual regenerated datum
+choices and separate SI display frames; source keeps `DatumPlane { feature_id }`.
+Datum editing additionally requires document identity. The draft predicate
+extends only to admitted active acyclic global/custom-rooted plane chains;
+actual cold/cached regeneration must still resolve each datum dependency.
+No cached frame is accepted as mutation intent and strict profile consumers
+remain unchanged. No persisted source field or tag is added.
+
 Keep the existing shared gateway and plain JS frontend; no new dependency is
 needed by this design. A bounded datum-chain admission makes source association
 testable before semantic face-plane editing is introduced. Reusing a copied
@@ -199,5 +208,6 @@ would expose unsupported edits. Those alternatives do not satisfy this contract.
 P17-001 is design only and earns no maturity or host credit. Later merged
 features need their own explicit fixed-rubric evidence ledger; the working GUI
 65 target and approximately 60% total remain estimates. Current scores stay
-52.60 / 95. Phase 14's existing forms, selection and pointer line editing are
+52.60 / 95 at its design merge; later feature credits are recorded in the
+maturity plan's evidence ledger. Phase 14's existing forms, selection and pointer line editing are
 not credited again, and ADR-012 continues to gate spline/NURBS editing.

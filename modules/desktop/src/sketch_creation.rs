@@ -1,9 +1,10 @@
-//! Atomic, document-bound global-plane sketch creation (ADR-102).
+//! Atomic, document-bound sketch creation on admitted source planes (ADR-102).
 use crate::editor::{
     feature_tree, verify_editor_document, verify_editor_document_native, EditorEvidence,
     FeatureEditResult,
 };
-use crate::sketch_editor::{sketch_editor_state, SketchEditorState};
+use crate::sketch_editor::{sketch_editor_state_with_kernel, SketchEditorState};
+use crate::sketch_workplanes::{admitted_datum_planes_with_kernel, DatumPlaneChoice};
 use opencad_ai::{DesignPatch, FeaturePosition, PatchOperation};
 use opencad_core::{OpenCadError, Result};
 use opencad_feature::{FeatureDefinition, FeatureNode, SketchFeatureDef};
@@ -22,6 +23,7 @@ pub struct SketchCreationState {
     pub suggested_sketch_id: String,
     pub suggested_feature_id: String,
     pub planes: Vec<GlobalPlane>,
+    pub datum_planes: Vec<DatumPlaneChoice>,
 }
 
 /// Transport intent only. Source serialization reuses existing sketch semantics.
@@ -33,7 +35,27 @@ pub struct SketchCreate {
     pub sketch_id: String,
     pub feature_id: String,
     pub name: String,
-    pub plane: GlobalPlane,
+    #[serde(
+        default,
+        deserialize_with = "supplied_choice",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub plane: Option<GlobalPlane>,
+    #[serde(
+        default,
+        deserialize_with = "supplied_choice",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub datum_plane: Option<String>,
+}
+
+// Absence means no choice; explicitly supplied null is not a plane or identity.
+fn supplied_choice<'de, D, T>(deserializer: D) -> std::result::Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    T::deserialize(deserializer).map(Some)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -45,6 +67,13 @@ pub struct SketchCreatePlan {
 }
 
 pub fn sketch_creation_state(doc: &OcadDocument) -> Result<SketchCreationState> {
+    sketch_creation_state_with_kernel(doc, &opencad_kernel_occt::OcctGeometryKernel::new())
+}
+
+pub fn sketch_creation_state_with_kernel<K: GeometryKernel>(
+    doc: &OcadDocument,
+    kernel: &K,
+) -> Result<SketchCreationState> {
     let tree = feature_tree(doc)?;
     let sketch_ids: std::collections::BTreeSet<_> =
         doc.sketches.iter().map(|s| s.id.as_str()).collect();
@@ -65,6 +94,7 @@ pub fn sketch_creation_state(doc: &OcadDocument) -> Result<SketchCreationState> 
         suggested_sketch_id: format!("sketch:new_{index}"),
         suggested_feature_id: format!("feature:sketch_new_{index}"),
         planes: vec![GlobalPlane::XY, GlobalPlane::XZ, GlobalPlane::YZ],
+        datum_planes: admitted_datum_planes_with_kernel(doc, kernel)?,
     })
 }
 
@@ -77,7 +107,7 @@ pub fn plan_sketch_create_with_kernel<K: GeometryKernel>(
     create: &SketchCreate,
     kernel: &K,
 ) -> Result<SketchCreatePlan> {
-    let state = sketch_creation_state(doc)?;
+    let state = sketch_creation_state_with_kernel(doc, kernel)?;
     if state.document_id != create.document_id || state.revision != create.revision {
         return Err(OpenCadError::validation(
             "stale sketch creation document identity or revision",
@@ -86,13 +116,24 @@ pub fn plan_sketch_create_with_kernel<K: GeometryKernel>(
     if create.name.trim().is_empty() {
         return Err(OpenCadError::validation("sketch name must not be empty"));
     }
+    let workplane = match (&create.plane, &create.datum_plane) {
+        (Some(plane), None) => Workplane::Global { plane: *plane },
+        (None, Some(id)) if state.datum_planes.iter().any(|p| &p.feature_id == id) => {
+            Workplane::DatumPlane {
+                feature_id: id.clone(),
+            }
+        }
+        _ => {
+            return Err(OpenCadError::validation(
+                "choose exactly one admitted global plane or existing datum plane",
+            ))
+        }
+    };
     let patch = DesignPatch::new(vec![
         PatchOperation::AddSketch {
             id: create.sketch_id.clone(),
             name: create.name.clone(),
-            workplane: Workplane::Global {
-                plane: create.plane,
-            },
+            workplane,
         },
         PatchOperation::AddFeature {
             node: FeatureNode::new(
@@ -109,7 +150,7 @@ pub fn plan_sketch_create_with_kernel<K: GeometryKernel>(
     opencad_ai::ensure_patch_valid(&opencad_file::dry_run_patch_document(doc, &patch))?;
     let mut candidate = doc.clone();
     apply_patch_to_document(&mut candidate, &patch)?;
-    let state = sketch_editor_state(&candidate)?;
+    let state = sketch_editor_state_with_kernel(&candidate, kernel)?;
     let evidence = verify_editor_document(&candidate, kernel)?;
     Ok(SketchCreatePlan {
         create: create.clone(),

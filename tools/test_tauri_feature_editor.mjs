@@ -3,6 +3,7 @@
 // Usage: node tools/test_tauri_feature_editor.mjs http://127.0.0.1:9223 /tmp/editor/examples/bracket.ocad.d
 import assert from 'node:assert/strict';
 import {checkSketchCreation} from './sketch_creation_ui_checks.mjs';
+import {checkDatumSketches} from './datum_sketch_ui_checks.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -91,5 +92,6 @@ try {
   assert.equal(source(), restored);
   results.push('invalid dependency and unit retain source/history');
   results.push(...await checkSketchCreation({evaluate,until,source,logicalSource}));
+  results.push(...await checkDatumSketches({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_tauri_editor_interactions_match_verified_backend_results:'passed',results}, null, 2));
 } finally { socket.close(); }
