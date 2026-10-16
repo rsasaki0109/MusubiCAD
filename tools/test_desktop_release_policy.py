@@ -191,6 +191,7 @@ def test_windows_ui_is_a_required_real_app_gate() -> None:
         require(text, needle, DESKTOP)
     parsed = parse_yaml_if_available(text, DESKTOP)
     if parsed is not None:
+        assert "tools/sketch_creation_ui_checks.mjs" in parsed["on"]["pull_request"]["paths"]
         steps = parsed["jobs"]["build"]["steps"]
         ui = next(step for step in steps if step.get("name") == "Exercise actual Windows native Tauri forms")
         assert ui["if"] == "${{ matrix.platform == 'windows-x86_64' }}"

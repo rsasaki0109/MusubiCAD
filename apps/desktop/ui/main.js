@@ -657,6 +657,7 @@ async function loadDocument(path, options = {}) {
   }
 
   const loadSequence = ++documentLoadSequence;
+  renderSketchCreation(null);
   cancelFeatureReview();
   clearSketchDraft();
   currentPath = path;
@@ -667,7 +668,7 @@ async function loadDocument(path, options = {}) {
 
   // A document that no longer regenerates has no preview, but its info,
   // parameters, and regeneration inspection still load so it can be repaired.
-  const [inspectResult, previewResult, regenerationResult, parametersResult, featuresResult, sketchesResult] =
+  const [inspectResult, previewResult, regenerationResult, parametersResult, featuresResult, sketchesResult, sketchCreationResult] =
     await Promise.allSettled([
       invoke("inspect_document_cmd", { path }),
       invoke("preview_document_cmd", { path }),
@@ -677,6 +678,7 @@ async function loadDocument(path, options = {}) {
         : invoke("list_document_parameters_cmd", { path }),
       invoke("list_document_features_cmd", { path }),
       invoke("inspect_sketches_cmd", { path }),
+      invoke("inspect_sketch_creation_cmd", { path }),
     ]);
   if (loadSequence !== documentLoadSequence || currentPath !== path) return;
   renderSketchEditor(sketchesResult.status === "fulfilled" ? sketchesResult.value : null);
@@ -685,6 +687,7 @@ async function loadDocument(path, options = {}) {
     throw inspectResult.reason;
   }
   const inspect = inspectResult.value;
+  renderSketchCreation(sketchCreationResult.status === "fulfilled" && sketchCreationResult.value.document_id === inspect.id ? sketchCreationResult.value : null);
 
   renderInfo(docInfo, [
     ["Name", inspect.name],
@@ -868,6 +871,7 @@ createBtn.addEventListener("click", () => {
 boot();
 
 function cancelFeatureReview() {
+  cancelSketchCreationReview();
   featureReviewSequence += 1;
   reviewedFeatureEdit = null;
   document.getElementById("feature-review").hidden = true;
@@ -1010,6 +1014,7 @@ let lineStart = null;
 const sketchCanvas = document.getElementById("sketch-canvas");
 function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
 function clearSketchDraft() {
+  cancelSketchCreationReview();
   sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null;
   document.getElementById("sketch-review").hidden = true;
 }
@@ -1038,7 +1043,7 @@ function drawSketch(row = sketchRow()) {
   }
   const authored=new Set(row.source.entities.filter(e=>e.type==="point").map(e=>e.id));
   for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:"sketch-point"},p.id);
-  document.getElementById("sketch-diagnostics").textContent=`${row.source.workplane.plane} · ${row.solved.solve_state.status} · ${row.solved.profiles.length} profiles · ${row.source.constraints.length} constraints. Arc/rectangle/cubic editing is outside this form scope.`;
+  document.getElementById("sketch-diagnostics").textContent=`${row.source.workplane.plane} · ${row.solved.solve_state.status} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arc/rectangle/cubic editing is outside this form scope.`;
 }
 function draftPoint(event) {
   const p=sketchCanvas.createSVGPoint(); p.x=event.clientX;p.y=event.clientY;const local=p.matrixTransform(sketchCanvas.getScreenCTM().inverse());
@@ -1101,3 +1106,75 @@ document.getElementById("sketch-apply").addEventListener("click",async()=> {
 ["sketch-select","sketch-tool","sketch-span"].forEach(id=>document.getElementById(id).addEventListener("change",()=>{clearSketchDraft();drawSketch();}));
 document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
 document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});
+
+// Creation drafts contain only typed intent; the backend owns IDs and source.
+let sketchCreationState = null;
+let reviewedSketchCreation = null;
+let sketchCreationSequence = 0;
+let sketchCreateBusy = false;
+function cancelSketchCreationReview() {
+  sketchCreationSequence++;
+  reviewedSketchCreation = null;
+  document.getElementById("sketch-new-preview").hidden = true;
+}
+function renderSketchCreation(state) {
+  cancelSketchCreationReview();
+  sketchCreationState = state;
+  const select = document.getElementById("sketch-new-plane"), previous = select.value;
+  select.replaceChildren();
+  state?.planes.forEach(plane => {
+    const option = document.createElement("option");
+    option.value = plane; option.textContent = plane; select.append(option);
+  });
+  if ([...select.options].some(option => option.value === previous)) select.value = previous;
+  document.getElementById("sketch-new-review").disabled = !state || state.revision !== featureTree?.revision;
+}
+document.getElementById("sketch-new-form").addEventListener("input", cancelSketchCreationReview);
+document.getElementById("sketch-new-plane").addEventListener("change", cancelSketchCreationReview);
+document.getElementById("sketch-new-cancel").addEventListener("click", cancelSketchCreationReview);
+document.getElementById("sketch-new-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentPath || !sketchCreationState || sketchCreateBusy || sketchBusy || featureBusy || documentMutationBusy) return;
+  cancelFeatureReview(); clearSketchDraft();
+  const sequence = ++sketchCreationSequence, path = currentPath, load = documentLoadSequence;
+  const create = {
+    document_id: sketchCreationState.document_id, revision: sketchCreationState.revision,
+    sketch_id: sketchCreationState.suggested_sketch_id, feature_id: sketchCreationState.suggested_feature_id,
+    name: document.getElementById("sketch-new-name").value.trim(),
+    plane: document.getElementById("sketch-new-plane").value,
+  };
+  sketchCreateBusy = true;
+  try {
+    const plan = await invoke("plan_sketch_create_cmd", {path, create});
+    if (sequence !== sketchCreationSequence || path !== currentPath || load !== documentLoadSequence || documentMutationBusy || create.revision !== featureTree?.revision) return;
+    reviewedSketchCreation = {path, create: plan.create, load};
+    const row = plan.state.sketches.find(row => row.source.id === create.sketch_id);
+    const physical = plan.evidence.volume_m3 == null ? "No solid yet" : `Part volume ${(plan.evidence.volume_m3 * 1e9).toFixed(3)} mm³`;
+    document.getElementById("sketch-new-effect").textContent = `${create.name} · ${create.plane} · ${row.solved.solve_state.status} · ${physical}. Source unchanged until Create.`;
+    document.getElementById("sketch-new-preview").hidden = false;
+  } catch (error) {
+    if (sequence === sketchCreationSequence && path === currentPath && load === documentLoadSequence) {
+      cancelSketchCreationReview(); setStatus(`Sketch creation refused: ${error}`);
+    }
+  } finally { sketchCreateBusy = false; }
+});
+document.getElementById("sketch-new-apply").addEventListener("click", async () => {
+  if (sketchCreateBusy || sketchBusy || featureBusy || documentMutationBusy || !reviewedSketchCreation) return;
+  const reviewed = reviewedSketchCreation;
+  if (reviewed.path !== currentPath || reviewed.load !== documentLoadSequence || reviewed.create.revision !== featureTree?.revision
+      || reviewed.create.name !== document.getElementById("sketch-new-name").value.trim()
+      || reviewed.create.plane !== document.getElementById("sketch-new-plane").value) {
+    cancelSketchCreationReview(); return;
+  }
+  sketchCreateBusy = true; documentMutationBusy = true;
+  let created = false;
+  try {
+    const result = await invoke("apply_sketch_create_cmd", {path:reviewed.path, create:reviewed.create, history:documentHistoryState?.history??null});
+    created = true;
+    acceptDocumentHistory(result.history);
+    await loadDocument(reviewed.path, {keepParamHistory:true});
+    document.getElementById("sketch-select").value = reviewed.create.sketch_id;
+    clearSketchDraft(); drawSketch(); setStatus("Created verified sketch.");
+  } catch (error) { setStatus(created ? `Sketch created. Refresh the document view: ${error}` : `Sketch creation refused: ${error}`); }
+  finally { sketchCreateBusy = false; documentMutationBusy = false; cancelSketchCreationReview(); }
+});

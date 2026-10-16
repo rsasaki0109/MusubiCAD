@@ -9,6 +9,14 @@ render/viewport layer and are not written to the document.
 
 ## Shared backend API
 
+P17-002 adds the shared [global sketch creation API](sketch-creation.md):
+`inspect_document_sketch_creation`, `plan_document_sketch_create` and
+`apply_document_sketch_create` (in `sketch_creation`). Tauri delegates through
+`inspect_sketch_creation_cmd`, `plan_sketch_create_cmd`, `apply_sketch_create_cmd`;
+Agent routes are `opencad.inspect_sketch_creation`, `opencad.plan_sketch_create`,
+`opencad.apply_sketch_create`, exposed as identically named MCP tools without
+the prefix. No frontend graph mutation or persisted schema is introduced.
+
 Phase 14 follows [ADR-058](../adr/ADR-058-backend-only-desktop-editing.md) and
 [desktop editing ownership](../architecture/desktop-editing.md). P14-001 is
 architecture-only; feature-tree/selection/sketch editors remain planned.

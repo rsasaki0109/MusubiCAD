@@ -55,7 +55,7 @@ current revision; review never writes. Existing global-workplane sketches only;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 `docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.
 
-## Phase 17 creation contract (design only)
+## Phase 17 creation boundary
 
 [ADR-102](../adr/ADR-102-desktop-creation-workplanes.md) extends ADR-058's
 accepted architecture for new-sketch controls and a bounded existing-datum
@@ -76,3 +76,13 @@ WebView2 interaction evidence, typed Agent/MCP parity, independently measured
 physical Mock/OCCT fixtures including equal-volume wrong-placement controls,
 read-only review, refusal and canonical history/persistence tests. Existing API
 documentation describes current behavior until those implementation PRs land.
+
+P17-002 implementation: `sketch_creation` owns document/revision admission,
+deterministic free-ID suggestions and an atomic source-sketch/owner DesignPatch.
+Tauri and typed Agent/MCP routes use the same native verified planner/applicator.
+The product form owns only a name/plane draft and discards canceled/late reviews;
+source IDs and opaque history come from the backend. Profile-free regeneration
+is limited to solved, uniquely owned, unconsumed authored global drafts; actual
+consumers retain strict profile admission. Sketch-only null physical evidence
+is distinct from existing-body evidence. No source schema or sampler changes.
+See [API and exact scope](../api/sketch-creation.md).

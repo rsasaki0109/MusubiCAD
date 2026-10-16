@@ -1549,3 +1549,29 @@ smooth/G1/general curved-edge fillet. See
 `faceted_circular_fillet_radius` in `tools/mcp_eval_tasks.json`. That eval grades
 retained source and fresh physical STL closure, dimensions, volume and authored
 phase contacts; source fields or scalar mass alone cannot pass.
+
+## Create a global-plane sketch (MCAD-P17-002)
+
+Use a CLI built from this checkout; published v0.3.1 predates these tools.
+Check actual `tools/list` capabilities rather than the version string alone.
+
+Use `inspect_sketch_creation` to obtain the current `document_id`, `revision`,
+admitted XY/XZ/YZ planes and deterministic free sketch/owner ID suggestions.
+Call `plan_sketch_create` with `path` and a `create` object containing those
+identity/revision values, `sketch_id`, `feature_id`, nonempty `name` and explicit
+`plane`. Review the returned source patch and evidence, then send the identical
+intent to `apply_sketch_create`; retain `history.history` unchanged. Both calls
+refuse foreign/stale identity, unsupported planes, namespace errors and collisions.
+The empty source sketch and its active owner are one atomic DesignPatch.
+
+Continue with existing `inspect_sketches` / reviewed sketch-edit commands and
+`list_features` / reviewed feature-edit commands. Point-only unconsumed global
+drafts are editable; a solid consumer still requires an admitted closed profile.
+A sketch-only part reports null mass/bounds, not a placeholder solid; existing
+parts retain evidence for their current active body. No blank-file creation,
+datum/custom/face-plane editing, inferred workplane, direct graph writes or
+NURBS editing is added. See [creation API](sketch-creation.md) and
+`examples/agent/create_global_sketch.json`. Eval `create_global_sketch` checks
+source ownership/plane and fresh physical output; a correct volume with wrong
+placement fails. `tools/test_sketch_creation_mcp.py` runs actual MCP/Agent stdio
+with zero model turns; real Tauri form evidence is tested separately.

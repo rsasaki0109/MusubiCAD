@@ -57,3 +57,42 @@ pub fn validate_sketch(sketch: &Sketch) -> Result<()> {
     }
     Ok(())
 }
+
+/// ADR-102: an unconsumed authored global sketch may still be a draft with no
+/// profiles. Keep profile-consuming and unsupported sketch admission unchanged.
+pub(crate) fn admits_unconsumed_global_draft(
+    sketch: &Sketch,
+    nodes: &indexmap::IndexMap<String, FeatureNode>,
+) -> bool {
+    use opencad_sketch::{SketchEntity, Workplane};
+    if !sketch.profiles.is_empty()
+        || !matches!(sketch.workplane, Workplane::Global { .. })
+        || sketch.entities.iter().any(|e| {
+            !matches!(
+                e,
+                SketchEntity::Point(_)
+                    | SketchEntity::Line(_)
+                    | SketchEntity::Circle(_)
+                    | SketchEntity::Ellipse(_)
+            )
+        })
+    {
+        return false;
+    }
+    let owners: Vec<_> = nodes.values().filter(|n| !n.suppressed
+        && matches!(&n.definition,FeatureDefinition::Sketch(s) if s.sketch_id==sketch.id.as_str())).collect();
+    if owners.len() != 1
+        || nodes.values().any(|n| {
+            !n.suppressed
+                && n.definition
+                    .feature_inputs()
+                    .iter()
+                    .any(|(_, id)| *id == owners[0].id)
+        })
+    {
+        return false;
+    }
+    // No-parameter regeneration can skip apply_parameters' solver. Do not turn
+    // that shortcut into admission of contradictory or invalid source drafts.
+    crate::param_apply::solved_sketch_copy(sketch, &indexmap::IndexMap::new()).is_ok()
+}

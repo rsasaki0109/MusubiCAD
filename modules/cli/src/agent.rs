@@ -194,6 +194,9 @@ pub fn handle_agent_request_with_plugins(
             handle_selection_editor(request)
         }
         "opencad.inspect_selection_frame" => handle_inspect_selection_frame(request),
+        "opencad.inspect_sketch_creation"
+        | "opencad.plan_sketch_create"
+        | "opencad.apply_sketch_create" => handle_sketch_creation(request),
         "opencad.inspect_sketches" | "opencad.plan_sketch_edit" | "opencad.apply_sketch_edit" => {
             handle_sketch_editor(request)
         }
@@ -1321,6 +1324,44 @@ fn handle_inspect_selection_frame(request: &JsonRpcRequest) -> JsonRpcResponse {
                 opencad_core::OpenCadError::validation("selection editing requires a part scene")
             })?;
         Ok(serde_json::to_value(frame)?)
+    })();
+    match result {
+        Ok(value) => JsonRpcResponse::success(request.id.clone(), value),
+        Err(error) => JsonRpcResponse::error(
+            request.id.clone(),
+            JsonRpcError::application_error(error.to_string()),
+        ),
+    }
+}
+
+fn handle_sketch_creation(request: &JsonRpcRequest) -> JsonRpcResponse {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Params {
+        path: String,
+        create: Option<opencad_desktop::sketch_creation::SketchCreate>,
+        history: Option<opencad_file::DocumentHistory>,
+    }
+    let result = (|| -> opencad_core::Result<Value> {
+        use opencad_desktop::sketch_creation::*;
+        let p: Params = serde_json::from_value(request.params.clone())?;
+        if request.method == "opencad.inspect_sketch_creation" {
+            return Ok(serde_json::to_value(inspect_document_sketch_creation(
+                &p.path,
+            )?)?);
+        }
+        let create = p
+            .create
+            .ok_or_else(|| opencad_core::OpenCadError::validation("create is required"))?;
+        if request.method == "opencad.plan_sketch_create" {
+            Ok(serde_json::to_value(plan_document_sketch_create(
+                &p.path, &create,
+            )?)?)
+        } else {
+            Ok(serde_json::to_value(apply_document_sketch_create(
+                &p.path, &create, p.history,
+            )?)?)
+        }
     })();
     match result {
         Ok(value) => JsonRpcResponse::success(request.id.clone(), value),

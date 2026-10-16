@@ -1,5 +1,10 @@
 # Interactive sketch editing (MCAD-P14-004)
 
+Create a new empty global-plane sketch and its source owner with the separate
+[P17-002 creation commands](sketch-creation.md), then edit it through these
+existing forms. Successful unconsumed point-only drafts need no closed profile;
+solid consumers still do. Datum/custom/face workplanes remain separately gated.
+
 Tauri, Agent JSON-RPC and MCP share `modules/desktop/src/sketch_editor.rs`.
 The backend owns authored entities, solve/profile diagnostics, DesignPatch,
 verification, document history and publication. The SVG canvas owns disposable

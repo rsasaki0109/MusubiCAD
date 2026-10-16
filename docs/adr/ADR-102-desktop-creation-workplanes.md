@@ -179,6 +179,16 @@ evidence. Additional controls receive no credit merely for reusing old smoke.
 
 ## Consequences and alternatives
 
+P17-002 implementation admission: the old regeneration preflight requires a
+profile even for an empty owned sketch. Keep that strict profile validator for
+consumers, but admit a successfully solved profile-free global draft with one
+active authored owner, only the existing editor's point/line/circle/ellipse
+entities, and no active feature input consuming that owner. Check actual solve
+admission even on the no-parameter shortcut. Unsupported workplanes/entities,
+ambiguous owners and active consumers keep strict refusal. Both cold and cached
+regeneration use this predicate. Existing source fields/tags are unchanged;
+older regeneration can refuse a profile-free draft rather than invent a solid.
+
 Keep the existing shared gateway and plain JS frontend; no new dependency is
 needed by this design. A bounded datum-chain admission makes source association
 testable before semantic face-plane editing is introduced. Reusing a copied

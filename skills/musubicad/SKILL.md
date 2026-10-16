@@ -1066,3 +1066,24 @@ Do not claim smooth/G1/general curved-edge support or substitute legacy straight
 fillets/constant geometry. See `examples/faceted_circular_fillet_source.md`,
 `docs/api/faceted-circular-fillet-source.md` and the actual source/physical MCP
 eval `faceted_circular_fillet_radius`.
+
+## New global-plane sketches
+
+These tools require a CLI built from this checkout. Published v0.3.1 predates
+them; inspect `tools/list` for actual capabilities.
+
+Use `inspect_sketch_creation`, then `plan_sketch_create` and
+`apply_sketch_create` with exact current `document_id` and `revision`, stable
+`sketch_id` / owning `feature_id`, a nonempty `name`, and explicit XY/XZ/YZ
+`plane`. Prefer the backend's deterministic free ID suggestions. Keep the
+reviewed intent unchanged and pass returned opaque `history.history` back to
+later commands. Creation atomically adds one empty authored sketch and its
+owner; stale/foreign identity, unsupported planes and ID collisions refuse.
+Use existing reviewed sketch/feature commands for geometry. A sketch-only part
+has null physical evidence; do not fabricate a solid or bypass assertions.
+Check absolute world bounds and direction as well as volume: XZ extrudes toward
+-Y. Example: `examples/agent/create_global_sketch.json`; API:
+`docs/api/sketch-creation.md`; actual protocol regression:
+`python tools/test_sketch_creation_mcp.py --musubicad target/debug/musubicad`.
+No new blank-file creation, datum/custom/face-plane editor, generated-source or
+NURBS editing is admitted. UI drafts never own source IDs, graph or solver state.

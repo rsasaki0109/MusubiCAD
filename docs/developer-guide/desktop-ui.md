@@ -36,6 +36,14 @@ without interpreting snapshot semantics. It uses only `can_undo` and
 
 ## Actual feature editor interaction test
 
+P17-002 extends both the Linux script below and the Windows native editor
+script with `tools/sketch_creation_ui_checks.mjs`. On the disposable cubic
+fixture, the real forms review/cancel and discard a late IPC result, reject a
+foreign document identity and owner collision without changing source/history/
+preview, create/select each global-plane sketch, check canonical Undo/Redo and
+create in a sketch-only state with null physical evidence. These are additional
+native interactions, separate from the actual MCP protocol/analytic fixture.
+
 The part feature editor contract and intentional scope are in
 [feature-editor.md](../api/feature-editor.md). Linux Tauri interaction evidence is
 provided by `tools/test_tauri_feature_editor.mjs`, using Node's built-in WebSocket

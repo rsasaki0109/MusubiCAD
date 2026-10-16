@@ -527,6 +527,36 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_global_sketch_creation" in task:
+        from sketch_creation_eval import source_problems, physical_problems
+        desired = task["expected_global_sketch_creation"]
+        problems.extend(source_problems(document, desired))
+        try:
+            baseline = ROOT / task["source"]
+            for filename in ["parameters.json", "semantic_refs.json"]:
+                if json.loads((baseline/"graph"/filename).read_text()) != json.loads((document/"graph"/filename).read_text()):
+                    problems.append("sketch creation changed unrelated parameters or semantic references")
+            old_sketches = json.loads((baseline/"graph/sketches.json").read_text())["sketches"]
+            sketches = json.loads((document/"graph/sketches.json").read_text())["sketches"]
+            if len(sketches) != len(old_sketches)+1 or sketches[:len(old_sketches)] != old_sketches:
+                problems.append("sketch creation changed unrelated sketch source")
+            old = json.loads((baseline/"graph/features.json").read_text())
+            current = json.loads((document/"graph/features.json").read_text())
+            expected_order = old["feature_graph"]["order"] + [desired["feature_id"],desired["body_feature"]]
+            if current["feature_graph"]["order"] != expected_order or current["feature_nodes"][:len(old["feature_nodes"])] != old["feature_nodes"] or len(current["feature_nodes"]) != len(old["feature_nodes"])+2:
+                problems.append("sketch creation changed unrelated feature source/order")
+        except (OSError, ValueError, KeyError, TypeError):
+            problems.append("sketch creation baseline preservation evidence unavailable")
+        if musubicad is None:
+            problems.append("sketch creation grader requires fresh native physical export")
+        elif not problems:
+            try:
+                with tempfile.TemporaryDirectory(prefix="musubicad-sketch-grade-") as folder:
+                    target=Path(folder)/"actual.stl"
+                    result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                    problems.extend(physical_problems(target.read_bytes(),desired["plane"]) if result.returncode==0 else ["new sketch physical export failed"])
+            except (OSError,subprocess.TimeoutExpired):
+                problems.append("new sketch physical export unavailable")
     if "expected_faceted_fillet" in task:
         problems.extend(check_faceted_fillet_source(task, document))
         if not problems:
