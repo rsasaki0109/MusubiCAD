@@ -54,3 +54,25 @@ and atomic history publication. Use explicit units, stable authored IDs and the
 current revision; review never writes. Existing global-workplane sketches only;
 unsupported/ambiguous/stale/failed-solve candidates refuse. See
 `docs/api/sketch-editing.md` and `examples/agent/interactive_sketch_edit.json`.
+
+## Phase 17 creation contract (design only)
+
+[ADR-102](../adr/ADR-102-desktop-creation-workplanes.md) extends ADR-058's
+accepted architecture for new-sketch controls and a bounded existing-datum
+workplane lifecycle. P17-001 registers the contract; it adds no command, form,
+persisted schema or change to the currently global-only sketch editor.
+
+P17-002 must atomically create a source sketch and its owning sketch feature
+through one revision-guarded DesignPatch, first for explicit global planes.
+Sketch-only states retain null physical evidence instead of a placeholder body.
+P17-003 must inspect/regenerate admitted datum chains, expose a disposable
+resolved view frame separately from the unchanged authored datum reference,
+and preserve the actual feature dependency. Frontend frames never own source
+placement. Unsupported chains and stale reviews refuse through the shared
+verified gateway. Later pointer/feature forms use the same lifecycle.
+
+Each implementation needs actual newly introduced Linux Tauri and Windows
+WebView2 interaction evidence, typed Agent/MCP parity, independently measured
+physical Mock/OCCT fixtures including equal-volume wrong-placement controls,
+read-only review, refusal and canonical history/persistence tests. Existing API
+documentation describes current behavior until those implementation PRs land.

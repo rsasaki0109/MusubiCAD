@@ -1540,3 +1540,35 @@ area/moment/centroid arithmetic and budgets, actual Mock/OCCT mass and placed
 contacts, all 1088 owned facets and stock preservation. Canonical-only
 certificate scopes remain unchanged. Release policy, version and hygiene checks
 also passed. No further source or test changes followed the successful suite.
+
+P16-008 completed in PR #148, merge commit
+`5f08c6a19217cf61c561ea7eae786a750a5094d0`, tested head
+`24d88d66c0cc262fdec5930052800b794b0909bb`, based on
+`78f62e25eb43a413ea2dbb15097dea3b3cdfa14b`. The merge and tested-head trees
+are identical. All four exact-head workflows and full eleven-job inventories
+passed: CI 38865471751, Design Review 38865471720, Desktop 38865471872 and
+Release 38865471551 (release publisher skipped as expected). Fresh local
+reference reports and independent checks, the actual MCP regression and all
+1264 workspace tests passed. Native diagnostic artifact metadata was verified;
+no artifact body was needed. No additional score for the bounded all-faceted
+approximation: weighted CAD 52.60 and agent operation 95.
+
+Phase 17 starts with P17-001 / accepted ADR-102, before new controls are
+implemented. The roadmap registers purpose, dependencies, IDs, completion,
+tests and risks. The contract requires atomic sketch/owner creation, explicit
+global planes followed by bounded existing datum-plane chains, separate
+resolved view frames and authored references, null physical evidence for
+sketch-only states, shared DesignPatch/verification/history and actual new
+Linux/Windows native interaction evidence. Its initial independent physical
+fixture uses analytic ellipse extrusion and absolute placement controls rather
+than synthetic Mock mass. Existing sketch forms remain global-only; no new
+command, `.ocad` field, GUI capability or maturity increment is supplied here.
+P17-002 implementation follows only after this design task's main merge.
+
+P17-001's mandatory pre-push checks passed: formatting, workspace all-target
+Clippy with denied warnings, all workspace tests without filters (1264 passed,
+0 failed, 37 ignored across 182 suites), and the agent plugin contract. This
+documentation-only change adds no executable test, schema, example or golden.
+Changed-document links and all Phase 17 registration sections/IDs were checked.
+Completion requires applicable exact-head CI and the design task's main merge;
+no new GUI or host capability and no maturity increment are claimed.
