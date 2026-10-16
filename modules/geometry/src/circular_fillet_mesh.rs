@@ -122,7 +122,114 @@ impl CircularFilletGridAreaComparison {
         self.reference_cells
     }
 }
+/// Explicit ideal widths and maximum error in EACH signed moment/centroid axis.
+#[derive(Debug, Clone, Copy)]
+pub struct CircularFilletGridMomentPrecision {
+    pub ideal: crate::CircularFilletMomentPrecision,
+    pub maximum_absolute_first_moment_difference_m4: f64,
+    pub maximum_absolute_centroid_difference: Length,
+}
+/// ADR-099: boundary-integral/quotient comparison; no embedding/native proof.
+#[derive(Debug, Clone, Copy)]
+pub struct CircularFilletGridMomentComparison {
+    grid_volume_m3: [f64; 2],
+    grid_first_moments_m4: [[f64; 2]; 3],
+    grid_centroid_m: [[f64; 2]; 3],
+    ideal: crate::CircularFilletMomentBounds,
+    first_moment_difference_m4: [[f64; 2]; 3],
+    centroid_difference_m: [[f64; 2]; 3],
+    absolute_first_moment_difference_upper_m4: [f64; 3],
+    absolute_centroid_difference_upper_m: [f64; 3],
+}
+impl CircularFilletGridMomentComparison {
+    pub fn grid_signed_volume_flux_m3(&self) -> [f64; 2] {
+        self.grid_volume_m3
+    }
+    pub fn grid_signed_first_moments_m4(&self) -> [[f64; 2]; 3] {
+        self.grid_first_moments_m4
+    }
+    pub fn grid_centroid_quotient_m(&self) -> [[f64; 2]; 3] {
+        self.grid_centroid_m
+    }
+    pub fn ideal(&self) -> crate::CircularFilletMomentBounds {
+        self.ideal
+    }
+    pub fn signed_first_moment_difference_m4(&self) -> [[f64; 2]; 3] {
+        self.first_moment_difference_m4
+    }
+    pub fn signed_centroid_difference_m(&self) -> [[f64; 2]; 3] {
+        self.centroid_difference_m
+    }
+    pub fn absolute_first_moment_difference_upper_m4(&self) -> [f64; 3] {
+        self.absolute_first_moment_difference_upper_m4
+    }
+    pub fn absolute_centroid_difference_upper_m(&self) -> [f64; 3] {
+        self.absolute_centroid_difference_upper_m
+    }
+}
 impl CircularFilletGridSolid {
+    /// Compare actual stored signed fluxes/positive-volume quotients with the
+    /// privately bound ideal. No native/placed/f32 or embedding admission.
+    pub fn moment_comparison(
+        &self,
+        p: CircularFilletGridMomentPrecision,
+    ) -> Result<CircularFilletGridMomentComparison> {
+        let invalid = || {
+            OpenCadError::validation(
+                "grid reference moment precision, work or discrepancy not certified",
+            )
+        };
+        let maximum_centroid = p.maximum_absolute_centroid_difference.meters();
+        if !p.maximum_absolute_first_moment_difference_m4.is_finite()
+            || p.maximum_absolute_first_moment_difference_m4 <= 0.
+            || !maximum_centroid.is_finite()
+            || maximum_centroid <= 0.
+        {
+            return Err(invalid());
+        }
+        let ideal = self.reference.moment_bounds(p.ideal)?;
+        let (volume, moments) = grid_moment_flux(&self.solid);
+        if !volume.valid() || volume.lo <= 0. {
+            return Err(invalid());
+        }
+        let mut result = CircularFilletGridMomentComparison {
+            grid_volume_m3: [volume.lo, volume.hi],
+            grid_first_moments_m4: [[0.; 2]; 3],
+            grid_centroid_m: [[0.; 2]; 3],
+            ideal,
+            first_moment_difference_m4: [[0.; 2]; 3],
+            centroid_difference_m: [[0.; 2]; 3],
+            absolute_first_moment_difference_upper_m4: [0.; 3],
+            absolute_centroid_difference_upper_m: [0.; 3],
+        };
+        for (axis, moment) in moments.into_iter().enumerate() {
+            let centroid = moment / volume;
+            let [lo, hi] = ideal.first_moments_m4[axis];
+            let md = moment - I { lo, hi };
+            let [lo, hi] = ideal.centroid_m[axis];
+            let cd = centroid - I { lo, hi };
+            let me = md.lo.abs().max(md.hi.abs());
+            let ce = cd.lo.abs().max(cd.hi.abs());
+            if !moment.valid()
+                || !centroid.valid()
+                || !md.valid()
+                || !cd.valid()
+                || !me.is_finite()
+                || !ce.is_finite()
+                || me > p.maximum_absolute_first_moment_difference_m4
+                || ce > maximum_centroid
+            {
+                return Err(invalid());
+            }
+            result.grid_first_moments_m4[axis] = [moment.lo, moment.hi];
+            result.grid_centroid_m[axis] = [centroid.lo, centroid.hi];
+            result.first_moment_difference_m4[axis] = [md.lo, md.hi];
+            result.centroid_difference_m[axis] = [cd.lo, cd.hi];
+            result.absolute_first_moment_difference_upper_m4[axis] = me;
+            result.absolute_centroid_difference_upper_m[axis] = ce;
+        }
+        Ok(result)
+    }
     /// Compare unsigned area of actual stored triangles, counted with
     /// multiplicity, to the privately bound ideal. Excludes native/placed/f32.
     pub fn area_comparison(
@@ -242,6 +349,19 @@ fn grid_volume_flux(solid: &crate::TriangleSolid) -> I {
         let [a, b, c] = t.map(|i| solid.vertices_m()[i as usize].map(I::exact));
         sum + dot(a, cross(b, c)) / I::exact(6.)
     })
+}
+fn grid_moment_flux(solid: &crate::TriangleSolid) -> (I, [I; 3]) {
+    solid
+        .triangles()
+        .iter()
+        .fold((I::exact(0.), [I::exact(0.); 3]), |(v, mut m), t| {
+            let [a, b, c] = t.map(|i| solid.vertices_m()[i as usize].map(I::exact));
+            let vt = dot(a, cross(b, c)) / I::exact(6.);
+            for k in 0..3 {
+                m[k] = m[k] + vt * (a[k] + b[k] + c[k]) / I::exact(4.);
+            }
+            (v + vt, m)
+        })
 }
 fn grid_surface_area(solid: &crate::TriangleSolid) -> Result<I> {
     solid.triangles().iter().try_fold(I::exact(0.), |sum, t| {
@@ -645,6 +765,70 @@ impl CircularFilletReference {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn grid_moments_and_quotients_enclose_exact_dyadic_solids() {
+        // Compare exact binary64 endpoint fractions to signed rational answers,
+        // independently of interval arithmetic and rounded division oracles.
+        fn rational_contains(i: I, n: i128, d: i128) {
+            assert!(i.valid());
+            for (x, lower) in [(i.lo, true), (i.hi, false)] {
+                assert!(x.is_normal());
+                let b = x.to_bits();
+                let mant = ((b & ((1_u64 << 52) - 1)) | (1_u64 << 52)) as i128;
+                let exponent = ((b >> 52) & 0x7ff) as i32 - 1023 - 52;
+                assert!((-100..0).contains(&exponent));
+                let numerator = if x.is_sign_negative() { -mant } else { mant };
+                let denominator = 1_i128 << (-exponent as u32);
+                assert!(if lower {
+                    numerator * d <= n * denominator
+                } else {
+                    numerator * d >= n * denominator
+                });
+            }
+        }
+        let (o, x, y, z) = ([0.; 3], [0.5, 0., 0.], [0., 0.25, 0.], [0., 0., 0.125]);
+        let tetra =
+            crate::TriangleSolid::from_triangles(&[[o, y, x], [o, x, z], [o, z, y], [x, y, z]])
+                .unwrap();
+        let (v, m) = grid_moment_flux(&tetra);
+        rational_contains(v, 1, 384);
+        for (k, den) in [8, 16, 32].into_iter().enumerate() {
+            rational_contains(m[k], 1, 384 * den);
+            rational_contains(m[k] / v, 1, den);
+        }
+        // Translated box: V=1/64, centroid=(-1/4,3/8,5/16).
+        let p = [
+            [-0.5, 0.25, 0.25],
+            [0., 0.25, 0.25],
+            [0., 0.5, 0.25],
+            [-0.5, 0.5, 0.25],
+            [-0.5, 0.25, 0.375],
+            [0., 0.25, 0.375],
+            [0., 0.5, 0.375],
+            [-0.5, 0.5, 0.375],
+        ];
+        let faces = [
+            [0, 2, 1],
+            [0, 3, 2],
+            [4, 5, 6],
+            [4, 6, 7],
+            [0, 1, 5],
+            [0, 5, 4],
+            [1, 2, 6],
+            [1, 6, 5],
+            [2, 3, 7],
+            [2, 7, 6],
+            [3, 0, 4],
+            [3, 4, 7],
+        ];
+        let solid = crate::TriangleSolid::from_triangles(&faces.map(|t| t.map(|i| p[i]))).unwrap();
+        let (v, m) = grid_moment_flux(&solid);
+        rational_contains(v, 1, 64);
+        for (k, (n, d)) in [(-1, 4), (3, 8), (5, 16)].into_iter().enumerate() {
+            rational_contains(m[k], n, d * 64);
+            rational_contains(m[k] / v, n, d);
+        }
+    }
     #[test]
     fn unsigned_area_encloses_exact_dyadic_box_by_integer_endpoint_comparison() {
         let p = [

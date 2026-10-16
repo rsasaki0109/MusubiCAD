@@ -1505,3 +1505,10 @@ leaves PER pass. A coarse volume enclosure may prevent a tight centroid; failure
 returns no partial result or midpoint. Canonical y symmetry is exact; no actual
 kernel mass is substituted. See [moment API](ideal-periodic-reference-moments.md).
 No MCP operation/eval, native/placed/f32 or production/source admission follows.
+
+P16-046 / ADR-099: developer-only `grid.moment_comparison` compares actual
+stored-grid signed first moments/centroid quotients against the privately bound
+ideal. Require explicit ideal widths/work and finite positive per-coordinate
+moment (m⁴)/centroid (Length) error budgets. Reject excess; never substitute ideal
+kernel mass or claim embedding/native/source admission. No new MCP operation/eval.
+See [comparison API](grid-reference-moment-difference.md).

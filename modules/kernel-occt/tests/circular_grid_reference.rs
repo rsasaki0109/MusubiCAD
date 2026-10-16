@@ -391,3 +391,49 @@ fn ideal_moment_queries_preserve_actual_grid_mass_and_centroid_in_both_kernels()
         }
     }
 }
+
+#[test]
+fn stored_grid_moment_comparisons_preserve_both_kernel_measurements() {
+    use opencad_geometry::{CircularFilletGridMomentPrecision, CircularFilletMomentPrecision};
+    for variable in [false, true] {
+        let g = grid(variable, false);
+        let p = CircularFilletGridMomentPrecision {
+            ideal: CircularFilletMomentPrecision {
+                maximum_volume_interval_width_m3: 1e-11,
+                maximum_first_moment_interval_width_m4: 1e-12,
+                maximum_centroid_interval_width: Length::from_meters(1e-6),
+                max_cells: 262144,
+            },
+            maximum_absolute_first_moment_difference_m4: 1e-9,
+            maximum_absolute_centroid_difference: Length::from_meters(2e-6),
+        };
+        let c = g.moment_comparison(p).unwrap();
+        let (v, _, centre) = independent(&g);
+        let mock = MockGeometryKernel::with_analytic_primitives();
+        let native = OcctGeometryKernel::new();
+        for kernel in [&mock as &dyn GeometryKernel, &native] {
+            let body = kernel.import_circular_fillet_grid(&g).unwrap();
+            let before = kernel.mass_properties(&body, 1000.).unwrap();
+            assert!((before.volume_m3 - v).abs() < 1e-14);
+            for (k, expected) in centre.into_iter().enumerate() {
+                let native = before.center_of_mass[k];
+                assert!((native - expected).abs() < 1e-9);
+                let [lo, hi] = c.grid_centroid_quotient_m()[k];
+                assert!(lo - 1e-9 <= native && native <= hi + 1e-9);
+                let [lo, hi] = c.grid_signed_first_moments_m4()[k];
+                assert!(
+                    lo - 1e-14 <= before.volume_m3 * native
+                        && before.volume_m3 * native <= hi + 1e-14
+                );
+            }
+            let mut bad = p;
+            bad.maximum_absolute_centroid_difference = Length::from_meters(1e-12);
+            assert!(g.moment_comparison(bad).is_err());
+            let after = kernel.mass_properties(&body, 1000.).unwrap();
+            assert!((after.volume_m3 - before.volume_m3).abs() < 1e-18);
+            for (a, b) in after.center_of_mass.into_iter().zip(before.center_of_mass) {
+                assert!((a - b).abs() < 1e-12);
+            }
+        }
+    }
+}
