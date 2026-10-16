@@ -1642,3 +1642,33 @@ A translated equal-volume mesh fails. MCP parity exercises typed intent; it
 does not claim a mouse gesture or external model-host verification. Native
 Linux/Windows tests separately drive the new pointer event path. Undo/Redo
 uses Agent history methods or native controls, not an invented MCP tool.
+
+## Atomic pointer rectangles (MCAD-P17-005)
+
+Inspect the current document identity/revision and use the existing
+plan_sketch_edit / apply_sketch_edit commands with one rectangle form:
+id is a fresh source prefix; x1, y1, x2, y2 are explicit local length
+expressions; construction marks the four edges. The backend expands this
+opposite-corner intent to four ordinary authored points and four lines in one
+guarded DesignPatch. Stable suffixes are _p0..p3 (initial lower-left,
+counterclockwise) and _e0..e3. Either corner direction works. All eight IDs must
+be fresh; a late collision refuses atomically. The expanded batch limit is 64
+source operations, so at most eight rectangle forms fit.
+
+This creates plain Point/Line source, without a stored Rectangle helper,
+associative group or implicit constraints. Do not claim rectangle association
+after point edits. Preserve datum references, existing source and parameters;
+no dummy parameter is necessary. Construction-only output has no closed profile
+or invented mass. One apply/Undo/Redo handles all eight additions. Finite positive
+width/height, explicit units, current identity/revision, solve, required
+assertions and native publication remain backend checks.
+
+The [example](../../examples/agent/create_pointer_rectangle.json) uses opposite
+corners (22,7) and (2,-3) mm, then a 6 mm extrusion: 1200 mm³ volume, 760 mm²
+area. On the seeded +5 mm XY datum, bounds are (2,-3,5)..(22,7,11) mm and centroid
+(12,2,8) mm. Eval create_pointer_rectangle checks exact source/owner/dependency,
+preserved prior source and fresh SI STL placement/centroid/volume/closure,
+including rejection of a translated equal-volume mesh. Native Draw rectangle
+tests separately exercise actual Linux/Windows events, cancellation and history;
+MCP expresses equivalent typed intent and does not simulate a mouse or establish
+an external model-host session. See [sketch API](sketch-editing.md#pointer-rectangle-intent-mcad-p17-005).

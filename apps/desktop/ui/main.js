@@ -1012,7 +1012,18 @@ function drawLineDraft(start, end) {
 }
 let lineStart = null;
 let circleStart = null;
+let rectangleStart = null;
 const sketchCanvas = document.getElementById("sketch-canvas");
+function rectangleSize(start,end) {
+  const mm=value=>Number(value.split(" ")[0]);
+  return {x:Math.min(mm(start.x),mm(end.x)),y:-Math.max(mm(start.y),mm(end.y)),width:Math.abs(mm(end.x)-mm(start.x)),height:Math.abs(mm(end.y)-mm(start.y))};
+}
+function drawRectangleDraft(start,end) {
+  document.getElementById("sketch-draft-rectangle")?.remove();
+  const e=document.createElementNS("http://www.w3.org/2000/svg","rect");e.id="sketch-draft-rectangle";
+  for(const [key,value] of Object.entries({...rectangleSize(start,end),class:"sketch-geometry construction"}))e.setAttribute(key,String(value));
+  sketchCanvas.append(e);
+}
 function circleRadius(start, end) {
   const mm=value=>Number(value.split(" ")[0]);
   return Math.hypot(mm(end.x)-mm(start.x),mm(end.y)-mm(start.y));
@@ -1031,8 +1042,9 @@ function drawCircleDraft(start, end) {
 function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
 function clearSketchDraft() {
   cancelSketchCreationReview();
-  sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null; circleStart = null;
+  sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null; circleStart = null; rectangleStart = null;
   document.getElementById("sketch-draft-circle")?.remove();
+  document.getElementById("sketch-draft-rectangle")?.remove();
   document.getElementById("sketch-review").hidden = true;
 }
 function renderSketchEditor(state) {
@@ -1060,7 +1072,7 @@ function drawSketch(row = sketchRow()) {
   }
   const authored=new Set(row.source.entities.filter(e=>e.type==="point").map(e=>e.id));
   for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:"sketch-point"},p.id);
-  document.getElementById("sketch-diagnostics").textContent=`${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${row.solved.solve_state.status} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arc/rectangle/cubic editing is outside this form scope.`;
+  document.getElementById("sketch-diagnostics").textContent=`${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${row.solved.solve_state.status} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arc/cubic and stored rectangle-helper editing remain outside this form scope.`;
 }
 function draftPoint(event) {
   const p=sketchCanvas.createSVGPoint(); p.x=event.clientX;p.y=event.clientY;const local=p.matrixTransform(sketchCanvas.getScreenCTM().inverse());
@@ -1071,9 +1083,25 @@ sketchCanvas.addEventListener("click",event=> {
   if(documentMutationBusy||sketchBusy||!sketchRow())return;
   reviewedSketch=null; sketchReviewSequence++; document.getElementById("sketch-review").hidden=true;
   const p=draftPoint(event),tool=document.getElementById("sketch-tool").value;
+  if(tool==="rectangle") {
+    if(!rectangleStart) {
+      sketchDraft=null;lineStart=null;circleStart=null;drawSketch();rectangleStart=p;
+      setStatus("Choose opposite rectangle corner (local mm).");return;
+    }
+    const size=rectangleSize(rectangleStart,p);
+    if(!Number.isFinite(size.width)||!Number.isFinite(size.height)||size.width<=0||size.height<=0) {
+      clearSketchDraft();drawSketch();setStatus("Rectangle refused: choose finite positive width and height (mm).");return;
+    }
+    const used=new Set(sketchRow().source.entities.map(e=>e.id));let n=1;
+    while(used.has(`ent:rectangle_${n}`)||[0,1,2,3].some(i=>used.has(`ent:rectangle_${n}_p${i}`)||used.has(`ent:rectangle_${n}_e${i}`)))n++;
+    const id=`ent:rectangle_${n}`;
+    sketchDraft=[{operation:"rectangle",id,x1:rectangleStart.x,y1:rectangleStart.y,x2:p.x,y2:p.y,construction:document.getElementById("sketch-construction").checked}];
+    drawRectangleDraft(rectangleStart,p);rectangleStart=null;
+    document.getElementById("sketch-id").value=id;setStatus("Rectangle drafted. Review before committing.");return;
+  }
   if(tool==="circle") {
     if(!circleStart) {
-      sketchDraft=null;lineStart=null;drawSketch();circleStart=p;drawCircleDraft(p,p);
+      sketchDraft=null;lineStart=null;rectangleStart=null;drawSketch();circleStart=p;drawCircleDraft(p,p);
       setStatus("Choose circle radius point (local mm).");return;
     }
     const radius=circleRadius(circleStart,p);
@@ -1109,6 +1137,7 @@ sketchCanvas.addEventListener("pointermove", event=>{
   if(sketchBusy||documentMutationBusy)return;
   if(lineStart)drawLineDraft(lineStart,draftPoint(event));
   if(circleStart)drawCircleDraft(circleStart,draftPoint(event));
+  if(rectangleStart)drawRectangleDraft(rectangleStart,draftPoint(event));
 });
 function sketchForm() {
   const value=id=>document.getElementById("sketch-"+id).value.trim(),operation=value("action"),id=value("id"),create=document.getElementById("sketch-create").checked,construction=document.getElementById("sketch-construction").checked;
@@ -1127,6 +1156,7 @@ function sketchForm() {
 document.getElementById("sketch-form").addEventListener("submit",async event=> {
   event.preventDefault();if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
   if(circleStart) {setStatus("Choose circle radius point or discard the draft before review.");return;}
+  if(rectangleStart) {setStatus("Choose opposite rectangle corner or discard the draft before review.");return;}
   cancelFeatureReview();const seq=++sketchReviewSequence,path=currentPath;
   const edit={document_id:sketchEditorState.document_id,revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations:sketchDraft??[sketchForm()]};sketchBusy=true;
   try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
@@ -1145,7 +1175,7 @@ document.getElementById("sketch-apply").addEventListener("click",async()=> {
 document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
 document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});
 document.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&(circleStart||sketchDraft||reviewedSketch)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
+  if(event.key==="Escape"&&(circleStart||rectangleStart||sketchDraft||reviewedSketch)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
 });
 
 // Creation drafts contain only typed intent; the backend owns IDs and source.

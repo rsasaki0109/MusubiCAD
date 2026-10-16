@@ -144,3 +144,18 @@ reload, construction flags, free IDs, one-entry Undo/Redo, a native 150*pi mm³
 prism and upstream-parameter/stale-command refusal. The helper path is enforced
 by Desktop PR triggers and the policy test. Successful Linux execution does not
 establish Windows completion; record its exact-head required native step too.
+
+## Actual pointer rectangle checks (P17-005)
+
+Both native editor scripts also unconditionally run
+[the rectangle helper](../../tools/pointer_rectangle_ui_checks.mjs). It creates
+a source-bound datum sketch through real controls, dispatches opposite-corner
+events and checks the independent 20x10 mm preview plus a native 1200 mm³ prism.
+The same integer-pixel presentation setup is used; input properties, product
+helpers, IPC responses and model results are never replaced. Checks cover
+half-review refusal, Escape/Discard and late real IPC cancellation, zero width/
+height, view/tool/sketch/reload invalidation, construction-only source, fresh
+derived IDs, one-entry eight-entity Undo/Redo and upstream/stale-command refusal.
+The stored geometry is four ordinary authored points and four lines, without
+a Rectangle helper or implied rectangle constraints. Linux execution and the
+required exact-head Windows WebView2 step remain separate evidence.

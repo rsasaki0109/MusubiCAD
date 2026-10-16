@@ -28,6 +28,7 @@ on:
       - tools/sketch_creation_ui_checks.mjs
       - tools/datum_sketch_ui_checks.mjs
       - tools/pointer_circle_ui_checks.mjs
+      - tools/pointer_rectangle_ui_checks.mjs
   push:
     branches: [main]
     tags:

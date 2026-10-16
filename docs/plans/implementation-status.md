@@ -1703,3 +1703,41 @@ checks passed. Completion and GUI 49→50 / weighted CAD 53.20→53.35 credit
 remain conditional on feature main merge and all applicable exact-head CI,
 including the actual Windows native pointer step. Agent operation remains 95;
 no new external-host or circle-geometry credit is claimed.
+
+P17-004 completed in PR #152, merge commit
+`419941f9077b25d4fd336171035c9403b1a31ccb`, tested head
+`640ecbbaa1969909e8cdc8e129dccd5536c69c82`, base
+`1956514704f9ab337fa1572149819e045e5a9301`. Exact merge parents and
+identical tested/merged trees were verified. All four exact-head workflows and
+their full eleven jobs passed (ten successes and the expected skipped PR
+publisher): CI 38911857585, Design Review 38911857656, Desktop 38911857609,
+Release 38911857542. New Linux and Windows native pointer gates passed.
+Partial fixed-rubric credit is GUI 49→50, weighted CAD 53.20→53.35; agent
+operation remains 95. Credit covers the usable pointer lifecycle and protected
+atomic publication/history, without repeat circle geometry or host credit.
+
+P17-005 starts under ADR-102: the backend expands one opposite-corner rectangle
+form into four authored points and four edges in a single guarded DesignPatch.
+The canvas owns only disposable local-mm input/preview. No new score before
+feature main merge and the required independent/native acceptance.
+
+P17-005 implementation expands a creation-only opposite-corner form into four
+ordinary Point entities and four Line entities, with stable p0..p3/e0..e3
+suffixes and the existing 64-source-operation cap. No stored Rectangle helper,
+associative group or implied constraints are introduced. Empty/absent parameter
+graphs resolve authored unit-bearing point/line source on disposable models.
+The native canvas supplies local-mm input/preview only; review/apply/history
+remain the shared DesignPatch gateway.
+
+Seven backend acceptance tests pass, including both-kernel independent
+20x10x6 mm prism volume/surface area/absolute placement, four corner directions,
+construction-only null mass, late derived-ID collision and assertion refusal,
+expanded batch limits and packed/expanded atomic history. The actual typed
+MCP/Agent regression passes five placements (XY/YZ/XZ, tilted datum, seeded XY
+datum) with read-only review, source/history preservation, fresh native STL
+grading and rejection of equal-volume wrong placement and invalid source decoys.
+Example, guide, skill, public API and feasible eval are included. The locked
+Tauri build passes. The four mandatory pre-push checks pass: fmt, workspace/all-target Clippy,
+workspace tests (1292 passed, 0 failed, 37 ignored across 190 suites) and the
+agent-plugin contract. New native pointer interaction acceptance and applicable
+exact-head CI remain pending; no maturity increment.

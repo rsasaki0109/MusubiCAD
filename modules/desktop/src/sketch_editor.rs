@@ -57,6 +57,14 @@ pub enum SketchForm {
         end: String,
         construction: bool,
     },
+    Rectangle {
+        id: String,
+        x1: String,
+        y1: String,
+        x2: String,
+        y2: String,
+        construction: bool,
+    },
     Circle {
         id: String,
         center: String,
@@ -249,6 +257,78 @@ fn base(id: &str, construction: bool) -> Result<EntityBase> {
         construction,
     })
 }
+// Opposite-corner intent becomes ordinary authored geometry, not a persisted
+// rectangle helper or an inferred associative constraint group.
+fn rectangle_entities(
+    doc: &OcadDocument,
+    sketch: &Sketch,
+    id: &str,
+    corners: [[&str; 2]; 2],
+    construction: bool,
+) -> Result<Vec<SketchEntity>> {
+    base(id, false)?;
+    if sketch.find_entity(id).is_some() {
+        return Err(OpenCadError::validation(
+            "rectangle source ID prefix already exists",
+        ));
+    }
+    let values = opencad_graph::evaluate_param_graph_strict(&doc.parameters)?;
+    let mut x = [
+        coord(doc, corners[0][0], false)?,
+        coord(doc, corners[1][0], false)?,
+    ];
+    let mut y = [
+        coord(doc, corners[0][1], false)?,
+        coord(doc, corners[1][1], false)?,
+    ];
+    let xs = [
+        opencad_graph::eval_length_expr_strict(corners[0][0], &values)?,
+        opencad_graph::eval_length_expr_strict(corners[1][0], &values)?,
+    ];
+    let ys = [
+        opencad_graph::eval_length_expr_strict(corners[0][1], &values)?,
+        opencad_graph::eval_length_expr_strict(corners[1][1], &values)?,
+    ];
+    if !(xs[1] - xs[0]).abs().is_finite()
+        || !(ys[1] - ys[0]).abs().is_finite()
+        || (xs[1] - xs[0]).abs() <= 0.
+        || (ys[1] - ys[0]).abs() <= 0.
+    {
+        return Err(OpenCadError::validation(
+            "rectangle requires finite positive width and height (m)",
+        ));
+    }
+    if xs[0] > xs[1] {
+        x.swap(0, 1);
+    }
+    if ys[0] > ys[1] {
+        y.swap(0, 1);
+    }
+    let ids: [String; 4] = std::array::from_fn(|i| format!("{id}_p{i}"));
+    let coordinates = [
+        (&x[0], &y[0]),
+        (&x[1], &y[0]),
+        (&x[1], &y[1]),
+        (&x[0], &y[1]),
+    ];
+    let mut entities = Vec::with_capacity(8);
+    for (i, (x, y)) in coordinates.into_iter().enumerate() {
+        entities.push(SketchEntity::Point(PointEntity {
+            base: base(&ids[i], false)?,
+            x: x.clone(),
+            y: y.clone(),
+        }));
+    }
+    for i in 0..4 {
+        entities.push(SketchEntity::Line(LineEntity {
+            base: base(&format!("{id}_e{i}"), construction)?,
+            start: EntityId::new(&ids[i])?,
+            end: EntityId::new(&ids[(i + 1) % 4])?,
+        }));
+    }
+    Ok(entities)
+}
+
 fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
     if feature_tree(doc)?.revision != edit.revision {
         return Err(OpenCadError::validation("stale sketch source revision"));
@@ -273,6 +353,24 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
     let mut ops = Vec::new();
     for form in &edit.operations {
         let sketch = authored(doc, &edit.sketch_id)?;
+        if let SketchForm::Rectangle {
+            id,
+            x1,
+            y1,
+            x2,
+            y2,
+            construction,
+        } = form
+        {
+            for entity in rectangle_entities(doc, sketch, id, [[x1, y1], [x2, y2]], *construction)?
+            {
+                ops.push(PatchOperation::AddSketchEntity {
+                    sketch_id: edit.sketch_id.clone(),
+                    entity,
+                });
+            }
+            continue;
+        }
         if let SketchForm::Point { id, .. } | SketchForm::Construction { id, .. } = form {
             if sketch.entities.iter().any(|e| matches!(e, SketchEntity::CubicBezier(c) if c.base.id.as_str()==id || c.control_points.iter().any(|p| p.as_str()==id))) {
                 return Err(OpenCadError::validation("cubic/NURBS editing remains separately gated"));
@@ -432,6 +530,11 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
                 _ => return Err(OpenCadError::validation("unsupported sketch form")),
             });
         }
+    }
+    if ops.len() > 64 {
+        return Err(OpenCadError::validation(
+            "expanded sketch form batch must contain at most 64 source operations",
+        ));
     }
     DesignPatch::new(ops).with_revision_precondition(&document_design_state(doc))
 }
