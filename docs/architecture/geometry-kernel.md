@@ -660,3 +660,14 @@ SI precision/work/discrepancy requests fail closed. See
 retained; this does not certify a geometric union, exact embedding or later
 native/placed/f32 conversion. Both kernels retain actual mass properties.
 No source/schema/first-moment/production-fillet admission or score.
+
+
+MCAD-P16-045 / ADR-098 adds pure canonical ideal first-moment/centroid enclosures.
+Degree-four characteristic-arc integration reduces removed Mx and a positive
+axial correction to deterministic outward rational-chart integrals. Independent
+volume, stock and moment bounds produce centroid intervals through positive
+volume division. Each SI full-width request and each pass's leaf cap must fit;
+otherwise refuse without mutation or partial output. Existing volume/area
+algorithms remain unchanged. See [API](../api/ideal-periodic-reference-moments.md).
+Actual kernel mass/centroid stays separate; no actual-grid/native/placed/f32 or
+production/source certificate and no score.

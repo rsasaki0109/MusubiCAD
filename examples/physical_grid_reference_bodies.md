@@ -55,3 +55,23 @@ with unsigned grid/ideal/signed-difference intervals, absolute/relative bounds
 and cell count. Actual `bodies[*].area_m2` stays a separate kernel query.
 The mathematical bound counts triangle multiplicity; native/placed/f32 conversion
 and exact embedding are excluded. See [API](../docs/api/grid-reference-area-difference.md).
+
+
+P16-045 / ADR-098 independently bounds ideal first moments and centroid:
+
+```rust
+let ideal = r.moment_bounds(CircularFilletMomentPrecision {
+    maximum_volume_interval_width_m3: 1e-11,
+    maximum_first_moment_interval_width_m4: 1e-12,
+    maximum_centroid_interval_width: Length::from_meters(1e-6),
+    max_cells: 262144, // separate volume and moment leaf caps
+})?;
+assert!(ideal.centroid_m[2][1] - ideal.centroid_m[2][0] <= 1e-6);
+```
+
+The existing example/CI JSON adds `ideal_moments` with all volume/moment/centroid
+intervals, requested widths and separate leaf counts. `bodies[*].volume_m3` and
+`center_of_mass_m` remain ACTUAL kernel measurements. Canonical y symmetry is
+exact; constant radii also give exact x symmetry and analytic zero-cell results.
+No midpoint/native mass substitution or grid-moment discrepancy certificate.
+See [API](../docs/api/ideal-periodic-reference-moments.md).

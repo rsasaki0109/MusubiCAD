@@ -349,3 +349,45 @@ fn area_comparison_keeps_actual_faceted_area_and_bounds_differences_in_either_ke
         }
     }
 }
+
+#[test]
+fn ideal_moment_queries_preserve_actual_grid_mass_and_centroid_in_both_kernels() {
+    for variable in [false, true] {
+        let g = grid(variable, false);
+        let r = CircularFilletReference::new(
+            Length::from_meters(0.01),
+            Length::from_meters(0.02),
+            Length::from_meters(0.0005),
+            Length::from_meters(if variable { 0.0015 } else { 0.0005 }),
+        )
+        .unwrap();
+        let precision = opencad_geometry::CircularFilletMomentPrecision {
+            maximum_volume_interval_width_m3: 1e-11,
+            maximum_first_moment_interval_width_m4: 1e-12,
+            maximum_centroid_interval_width: Length::from_meters(1e-6),
+            max_cells: 262144,
+        };
+        let ideal = r.moment_bounds(precision).unwrap();
+        let (v, _, centre) = independent(&g);
+        let mock = MockGeometryKernel::with_analytic_primitives();
+        let native = OcctGeometryKernel::new();
+        for kernel in [&mock as &dyn GeometryKernel, &native] {
+            let body = kernel.import_circular_fillet_grid(&g).unwrap();
+            let before = kernel.mass_properties(&body, 1000.).unwrap();
+            assert!((before.volume_m3 - v).abs() < 1e-14);
+            for (actual, expected) in before.center_of_mass.into_iter().zip(centre) {
+                assert!((actual - expected).abs() < 1e-9); // Separate native numerical allowance.
+            }
+            assert!((before.volume_m3 - ideal.volume_m3[0]).abs() > 1e-9);
+            let mut bad = precision;
+            bad.maximum_centroid_interval_width = Length::from_meters(f64::from_bits(1));
+            bad.max_cells = 4;
+            assert!(r.moment_bounds(bad).is_err());
+            let after = kernel.mass_properties(&body, 1000.).unwrap();
+            assert!((after.volume_m3 - before.volume_m3).abs() < 1e-18);
+            for (a, b) in after.center_of_mass.into_iter().zip(before.center_of_mass) {
+                assert!((a - b).abs() < 1e-12);
+            }
+        }
+    }
+}
