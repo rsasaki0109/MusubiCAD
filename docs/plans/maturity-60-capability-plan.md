@@ -19,12 +19,13 @@ Keep one task per PR and do not stack. Register canonical IDs in roadmap.md
 before task implementation. Each new phase must have objective, dependencies,
 ID table, completion definition, tests and risks. P15-009 is complete in PR #101;
 v0.3.1 was published and independently verified.
-MCAD-P16-001 registers this plan and ADR-062; the next implementation task is
-MCAD-P16-002. Only Phase 16 IDs are accepted here. Following phases remain
-candidates until their purpose/dependencies/IDs/done/tests/risks are registered
-in the roadmap before implementation.
+MCAD-P16-001 registered this plan and ADR-062 before MCAD-P16-002.
+Phase 16's registered tasks are now merged. Phase 17 is registered
+in roadmap.md with purpose/dependencies/IDs/done/tests/risks; P17-001 accepts
+ADR-102 before P17-002 implementation. Later phases remain candidates until
+their corresponding roadmap registration, with no advance maturity credit.
 
-## Next phase: broader manufacturing modeling
+## Phase 16: broader manufacturing modeling (merged)
 
 Start by planning and accepting the admission/compatibility contract. Current
 ordinary Mock profiles/extrusions/Booleans use synthetic body IDs and synthetic
@@ -58,7 +59,7 @@ examples, MCP guide and skill, feasible actual MCP eval, schema/migration/
 round trips when the document changes, source/undo/refusal isolation and all
 required pre-push/native CI. Architecture/numeric/representation choices get ADRs.
 
-## Following phase: a usable desktop creation workflow
+## Phase 17: a usable desktop creation workflow
 
 Preserve ADR-058 backend ownership and shared DesignPatch gateways. Proposed
 increments come from actual native controls, not additional JSON fields:
@@ -75,6 +76,17 @@ Each increment needs backend/CLI-Agent/native Tauri parity, analytic Mock/OCCT
 physical results, meaningful failure and history tests, actual Windows form/
 pointer evidence, examples/guide/skill/eval. Keep implementation details out of
 product flows and never write graph/solver state from frontend JavaScript.
+
+Phase 17's first task, P17-001 / ADR-102, defines creation/workplane admission
+without adding controls or points. P17-002 adds atomic global-plane sketch and
+owner creation; P17-003 adds source-bound existing datum planes and their
+resolved view frames. Pointer, constraint and feature-form tasks follow in the
+registered roadmap order. Blank-document file creation and arbitrary custom/
+face-plane editing are not implicitly included. Acceptance requires actual new
+Linux Tauri/Windows WebView2 interactions and independent both-kernel physical
+results, including absolute placement and equal-volume wrong-placement controls.
+Existing Phase 14 operations receive no duplicate credit. Keep 52.60 / 95 until
+a later implemented feature merges with an explicit justified ledger entry.
 
 ## Following phase: associative sketch and drawing coverage
 
