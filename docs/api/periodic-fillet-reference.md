@@ -31,8 +31,10 @@ an outward-rounded numerical certificate, a mesh error bound or native proof.
 
 `constant_limit_volume_m3()` gives the ideal constant-radius rounded-cylinder
 volume only for identically authored minimum/maximum values. An explicitly
-unequal pair, even one floating-point step apart, refuses. This original constant-only method retains its refusal semantics. No area/COM
-result or backend mass-property substitution is supplied.
+unequal pair, even one floating-point step apart, refuses. This original
+constant-only method retains its refusal semantics. It supplies no area/COM
+result or backend mass-property substitution. P16-043 separately adds
+[bounded ideal surface area](ideal-periodic-reference-area.md).
 
 See the [executable example](../../examples/periodic_fillet_reference.md).
 Kernel solids, bounded meshes/sampling, native parameter/contact/periodicity

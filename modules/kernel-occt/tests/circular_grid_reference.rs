@@ -304,3 +304,34 @@ fn volume_comparison_encloses_actual_backend_mass_without_substituting_ideal_val
         assert!((kernel.mass_properties(&body, 1.).unwrap().volume_m3 - actual).abs() < 1e-18);
     }
 }
+
+#[test]
+fn ideal_area_never_replaces_actual_faceted_area_in_either_kernel() {
+    for variable in [false, true] {
+        let g = grid(variable, false);
+        let r = CircularFilletReference::new(
+            Length::from_meters(0.01),
+            Length::from_meters(0.02),
+            Length::from_meters(0.0005),
+            Length::from_meters(if variable { 0.0015 } else { 0.0005 }),
+        )
+        .unwrap();
+        let ideal = r.surface_area_bounds_m2(1e-7, 262144).unwrap();
+        let actual_grid_area = independent(&g).1;
+        let mock = MockGeometryKernel::with_analytic_primitives();
+        let native = OcctGeometryKernel::new();
+        for kernel in [&mock as &dyn GeometryKernel, &native] {
+            let body = kernel.import_circular_fillet_grid(&g).unwrap();
+            let before = kernel.mass_properties(&body, 1.).unwrap();
+            // Numerical native conversion allowance; not an area certificate.
+            assert!((before.area_m2 - actual_grid_area).abs() < 1e-10);
+            for bound in [ideal.body_lower_m2, ideal.body_upper_m2] {
+                assert!((before.area_m2 - bound).abs() > 1e-7);
+            }
+            assert!(r.surface_area_bounds_m2(f64::from_bits(1), 4).is_err());
+            let after = kernel.mass_properties(&body, 1.).unwrap();
+            assert!((before.area_m2 - after.area_m2).abs() < 1e-18);
+            assert!((before.volume_m3 - after.volume_m3).abs() < 1e-18);
+        }
+    }
+}

@@ -349,3 +349,27 @@ Existing surface/edge/position/topology/volume/phase and numerical-normal gates
 remain. This proves finite mathematical normal gaps, not exact G1 or native
 floating evaluation/whole-BREP/production fidelity. See
 [the paired-normal API](../docs/api/periodic-fillet-reference.md#current-native-paired-boundary-normal-bounds-p16-038).
+
+
+P16-043 / ADR-096 independently bounds the complete ideal surface area:
+
+```rust
+let area = reference.surface_area_bounds_m2(1e-7, 262_144)?;
+assert!(area.body_upper_m2 - area.body_lower_m2 <= 1e-7); // m², full total width
+assert!(area.blend_lower_m2 > 0.);
+assert!(reference.surface_area_bounds_m2(1e-7, 4).is_err()); // variable fixture
+```
+
+The result also contains retained side/end/bottom area intervals in m².
+Identical authored radii use an analytic constant formula with zero cells; an
+explicit positive amplitude stays variable. Run the existing physical example:
+
+```sh
+cargo run --locked --quiet -p opencad-kernel-occt --example circular_grid_reference
+```
+
+Each case's `ideal_area` contains ideal component/total bounds and cell count,
+while `bodies[*].area_m2` is the actual Mock/OCCT faceted area. CI retains both
+in `grid-reference-volume-comparison.json`. No native conversion, area
+discrepancy, production fillet or source certificate is implied. See
+[API](../docs/api/ideal-periodic-reference-area.md).
