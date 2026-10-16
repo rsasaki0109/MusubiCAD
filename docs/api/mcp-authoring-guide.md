@@ -1522,3 +1522,30 @@ no new source tag, MCP operation or eval is admitted. Canonical bounds are not
 native/placed/f32 certificates. See [runtime API](faceted-circular-fillet-runtime.md)
 and `examples/faceted_circular_fillet.md`. P16-008 still owns source, transaction,
 reader/cache/phase and independently graded MCP gates.
+
+## Numerical faceted circular cylinder fillets (ADR-101)
+
+Use a CLI built from this feature revision; the published v0.3.1 binary predates
+this source tag.
+
+Use the distinct `faceted_circular_fillet` feature through `add_feature` or
+`replace_feature_definition`; keep its mandatory
+`representation: grid_faceted_periodic_cosine` and
+`verification: canonical_grid_with_numerical_backend_checks`. Both SI radii and
+all quality/error/work budgets are explicit. The original exact-circle
+Distance/NewBody extrusion supplies authored phase X and the positive end
+semantic Edge (`extrusion_end`); select it with `edge_ref`, including typed
+`set_feature_ref` edits. Preserve source and unique ownership, and put coordinated
+stock/radius changes in one reviewed patch. Initially radius expression fields
+are unsupported. Review/dry-run are read-only, failures preserve history and
+artifacts, and native verification is mandatory even with `verify: false`.
+
+All output supports are rebuilt planar facets with new physical ownership.
+Canonical grid quality bounds do not certify native/placed/f32 conversion;
+`faceted_surface` alone cannot select a subface. Do not describe this as an exact
+smooth/G1/general curved-edge fillet. See
+[the source contract](faceted-circular-fillet-source.md),
+[the DesignPatch example](../../examples/faceted_circular_fillet_source.md), and
+`faceted_circular_fillet_radius` in `tools/mcp_eval_tasks.json`. That eval grades
+retained source and fresh physical STL closure, dimensions, volume and authored
+phase contacts; source fields or scalar mass alone cannot pass.

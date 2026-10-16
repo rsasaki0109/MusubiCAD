@@ -686,3 +686,12 @@ SI matrix and rechecks its solid/self-intersection/actual volume before insertio
 All output facets are new, stock remains immutable, counting forwards and legacy
 Mock refuses. Canonical certificates do not propagate to native/placed/f32;
 source/schema/cache/history/MCP admission remains separate.
+
+ADR-101 exposes ADR-100 as the separately named numerical
+`faceted_circular_fillet` source. The feature layer proves original authored
+cylinder/end-ref/phase and validates actual output facets on cold and warm
+regeneration. Mandatory CLI/MCP candidate verification, strict wire schemas and
+DesignPatch/history preserve the graph as truth. All physical facets have the
+new producer and ambiguous facet roles refuse. Canonical input-grid bounds stay
+separate from native/placed/f32 numerical checks; see
+[the source API](../api/faceted-circular-fillet-source.md).

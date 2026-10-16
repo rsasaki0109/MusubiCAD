@@ -56,3 +56,8 @@ constant and placed-variable examples in both kernels. The existing
 `circular_grid_reference` CI JSON includes the same `guarded_operations` report:
 canonical input bounds/comparisons, actual stock/output properties and measured
 contact vertices are separate. See [ADR-100](../adr/ADR-100-guarded-grid-faceted-circular-fillet-runtime.md).
+
+ADR-101 now supplies a separate authored source wrapper with original
+cylinder/rim/phase, persistence, transaction and actual output/cache checks.
+See [the source contract](faceted-circular-fillet-source.md); this runtime's
+canonical-only certificate scope is unchanged.

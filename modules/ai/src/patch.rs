@@ -45,6 +45,7 @@ pub enum FeatureExprField {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FeatureRefField {
+    EdgeRef,
     PlaneFaceRef,
     FaceRef,
 }
@@ -54,6 +55,7 @@ impl FeatureRefField {
         match self {
             Self::PlaneFaceRef => "plane_face_ref",
             Self::FaceRef => "face_ref",
+            Self::EdgeRef => "edge_ref",
         }
     }
 
@@ -61,8 +63,9 @@ impl FeatureRefField {
         match field {
             "plane_face_ref" => Ok(Self::PlaneFaceRef),
             "face_ref" => Ok(Self::FaceRef),
+            "edge_ref" => Ok(Self::EdgeRef),
             _ => Err(OpenCadError::validation(format!(
-                "unsupported feature ref field '{field}'; expected 'plane_face_ref' or 'face_ref'"
+                "unsupported feature ref field '{field}'; expected 'plane_face_ref', 'face_ref' or 'edge_ref'"
             ))),
         }
     }
@@ -492,6 +495,7 @@ pub(crate) fn validate_feature_values(
             FeatureDefinition::SeatedStandardHole(_)
                 | FeatureDefinition::CylindricalDraft(_)
                 | FeatureDefinition::NominalMetricThread(_)
+                | FeatureDefinition::FacetedCircularFillet(_)
                 | FeatureDefinition::TaperedRib(_)
         )
     }) {
@@ -520,6 +524,7 @@ pub(crate) fn validate_feature_values(
                 FeatureDefinition::CylindricalDraft(_)
                     | FeatureDefinition::TaperedRib(_)
                     | FeatureDefinition::NominalMetricThread(_)
+                    | FeatureDefinition::FacetedCircularFillet(_)
             )
         {
             crate::feature_patch::check_feature_inputs(node, state, &mut failures);
@@ -1427,6 +1432,10 @@ fn apply_feature_ref(node: &mut FeatureNode, field: FeatureRefField, ref_id: &st
         }
         (FeatureDefinition::TaperedRib(def), FeatureRefField::FaceRef) => {
             def.face_ref = ref_id.to_string();
+            Ok(())
+        }
+        (FeatureDefinition::FacetedCircularFillet(def), FeatureRefField::EdgeRef) => {
+            def.edge_ref = ref_id.to_string();
             Ok(())
         }
         (FeatureDefinition::NominalMetricThread(def), FeatureRefField::FaceRef) => {

@@ -69,7 +69,7 @@ pub fn resolve_topo_ref_id_with_history(
         .map(|id| id.as_str().to_string())
 }
 
-/// ADR-069: thread surface roles cannot select a transient native subface.
+/// ADR-069/101: thread/faceted surface roles cannot select a transient native subface.
 /// End roles resolve only through one current, owned physical discovery.
 pub(crate) fn guarded_thread_face(
     topo_ref: &TopoRef,
@@ -77,12 +77,25 @@ pub(crate) fn guarded_thread_face(
     policy: TopoRefTolerancePolicy,
 ) -> Option<Option<u64>> {
     let role = topo_ref.semantic.role.as_deref().unwrap_or("");
-    if !["thread_start", "thread_end", "thread_surface"].contains(&role) {
+    if ![
+        "thread_start",
+        "thread_end",
+        "thread_surface",
+        "faceted_surface",
+    ]
+    .contains(&role)
+    {
         // Omission/renaming of a role cannot bypass current thread ownership.
         return discoveries
             .is_some_and(|faces| {
                 faces.iter().any(|d| {
-                    ["thread_start", "thread_end", "thread_surface"].contains(&d.role.as_str())
+                    [
+                        "thread_start",
+                        "thread_end",
+                        "thread_surface",
+                        "faceted_surface",
+                    ]
+                    .contains(&d.role.as_str())
                         && (d.feature_id.as_deref() == Some(topo_ref.semantic.created_by.as_str())
                             || topo_ref.kernel_face_id() == Some(d.kernel_face_id))
                 })
@@ -95,7 +108,7 @@ pub(crate) fn guarded_thread_face(
     let Some(discoveries) = discoveries else {
         return Some(None);
     };
-    if role == "thread_surface" {
+    if ["thread_surface", "faceted_surface"].contains(&role) {
         return Some(None);
     }
     let mut candidates = discoveries.iter().filter(|d| {

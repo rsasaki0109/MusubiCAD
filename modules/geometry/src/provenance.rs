@@ -282,7 +282,7 @@ pub fn resolve_face_ref_with_provenance(
         } else {
             ReferenceStatus::Missing
         };
-        let provenance=provenance_from(topo_ref,status,resolved,&candidates,"thread roles require one current owned end; native subface numbering cannot select a surface",required);
+        let provenance=provenance_from(topo_ref,status,resolved,&candidates,"guarded roles require a uniquely admitted current face; native subface numbering cannot select a thread or faceted surface",required);
         return finish(
             ReferenceResolution {
                 provenance,

@@ -74,6 +74,6 @@ fn every_example_feature_graph_is_derivable() {
         }
         checked += 1;
     }
-    // The nominal thread is included in graph derivation and exact edge checks.
-    assert_eq!(checked, 32, "every part example must be checked");
+    // The faceted circular fillet is included in derivation and exact edge checks.
+    assert_eq!(checked, 33, "every part example must be checked");
 }

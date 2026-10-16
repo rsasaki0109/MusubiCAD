@@ -92,3 +92,9 @@ pub mod seated_standard_hole;
 pub use seated_standard_hole::{
     SeatedStandardHoleFeature, SeatedStandardHoleFeatureExecutor, StandardHoleSeat,
 };
+
+pub mod faceted_circular_fillet;
+pub use faceted_circular_fillet::{
+    FacetedCircularFilletFeature, FacetedCircularFilletFeatureExecutor, FacetedFilletQuality,
+    FacetedFilletRepresentation, FacetedFilletVerification,
+};

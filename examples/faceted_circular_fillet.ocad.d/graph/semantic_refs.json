@@ -1,0 +1,12 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:edge:stock_end",
+      "kind": "edge",
+      "semantic": {
+        "created_by": "feature:stock",
+        "role": "extrusion_end"
+      }
+    }
+  ]
+}

@@ -1,3 +1,7 @@
+// MCAD-P16-008 / ADR-101: faceted_circular_fillet is a distinct closed
+// numerical representation with mandatory quality and verification intent.
+// Never infer it from legacy fillet/cylinder records; older wire readers
+// refuse its unknown tag. Existing version policy and old source stay intact.
 // MCAD-P16-007 / ADR-069: nominal_metric_thread is a distinct closed feature
 // tag requiring representation/size/hand/whole-turn/square-end intent. Genuine
 // old readers reject it. Never infer a thread from a cylinder, standard-hole

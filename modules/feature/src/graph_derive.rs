@@ -124,6 +124,9 @@ impl FeatureDefinition {
                 ("source_feature", Some(&def.source_feature)),
                 ("target_feature", Some(&def.target_feature)),
             ],
+            Self::FacetedCircularFillet(def) => {
+                [("target_feature", Some(&def.target_feature)), ("", None)]
+            }
             Self::Fillet(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::Chamfer(def) => [("target_feature", Some(&def.target_feature)), ("", None)],
             Self::NominalMetricThread(def) => {
@@ -165,6 +168,9 @@ impl FeatureDefinition {
                 Workplane::FaceRef { face_ref } => vec![("base.face_ref", face_ref.as_str())],
                 _ => vec![],
             };
+        }
+        if let Self::FacetedCircularFillet(def) = self {
+            return vec![("edge_ref", def.edge_ref.as_str())];
         }
         if let Self::NominalMetricThread(def) = self {
             return vec![("face_ref", def.face_ref.as_str())];
@@ -224,6 +230,7 @@ impl FeatureDefinition {
             | Self::Draft(_)
             | Self::CylindricalDraft(_)
             | Self::NominalMetricThread(_)
+            | Self::FacetedCircularFillet(_)
             | Self::BodyBoolean(_)
             | Self::Rib(_)
             | Self::Loft(_)
@@ -273,6 +280,14 @@ impl FeatureDefinition {
             Self::Shell(def) => def.open_face_refs.iter().map(String::as_str).collect(),
             Self::CylindricalDraft(def) => vec![def.face_ref.as_str()],
             Self::NominalMetricThread(def) => vec![def.face_ref.as_str()],
+            _ => Vec::new(),
+        }
+    }
+
+    /// Edge references explicitly consumed by a solid modifier.
+    pub fn consumed_edge_refs(&self) -> Vec<&str> {
+        match self {
+            Self::FacetedCircularFillet(def) => vec![def.edge_ref.as_str()],
             _ => Vec::new(),
         }
     }
@@ -380,6 +395,7 @@ impl FeatureDefinition {
             | Self::Rib(_)
             | Self::TaperedRib(_)
             | Self::NominalMetricThread(_)
+            | Self::FacetedCircularFillet(_)
             | Self::Loft(_)
             | Self::Sweep(_)
             | Self::HelixSweep(_) => return Vec::new(),

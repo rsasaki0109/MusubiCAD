@@ -409,7 +409,12 @@ impl PartModel {
             progress.enter(RegenerationStage::Parameters, None);
             apply_parameters(self, params)?;
         } else if self.nodes.values().any(|n| {
-            !n.suppressed && matches!(n.definition, FeatureDefinition::NominalMetricThread(_))
+            !n.suppressed
+                && matches!(
+                    n.definition,
+                    FeatureDefinition::NominalMetricThread(_)
+                        | FeatureDefinition::FacetedCircularFillet(_)
+                )
         }) {
             apply_parameters(self, &ParamGraph::new())?;
         }
@@ -517,6 +522,7 @@ impl PartModel {
                         FeatureDefinition::CylindricalDraft(_)
                             | FeatureDefinition::TaperedRib(_)
                             | FeatureDefinition::NominalMetricThread(_)
+                            | FeatureDefinition::FacetedCircularFillet(_)
                     ) {
                         registry.discover_output_faces(node, &session, &cached.output)?
                     } else {
@@ -533,13 +539,15 @@ impl PartModel {
                     if cached.output.body.is_some() {
                         face_discoveries =
                             verified_faces.unwrap_or_else(|| cached.face_discoveries.clone());
-                        edge_discoveries =
-                            if matches!(node.definition, FeatureDefinition::NominalMetricThread(_))
-                            {
-                                Vec::new()
-                            } else {
-                                cached.edge_discoveries.clone()
-                            };
+                        edge_discoveries = if matches!(
+                            node.definition,
+                            FeatureDefinition::NominalMetricThread(_)
+                                | FeatureDefinition::FacetedCircularFillet(_)
+                        ) {
+                            Vec::new()
+                        } else {
+                            cached.edge_discoveries.clone()
+                        };
                     }
                     report.face_history.extend(cached.face_history.clone());
                     output_hashes.insert(feature_id.clone(), output_key);
@@ -564,14 +572,16 @@ impl PartModel {
                             None => discover_face_refs_from_body(&counted_kernel, body, &node_list)
                                 .unwrap_or_default(),
                         };
-                        edge_discoveries =
-                            if matches!(node.definition, FeatureDefinition::NominalMetricThread(_))
-                            {
-                                Vec::new()
-                            } else {
-                                discover_edge_refs_from_body(&counted_kernel, body, &node_list)
-                                    .unwrap_or_default()
-                            };
+                        edge_discoveries = if matches!(
+                            node.definition,
+                            FeatureDefinition::NominalMetricThread(_)
+                                | FeatureDefinition::FacetedCircularFillet(_)
+                        ) {
+                            Vec::new()
+                        } else {
+                            discover_edge_refs_from_body(&counted_kernel, body, &node_list)
+                                .unwrap_or_default()
+                        };
                     }
                 }
                 output_hashes.insert(feature_id.clone(), output_key.clone());
@@ -622,6 +632,7 @@ impl PartModel {
                         node.definition
                             .consumed_face_refs()
                             .into_iter()
+                            .chain(node.definition.consumed_edge_refs())
                             .map(|ref_id| (ref_id.to_string(), node.id.clone()))
                     })
                     .collect();
