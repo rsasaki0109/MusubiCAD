@@ -227,7 +227,7 @@ fn tools() -> Vec<Tool> {
         Tool { name: "plan_sketch_create", description: "Review atomic empty sketch/owner creation on exactly one global or admitted existing datum plane. Require current document identity/revision and stable IDs; verify candidate without writes.", handler: Handler::Agent("opencad.plan_sketch_create"), schema: sketch_create_schema },
         Tool { name: "apply_sketch_create", description: "Reverify and atomically create the reviewed source-bound sketch/owner through DesignPatch and history. Refuse stale identity/revision or ID collisions without writes.", handler: Handler::Agent("opencad.apply_sketch_create"), schema: sketch_create_schema },
         Tool { name: "inspect_sketches", description: "Read admitted authored global/datum sketches, solved local SI entities, original source associations and regenerated display frames without writing.", handler: Handler::Agent("opencad.inspect_sketches"), schema: path_schema },
-        Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, circle, ellipse, construction and basic constraints. Inputs require explicit units. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
+        Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, opposite-corner rectangle (four points/four lines), circle, ellipse, construction and basic constraints. Inputs require explicit units. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
         Tool { name: "apply_sketch_edit", description: "Reverify and atomically apply the same sketch commands as Tauri; preserve source/history on stale, unit, solve, profile or geometry failure.", handler: Handler::Agent("opencad.apply_sketch_edit"), schema: sketch_edit_schema },
         Tool {
             name: "inspect_selection_frame",
@@ -413,6 +413,11 @@ fn sketch_edit_schema() -> Value {
     let forms = [
         ("point", vec!["id", "x", "y"], vec!["create"]),
         ("line", vec!["id", "start", "end"], vec!["construction"]),
+        (
+            "rectangle",
+            vec!["id", "x1", "y1", "x2", "y2"],
+            vec!["construction"],
+        ),
         (
             "circle",
             vec!["id", "center", "radius"],

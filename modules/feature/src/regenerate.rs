@@ -410,7 +410,7 @@ impl PartModel {
         if let Some(params) = parameters {
             progress.enter(RegenerationStage::Parameters, None);
             apply_parameters(self, params)?;
-        } else if crate::param_apply::has_circle_form_source(self)
+        } else if crate::param_apply::has_sketch_form_source(self)
             || self.nodes.values().any(|n| {
                 !n.suppressed
                     && matches!(

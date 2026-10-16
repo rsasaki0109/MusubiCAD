@@ -292,7 +292,7 @@
       "id": "drawing_polygonal_section",
       "source": "examples/section_plate_drawing.ocad.d",
       "document": "section_drawing.ocad.d",
-      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m², two loops and eight edges; never store contour caches.",
+      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m\u00b2, two loops and eight edges; never store contour caches.",
       "expected_views": [
         "front"
       ],
@@ -2036,7 +2036,7 @@
       "id": "tapered_rib_height",
       "source": "examples/tapered_rib_plate.ocad.d",
       "document": "tapered_rib_plate.ocad.d",
-      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm³. Do not substitute a constant-width rib or change source sketches/order.",
+      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm\u00b3. Do not substitute a constant-width rib or change source sketches/order.",
       "expected_volume_mm3": 13224,
       "required_parameters": [
         "rib_height",
@@ -2110,6 +2110,24 @@
       "expected_volume_mm3": 471.23889803846896,
       "required_parameters": [],
       "expected_pointer_circle": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:pointer_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
+    },
+    {
+      "id": "create_pointer_rectangle",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "created_pointer_rectangle.ocad.d",
+      "prompt": "In {document}, create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum using typed sketch creation. Review and apply one rectangle sketch form with id ent:rectangle_1, opposite corners x1=22.000 mm, y1=7.000 mm, x2=2.000 mm, y2=-3.000 mm, construction=false. The shared backend must expand this to four authored points and four authored lines in one atomic patch; do not create a stored Rectangle helper, dummy parameters or inferred constraints. Extrude its admitted closed profile as feature:pointer_body, 6 mm new body. Preserve all prior source, parameters and datum dependency. MCP supplies equivalent typed intent; native GUI evidence separately exercises the opposite-corner gesture. Verify fresh physical placement, centroid and volume.",
+      "expected_volume_mm3": 1200,
+      "required_parameters": [],
+      "expected_pointer_rectangle": {
         "sketch_id": "sketch:new_1",
         "feature_id": "feature:sketch_new_1",
         "body_feature": "feature:pointer_body",

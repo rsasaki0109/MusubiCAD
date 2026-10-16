@@ -214,6 +214,21 @@ unit-bearing radius/center expressions. Resolve these on the disposable model
 in cold/cached regeneration, including the no-parameter API path; do not add a
 dummy source parameter or literalize the document to make extrusion succeed.
 
+P17-005 adds a creation-only rectangle form with a source-ID prefix, two
+explicit-unit opposite corners and construction flag. The backend normalizes
+corner order, refuses nonfinite/zero width or height, and returns one concrete
+patch containing four authored points and four edges. Stable suffixes p0..p3
+and e0..e3 run counterclockwise from the initially lower-left corner. No rectangle
+helper/group is persisted: these are ordinary editable source points/lines,
+without inferred associative rectangle or dimensional constraints. The corner
+coordinate expressions and old source remain intact. Construction marks edges;
+points follow existing point-form semantics. Both the submitted form count and
+expanded source-operation count remain bounded by 64. Collisions anywhere in
+the expansion fail atomically. The frontend provides input and disposable
+preview only; Tauri and Agent/MCP share the typed backend expansion and gates.
+Empty/missing parameter graphs must resolve unit-bearing point/line form source
+on disposable cold/cached models, extending the same circle-source correction.
+
 Keep the existing shared gateway and plain JS frontend; no new dependency is
 needed by this design. A bounded datum-chain admission makes source association
 testable before semantic face-plane editing is introduced. Reusing a copied

@@ -1,0 +1,61 @@
+{
+  "task": "MCAD-P17-005",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Create a source-bound datum sketch, then atomically author the typed equivalent of an opposite-corner rectangle gesture. Preserve all prior source and parameters.",
+  "steps": [
+    "inspect_sketch_creation; plan/apply sketch:new_1 owned by feature:sketch_new_1 on feature:datum",
+    "inspect_sketches; retain current document_id and revision",
+    "plan_sketch_edit with the single rectangle form below; review eight source additions without writing",
+    "apply_sketch_edit once with the same form and current opaque history",
+    "create 6 mm new-body extrusion feature:pointer_body from its admitted closed profile",
+    "export fresh SI STL; independently verify absolute placement, centroid and volume",
+    "Agent history Undo/Redo or native controls restore all four points and four edges in one source edit"
+  ],
+  "operations": [
+    {
+      "operation": "rectangle",
+      "id": "ent:rectangle_1",
+      "x1": "22.000 mm",
+      "y1": "7.000 mm",
+      "x2": "2.000 mm",
+      "y2": "-3.000 mm",
+      "construction": false
+    }
+  ],
+  "expanded_source_ids": {
+    "points": [
+      "ent:rectangle_1_p0",
+      "ent:rectangle_1_p1",
+      "ent:rectangle_1_p2",
+      "ent:rectangle_1_p3"
+    ],
+    "edges": [
+      "ent:rectangle_1_e0",
+      "ent:rectangle_1_e1",
+      "ent:rectangle_1_e2",
+      "ent:rectangle_1_e3"
+    ]
+  },
+  "analytic_final": {
+    "volume_mm3": 1200,
+    "area_mm2": 760,
+    "bounds_mm": {
+      "min": [
+        2,
+        -3,
+        5
+      ],
+      "max": [
+        22,
+        7,
+        11
+      ]
+    },
+    "centroid_mm": [
+      12,
+      2,
+      8
+    ]
+  },
+  "compatibility": "Existing Point/Line source tags and typed sketch commands; no persisted schema or tool-count change. All corners carry length expressions. No stored Rectangle helper, rectangle association or implied constraints. Construction marks the four edges and produces no profile. Maximum 64 expanded source operations per batch."
+}

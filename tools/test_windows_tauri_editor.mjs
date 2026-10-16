@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {checkSketchCreation} from './sketch_creation_ui_checks.mjs';
 import {checkDatumSketches} from './datum_sketch_ui_checks.mjs';
 import {checkPointerCircles} from './pointer_circle_ui_checks.mjs';
+import {checkPointerRectangles} from './pointer_rectangle_ui_checks.mjs';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -113,5 +114,6 @@ try {
   results.push(...await checkSketchCreation({evaluate,until,source,logicalSource}));
   results.push(...await checkDatumSketches({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkPointerCircles({evaluate,until,source,logicalSource,partPath}));
+  results.push(...await checkPointerRectangles({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_windows_tauri_webview2_forms:'passed',webview_url:pages[0].url,results}, null, 2));
 } finally { socket.close(); }
