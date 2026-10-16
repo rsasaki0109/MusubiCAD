@@ -633,3 +633,11 @@ placement, including compound members and repeated placement. No input error
 certificate extends to placed/native/f32 geometry. See
 [physical reference bodies](../api/physical-grid-reference-bodies.md); this is
 not authored stock/rim consumption or P16-008 feature admission.
+
+MCAD-P16-042 / ADR-095 privately binds each raw/grid reference mesh to its original
+CircularFilletReference. The grid solid can compute outward exact signed-volume
+flux and subtract the independent ideal volume interval, refusing unmet SI
+precision/work/absolute-difference budgets. This comparison does not modify
+backend mass or promote numeric intersection admission to exact embedding.
+See [scope](../api/grid-reference-volume-difference.md). Native/placement/f32
+fidelity and source fillet admission remain separate.

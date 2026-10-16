@@ -163,6 +163,9 @@ jobs:
           --occt-root target/cadrum-occt-v800-x86_64-unknown-linux-gnu
           --output target/closed-reference-mesh-diagnostic.json
 
+      - name: Compare physical grid reference volumes
+        run: cargo run --locked --quiet -p opencad-kernel-occt --example circular_grid_reference > target/grid-reference-volume-comparison.json
+
       - name: Upload native reference diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -177,6 +180,7 @@ jobs:
             target/trimmed-support-diagnostic.json
             target/rational-reference-diagnostic.json
             target/closed-reference-mesh-diagnostic.json
+            target/grid-reference-volume-comparison.json
           if-no-files-found: warn
 
       - name: Execute reproducible MCP editing tutorial

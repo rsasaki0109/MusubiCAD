@@ -269,3 +269,38 @@ fn analytic_mock_remains_opt_in_and_refuses_unsupported_edits_without_plumbing_f
         again.tessellate(&same, &Default::default()).unwrap()
     );
 }
+
+#[test]
+fn volume_comparison_encloses_actual_backend_mass_without_substituting_ideal_values() {
+    let g = grid(true, false);
+    let p = opencad_geometry::CircularFilletGridVolumePrecision {
+        maximum_reference_interval_width_m3: 1e-12,
+        maximum_absolute_difference_m3: 1e-7,
+        max_cells: 262144,
+    };
+    let c = g.volume_comparison(p).unwrap();
+    let mock = MockGeometryKernel::with_analytic_primitives();
+    let native = OcctGeometryKernel::new();
+    let independent_grid_volume = independent(&g).0;
+    for kernel in [&mock as &dyn GeometryKernel, &native] {
+        let body = kernel.import_circular_fillet_grid(&g).unwrap();
+        let actual = kernel.mass_properties(&body, 1.).unwrap().volume_m3;
+        assert!((actual - independent_grid_volume).abs() < 1e-14);
+        assert!(
+            c.grid_signed_volume_flux_m3()[0] - 1e-14 <= actual
+                && actual <= c.grid_signed_volume_flux_m3()[1] + 1e-14
+        );
+        for ideal in c.ideal_volume_m3() {
+            let delta = actual - ideal;
+            assert!(
+                c.signed_difference_m3()[0] - 1e-14 <= delta
+                    && delta <= c.signed_difference_m3()[1] + 1e-14
+            );
+            assert!(delta.abs() > 1e-9, "backend must retain actual grid mass");
+        }
+        let mut tight = p;
+        tight.maximum_absolute_difference_m3 = 1e-12;
+        assert!(g.volume_comparison(tight).is_err());
+        assert!((kernel.mass_properties(&body, 1.).unwrap().volume_m3 - actual).abs() < 1e-18);
+    }
+}

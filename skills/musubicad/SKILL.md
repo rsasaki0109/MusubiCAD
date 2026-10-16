@@ -990,3 +990,11 @@ identities are (body handle, local face index). Input bounds do not certify
 placement/native/f32 conversions. This is not a source fillet or smooth support
 admission; P16-008 stays planned. See `docs/api/physical-grid-reference-bodies.md`
 and `examples/physical_grid_reference_bodies.md`; no new MCP operation/eval.
+
+P16-042 / ADR-095: `CircularFilletGridSolid::volume_comparison` bounds exact
+stored-grid signed flux minus its privately bound ideal-reference volume.
+Specify finite positive SI reference interval width and absolute discrepancy
+plus 4..=262144 cells. Exhausted precision/work or real excess discrepancy
+refuses without changing geometry. Never replace backend mass with ideal mass
+or infer phase/native/placed/f32/embedding/source admission from a volume match.
+See `docs/api/grid-reference-volume-difference.md`; no new MCP operation/eval.
