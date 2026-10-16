@@ -83,3 +83,9 @@ example uses 1e-9 m⁴ and 2e-6 m maximum error per coordinate; ideal full width
 remain 1e-11 m³ / 1e-12 m⁴ / 1e-6 m with unchanged per-pass caps. Native/embedding
 flags remain false; actual `bodies` measurements stay separate. See
 `docs/api/grid-reference-moment-difference.md`.
+
+P16-047 / ADR-100 extends this same executable/CI JSON with `guarded_operations`:
+actual cylinder/end-rim, explicit phase and all canonical error budgets gate a
+named numerical faceted operation in both kernels. Constant and placed-variable
+cases retain separate actual body/contact measurements and canonical grid bounds.
+See `examples/faceted_circular_fillet.md`; no source or native certificate claim.

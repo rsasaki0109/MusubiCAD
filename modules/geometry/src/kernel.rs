@@ -349,6 +349,18 @@ pub trait GeometryKernel {
         ))
     }
 
+    /// ADR-100: replace an actual current cylinder with a named numerical
+    /// grid-faceted periodic cosine approximation. Rebuilds all support facets.
+    fn grid_faceted_periodic_cosine(
+        &self,
+        _body: KernelBody,
+        _input: &crate::FacetedCircularFilletInput,
+    ) -> Result<KernelBody> {
+        Err(OpenCadError::validation(
+            "grid-faceted periodic fillets unsupported",
+        ))
+    }
+
     fn draft_cylindrical_stock(
         &self,
         _body: KernelBody,
@@ -1083,6 +1095,18 @@ impl GeometryKernel for MockGeometryKernel {
             .borrow()
             .cylinder_rims(body, axis_hint)
     }
+    fn grid_faceted_periodic_cosine(
+        &self,
+        body: KernelBody,
+        input: &crate::FacetedCircularFilletInput,
+    ) -> Result<KernelBody> {
+        self.analytic
+            .as_ref()
+            .ok_or_else(crate::analytic_mock::unsupported)?
+            .borrow_mut()
+            .grid_faceted_periodic_cosine(body, input)
+    }
+
     fn draft_cylindrical_stock(
         &self,
         body: KernelBody,

@@ -113,6 +113,15 @@ impl<K: GeometryKernel> GeometryKernel for CountingGeometryKernel<'_, K> {
         self.record();
         self.inner.cylindrical_stock_rims(body, axis_hint)
     }
+    fn grid_faceted_periodic_cosine(
+        &self,
+        body: KernelBody,
+        input: &crate::FacetedCircularFilletInput,
+    ) -> Result<KernelBody> {
+        self.record();
+        self.inner.grid_faceted_periodic_cosine(body, input)
+    }
+
     fn draft_cylindrical_stock(
         &self,
         body: KernelBody,

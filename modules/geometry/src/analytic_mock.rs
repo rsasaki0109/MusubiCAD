@@ -873,6 +873,18 @@ impl AnalyticMock {
         })
     }
 
+    pub(crate) fn grid_faceted_periodic_cosine(
+        &mut self,
+        body: KernelBody,
+        input: &crate::FacetedCircularFilletInput,
+    ) -> Result<KernelBody> {
+        let rims = self.cylinder_rims(&body, input.axis)?;
+        let plan = input.prepare(&rims)?;
+        let output =
+            Body::CircularReference(plan.grid().solid().clone()).transformed(plan.placement())?;
+        self.store(output, None, false)
+    }
+
     pub(crate) fn circular_fillet_grid(
         &mut self,
         grid: &crate::CircularFilletGridSolid,

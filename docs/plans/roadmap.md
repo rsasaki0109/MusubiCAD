@@ -920,7 +920,15 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-043 | Bound ideal periodic reference surface area | ADR-096 / P16-008 prerequisite; analytic characteristic-arc reduction, outward SI total/blend/support area enclosures with explicit work/precision refusal, independent analytic and surface-integral tests; actual both-kernel areas remain separate, no source admission | Complete (PR #143) |
 | MCAD-P16-044 | Bound grid reference surface-area differences | ADR-097 / P16-008 prerequisite; actual stored-grid unsigned triangle area versus privately bound ideal area, outward SI absolute/relative differences with precision/work/error refusal, independent analytic/grid and both-kernel evidence; no embedding/native/source admission | Complete (PR #144) |
 | MCAD-P16-045 | Bound ideal periodic reference first moments and centroid | ADR-098 / P16-008 prerequisite; degree-four characteristic reduction and outward SI first-moment/centroid enclosures with explicit volume/moment/centroid widths and work refusal, independent surface/constant/scaled checks; actual kernel mass stays separate, no source admission | Complete (PR #145) |
-| MCAD-P16-046 | Bound stored-grid first-moment and centroid differences | ADR-099 / P16-008 prerequisite; outward signed tetrahedral first-moment flux and positive-volume centroid quotient versus privately bound ideal moments, explicit SI per-coordinate error refusal and independent grid/both-kernel evidence; no embedding/native/source admission | Implemented; complete upon PR merge |
+| MCAD-P16-046 | Bound stored-grid first-moment and centroid differences | ADR-099 / P16-008 prerequisite; outward signed tetrahedral first-moment flux and positive-volume centroid quotient versus privately bound ideal moments, explicit SI per-coordinate error refusal and independent grid/both-kernel evidence; no embedding/native/source admission | Complete (PR #146) |
+| MCAD-P16-047 | Apply guarded grid-faceted periodic cylinder fillets | ADR-100 / P16-008 runtime prerequisite; current full cylinder/end rim and explicit proper phase frame, privately generated grid with SI quality/volume/area/moment budgets, real all-new facet bodies in Mock/OCCT, independent analytic/contact/placed/refusal evidence; named numerical approximation, no source admission | Implemented; complete upon PR merge |
+
+P16-047 / ADR-100 supplies the named numerical grid-faceted cylinder/end-rim
+runtime in both kernels, including explicit phase and canonical discrepancy
+budgets. All support faces are rebuilt facets. Its input-grid certificates remain
+separate from native/placed/f32 numerical measurements. P16-008 still requires
+its distinct accepted source/approximation/verification contract, semantic
+ownership/cache/phase, strict reader/schema/history and actual MCP gates.
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
 independent analytic dimension/volume tests, example, MCP authoring guide and
