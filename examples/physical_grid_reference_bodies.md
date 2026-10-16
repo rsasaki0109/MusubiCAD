@@ -37,3 +37,21 @@ width and a 262144-leaf budget. Complete ideal blend/support/total bounds remain
 separate from `bodies[*].area_m2`, which is still measured from each physical
 faceted body. The report does not certify their area discrepancy or native
 conversion. See [ideal area](../docs/api/ideal-periodic-reference-area.md).
+
+
+P16-044 / ADR-097 also compares the stored-grid area with its bound ideal:
+
+```rust
+let comparison = g.area_comparison(CircularFilletGridAreaPrecision {
+    maximum_reference_interval_width_m2: 1e-7,
+    maximum_absolute_difference_m2: 1e-5,
+    max_cells: 262144,
+})?;
+assert!(comparison.absolute_difference_upper_m2() <= 1e-5);
+```
+
+The existing `circular_grid_reference` example/CI JSON adds `area_comparison`
+with unsigned grid/ideal/signed-difference intervals, absolute/relative bounds
+and cell count. Actual `bodies[*].area_m2` stays a separate kernel query.
+The mathematical bound counts triangle multiplicity; native/placed/f32 conversion
+and exact embedding are excluded. See [API](../docs/api/grid-reference-area-difference.md).

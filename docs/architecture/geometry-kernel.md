@@ -650,3 +650,13 @@ The explicit SI total-width and leaf budgets fail closed. See
 [area API](../api/ideal-periodic-reference-area.md). Actual physical kernel areas
 remain separate and unchanged; this does not admit production fillets, native
 conversion, ideal first moments, source or serialization. No score.
+
+
+MCAD-P16-044 / ADR-097 adds immutable stored-grid unsigned area versus ideal
+area comparisons. Existing outward facet arithmetic sums actual stored binary64
+triangles in order; ADR-096 supplies the privately bound ideal total. Explicit
+SI precision/work/discrepancy requests fail closed. See
+[area difference](../api/grid-reference-area-difference.md). Multiplicity is
+retained; this does not certify a geometric union, exact embedding or later
+native/placed/f32 conversion. Both kernels retain actual mass properties.
+No source/schema/first-moment/production-fillet admission or score.

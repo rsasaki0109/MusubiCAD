@@ -85,7 +85,93 @@ impl CircularFilletGridVolumeComparison {
         self.reference_cells
     }
 }
+/// Explicit SI ideal-area width and permitted absolute area difference (ADR-097).
+#[derive(Debug, Clone, Copy)]
+pub struct CircularFilletGridAreaPrecision {
+    pub maximum_reference_interval_width_m2: f64,
+    pub maximum_absolute_difference_m2: f64,
+    pub max_cells: usize,
+}
+/// Stored-grid unsigned triangle area comparison; no embedding/native proof.
+#[derive(Debug, Clone, Copy)]
+pub struct CircularFilletGridAreaComparison {
+    grid_area_m2: [f64; 2],
+    ideal_area_m2: [f64; 2],
+    difference_m2: [f64; 2],
+    absolute_difference: f64,
+    relative_difference: f64,
+    reference_cells: usize,
+}
+impl CircularFilletGridAreaComparison {
+    pub fn grid_unsigned_area_m2(&self) -> [f64; 2] {
+        self.grid_area_m2
+    }
+    pub fn ideal_area_m2(&self) -> [f64; 2] {
+        self.ideal_area_m2
+    }
+    pub fn signed_difference_m2(&self) -> [f64; 2] {
+        self.difference_m2
+    }
+    pub fn absolute_difference_upper_m2(&self) -> f64 {
+        self.absolute_difference
+    }
+    pub fn relative_difference_upper(&self) -> f64 {
+        self.relative_difference
+    }
+    pub fn reference_cells(&self) -> usize {
+        self.reference_cells
+    }
+}
 impl CircularFilletGridSolid {
+    /// Compare unsigned area of actual stored triangles, counted with
+    /// multiplicity, to the privately bound ideal. Excludes native/placed/f32.
+    pub fn area_comparison(
+        &self,
+        p: CircularFilletGridAreaPrecision,
+    ) -> Result<CircularFilletGridAreaComparison> {
+        let invalid = || {
+            OpenCadError::validation(
+                "grid reference area precision, work or discrepancy not certified",
+            )
+        };
+        if !p.maximum_reference_interval_width_m2.is_finite()
+            || p.maximum_reference_interval_width_m2 <= 0.
+            || !p.maximum_absolute_difference_m2.is_finite()
+            || p.maximum_absolute_difference_m2 <= 0.
+            || !(4..=262144).contains(&p.max_cells)
+        {
+            return Err(invalid());
+        }
+        let reference = self
+            .reference
+            .surface_area_bounds_m2(p.maximum_reference_interval_width_m2, p.max_cells)?;
+        let ideal = I {
+            lo: reference.body_lower_m2,
+            hi: reference.body_upper_m2,
+        };
+        let area = grid_surface_area(&self.solid)?;
+        if !area.valid() || area.lo <= 0. || !ideal.valid() || ideal.lo <= 0. {
+            return Err(invalid());
+        }
+        let delta = area - ideal;
+        let absolute = delta.lo.abs().max(delta.hi.abs());
+        let relative = (I::exact(absolute) / I::exact(ideal.lo)).hi;
+        if !delta.valid()
+            || !absolute.is_finite()
+            || !relative.is_finite()
+            || absolute > p.maximum_absolute_difference_m2
+        {
+            return Err(invalid());
+        }
+        Ok(CircularFilletGridAreaComparison {
+            grid_area_m2: [area.lo, area.hi],
+            ideal_area_m2: [ideal.lo, ideal.hi],
+            difference_m2: [delta.lo, delta.hi],
+            absolute_difference: absolute,
+            relative_difference: relative,
+            reference_cells: reference.cells,
+        })
+    }
     /// Compare the exact stored-grid signed flux to its privately bound ideal reference.
     /// No native/placed/f32 or exact global embedding certificate is implied.
     pub fn volume_comparison(
@@ -155,6 +241,12 @@ fn grid_volume_flux(solid: &crate::TriangleSolid) -> I {
     solid.triangles().iter().fold(I::exact(0.), |sum, t| {
         let [a, b, c] = t.map(|i| solid.vertices_m()[i as usize].map(I::exact));
         sum + dot(a, cross(b, c)) / I::exact(6.)
+    })
+}
+fn grid_surface_area(solid: &crate::TriangleSolid) -> Result<I> {
+    solid.triangles().iter().try_fold(I::exact(0.), |sum, t| {
+        let points = t.map(|i| solid.vertices_m()[i as usize]);
+        Ok(sum + facet(points)?.1)
     })
 }
 fn invalid() -> OpenCadError {
@@ -553,6 +645,50 @@ impl CircularFilletReference {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn unsigned_area_encloses_exact_dyadic_box_by_integer_endpoint_comparison() {
+        let p = [
+            [0., 0., 0.],
+            [0.5, 0., 0.],
+            [0.5, 0.25, 0.],
+            [0., 0.25, 0.],
+            [0., 0., 0.125],
+            [0.5, 0., 0.125],
+            [0.5, 0.25, 0.125],
+            [0., 0.25, 0.125],
+        ];
+        let faces = [
+            [0, 2, 1],
+            [0, 3, 2],
+            [4, 5, 6],
+            [4, 6, 7],
+            [0, 1, 5],
+            [0, 5, 4],
+            [1, 2, 6],
+            [1, 6, 5],
+            [2, 3, 7],
+            [2, 7, 6],
+            [3, 0, 4],
+            [3, 4, 7],
+        ];
+        let triangles = faces.map(|t| t.map(|i| p[i]));
+        let solid = crate::TriangleSolid::from_triangles(&triangles).unwrap();
+        let area = grid_surface_area(&solid).unwrap();
+        assert!(area.valid() && area.lo > 0.);
+        // Exact area 2*(1/8+1/16+1/32)=7/16. No rounded numerical oracle.
+        for (v, lower) in [(area.lo, true), (area.hi, false)] {
+            let bits = v.to_bits();
+            let n = u128::from(bits & ((1_u64 << 52) - 1)) + (1_u128 << 52);
+            let exponent = ((bits >> 52) & 0x7ff) as i32 - 1023 - 52;
+            assert!((-100..0).contains(&exponent));
+            let d = 1_u128 << (-exponent as u32);
+            assert!(if lower {
+                n * 16 <= d * 7
+            } else {
+                n * 16 >= d * 7
+            });
+        }
+    }
     #[test]
     fn signed_flux_encloses_exact_dyadic_simplex_volume_by_integer_bit_comparison() {
         let (o, x, y, z) = ([0.; 3], [0.5, 0., 0.], [0., 0.25, 0.], [0., 0., 0.125]);

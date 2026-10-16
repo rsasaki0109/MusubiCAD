@@ -35,7 +35,12 @@ The existing `circular_grid_reference` example and CI JSON now include an
 `ideal_area` object with all bounds, width request, cell count and
 `native_conversion_certified:false`. Each body's `area_m2` still comes from its
 actual kernel mass query. These faceted areas differ from the ideal result;
-neither a native conversion certificate nor an area discrepancy bound is implied.
+neither a native conversion certificate nor a native-area discrepancy bound is implied.
 This API has no document, schema, source, DesignPatch or MCP operation. Ideal
 first moments, production variable fillets and their source/phase/history/eval
 gates remain separate. No maturity credit is assigned.
+
+
+P16-044 separately adds [stored-grid area differences](grid-reference-area-difference.md).
+That comparison bounds the actual input triangles, counted with multiplicity;
+it still does not certify native conversion or replace kernel area.
