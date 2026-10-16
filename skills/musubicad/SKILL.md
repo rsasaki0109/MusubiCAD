@@ -1044,3 +1044,25 @@ unchanged analytic supports or native/placed/f32 certificates from canonical
 bounds. See `docs/api/faceted-circular-fillet-runtime.md` and
 `examples/faceted_circular_fillet.md`; source/reader/cache/history/actual MCP
 admission remains P16-008.
+
+### Numerical faceted circular fillet
+
+Use a CLI built from a checkout containing ADR-101/P16-008; the published
+v0.3.1 binary predates this source tag. Do not assume a version string alone
+proves support.
+
+For one original exact-circle Distance/NewBody cylinder's positive complete end
+rim, use `faceted_circular_fillet` with mandatory `edge_ref` owned by the stock
+and role `extrusion_end`. Keep `representation: grid_faceted_periodic_cosine`,
+`verification: canonical_grid_with_numerical_backend_checks`, explicit SI min/max
+radii and every quality/work budget. Positive authored sketch X fixes maximum
+radius; X cross Y fixes extrusion direction. Do not use a native seam for phase.
+Use structural DesignPatch and review before apply; typed replacement edits
+radii/quality, and `set_feature_ref` supports `edge_ref`. Native candidate checks
+remain mandatory with `verify: false`; failed changes preserve source/history.
+All output surfaces are new planar facets; role-only facet selection refuses.
+Canonical grid bounds do not certify native conversion, placement or f32 export.
+Do not claim smooth/G1/general curved-edge support or substitute legacy straight
+fillets/constant geometry. See `examples/faceted_circular_fillet_source.md`,
+`docs/api/faceted-circular-fillet-source.md` and the actual source/physical MCP
+eval `faceted_circular_fillet_radius`.

@@ -882,7 +882,7 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-005 | Extend draft to admitted curved faces | ADR-065 closed cylindrical_draft; original exact-circle source and owned full side, signed SI angle/neutral plane, physical ownership/cache, strict schema/patch/history and independent Mock/native/MCP evidence | Complete: PR #110 |
 | MCAD-P16-006 | Add tapered rib profiles | ADR-066 closed tapered_rib; original stock/end/line ownership, strict SI thickness/height/signed angle/square ends, source/cache/transaction/history and independent Mock/native/MCP evidence; runtime P16-013 complete in PR #111 | Complete: PR #112 |
 | MCAD-P16-007 | Model standard external thread geometry | After P16-016 / ADR-069: guarded authored cylinder, strict nominal source, physical output ownership/cache admission, schemas/old-reader refusal, transactional patches/history and independently graded actual MCP eval; existing generic helical sweep gets no repeat credit | Complete: PR #116 |
-| MCAD-P16-008 | Expand admitted variable fillet contours | After P16-017: accepted physical radius-law/contour and semantic ownership, genuinely new supported cases with independent volume/contact tests in both kernels; no general curved-edge claim from another straight-edge case | Planned |
+| MCAD-P16-008 | Expand admitted variable fillet contours | ADR-101: distinct numerical grid-faceted periodic-cosine source; original authored cylinder/end semantic rim/phase, strict quality and canonical-vs-native scope, all-new physical facets, cache/reader/transaction/MCP gates and complete deliverables | Implemented; complete upon PR merge |
 | MCAD-P16-009 | Admit counterbore source and physical mesh prerequisites | ADR-063 specifies strict seated-hole source, owned rectangular-stock entry witness, bounded closed-mesh sampling/identity/error rules, schema/patch/old-reader refusal and independently graded acceptance; design only, no score | Complete (PR #104) |
 | MCAD-P16-010 | Supply physical analytic meshes and stock-face witnesses | After P16-009, actual closed rectangle/cylinder/concentric-cut meshes with bounded quality/error/IDs and a unique body-owned rectangular-stock query in Mock/OCCT; independent mesh and face/refusal evidence, default Mock isolation; no source feature or score | Complete: PR #105 |
 | MCAD-P16-011 | Supply bounded physical countersink cuts | P16-004 prerequisite; ADR-064, real conical-frustum/bore union removal on original rectangular stock in both kernels, exact volume/area/first moments and closed face-bearing bounded meshes, independent parity/refusal tests; runtime geometry only, no feature score | Complete: PR #107 |
@@ -921,13 +921,13 @@ Mock admission; each later geometric extension requires its own accepted ADR.
 | MCAD-P16-044 | Bound grid reference surface-area differences | ADR-097 / P16-008 prerequisite; actual stored-grid unsigned triangle area versus privately bound ideal area, outward SI absolute/relative differences with precision/work/error refusal, independent analytic/grid and both-kernel evidence; no embedding/native/source admission | Complete (PR #144) |
 | MCAD-P16-045 | Bound ideal periodic reference first moments and centroid | ADR-098 / P16-008 prerequisite; degree-four characteristic reduction and outward SI first-moment/centroid enclosures with explicit volume/moment/centroid widths and work refusal, independent surface/constant/scaled checks; actual kernel mass stays separate, no source admission | Complete (PR #145) |
 | MCAD-P16-046 | Bound stored-grid first-moment and centroid differences | ADR-099 / P16-008 prerequisite; outward signed tetrahedral first-moment flux and positive-volume centroid quotient versus privately bound ideal moments, explicit SI per-coordinate error refusal and independent grid/both-kernel evidence; no embedding/native/source admission | Complete (PR #146) |
-| MCAD-P16-047 | Apply guarded grid-faceted periodic cylinder fillets | ADR-100 / P16-008 runtime prerequisite; current full cylinder/end rim and explicit proper phase frame, privately generated grid with SI quality/volume/area/moment budgets, real all-new facet bodies in Mock/OCCT, independent analytic/contact/placed/refusal evidence; named numerical approximation, no source admission | Implemented; complete upon PR merge |
+| MCAD-P16-047 | Apply guarded grid-faceted periodic cylinder fillets | ADR-100 / P16-008 runtime prerequisite; current full cylinder/end rim and explicit proper phase frame, privately generated grid with SI quality/volume/area/moment budgets, real all-new facet bodies in Mock/OCCT, independent analytic/contact/placed/refusal evidence; named numerical approximation, no source admission | Complete: PR #147 |
 
 P16-047 / ADR-100 supplies the named numerical grid-faceted cylinder/end-rim
 runtime in both kernels, including explicit phase and canonical discrepancy
 budgets. All support faces are rebuilt facets. Its input-grid certificates remain
-separate from native/placed/f32 numerical measurements. P16-008 still requires
-its distinct accepted source/approximation/verification contract, semantic
+separate from native/placed/f32 numerical measurements. P16-008 implements the
+separately accepted ADR-101 source/approximation/verification contract, semantic
 ownership/cache/phase, strict reader/schema/history and actual MCP gates.
 
 **Completion definition:** every feature has real Mock and OCCT implementation,
@@ -1017,7 +1017,8 @@ P16-038 / ADR-091 additionally bounds complete paired normal CHORD gaps from
 current surface/support/pcurve definitions over corresponding side/end/seam
 parameters, with explicit precision/work refusal. Finite normal gaps do not prove
 exact G1, floating native evaluation, global embedding, untouched support seams
-or whole-BREP/production admission. P16-008 remains planned.
+or whole-BREP/production admission. The later ADR-100/101 path separately
+admits the named numerical faceted approximation, not these smooth diagnostics.
 
 P16-039 / ADR-092 adds bounded closed reference triangle shells with explicit
 shared periodic/contact/cap IDs, full position/facet-normal precision and

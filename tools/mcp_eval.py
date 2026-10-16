@@ -400,6 +400,40 @@ def check_countersink_source(task: dict, document: Path) -> list[str]:
 
 
 
+def check_faceted_fillet_source(task: dict, document: Path) -> list[str]:
+    """Closed source/ref/frame/quality intent; fresh physical phase is checked too."""
+    try:
+        baseline = ROOT / task["source"]
+        for filename in ["sketches.json", "parameters.json", "semantic_refs.json"]:
+            if json.loads((baseline / "graph" / filename).read_text()) != json.loads((document / "graph" / filename).read_text()):
+                return ["faceted fillet authored stock, phase, parameters or end ownership changed"]
+        before = json.loads((baseline / "graph/features.json").read_text())
+        expected = next(n for n in before["feature_nodes"] if n["id"] == task["expected_faceted_fillet"])["definition"]
+        if expected["type"] != "faceted_circular_fillet" or expected["representation"] != "grid_faceted_periodic_cosine" or expected["verification"] != "canonical_grid_with_numerical_backend_checks":
+            return ["invalid faceted fillet baseline"]
+        expected["maximum_radius"]["value_si"] = task["expected_maximum_radius_m"]
+        if json.loads((document / "graph/features.json").read_text()) != before:
+            return ["faceted fillet source, quality, radii, representation or order differs"]
+        return []
+    except (OSError, ValueError, KeyError, TypeError, StopIteration):
+        return ["faceted fillet source evidence absent or malformed"]
+
+
+def check_faceted_fillet_physical(task: dict, document: Path, musubicad: Path | None) -> list[str]:
+    if musubicad is None:
+        return ["faceted fillet grader requires fresh native physical export"]
+    try:
+        from faceted_fillet_eval import physical_problems
+        with tempfile.TemporaryDirectory(prefix="musubicad-faceted-grade-") as folder:
+            path = Path(folder)/"actual.stl"
+            export = subprocess.run([str(musubicad), "export", str(document), str(path)], capture_output=True, text=True, timeout=180)
+            if export.returncode != 0:
+                return ["fresh native faceted fillet export failed"]
+            return physical_problems(path.read_bytes(), task["expected_maximum_radius_m"], task["expected_volume_mm3"])
+    except (OSError, subprocess.TimeoutExpired):
+        return ["fresh native physical faceted fillet evidence unavailable"]
+
+
 def check_nominal_thread_source(task: dict, document: Path) -> list[str]:
     """Source intent/ownership guard; physical phase is graded by kernel tests."""
     try:
@@ -493,6 +527,10 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_faceted_fillet" in task:
+        problems.extend(check_faceted_fillet_source(task, document))
+        if not problems:
+            problems.extend(check_faceted_fillet_physical(task, document, musubicad))
     if "expected_nominal_thread" in task:
         problems.extend(check_nominal_thread_source(task, document))
     if "expected_tapered_rib" in task:
@@ -925,6 +963,20 @@ def run_task(task: dict, musubicad: Path, claude: str, timeout_s: int) -> dict:
 
 def self_test() -> None:
     """Exercise the checker without calling a model."""
+    fillet_task = next(t for t in json.loads(TASKS.read_text())["tasks"] if t["id"] == "faceted_circular_fillet_radius")
+    with tempfile.TemporaryDirectory() as folder:
+        candidate = Path(folder)/"fillet.ocad.d"
+        shutil.copytree(ROOT/fillet_task["source"],candidate)
+        path=candidate/"graph/features.json"
+        data=json.loads(path.read_text())
+        definition=next(n for n in data["feature_nodes"] if n["id"]=="feature:fillet")["definition"]
+        definition["maximum_radius"]["value_si"]=fillet_task["expected_maximum_radius_m"]
+        path.write_text(json.dumps(data))
+        assert check_faceted_fillet_source(fillet_task,candidate)==[]
+        for field,wrong in [("type","fillet"),("type","extrude"),("representation","smooth"),("verification","none"),("edge_ref","ref:edge:foreign"),("maximum_radius",{"value_si":0.0005})]:
+            previous=definition[field];definition[field]=wrong;path.write_text(json.dumps(data))
+            assert check_faceted_fillet_source(fillet_task,candidate)
+            definition[field]=previous
     counterbore_task = next(t for t in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"] if t["id"] == "counterbore_seat_depth")
     seed = ROOT / counterbore_task["source"]
     assert check_counterbore_source(counterbore_task, seed) == []

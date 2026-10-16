@@ -45,7 +45,7 @@ fn frame(p: SketchPlacement) -> Result<[f64; 3]> {
     }
     Ok(cross(p.x_axis_m, p.y_axis_m))
 }
-fn checked_placement(plane: &Workplane) -> Result<SketchPlacement> {
+pub(crate) fn checked_placement(plane: &Workplane) -> Result<SketchPlacement> {
     if let Workplane::Custom { normal, x_axis, .. } = plane {
         if normal.iter().chain(x_axis).any(|v| !v.is_finite())
             || (norm(*normal) - 1.).abs() > EPS
@@ -117,79 +117,89 @@ impl NominalMetricThreadFeature {
         scope: &indexmap::IndexMap<String, f64>,
     ) -> Result<()> {
         self.validate()?;
-        let target = nodes
-            .iter()
-            .find(|n| n.id == self.target_feature && !n.suppressed)
-            .ok_or_else(|| invalid("missing target"))?;
-        let FeatureDefinition::Extrude(e) = &target.definition else {
-            return Err(invalid("original extrusion required"));
-        };
-        let ExtrudeExtent::Distance { length } = e.extent else {
-            return Err(invalid("distance extent required"));
-        };
-        if !length.meters().is_finite()
-            || length.meters() <= EPS
-            || e.operation != ExtrudeOperation::NewBody
-            || e.target_feature.is_some()
-        {
-            return Err(invalid("invalid original cylinder fallback/operation"));
-        }
-        if let Some(expr) = &e.length_expr {
-            strict_length(expr, scope)?;
-        }
-        let source = nodes
-            .iter()
-            .find(|n| n.id == e.sketch_feature && !n.suppressed)
-            .ok_or_else(|| invalid("missing authored sketch"))?;
-        let FeatureDefinition::Sketch(s) = &source.definition else {
-            return Err(invalid("authored sketch required"));
-        };
-        let sketch = sketches
-            .iter()
-            .find(|s0| s0.id.as_str() == s.sketch_id)
-            .ok_or_else(|| invalid("missing authored sketch data"))?;
-        checked_placement_without_resolution(&sketch.workplane)?;
-        for constraint in &sketch.constraints {
-            match constraint {
-                opencad_sketch::Constraint::Distance { expr, .. } => {
-                    if strict_length(expr.as_str(), scope)? < 0. {
-                        return Err(invalid("negative source distance constraint"));
-                    }
-                }
-                opencad_sketch::Constraint::Radius { expr, .. }
-                | opencad_sketch::Constraint::Diameter { expr, .. }
-                    if strict_length(expr.as_str(), scope)? <= EPS =>
-                {
-                    return Err(invalid("nonpositive source circle constraint"));
-                }
-                _ => {}
-            }
-        }
-        for entity in &sketch.entities {
-            if let SketchEntity::Point(point) = entity {
-                for coordinate in [&point.x, &point.y] {
-                    let value = match coordinate {
-                        Coord::Literal(v) => *v,
-                        Coord::Expr(e) => strict_length(e.as_str(), scope)?,
-                    };
-                    if !value.is_finite() {
-                        return Err(invalid("nonfinite source point"));
-                    }
-                }
-            }
-            if let SketchEntity::Circle(c) = entity {
-                let radius = match &c.radius {
-                    Coord::Literal(r) => *r,
-                    Coord::Expr(e) => strict_length(e.as_str(), scope)?,
-                };
-                if !radius.is_finite() || radius <= EPS {
-                    return Err(invalid("invalid circle radius fallback/expression"));
-                }
-            }
-        }
-        Ok(())
+        validate_original_circle_source(&self.target_feature, nodes, sketches, scope)
     }
 }
+/// Shared strict authored-circle admission for the guarded manufacturing features.
+pub(crate) fn validate_original_circle_source(
+    target_feature: &str,
+    nodes: &[&FeatureNode],
+    sketches: &[&Sketch],
+    scope: &indexmap::IndexMap<String, f64>,
+) -> Result<()> {
+    let target = nodes
+        .iter()
+        .find(|n| n.id == target_feature && !n.suppressed)
+        .ok_or_else(|| invalid("missing target"))?;
+    let FeatureDefinition::Extrude(e) = &target.definition else {
+        return Err(invalid("original extrusion required"));
+    };
+    let ExtrudeExtent::Distance { length } = e.extent else {
+        return Err(invalid("distance extent required"));
+    };
+    if !length.meters().is_finite()
+        || length.meters() <= EPS
+        || e.operation != ExtrudeOperation::NewBody
+        || e.target_feature.is_some()
+    {
+        return Err(invalid("invalid original cylinder fallback/operation"));
+    }
+    if let Some(expr) = &e.length_expr {
+        strict_length(expr, scope)?;
+    }
+    let source = nodes
+        .iter()
+        .find(|n| n.id == e.sketch_feature && !n.suppressed)
+        .ok_or_else(|| invalid("missing authored sketch"))?;
+    let FeatureDefinition::Sketch(s) = &source.definition else {
+        return Err(invalid("authored sketch required"));
+    };
+    let sketch = sketches
+        .iter()
+        .find(|s0| s0.id.as_str() == s.sketch_id)
+        .ok_or_else(|| invalid("missing authored sketch data"))?;
+    checked_placement_without_resolution(&sketch.workplane)?;
+    for constraint in &sketch.constraints {
+        match constraint {
+            opencad_sketch::Constraint::Distance { expr, .. } => {
+                if strict_length(expr.as_str(), scope)? < 0. {
+                    return Err(invalid("negative source distance constraint"));
+                }
+            }
+            opencad_sketch::Constraint::Radius { expr, .. }
+            | opencad_sketch::Constraint::Diameter { expr, .. }
+                if strict_length(expr.as_str(), scope)? <= EPS =>
+            {
+                return Err(invalid("nonpositive source circle constraint"));
+            }
+            _ => {}
+        }
+    }
+    for entity in &sketch.entities {
+        if let SketchEntity::Point(point) = entity {
+            for coordinate in [&point.x, &point.y] {
+                let value = match coordinate {
+                    Coord::Literal(v) => *v,
+                    Coord::Expr(e) => strict_length(e.as_str(), scope)?,
+                };
+                if !value.is_finite() {
+                    return Err(invalid("nonfinite source point"));
+                }
+            }
+        }
+        if let SketchEntity::Circle(c) = entity {
+            let radius = match &c.radius {
+                Coord::Literal(r) => *r,
+                Coord::Expr(e) => strict_length(e.as_str(), scope)?,
+            };
+            if !radius.is_finite() || radius <= EPS {
+                return Err(invalid("invalid circle radius fallback/expression"));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn strict_length(expr: &str, scope: &indexmap::IndexMap<String, f64>) -> Result<f64> {
     if opencad_graph::parameter_names_in_expr(expr)
         .iter()

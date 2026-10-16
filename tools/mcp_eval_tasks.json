@@ -2055,6 +2055,16 @@
       "required_parameters": [],
       "expected_nominal_thread": "feature:thread",
       "expected_thread_hand": "left"
+    },
+    {
+      "id": "faceted_circular_fillet_radius",
+      "source": "examples/faceted_circular_fillet.ocad.d",
+      "document": "faceted_circular_fillet.ocad.d",
+      "prompt": "Change only the faceted circular fillet in {document} maximum_radius from 1.5 mm to 1 mm using reviewed replace_feature_definition through DesignPatch. Preserve minimum 0.5 mm, representation grid_faceted_periodic_cosine, verification canonical_grid_with_numerical_backend_checks, all explicit quality budgets, original exact-circle 10 mm radius / 20 mm Distance NewBody cylinder, positive authored X phase and owned complete extrusion_end Edge. Verify fresh native regeneration and physical export. This approximation rebuilds all supports as facets; do not claim exact G1 or substitute a constant fillet, cylinder or straight edge. Scalar volume alone cannot prove phase.",
+      "expected_volume_mm3": 6229.982623368721,
+      "required_parameters": [],
+      "expected_faceted_fillet": "feature:fillet",
+      "expected_maximum_radius_m": 0.001
     }
   ]
 }

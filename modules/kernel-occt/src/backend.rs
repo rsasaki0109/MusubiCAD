@@ -1183,14 +1183,28 @@ impl GeometryKernel for OcctGeometryKernel {
         {
             let store = self.store.borrow();
             let solids = collect_body_solids(&store, body.0)?;
+            let member_ids = collect_body_member_ids(&store, body.0)?;
+            let grid_members: Vec<bool> = member_ids
+                .iter()
+                .map(|id| store.circular_grid_bodies.contains(id))
+                .collect();
             let mut thread = false;
-            for id in collect_body_member_ids(&store, body.0)? {
+            for id in member_ids {
                 if let Some(g) = store.nominal_threads.get(&id) {
                     g.mesh_plan(settings)?;
                     thread = true;
                 }
             }
             drop(store);
+            // ADR-101: marked grid members are actual planar facets. Their
+            // display normals come from the oriented physical triangles, not
+            // the legacy +Z placeholder or smoothing across adjacent facets.
+            let mut faceted_faces = std::collections::BTreeSet::new();
+            for (solid, faceted) in solids.iter().zip(grid_members) {
+                if faceted {
+                    faceted_faces.extend(solid.iter_face().map(|f| f.id()));
+                }
+            }
             let mut index_of = std::collections::HashMap::new();
             let mut offset = 0;
             for solid in &solids {
@@ -1215,7 +1229,7 @@ impl GeometryKernel for OcctGeometryKernel {
                     "native thread mesh budget exceeded",
                 ));
             }
-            let positions: Vec<[f32; 3]> = mesh
+            let mut positions: Vec<[f32; 3]> = mesh
                 .vertices
                 .iter()
                 .map(|p| [p.x as f32, p.y as f32, p.z as f32])
@@ -1269,7 +1283,7 @@ impl GeometryKernel for OcctGeometryKernel {
                     *out = n.normalize().to_array().map(|v| v as f32);
                 }
             }
-            let indices: Vec<u32> = mesh.indices.iter().map(|&i| i as u32).collect();
+            let mut indices: Vec<u32> = mesh.indices.iter().map(|&i| i as u32).collect();
             let triangle_face_ids = mesh
                 .face_ids
                 .iter()
@@ -1281,6 +1295,43 @@ impl GeometryKernel for OcctGeometryKernel {
                     })
                 })
                 .collect::<Result<Vec<u64>>>()?;
+
+            for (triangle, (tri, address)) in
+                mesh.indices.chunks_exact(3).zip(&mesh.face_ids).enumerate()
+            {
+                if !faceted_faces.contains(address) {
+                    continue;
+                }
+                let points = std::array::from_fn::<_, 3, _>(|i| positions[tri[i]]);
+                let p = points.map(|p| DVec3::from_array(p.map(f64::from)));
+                let normal = (p[1] - p[0]).cross(p[2] - p[0]);
+                let original = tri.iter().map(|i| mesh.vertices[*i]).collect::<Vec<_>>();
+                let source_normal = (original[1] - original[0]).cross(original[2] - original[0]);
+                if !normal.is_finite()
+                    || normal.length_squared() <= 0.
+                    || normal.dot(source_normal) <= 0.
+                {
+                    return Err(OpenCadError::validation(
+                        "native faceted display below f32 normal precision",
+                    ));
+                }
+                let normal = normal.normalize().to_array().map(|v| v as f32);
+                // Duplicating these three display vertices preserves sharp
+                // normals even if the tessellator shares corners across faces.
+                for (corner, point) in points.into_iter().enumerate() {
+                    let index = u32::try_from(positions.len()).map_err(|_| {
+                        OpenCadError::validation("faceted display vertex index overflow")
+                    })?;
+                    positions.push(point);
+                    normals.push(normal);
+                    indices[triangle * 3 + corner] = index;
+                }
+            }
+            if thread && positions.len() > 100_000 {
+                return Err(OpenCadError::validation(
+                    "native thread mesh budget exceeded",
+                ));
+            }
 
             if thread && solids.len() == 1 {
                 let mut edges =

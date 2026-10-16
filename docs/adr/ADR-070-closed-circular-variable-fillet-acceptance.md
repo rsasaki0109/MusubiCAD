@@ -2,7 +2,9 @@
 
 Status: Accepted for MCAD-P16-017's reference and acceptance contract only.
 Physical construction, native radius-law admission and sampling are not accepted
-by this decision; MCAD-P16-008 remains planned.
+by this decision. ADR-100 and ADR-101 subsequently admit a separately named,
+quantified numerical faceted runtime/source approximation; exact smooth support
+and general curved-contour acceptance remain outside that admission.
 Date: 2026-10-14.
 
 ## Context and decision

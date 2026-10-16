@@ -1,0 +1,42 @@
+{
+  "operations": [
+    {
+      "type": "replace_feature_definition",
+      "id": "feature:fillet",
+      "definition": {
+        "type": "faceted_circular_fillet",
+        "target_feature": "feature:stock",
+        "edge_ref": "ref:edge:stock_end",
+        "representation": "grid_faceted_periodic_cosine",
+        "verification": "canonical_grid_with_numerical_backend_checks",
+        "minimum_radius": {
+          "value_si": 0.0005
+        },
+        "maximum_radius": {
+          "value_si": 0.001
+        },
+        "quality": {
+          "maximum_position_error": {
+            "value_si": 0.0004
+          },
+          "maximum_normal_chord": 0.8,
+          "ideal_volume_width_m3": 1e-11,
+          "maximum_volume_difference_m3": 1e-07,
+          "ideal_area_width_m2": 1e-07,
+          "maximum_area_difference_m2": 1e-05,
+          "ideal_first_moment_width_m4": 1e-12,
+          "maximum_first_moment_difference_m4": 1e-09,
+          "ideal_centroid_width": {
+            "value_si": 1e-06
+          },
+          "maximum_centroid_difference": {
+            "value_si": 2e-06
+          },
+          "max_integration_cells": 262144,
+          "max_vertices": 5000,
+          "max_triangles": 10000
+        }
+      }
+    }
+  ]
+}

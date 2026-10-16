@@ -71,6 +71,21 @@
                 "if": {
                   "properties": {
                     "type": {
+                      "const": "faceted_circular_fillet"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                "then": {
+                  "$ref": "#/$defs/faceted_circular_fillet"
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "type": {
                       "const": "nominal_metric_thread"
                     }
                   },
@@ -775,6 +790,169 @@
                   "type": "number"
                 }
               }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "faceted_circular_fillet": {
+      "type": "object",
+      "required": [
+        "type",
+        "target_feature",
+        "edge_ref",
+        "representation",
+        "verification",
+        "minimum_radius",
+        "maximum_radius",
+        "quality"
+      ],
+      "properties": {
+        "type": {
+          "const": "faceted_circular_fillet"
+        },
+        "target_feature": {
+          "type": "string",
+          "pattern": "^feature:.+"
+        },
+        "edge_ref": {
+          "type": "string",
+          "pattern": "^ref:edge:.+"
+        },
+        "representation": {
+          "const": "grid_faceted_periodic_cosine"
+        },
+        "verification": {
+          "const": "canonical_grid_with_numerical_backend_checks"
+        },
+        "minimum_radius": {
+          "type": "object",
+          "required": [
+            "value_si"
+          ],
+          "properties": {
+            "value_si": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "maximum_radius": {
+          "type": "object",
+          "required": [
+            "value_si"
+          ],
+          "properties": {
+            "value_si": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "quality": {
+          "type": "object",
+          "required": [
+            "maximum_normal_chord",
+            "ideal_volume_width_m3",
+            "maximum_volume_difference_m3",
+            "ideal_area_width_m2",
+            "maximum_area_difference_m2",
+            "ideal_first_moment_width_m4",
+            "maximum_first_moment_difference_m4",
+            "maximum_position_error",
+            "ideal_centroid_width",
+            "maximum_centroid_difference",
+            "max_integration_cells",
+            "max_vertices",
+            "max_triangles"
+          ],
+          "properties": {
+            "maximum_normal_chord": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1
+            },
+            "ideal_volume_width_m3": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "maximum_volume_difference_m3": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "ideal_area_width_m2": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "maximum_area_difference_m2": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "ideal_first_moment_width_m4": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "maximum_first_moment_difference_m4": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "maximum_position_error": {
+              "type": "object",
+              "required": [
+                "value_si"
+              ],
+              "properties": {
+                "value_si": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "ideal_centroid_width": {
+              "type": "object",
+              "required": [
+                "value_si"
+              ],
+              "properties": {
+                "value_si": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "maximum_centroid_difference": {
+              "type": "object",
+              "required": [
+                "value_si"
+              ],
+              "properties": {
+                "value_si": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "max_integration_cells": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 262144
+            },
+            "max_vertices": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 10000
+            },
+            "max_triangles": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 10000
             }
           },
           "additionalProperties": false

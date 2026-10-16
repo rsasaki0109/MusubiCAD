@@ -1473,3 +1473,70 @@ maximum measured contact-vertex discrepancy is 3.649659129610206e-9 m, below the
 separate 1e-8 m numerical allowance. Its canonical volume discrepancy bound is
 4.54712916126606e-8 m³ (1e-11 m³ ideal width). These measurements do not certify
 native/placed/f32 conversion. No score: 52.60 / 95.
+
+P16-047 merged as PR #147, merge commit
+`78f62e25eb43a413ea2dbb15097dea3b3cdfa14b` with tested head
+`9f94738d4a584ebb2243ee64a896ef5ffa75e737` and identical merge/head trees.
+All four exact-head workflows and full eleven-job inventories passed (release
+publisher skipped as expected). No maturity credit: runtime only, 52.60 / 95.
+
+P16-008 begins under accepted ADR-101 before source implementation: distinct
+numerical faceted circular-fillet intent, canonical-grid-only quality bounds,
+actual source/rim/phase/facet cache checks and strict transaction/reader/MCP
+acceptance. No score is assigned before the completed feature main merge.
+
+P16-008 implements the distinct ADR-101 `faceted_circular_fillet` source with
+mandatory numerical representation/verification tags and explicit SI quality.
+Original authored cylinder/positive-X phase/current owned complete end-rim,
+strict fallback/parameter admission, all-new physical facet ownership and actual
+geometry cache checks accompany the existing physical Mock/OCCT runtime.
+Both schemas, no-inference migration, genuine pre-extension enum refusal,
+expanded/packed/authoring round trips, typed/coordinated DesignPatch history,
+a source example, guide/skill and actual independently graded physical MCP eval
+are included. Canonical quality bounds remain separate from native/placed/f32
+numerical consistency. Exact smooth/G1/general contour support is excluded.
+No score increase is assumed for this bounded numerical approximation.
+
+Initial targeted physical source tests passed in both kernels, including cold/
+warm ownership and equal-volume/area/COM wrong-phase cached shells that reach
+and fail the actual corner/phase gate. Persistence/history tests and both-schema
+29-case refusal matrices passed. Fresh native edited output measures
+6229.982623368721 mm³ with 1088 physical facets; independent STL integration,
+closure/dimensions and maximum/minimum phase contacts agree. Final workspace
+and actual MCP/CI evidence are required before completion.
+
+The actual native MCP acceptance regression passed in the final workspace run
+(510.71 seconds in this debug cloud build). It creates through DesignPatch,
+checks read-only preview/review, edits radii, independently grades a fresh native
+STL, refuses an equal-volume wrong-phase export, preserves source/review/history
+on structural and physical budget failures even with verification disabled by
+the caller, and verifies canonical Undo/Redo. These are protocol/backend tests,
+not new real model-host or smooth-surface certification evidence.
+
+Additional regressions found two concrete native issues before publication.
+Grid faces inherited the legacy +Z display-normal placeholder; marked grid
+member faces now derive finite oriented flat display normals from actual
+triangles, preserving physical coordinates/face IDs and unrelated members.
+The normal-direction assertion stays enabled. Generic native edge discovery
+lists only top edges, so it could not establish that a hint selected the current
+start rim. Admission now uses the complete typed rim witness and direct physical
+edge query, rejecting current start/seam/zero bindings. Refusal tests keep the
+actual stock body warm; body-local indices are not treated as global identities.
+Final checks must cover these fixes before push.
+
+P16-008 final mandatory pre-push checks passed: formatting, workspace all-target
+Clippy with denied warnings, all workspace tests without filters (1264 passed,
+0 failed, 37 ignored; --no-fail-fast collects every suite), and the agent plugin
+contract. Final source tests cover proper reversed/tilted frames and actual
+outward display normals in both kernels. The actual native MCP regression
+passed again under the final implementation in 498.12 seconds. Existing example
+validation counts include the added source: state 51, structural native rebuild
+34, nonempty feature-graph derivation 33. No golden changed. Main completion
+requires the exact-head applicable CI and merge; scores stay 52.60 / 95.
+
+Both native reference example entry points executed again after the display
+normal change. Independent fresh-report checks passed for canonical volume/
+area/moment/centroid arithmetic and budgets, actual Mock/OCCT mass and placed
+contacts, all 1088 owned facets and stock preservation. Canonical-only
+certificate scopes remain unchanged. Release policy, version and hygiene checks
+also passed. No further source or test changes followed the successful suite.

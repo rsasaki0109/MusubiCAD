@@ -159,3 +159,18 @@ Its conditional credit is earned: solid 63, weighted CAD 52.10, agent operation
 94. P16-014's nominal thread profile contract/calculation earns no increment;
 physical P16-007 construction and source deliverables remain pending. The
 original weights, comparison and additional approximately 60% goal are unchanged.
+
+## Current merged baseline and P16-008 scope
+
+P16-007 merged in PR #116 (`508e7c8`), as recorded in implementation-status.md:
+solid 63→65, weighted CAD 52.10→52.60, agent operation 94→95. Its partial credit
+is for physical nominal metric external threads with source/phase/ref/reader/
+transaction/native MCP acceptance; do not credit the prerequisite diagnostics
+again. The fixed rubric, weights and approximately 60% objective are unchanged.
+
+P16-008 supplies an explicitly named numerical faceted circular-rim feature under
+ADR-101, with actual persistence/edit/cache/MCP use. All retained supports are
+also facets; exact smooth/G1 support and general variable contours remain
+outside this bounded admission. This PR assigns no additional fixed-rubric or
+agent-operation points. Keep 52.60 / 95, including after its source merge, until
+further independently accepted capabilities justify an increment.

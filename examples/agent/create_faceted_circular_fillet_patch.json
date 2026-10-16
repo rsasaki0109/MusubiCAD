@@ -1,0 +1,129 @@
+{
+  "operations": [
+    {
+      "type": "add_sketch",
+      "id": "sketch:stock",
+      "name": "Exact cylinder",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:stock",
+      "entity": {
+        "type": "point",
+        "id": "ent:center",
+        "construction": false,
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:stock",
+      "entity": {
+        "type": "circle",
+        "id": "ent:circle",
+        "construction": false,
+        "center": "ent:center",
+        "radius": 0.01
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_stock",
+        "name": "Cylinder sketch",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:stock"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:stock",
+        "name": "Original cylinder",
+        "definition": {
+          "type": "extrude",
+          "sketch_feature": "feature:sketch_stock",
+          "profile_ref": "sketch:stock/profile:outer",
+          "extent": {
+            "type": "distance",
+            "length": {
+              "value_si": 0.02
+            }
+          },
+          "operation": "new_body"
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:fillet",
+        "name": "Faceted periodic circular fillet",
+        "definition": {
+          "type": "faceted_circular_fillet",
+          "target_feature": "feature:stock",
+          "edge_ref": "ref:edge:stock_end",
+          "representation": "grid_faceted_periodic_cosine",
+          "verification": "canonical_grid_with_numerical_backend_checks",
+          "minimum_radius": {
+            "value_si": 0.0005
+          },
+          "maximum_radius": {
+            "value_si": 0.0015
+          },
+          "quality": {
+            "maximum_position_error": {
+              "value_si": 0.0004
+            },
+            "maximum_normal_chord": 0.8,
+            "ideal_volume_width_m3": 1e-11,
+            "maximum_volume_difference_m3": 1e-7,
+            "ideal_area_width_m2": 1e-7,
+            "maximum_area_difference_m2": 0.00001,
+            "ideal_first_moment_width_m4": 1e-12,
+            "maximum_first_moment_difference_m4": 1e-9,
+            "ideal_centroid_width": {
+              "value_si": 1e-6
+            },
+            "maximum_centroid_difference": {
+              "value_si": 2e-6
+            },
+            "max_integration_cells": 262144,
+            "max_vertices": 5000,
+            "max_triangles": 10000
+          }
+        },
+        "suppressed": false
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_semantic_ref",
+      "topo_ref": {
+        "ref_id": "ref:edge:stock_end",
+        "kind": "edge",
+        "semantic": {
+          "created_by": "feature:stock",
+          "role": "extrusion_end"
+        }
+      }
+    }
+  ]
+}

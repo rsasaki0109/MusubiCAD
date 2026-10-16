@@ -27,3 +27,7 @@ The existing `circular_grid_reference` CI executable includes the same report as
 this runtime example. P16-008 must separately admit the source, cache ownership,
 compatibility/history and actual MCP evaluation. See
 [the runtime API](../docs/api/faceted-circular-fillet-runtime.md).
+
+The separately admitted persisted feature is now documented in
+[the source example](faceted_circular_fillet_source.md) and ADR-101. The runtime
+example above remains a transient geometry diagnostic, not a source document.
