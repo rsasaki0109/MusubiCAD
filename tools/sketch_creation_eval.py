@@ -36,7 +36,7 @@ def centroid(faces):
     total=math.fsum(signed)
     return tuple(math.fsum(s*(a[i]+b[i]+c[i])/4 for s,(a,b,c) in zip(signed,faces))/total for i in range(3))
 
-def physical_problems(data,plane=None,*,bounds=None,expected_center=None):
+def physical_problems(data,plane=None,*,bounds=None,expected_center=None,expected_volume=None):
     try:
         faces=triangles(data);points=[p for face in faces for p in face]
         if bounds is None and plane not in BOUNDS:
@@ -46,9 +46,9 @@ def physical_problems(data,plane=None,*,bounds=None,expected_center=None):
             actual=(min(p[axis] for p in points),max(p[axis] for p in points))
             if any(abs(a-b)>1e-4 for a,b in zip(actual,(lower[axis],upper[axis]))):
                 return ['actual world bounds or signed extrusion direction differs']
-        ideal=math.pi*.02*.01*.006
+        ideal=math.pi*.02*.01*.006 if expected_volume is None else expected_volume
         if abs(volume(faces)-ideal)>ideal*.01:
-            return ['independent STL volume differs from analytic ellipse prism']
+            return ['independent STL volume differs from analytic prism']
         if expected_center is not None and any(abs(a-b)>1e-4 for a,b in zip(centroid(faces),expected_center)):
             return ['independent STL centroid differs from placed analytic prism']
         # Geometric closure at 1 nm; distinct from exact topological certification.

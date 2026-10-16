@@ -410,14 +410,16 @@ impl PartModel {
         if let Some(params) = parameters {
             progress.enter(RegenerationStage::Parameters, None);
             apply_parameters(self, params)?;
-        } else if self.nodes.values().any(|n| {
-            !n.suppressed
-                && matches!(
-                    n.definition,
-                    FeatureDefinition::NominalMetricThread(_)
-                        | FeatureDefinition::FacetedCircularFillet(_)
-                )
-        }) {
+        } else if crate::param_apply::has_circle_form_source(self)
+            || self.nodes.values().any(|n| {
+                !n.suppressed
+                    && matches!(
+                        n.definition,
+                        FeatureDefinition::NominalMetricThread(_)
+                            | FeatureDefinition::FacetedCircularFillet(_)
+                    )
+            })
+        {
             apply_parameters(self, &ParamGraph::new())?;
         }
         for sketch in self.sketches.values_mut() {

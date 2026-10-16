@@ -198,6 +198,22 @@ actual cold/cached regeneration must still resolve each datum dependency.
 No cached frame is accepted as mutation intent and strict profile consumers
 remain unchanged. No persisted source field or tag is added.
 
+P17-004 maps two local-mm pointer clicks to the existing typed sketch-edit
+batch: one new center point and one circle with fresh source IDs. The second
+click determines a unit-bearing radius; this is disposable input intent, not
+a frontend solve or physical result. The shared backend validates the complete
+batch, current source/identity/workplane and required assertions. Review and
+apply reuse the existing commands in Tauri and Agent/MCP. A half-complete gesture
+cannot submit the unrelated numeric form. Cancel, Escape, tool/sketch/view/file
+changes and upstream edits invalidate the gesture/review; late replies cannot
+restore a canceled review. This adds no command, source tag, sampler or kernel
+geometry family. Explicitly admitted analytic Mock primitives and OCCT provide
+independent circle-prism physical evidence.
+The existing empty-parameter shortcut must not bypass solving a circle with
+unit-bearing radius/center expressions. Resolve these on the disposable model
+in cold/cached regeneration, including the no-parameter API path; do not add a
+dummy source parameter or literalize the document to make extrusion succeed.
+
 Keep the existing shared gateway and plain JS frontend; no new dependency is
 needed by this design. A bounded datum-chain admission makes source association
 testable before semantic face-plane editing is introduced. Reusing a copied

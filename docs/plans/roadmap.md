@@ -1048,7 +1048,7 @@ workplanes. Preserve the original fixed maturity rubric and ADR-058's backend
 ownership. P14's existing feature editing and point/line/circle/ellipse forms
 receive no duplicate credit. P16-008 completed in PR #148; its explicitly
 faceted approximation receives no additional score. The current merged baseline
-is weighted CAD 52.90 and agent operation 95 after P17-002 / PR #150.
+is weighted CAD 53.20 and agent operation 95 after P17-003 / PR #151.
 
 **Dependencies:** completed Phase 14 shared DesignPatch/verification/history
 gateways; existing sketch entities, solver, datum and modeling admission
@@ -1063,8 +1063,8 @@ ADR rather than silently broadening a UI task.
 |---|---|---|---|
 | MCAD-P17-001 | Define desktop creation and workplane admission | ADR-102: atomic sketch/owner creation, source-bound global/datum choices, resolved view frames, candidate/solve/history gates, native Linux/Windows evidence and task-specific analytic acceptance; design only, no feature or score | Complete: PR #149 |
 | MCAD-P17-002 | Create global-plane sketches through native controls | New-sketch form on explicit XY/XZ/YZ; backend-owned stable identities and one atomic AddSketch/AddFeature patch; sketch-only states and existing-part creation, read-only review, stale/collision/solve refusal and canonical Undo/Redo; shared Agent/MCP route and actual native form evidence | Complete: PR #150 |
-| MCAD-P17-003 | Create and edit sketches on admitted datum planes | Backend-listed existing active datum planes, regenerated frame and exact source dependency; preserve authored datum association through local-coordinate edits and parameter changes; refuse missing/suppressed/wrong-kind/cyclic/unsupported chains; independent placed physical fixtures and native controls | Implemented; completion requires exact-head native Windows/all CI and main merge |
-| MCAD-P17-004 | Draft circles with pointer controls | Center/radius gesture, view-only draft, explicit-unit source intent and atomic point/circle creation; cancel, degenerate radius and stale-result refusal; independent circle/extrusion measurements and actual native pointer evidence | Planned |
+| MCAD-P17-003 | Create and edit sketches on admitted datum planes | Backend-listed existing active datum planes, regenerated frame and exact source dependency; preserve authored datum association through local-coordinate edits and parameter changes; refuse missing/suppressed/wrong-kind/cyclic/unsupported chains; independent placed physical fixtures and native controls | Complete: PR #151 |
+| MCAD-P17-004 | Draft circles with pointer controls | Center/radius gesture, view-only draft, explicit-unit source intent and atomic point/circle creation; cancel, degenerate radius and stale-result refusal; independent circle/extrusion measurements and actual native pointer evidence | Implemented; completion requires exact-head native Windows/all CI and main merge |
 | MCAD-P17-005 | Draft rectangles with pointer controls | Opposite-corner gesture and reviewed backend rectangle expansion with stable authored corner/edge IDs; finite positive dimensions, cancel/undo/refusal and independent placed prism measurements | Planned |
 | MCAD-P17-006 | Draft admitted arcs with pointer controls | Explicit center/endpoints and orientation/branch, bounded existing arc representation, reviewed atomic source commit; branch/degeneracy/refusal and independent arc/profile measurements; no sampling admission by UI | Planned |
 | MCAD-P17-007 | Draft ellipses with pointer controls | Center/axes/orientation gestures and explicit units; preserve existing analytic ellipse admission, independent placed area/solid dimensions, invalid-axis/refusal and history evidence | Planned |

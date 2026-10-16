@@ -1616,3 +1616,29 @@ grades fresh native STL absolute bounds, centroid, volume and numerical closure.
 `tools/test_datum_sketch_mcp.py` runs five actual MCP/Agent cases with no model
 turns and rejects equal-volume wrong placement/flattened association. New actual
 Linux/Windows native form checks are separate from protocol or external-host evidence.
+
+## Atomic pointer-circle intent (MCAD-P17-004)
+
+The native Draw circle tool and Agent/MCP use the existing sketch editor. Inspect
+current `document_id`, `revision` and source IDs, then plan/apply **one**
+`edit.operations` batch with a new point and a new circle (`create: true` for
+both). Supply the circle's `center` as that point ID, a positive explicit-unit
+`radius` and the desired `construction` flag. Do not publish the center as a
+separate edit or silently rename IDs after review. Datum source remains a
+`datum_plane` reference; no cached frame is mutation intent.
+
+The native gesture quantizes local coordinates to 0.001 mm and emits radius
+with six decimal places in mm. For example, centre (2,-3) and radius point (5,1)
+produce `2.000 mm`, `-3.000 mm`, `5.000000 mm`. Backend validation, solve,
+required assertions, native verification and atomic history are shared. A circle
+with unit-bearing coordinates works with an empty parameter graph; no dummy
+parameter is needed. Construction circles alone report no invented solid.
+
+See [the example](../../examples/agent/create_pointer_circle.json) and
+[sketch API](sketch-editing.md#pointer-circle-intent-mcad-p17-004). Eval task
+`create_pointer_circle` checks source identity/ownership/dependency and a fresh
+SI STL against independent bounds, centroid, volume and numerical closure.
+A translated equal-volume mesh fails. MCP parity exercises typed intent; it
+does not claim a mouse gesture or external model-host verification. Native
+Linux/Windows tests separately drive the new pointer event path. Undo/Redo
+uses Agent history methods or native controls, not an invented MCP tool.

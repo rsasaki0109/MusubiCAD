@@ -1115,3 +1115,23 @@ See `examples/agent/create_datum_sketch.json`, `docs/api/sketch-creation.md`, ev
 `python tools/test_datum_sketch_mcp.py --musubicad target/debug/musubicad`.
 Real Linux Tauri and Windows WebView2 controls have separate native gates; these
 protocol checks do not establish another external model-host session.
+
+## Atomic pointer circles (MCAD-P17-004)
+
+Use `inspect_sketches`, then the existing `plan_sketch_edit` /
+`apply_sketch_edit` with current document identity/revision. Submit one two-form
+batch: create an explicit-unit center point, then create a circle referring to
+that point with positive radius and the chosen construction flag. Keep fresh
+source IDs, the authored workplane and unrelated source. Never publish the
+center separately or substitute a cached datum frame. Empty parameter graphs
+are supported; do not add dummy parameters. Cancel/stale/unit/solve/assertion
+failures must preserve source/history/output.
+
+The native Draw circle gesture specifies center then radius point in local mm;
+its preview is disposable and Escape/Discard cancels it. The equivalent typed
+example is [create_pointer_circle.json](../../examples/agent/create_pointer_circle.json).
+For (2,-3) mm and radius point (5,1) mm, the native strings are `2.000 mm`,
+`-3.000 mm`, `5.000000 mm`. A 6 mm prism has volume 150*pi mm³; validate
+placement, not just volume. Eval `create_pointer_circle` independently grades
+source plus fresh SI STL; actual native Linux/Windows pointer evidence remains
+separate from protocol parity and external model-host sessions.

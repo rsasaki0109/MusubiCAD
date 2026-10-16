@@ -11,6 +11,20 @@ use opencad_solver::SolverOptions;
 use crate::feature::{FeatureDefinition, FeatureNode};
 use crate::regenerate::PartModel;
 
+/// A unit-bearing circle form needs solving even with an empty parameter graph.
+/// Only the disposable regeneration model is resolved; authored source stays intact.
+pub(crate) fn has_circle_form_source(model: &PartModel) -> bool {
+    use opencad_sketch::{Coord, SketchEntity};
+    model.sketches.values().any(|sketch| {
+        sketch.entities.iter().any(|entity| {
+            let SketchEntity::Circle(circle) = entity else { return false; };
+            matches!(circle.radius, Coord::Expr(_))
+                || matches!(sketch.find_entity(circle.center.as_str()), Some(SketchEntity::Point(point))
+                    if matches!(point.x, Coord::Expr(_)) || matches!(point.y, Coord::Expr(_)))
+        })
+    })
+}
+
 pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Result<()> {
     let guarded_scope = if model.nodes.values().any(|n| {
         !n.suppressed
@@ -44,6 +58,7 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
     });
     if parameters.evaluation_order()?.is_empty()
         && !contains_cubic
+        && !has_circle_form_source(model)
         && !model.nodes.values().any(|n| {
             matches!(
                 n.definition,
