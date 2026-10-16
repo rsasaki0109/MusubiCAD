@@ -1,6 +1,6 @@
 # MusubiCAD implementation status
 
-Last reviewed: 2026-10-14
+Last reviewed: 2026-10-16
 
 This inventory is evidence-based against the current repository. **Implemented**
 means the capability has code and focused tests; **Partial** means the primary
@@ -1788,3 +1788,40 @@ PR's main merge after applicable exact-head CI, including existing native
 desktop compatibility. No new GUI interaction is introduced; P17-006 follows
 this prerequisite. No maturity increment: weighted CAD remains 53.50, GUI 51,
 agent operation 95 because exact native arc extrusion already existed.
+
+P17-020 completed in PR #154, merge 180c02ae6c9f9c85a23cfa16ea66cfaf2db77094,
+tested head 8de5feb6596d7c4fcf8d51847ba2d87929607ea6 and base
+f9a1754b19affa210dc26c9f5dee2aaf81b1ba3a. Exact parents, identical tested/merged
+trees and clean synchronized main were verified. All four workflows/full eleven
+jobs passed (ten successes, expected skipped publisher): CI 38965944056,
+Design Review 38965944039, Desktop 38965943816, Release 38965943934, including
+actual Windows native compatibility. Required local tests: 1300 passed, zero
+failed, 37 existing ignored across 194 suites. No maturity increment.
+
+P17-006 begins under ADR-104: three-click centre/start/end-direction input with
+explicit CW/CCW and optional shared-ID radial closure. The backend expands a
+creation-only constant-unit form to ordinary Point/Arc/Line source in one
+revision/identity-guarded patch. Native Linux/Windows new-control acceptance,
+both-kernel physical source/history tests and independently graded actual MCP
+are required before completion and any conditional GUI credit.
+
+P17-006 backend and native controls now implement the ADR-104 three-click arc
+intent, explicit direction and optional shared-ID radial closure. Nine targeted
+backend tests pass, including both-kernel minor/major world bounds/centroid/area/
+volume and real outward closed meshes on global/tilted planes, 0° wrap, source
+cold/cache preservation, strict unit/geometry/identity/revision/late-ID refusal,
+construction/open drafts, assertions, expanded budgets and packed/expanded
+canonical history. Actual MCP/Agent parity passes ten cases (five placements ×
+CW/CCW), with independent source/branch and fresh native SI output grading and
+wrong-source/branch/equal-volume-placement adversaries. The locked Tauri build
+passes. Actual Linux Tauri/WebKit passes all 32 interaction groups, including
+six new arc groups using real coordinate events, product handlers and IPC.
+All four required local checks pass: formatting, workspace/all-target Clippy,
+workspace tests (1310 passed, zero failed, 37 existing ignored across 196
+suites) and the agent-plugin contract. New actual Windows WebView2 arc
+acceptance and the full applicable exact-head CI inventories are required
+before completion with this task PR's main merge. Only that qualifying
+merge changes GUI 51 to 52 and weighted CAD 53.50 to 53.65; agent operation
+stays 95. The increment is solely the new usable three-click arc branch/
+radial-closure lifecycle with atomic source/history; no repeated geometry,
+workplane, old-form, physical-parity or external-host credit.

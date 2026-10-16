@@ -228,7 +228,7 @@ fn tools() -> Vec<Tool> {
         Tool { name: "plan_sketch_create", description: "Review atomic empty sketch/owner creation on exactly one global or admitted existing datum plane. Require current document identity/revision and stable IDs; verify candidate without writes.", handler: Handler::Agent("opencad.plan_sketch_create"), schema: sketch_create_schema },
         Tool { name: "apply_sketch_create", description: "Reverify and atomically create the reviewed source-bound sketch/owner through DesignPatch and history. Refuse stale identity/revision or ID collisions without writes.", handler: Handler::Agent("opencad.apply_sketch_create"), schema: sketch_create_schema },
         Tool { name: "inspect_sketches", description: "Read admitted authored global/datum sketches, solved local SI entities, original source associations and regenerated display frames without writing.", handler: Handler::Agent("opencad.inspect_sketches"), schema: path_schema },
-        Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, opposite-corner rectangle (four points/four lines), circle, ellipse, construction and basic constraints. Inputs require explicit units. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
+        Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, opposite-corner rectangle, constant centre/start/end-direction arc (CW/CCW, optional radial closure), circle, ellipse, construction and basic constraints. Inputs require explicit units; arc creation requires document identity. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
         Tool { name: "apply_sketch_edit", description: "Reverify and atomically apply the same sketch commands as Tauri; preserve source/history on stale, unit, solve, profile or geometry failure.", handler: Handler::Agent("opencad.apply_sketch_edit"), schema: sketch_edit_schema },
         Tool {
             name: "inspect_selection_frame",
@@ -415,6 +415,19 @@ fn sketch_edit_schema() -> Value {
         ("point", vec!["id", "x", "y"], vec!["create"]),
         ("line", vec!["id", "start", "end"], vec!["construction"]),
         (
+            "arc",
+            vec![
+                "id",
+                "center_x",
+                "center_y",
+                "start_x",
+                "start_y",
+                "end_direction_x",
+                "end_direction_y",
+            ],
+            vec!["clockwise", "close_sector", "construction"],
+        ),
+        (
             "rectangle",
             vec!["id", "x1", "y1", "x2", "y2"],
             vec!["construction"],
@@ -444,7 +457,7 @@ fn sketch_edit_schema() -> Value {
         for field in booleans { properties.insert(field.into(),json!({"type":"boolean"}));required.push(field); }
         json!({"type":"object","properties":properties,"required":required,"additionalProperties":false})
     }).collect();
-    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","properties":{"document_id":{"type":"string","description":"Required for datum-plane edits; match inspect_sketches.document_id"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"operations":{"type":"array","minItems":1,"maxItems":64,"items":{"oneOf":operations}}},"required":["revision","sketch_id","operations"],"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","edit"],"additionalProperties":false})
+    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","properties":{"document_id":{"type":"string","description":"Required for datum-plane edits or arc creation; match inspect_sketches.document_id"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"operations":{"type":"array","minItems":1,"maxItems":64,"items":{"oneOf":operations}}},"required":["revision","sketch_id","operations"],"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","edit"],"additionalProperties":false})
 }
 
 #[cfg(test)]

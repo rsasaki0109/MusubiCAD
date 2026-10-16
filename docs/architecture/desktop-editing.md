@@ -115,3 +115,23 @@ and workplane references remain unchanged. Half gestures, Escape, invalid radius
 stale replies, source changes and failed verification cannot publish a point
 without its circle. Actual native interaction evidence is required separately
 for Linux and Windows.
+
+## Backend-owned pointer arcs
+
+P17-006 / [ADR-104](../adr/ADR-104-pointer-arc-intent.md) routes native three-click
+centre/start/end-direction input through the same typed sketch gateway as
+Agent/MCP. The backend computes radius, projects the endpoint, selects the
+explicit CW/CCW branch and expands four ordinary source entities (six with
+shared-ID radial closure). Existing CCW Arc source encodes CW through endpoint
+reference/angle swapping; no persisted helper or new source tag is introduced.
+The creation form admits constant unit-bearing inputs only and preserves
+centre/start expressions. Existing raw parametric Arc support is unchanged.
+
+The frontend owns disposable SVG arcs and input intent, with cancellation/late
+reply invalidation. Solved inspection carries numeric display radians separately
+from authored source. The profile-free draft predicate gains only successfully
+solved bounded explicit-endpoint construction arcs, checked through ADR-103's
+kernel-neutral validator. Consumers, source ownership, required assertions,
+native candidate verification and atomic history retain their shared gates.
+Both native drivers execute new arc checks unconditionally; workflow path policy
+includes the helper. No new kernel representation, sampler or NURBS admission.

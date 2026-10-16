@@ -292,7 +292,7 @@
       "id": "drawing_polygonal_section",
       "source": "examples/section_plate_drawing.ocad.d",
       "document": "section_drawing.ocad.d",
-      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m\u00b2, two loops and eight edges; never store contour caches.",
+      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m², two loops and eight edges; never store contour caches.",
       "expected_views": [
         "front"
       ],
@@ -2036,7 +2036,7 @@
       "id": "tapered_rib_height",
       "source": "examples/tapered_rib_plate.ocad.d",
       "document": "tapered_rib_plate.ocad.d",
-      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm\u00b3. Do not substitute a constant-width rib or change source sketches/order.",
+      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm³. Do not substitute a constant-width rib or change source sketches/order.",
       "expected_volume_mm3": 13224,
       "required_parameters": [
         "rib_height",
@@ -2154,6 +2154,44 @@
           "feature_id": "feature:datum"
         },
         "case": "seeded_XY"
+      }
+    },
+    {
+      "id": "create_pointer_arc",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "pointer_arc.ocad.d",
+      "prompt": "In {document}, follow examples/agent/create_pointer_arc.json through typed sketch creation and plan_sketch_edit/apply_sketch_edit. Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum. Use the exact constant centre/start/end-direction strings shown, clockwise=false, close_sector=true, construction=false. The direction click is (2,17) mm; preserve radius 10 mm, projecting the endpoint to (2,7) mm. Preserve prior source and datum dependency. Create 6 mm NewBody feature:pointer_body. Independently verify the selected 90 degree CCW minor sector, volume 150*pi mm3, exact source and fresh native SI placement/centroid/closure. Do not guess the shortest arc or replace it with a polygon. MCP expresses typed intent, not mouse events.",
+      "expected_volume_mm3": 471.23889803846896,
+      "required_parameters": [],
+      "expected_pointer_arc": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:pointer_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY",
+        "clockwise": false
+      }
+    },
+    {
+      "id": "create_pointer_arc_clockwise_major",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "pointer_arc.ocad.d",
+      "prompt": "In {document}, follow examples/agent/create_pointer_arc.json through typed sketch creation and plan_sketch_edit/apply_sketch_edit. Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum. Use the exact constant centre/start/end-direction strings shown, clockwise=true, close_sector=true, construction=false. The direction click is (2,17) mm; preserve radius 10 mm, projecting the endpoint to (2,7) mm. Preserve prior source and datum dependency. Create 6 mm NewBody feature:pointer_body. Independently verify the selected 270 degree CW major sector, volume 450*pi mm3, exact source and fresh native SI placement/centroid/closure. Do not guess the shortest arc or replace it with a polygon. MCP expresses typed intent, not mouse events.",
+      "expected_volume_mm3": 1413.7166941154069,
+      "required_parameters": [],
+      "expected_pointer_arc": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:pointer_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY",
+        "clockwise": true
       }
     }
   ]

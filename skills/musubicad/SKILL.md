@@ -1192,3 +1192,29 @@ placement, centroid, volume and oriented closure. Actual MCP/Agent parity and
 history tests cover five placements without model calls. This prerequisite
 does not claim a pointer control, external model-host session or maturity
 increment; new arc pointer lifecycle acceptance belongs to P17-006.
+
+## Atomic pointer arcs (MCAD-P17-006)
+
+Use inspected identity/revision with the existing sketch plan/apply commands
+and the [arc example](../../examples/agent/create_pointer_arc.json). The `arc`
+form requires a fresh prefix `id`, constant explicit local lengths `center_x`,
+`center_y`, `start_x`, `start_y`, `end_direction_x`, `end_direction_y`, and
+explicit `clockwise`, `close_sector`, `construction` booleans. Radius comes
+from centre/start; the end click selects direction, not a second radius.
+Backend-owned expansion creates three points and an exact Arc; optional radial
+closure adds two lines sharing point IDs, all in one guarded DesignPatch/history
+edit. Preserve datum association, prior source and opaque history.
+
+Do not guess the short branch, pre-expand points, submit unitless values or
+claim an associative parameter helper. This form refuses named parameters;
+existing parametric Arc source remains supported separately. CW major geometry
+is encoded through swapped references in existing CCW Arc source. One Undo/Redo
+restores every addition; failed units/IDs/solve/assertions/stale reviews preserve
+source/history/output. Open/construction sketches have no invented solid.
+
+At centre (2,-3) mm, start (12,-3) mm and direction (2,17) mm, actual radius
+is 10 mm. With 6 mm depth, CCW quarter volume is 150*pi mm³, CW major 450*pi.
+Evals `create_pointer_arc` / `create_pointer_arc_clockwise_major` check exact
+source and fresh SI placement/centroid/volume/closure. See [API](../../docs/api/sketch-editing.md#pointer-arc-intent-mcad-p17-006)
+and ADR-104. Native pointer acceptance and external host verification remain
+separate from actual MCP/Agent ten-case typed parity.

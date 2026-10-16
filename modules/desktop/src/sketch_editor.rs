@@ -19,6 +19,7 @@ use opencad_sketch::{
     LineEntity, PointEntity, Sketch, SketchEntity, Workplane,
 };
 use serde::{Deserialize, Serialize};
+mod arc;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SketchEditorState {
@@ -63,6 +64,18 @@ pub enum SketchForm {
         y1: String,
         x2: String,
         y2: String,
+        construction: bool,
+    },
+    Arc {
+        id: String,
+        center_x: String,
+        center_y: String,
+        start_x: String,
+        start_y: String,
+        end_direction_x: String,
+        end_direction_y: String,
+        clockwise: bool,
+        close_sector: bool,
         construction: bool,
     },
     Circle {
@@ -170,6 +183,11 @@ pub fn sketch_editor_state_with_kernel<K: GeometryKernel>(
         if authored(doc, sketch.id.as_str()).is_ok() {
             let mut solved = opencad_feature::param_apply::solved_sketch_copy(sketch, &values)?;
             for entity in &mut solved.entities {
+                if let SketchEntity::Arc(arc) = entity {
+                    let (start, end) = opencad_sketch::solve::arc_angles(arc)?;
+                    arc.start_angle = Coord::Literal(start);
+                    arc.end_angle = Coord::Literal(end);
+                }
                 if let SketchEntity::Ellipse(e) = entity {
                     let [a, b, angle] = opencad_sketch::solve::ellipse_parameters(e)?;
                     e.major_radius = Coord::Literal(a);
@@ -338,7 +356,11 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
         .document_id
         .as_deref()
         .is_some_and(|id| id != doc.metadata.id.as_str())
-        || (matches!(sketch.workplane, Workplane::DatumPlane { .. })
+        || ((matches!(sketch.workplane, Workplane::DatumPlane { .. })
+            || edit
+                .operations
+                .iter()
+                .any(|form| matches!(form, SketchForm::Arc { .. })))
             && edit.document_id.as_deref() != Some(doc.metadata.id.as_str()))
     {
         return Err(OpenCadError::validation(
@@ -353,6 +375,15 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
     let mut ops = Vec::new();
     for form in &edit.operations {
         let sketch = authored(doc, &edit.sketch_id)?;
+        if matches!(form, SketchForm::Arc { .. }) {
+            for entity in arc::entities(doc, sketch, form)? {
+                ops.push(PatchOperation::AddSketchEntity {
+                    sketch_id: edit.sketch_id.clone(),
+                    entity,
+                });
+            }
+            continue;
+        }
         if let SketchForm::Rectangle {
             id,
             x1,
@@ -384,6 +415,7 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
                         | SketchEntity::Line(_)
                         | SketchEntity::Circle(_)
                         | SketchEntity::Ellipse(_)
+                        | SketchEntity::Arc(_)
                 )
             ) {
                 return Err(OpenCadError::validation(
