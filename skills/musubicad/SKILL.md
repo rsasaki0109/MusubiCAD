@@ -1165,3 +1165,30 @@ including rejection of a translated equal-volume mesh. Native Draw rectangle
 tests separately exercise actual Linux/Windows events, cancellation and history;
 MCP expresses equivalent typed intent and does not simulate a mouse or establish
 an external model-host session. See [sketch API](../../docs/api/sketch-editing.md#pointer-rectangle-intent-mcad-p17-005).
+
+## Verified physical arc sectors (MCAD-P17-020)
+
+Follow [physical_arc_sector.json](../../examples/agent/physical_arc_sector.json):
+create a source-owned sketch on the inspected global/datum plane, then add
+three explicit-unit points, one Arc and two radial Lines in one revision-guarded
+DesignPatch. Preserve endpoint IDs, original source and datum dependency.
+Use verified `patch_dry_run`/`patch_apply` with the latest opaque history;
+raw patch responses return it at `history`, typed edit responses at
+`history.history`. All six additions Undo/Redo as one edit. No dummy parameter,
+polygon substitute or separate endpoint publication is needed.
+
+Physical Mock admits exactly this closed one-arc/two-radii subset, normal
+distance/symmetric NewBody extrusion and proper rigid placement. It refuses
+ambiguous branches, gaps, general mixed outlines, sector Booleans and stock
+witnesses. OCCT retains its wider exact arc support. See
+[admission and units](../../docs/api/arc-sectors.md). For the seeded +5 mm datum,
+radius 10 mm and CCW 0..90° at centre (2,-3) mm with 6 mm depth give volume
+150*pi mm³, bounds (2,-3,5)..(12,7,11) mm and centroid
+(2+40/(3*pi), -3+40/(3*pi), 8) mm. A full radius-5 mm circle has equal volume;
+independent shape/placement checks must reject it.
+
+Eval `create_physical_arc_sector` checks exact source plus fresh native SI STL
+placement, centroid, volume and oriented closure. Actual MCP/Agent parity and
+history tests cover five placements without model calls. This prerequisite
+does not claim a pointer control, external model-host session or maturity
+increment; new arc pointer lifecycle acceptance belongs to P17-006.

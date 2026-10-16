@@ -10,6 +10,7 @@ pub(super) enum FaceKey {
     Cone(u64, u64, u64, u64),
     Cap(u64, u64, u64),
     Cylinder(usize),
+    Sector(usize),
     Frustum(usize),
     Rib(usize),
     Thread(usize),
@@ -37,6 +38,7 @@ pub(super) fn validate_frame(frame: Frame) -> Result<()> {
 }
 pub(super) fn keys(body: &Body) -> Result<Vec<FaceKey>> {
     match body {
+        Body::Sector(_) => Ok((0..5).map(FaceKey::Sector).collect()),
         Body::CircularReference(g) => Ok((0..g.triangles().len())
             .map(FaceKey::CircularReference)
             .collect()),
@@ -165,6 +167,7 @@ impl AnalyticMock {
             return ribbed_mesh(*frame, *dimensions, rib, face_ids, linear);
         }
         let radius = match body_record {
+            Body::Sector(g) => g.profile.radius,
             Body::CircularReference(_) | Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock { .. } => 0.,
             Body::Stock { cuts, .. } => cuts
@@ -190,6 +193,7 @@ impl AnalyticMock {
             .collect();
         let mut builder = Builder::new();
         match body_record {
+            Body::Sector(g) => sector_mesh(&mut builder, g, face_ids, &angles)?,
             Body::CircularReference(_) | Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock {
                 frame,
@@ -564,6 +568,67 @@ fn ribbed_mesh(
         ));
     }
     builder.finish()
+}
+fn sector_mesh(
+    builder: &mut Builder,
+    sector: &super::sector::Sector,
+    faces: &BTreeMap<FaceKey, u64>,
+    grid: &[f64],
+) -> Result<()> {
+    let t = sector.profile.sweep;
+    let frame = sector.profile.frame;
+    validate_frame(frame)?;
+    let mut angles = vec![0.];
+    angles.extend(grid.iter().copied().filter(|a| *a > 0. && *a < t));
+    angles.push(t);
+    if angles.len() > 8192 {
+        return Err(invalid("sector endpoints exceed angular budget"));
+    }
+    for pair in angles.windows(2) {
+        let [a, b] = [pair[0], pair[1]];
+        for (i, z) in [0., sector.height].into_iter().enumerate() {
+            builder.triangle(
+                [frame.map([0., 0., z]), sector.at(a, z), sector.at(b, z)],
+                scale(frame.axes[2], if i == 0 { -1. } else { 1. }),
+                faces[&FaceKey::Sector(i)],
+            )?;
+        }
+        let mid = (a + b) / 2.;
+        builder.quad(
+            [
+                sector.at(a, 0.),
+                sector.at(b, 0.),
+                sector.at(b, sector.height),
+                sector.at(a, sector.height),
+            ],
+            add(
+                scale(frame.axes[0], mid.cos()),
+                scale(frame.axes[1], mid.sin()),
+            ),
+            faces[&FaceKey::Sector(2)],
+        )?;
+    }
+    for (i, a) in [0., t].into_iter().enumerate() {
+        let normal = if i == 0 {
+            scale(frame.axes[1], -1.)
+        } else {
+            add(
+                scale(frame.axes[0], -a.sin()),
+                scale(frame.axes[1], a.cos()),
+            )
+        };
+        builder.quad(
+            [
+                frame.map([0., 0., 0.]),
+                sector.at(a, 0.),
+                sector.at(a, sector.height),
+                frame.map([0., 0., sector.height]),
+            ],
+            normal,
+            faces[&FaceKey::Sector(i + 3)],
+        )?;
+    }
+    Ok(())
 }
 fn gap(angles: &[f64], i: usize) -> f64 {
     if i + 1 < angles.len() {

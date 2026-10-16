@@ -2137,6 +2137,24 @@
         },
         "case": "seeded_XY"
       }
+    },
+    {
+      "id": "create_physical_arc_sector",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "physical_arc_sector.ocad.d",
+      "prompt": "In {document}, follow examples/agent/physical_arc_sector.json. Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum through typed creation. Use current revision and patch_dry_run/patch_apply (verify=true) to author the six Point/Arc/Line entities exactly as shown: centre (2,-3) mm, radius 10 mm, CCW angles 0 deg to 90 deg, shared start/end points and two radial lines. Preserve all prior source/parameters and datum dependency. Create a 6 mm NewBody feature:sector_body from its admitted closed profile. Verify fresh native SI STL absolute bounds, centroid, oriented closure and analytic volume 150*pi mm3. A full radius-5 circle has the same volume but is the wrong shape. Do not replace the exact arc with a polygon or claim an MCP pointer gesture.",
+      "expected_volume_mm3": 471.23889803846896,
+      "required_parameters": [],
+      "expected_arc_sector": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:sector_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
     }
   ]
 }

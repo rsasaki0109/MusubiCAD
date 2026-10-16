@@ -1672,3 +1672,31 @@ including rejection of a translated equal-volume mesh. Native Draw rectangle
 tests separately exercise actual Linux/Windows events, cancellation and history;
 MCP expresses equivalent typed intent and does not simulate a mouse or establish
 an external model-host session. See [sketch API](sketch-editing.md#pointer-rectangle-intent-mcad-p17-005).
+
+## Verified physical arc sectors (MCAD-P17-020)
+
+Use [physical_arc_sector.json](../../examples/agent/physical_arc_sector.json)
+for existing Arc/Point/Line source: typed sketch creation on the current
+global/datum workplane, followed by six `add_sketch_entity` operations in one
+revision-guarded DesignPatch. Keep explicit local length/angle units, shared
+endpoint IDs and the datum owner/dependency. Dry-run and apply with
+`verify: true`, passing the latest opaque `history` unchanged. MCP advertises
+that existing history argument. Raw patch results contain it at `history`;
+typed sketch/feature edit results contain it at `history.history`.
+
+The portable physical subset is exactly one arc and two radial lines meeting
+at its circle centre. The three-point branch distinguishes major/minor and
+CW/CCW; zero/full/ambiguous turns and geometric gaps refuse. Both physical Mock
+and OCCT provide independent analytic measurements and genuine closed meshes;
+Mock does not admit arbitrary mixed outlines, oblique/through-all extrusion,
+sector Boolean edits or stock witnesses. Native's existing wider support is
+unchanged. See [API/admission](arc-sectors.md) and ADR-103.
+
+Eval `create_physical_arc_sector` grades exact source and a fresh native SI STL
+for the example's 10 mm radius, 90° sector and 6 mm depth on a +5 mm datum:
+volume 150*pi mm³, bounds (2,-3,5)..(12,7,11) mm and centroid
+(2+40/(3*pi), -3+40/(3*pi), 8) mm. A full 5 mm circle has equal volume but must
+fail source/placement grading. Actual MCP/Agent regression covers five planes,
+verified read-only preview, atomic six-entity Undo/Redo and invalid/stale refusal.
+No mouse gesture, external model-host session or new GUI maturity is claimed;
+arc pointer controls follow separately in P17-006.

@@ -1741,3 +1741,50 @@ Tauri build passes. The four mandatory pre-push checks pass: fmt, workspace/all-
 workspace tests (1292 passed, 0 failed, 37 ignored across 190 suites) and the
 agent-plugin contract. New native pointer interaction acceptance and applicable
 exact-head CI remain pending; no maturity increment.
+
+P17-005 completed in PR #153, merge commit
+f9a1754b19affa210dc26c9f5dee2aaf81b1ba3a, tested head
+45e83fca18613274df8676be85fceda1d1e5e476, base
+419941f9077b25d4fd336171035c9403b1a31ccb. Exact parents and identical
+tested/merged trees were verified; local main synchronized cleanly.
+All four exact-head workflows/full eleven jobs passed (ten successes, expected
+skipped PR publisher): CI 38927542204, Design Review 38927542436, Desktop
+38927542706, Release 38927542437. New actual Linux/Windows rectangle gates
+passed, including 26 Linux native checks. Required local checks passed with
+1292 tests, zero failures, 37 ignored and 190 suites. GUI 50→51 gives weighted
+CAD 53.35→53.50; agent operation stays 95. Credit is the new rectangle input/
+review/cancellation/atomic-history lifecycle, without repeated geometry credit.
+
+P17-006 investigation found that exact native OCCT line/arc profiles already
+work, but the explicitly selected physical analytic Mock rejects arcs. The
+separately registered P17-020 / ADR-103 prerequisite establishes a bounded
+one-arc/two-radii sector prism before implementing new arc pointer controls.
+No synthetic Mock geometry, sampled-polygon mass or new GUI score is accepted.
+
+P17-020 implementation supplies the ADR-103 kernel-neutral closed-sector
+validator, independent physical analytic Mock sector mass/area/centroid/world
+bounds and five-face meshes through the existing ADR-063 builder. Native keeps
+exact line/arc solids and tracks admitted sectors for outward triangle-derived
+display normals and proper rigid placements. Strict source Arc radius/angle
+evaluation now rejects wrong literal units before an optional radius seed can
+discard the error; empty/absent parameter graphs work without dummy parameters.
+Only disposable copies resolve source expressions.
+
+Seven new geometry/native/desktop tests pass: minor/half/major/reversed arcs,
+global/tilted/negative/symmetric/rigid placement, analytic interior arc extrema,
+real closed outward meshes, endpoint-inclusive budgets, owned Mock face
+ancestry, refused operations, source/history preservation and packed/expanded
+round trips. The actual five-case MCP/Agent regression also passes verified
+read-only patches, unit/reference/late-ID/stale refusal, atomic six-entity
+Undo/Redo, exact-source/fresh-SI export grading and same-volume wrong-circle/
+placement adversaries. Example, API/architecture, guide, skill and feasible eval
+are included; no schema, migration, dependency or golden change.
+
+The four required local checks pass: formatting, workspace/all-target Clippy,
+workspace tests (1300 passed, zero failed, 37 existing ignored across 194
+suites) and the agent-plugin contract. The locked Tauri build also passes.
+Completion takes effect with this task
+PR's main merge after applicable exact-head CI, including existing native
+desktop compatibility. No new GUI interaction is introduced; P17-006 follows
+this prerequisite. No maturity increment: weighted CAD remains 53.50, GUI 51,
+agent operation 95 because exact native arc extrusion already existed.

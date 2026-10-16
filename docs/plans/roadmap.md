@@ -1048,7 +1048,7 @@ workplanes. Preserve the original fixed maturity rubric and ADR-058's backend
 ownership. P14's existing feature editing and point/line/circle/ellipse forms
 receive no duplicate credit. P16-008 completed in PR #148; its explicitly
 faceted approximation receives no additional score. The current merged baseline
-is weighted CAD 53.35 and agent operation 95 after P17-004 / PR #152.
+is weighted CAD 53.50 and agent operation 95 after P17-005 / PR #153.
 
 **Dependencies:** completed Phase 14 shared DesignPatch/verification/history
 gateways; existing sketch entities, solver, datum and modeling admission
@@ -1065,8 +1065,9 @@ ADR rather than silently broadening a UI task.
 | MCAD-P17-002 | Create global-plane sketches through native controls | New-sketch form on explicit XY/XZ/YZ; backend-owned stable identities and one atomic AddSketch/AddFeature patch; sketch-only states and existing-part creation, read-only review, stale/collision/solve refusal and canonical Undo/Redo; shared Agent/MCP route and actual native form evidence | Complete: PR #150 |
 | MCAD-P17-003 | Create and edit sketches on admitted datum planes | Backend-listed existing active datum planes, regenerated frame and exact source dependency; preserve authored datum association through local-coordinate edits and parameter changes; refuse missing/suppressed/wrong-kind/cyclic/unsupported chains; independent placed physical fixtures and native controls | Complete: PR #151 |
 | MCAD-P17-004 | Draft circles with pointer controls | Center/radius gesture, view-only draft, explicit-unit source intent and atomic point/circle creation; cancel, degenerate radius and stale-result refusal; independent circle/extrusion measurements and actual native pointer evidence | Complete: PR #152 |
-| MCAD-P17-005 | Draft rectangles with pointer controls | Opposite-corner gesture and reviewed backend rectangle expansion with stable authored corner/edge IDs; finite positive dimensions, cancel/undo/refusal and independent placed prism measurements | In progress |
-| MCAD-P17-006 | Draft admitted arcs with pointer controls | Explicit center/endpoints and orientation/branch, bounded existing arc representation, reviewed atomic source commit; branch/degeneracy/refusal and independent arc/profile measurements; no sampling admission by UI | Planned |
+| MCAD-P17-005 | Draft rectangles with pointer controls | Opposite-corner gesture and reviewed backend rectangle expansion with stable authored corner/edge IDs; finite positive dimensions, cancel/undo/refusal and independent placed prism measurements | Complete: PR #153 |
+| MCAD-P17-020 | Establish physical arc-sector kernel parity | Prerequisite to P17-006: exact closed one-arc/two-radii sectors in analytic Mock alongside existing native OCCT; explicit bounded admission, analytic volume/area/centroid/world bounds, genuine display mesh, refusal/history, example/guide/skill/eval; ADR-103, no GUI or score credit | Implementation complete; completion takes effect with this task PR's main merge after all acceptance gates |
+| MCAD-P17-006 | Draft admitted arcs with pointer controls | Depends on P17-020 physical kernel parity. Explicit center/endpoints and orientation/branch, bounded existing arc representation, reviewed atomic source commit; branch/degeneracy/refusal and independent arc/profile measurements; no sampling admission by UI | Planned |
 | MCAD-P17-007 | Draft ellipses with pointer controls | Center/axes/orientation gestures and explicit units; preserve existing analytic ellipse admission, independent placed area/solid dimensions, invalid-axis/refusal and history evidence | Planned |
 | MCAD-P17-008 | Interact with sketch dimensions and constraints | Source-selected admitted points/lines/circles, usable dimension/constraint controls, backend DOF/contradiction diagnostics and atomic reviewed changes; no repeat credit for existing basic forms or unsupported ellipse constraints | Planned |
 | MCAD-P17-009 | Edit construction geometry through direct selection | Admitted authored-entity selection and construction controls, explicit profile/solid consequences, source identity and refusal/history tests; no duplicate credit for the existing construction checkbox | Planned |
@@ -1080,6 +1081,14 @@ ADR rather than silently broadening a UI task.
 | MCAD-P17-017 | Create admitted fillets through native controls | Owned edge/face choices and explicit radius within existing backend admission; independently checked physical dimensions/volume and refusal; no general smooth variable-contour claim | Planned |
 | MCAD-P17-018 | Create admitted chamfers through native controls | Owned edge/face choices and explicit distance within existing backend admission; independent contact/removal measurements and protected history | Planned |
 | MCAD-P17-019 | Create admitted patterns through native controls | Explicit source/axis/direction/count/spacing for advertised linear/circular admission; independent instance/contact/bounds/volume evidence and collision/dependency/refusal controls | Planned |
+
+P17-020 is a separately registered geometry prerequisite: at registration,
+analytic Mock rejected curved profiles while OCCT already constructed exact arcs.
+It precedes P17-006, introduces no native control and receives no maturity
+increment. Its acceptance is new independent both-kernel physical and actual
+MCP evidence, bounded refusal and source/history preservation; existing native
+controls retain their normal CI compatibility gate. General line-arc outlines,
+chord segments, booleans and arbitrary new samplers are outside this admission.
 
 **Completion definition:** P17-001 completes only after its design main merge;
 it adds no controls or score. Each subsequent task must deliver usable native
