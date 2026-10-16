@@ -998,3 +998,12 @@ plus 4..=262144 cells. Exhausted precision/work or real excess discrepancy
 refuses without changing geometry. Never replace backend mass with ideal mass
 or infer phase/native/placed/f32/embedding/source admission from a volume match.
 See `docs/api/grid-reference-volume-difference.md`; no new MCP operation/eval.
+
+
+P16-043 / ADR-096: `CircularFilletReference::surface_area_bounds_m2(width, cells)`
+returns outward ideal total/blend/support area intervals in m². Request an
+explicit finite positive TOTAL full width and 4..=262144 leaves; exhaustion or
+unattainable precision refuses. Actual Mock/OCCT faceted-body area stays actual
+and separate in the example/CI report. Do not substitute ideal mass or claim
+production fillets, native conversion, first moments or source admission. See
+`docs/api/ideal-periodic-reference-area.md`; no MCP operation/eval or score.

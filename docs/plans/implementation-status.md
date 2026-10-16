@@ -1304,3 +1304,33 @@ constant/variable absolute flux differences by 4.527e-8 / 4.547e-8 m³
 (relative 0.007208 / 0.007254); the variable reference uses 242125 cells
 within the unchanged 262144 cap at 1e-12 m³ width. These are input-grid
 integral bounds, not native/embedding/source certificates. No score.
+
+
+PR #142 completed P16-042 at main
+`16c29bdb4ac3f38ae8765ffbc27c8a2610f33394`, after all four exact-head applicable
+workflows and complete job inventories succeeded. Both merge parents match
+tested base/head and the merge tree equals the tested head tree. No score: 52.60 / 95.
+
+MCAD-P16-043 / accepted ADR-096 adds ideal complete/blend/support unsigned area
+enclosures with analytic characteristic-arc reduction and deterministic outward
+rational-chart integration. Explicit total SI width/work budgets refuse without
+partial output or mutation. Independent constant/scaled solutions and original
+two-dimensional surface/support integration, admitted boundary, refinement,
+determinism and invalid/tiny-amplitude/refusal tests cover the API. Both-kernel
+regression and example/CI keep ACTUAL faceted areas separate from ideal results.
+API/architecture/guide/skill/examples updated. No source/schema/migration/golden/
+MCP operation/eval, native conversion, area discrepancy or ideal first-moment
+certificate; P16-008 stays planned. Completion requires merge; no score, 52.60 / 95.
+
+P16-043 mandatory local checks passed before push: formatting, workspace all-target
+Clippy with denied warnings, workspace tests (1237 passed, 0 failed, 36 ignored),
+and agent plugin contract. Four new independent geometry tests and the new
+actual both-kernel area regression passed (current kernel suite: 5 passed).
+Release policy and repository hygiene checks passed. No score.
+
+The fresh both-kernel example passed independent component/width/work checks and
+a high-precision constant-area oracle. At 1e-7 m² total full width, variable ideal
+area is [0.001857449956914607, 0.0018575499518287903] m² using 6672 leaves;
+actual faceted area remains approximately 0.001850633968 m² in BOTH kernels.
+Constant ideal area is approximately 0.001871360554477447 m² (zero cells).
+These remain separate measurements, not a native area discrepancy certificate.

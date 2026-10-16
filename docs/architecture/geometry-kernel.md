@@ -641,3 +641,12 @@ precision/work/absolute-difference budgets. This comparison does not modify
 backend mass or promote numeric intersection admission to exact embedding.
 See [scope](../api/grid-reference-volume-difference.md). Native/placement/f32
 fidelity and source fillet admission remain separate.
+
+
+MCAD-P16-043 / ADR-096 adds pure ideal rolling-sphere boundary area enclosures.
+The analytic characteristic-arc Jacobian reduction leaves one rational-chart
+interval integral; retained cylinder/end/bottom areas are enclosed analytically.
+The explicit SI total-width and leaf budgets fail closed. See
+[area API](../api/ideal-periodic-reference-area.md). Actual physical kernel areas
+remain separate and unchanged; this does not admit production fillets, native
+conversion, ideal first moments, source or serialization. No score.

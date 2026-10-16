@@ -30,3 +30,10 @@ signed/absolute/relative discrepancy bounds and reference cell count under
 These comparison bounds do not certify native/placed/f32 geometry or exact
 global embedding. CI retains the example JSON as
 `grid-reference-volume-comparison.json` in its existing diagnostics artifact.
+
+
+ADR-096 adds `ideal_area` to that report with explicit 1e-7 m² total interval
+width and a 262144-leaf budget. Complete ideal blend/support/total bounds remain
+separate from `bodies[*].area_m2`, which is still measured from each physical
+faceted body. The report does not certify their area discrepancy or native
+conversion. See [ideal area](../docs/api/ideal-periodic-reference-area.md).

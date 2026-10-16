@@ -1478,3 +1478,12 @@ be substituted. Use actual backend mass separately from this signed-integral
 comparison; it does not prove phase, native fidelity, exact embedding or source
 fillet admission. No new MCP operation/eval. See
 [volume comparison](grid-reference-volume-difference.md).
+
+
+P16-043 / ADR-096 adds developer-only ideal `surface_area_bounds_m2(width, cells)`.
+The finite positive width is the full TOTAL area interval in m²; work is
+4..=262144 leaves. Returned blend and retained-support intervals describe the
+ideal envelope, never a backend mass query. Invalid/unattainable requests refuse.
+The both-kernel example/CI reports ideal and actual faceted areas separately.
+See [area API](ideal-periodic-reference-area.md). No MCP operation/eval or
+authored variable-fillet admission follows; P16-008 remains planned.
