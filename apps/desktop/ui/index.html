@@ -60,6 +60,12 @@
           <label>View span (mm) <input id="sketch-span" type="number" min="1" max="1000000" value="120" /></label>
           <svg id="sketch-canvas" viewBox="-60 -40 120 80" aria-label="Sketch in local mm"></svg>
           <p id="sketch-diagnostics"></p>
+          <form id="sketch-construction-form">
+            <h3>Construction geometry</h3>
+            <label>Selected source <select id="construction-target" aria-describedby="construction-info"></select></label>
+            <p id="construction-info" aria-live="polite"></p>
+            <button id="construction-review" type="submit" disabled>Choose geometry</button>
+          </form>
           <form id="sketch-constraint-form">
             <h3>Constrain selected geometry</h3>
             <p>Choose a source curve or point on the canvas. Shift-click a second point for a pair, or choose the targets below. Review before applying.</p>

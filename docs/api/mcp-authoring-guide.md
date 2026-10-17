@@ -1777,3 +1777,30 @@ nonconvergence without changing solver policy or exposing mixed-unit residuals.
 A refusal retains all source/history/publication. Use separate verified removal
 and fresh addition when needed; same-patch remove/reuse of an ID remains forbidden.
 No arc/ellipse radius or cubic-control admission is added (ADR-106).
+
+
+## Selected construction geometry (P17-009)
+
+Follow [the flag-only example](../../examples/agent/toggle_selected_construction.json)
+and [the sketch API](sketch-editing.md). Inspect `construction_targets` for
+existing authored points/lines/circles/ellipses/arcs and their current flags.
+It differs from `constraint_targets`: an ellipse is eligible for its flag,
+without becoming eligible for a circle-radius constraint. Cubic controls,
+stored helpers/derived IDs and projected geometry remain excluded.
+
+Use only `{operation:"construction", id, construction}` in a current
+identity/revision-bound plan/apply request to change a flag. Preserve coordinates,
+units/expressions, references, constraints, owners and datum associations.
+Inspect `profile_effect.before/after` exact closed loops and `.consumers`, plus
+verified volume. Construction curves leave profiles; point flags do not remove
+curves using that point. Ordinary open curves need not form a closed loop.
+Existing consumers must retain their exact membership; a consumed circle cannot
+be made construction by silently rebinding, suppressing or removing its solid.
+
+Example final circle V=600*pi mm³, A=320*pi mm²; +5 mm XY datum bounds
+(-8,-13,5)..(12,7,11) mm, COM (2,-3,8) mm. `toggle_selected_construction`
+grades exact source flags (including the unconsumed ordinary ellipse), unchanged
+`1 cm` circle/`15 mm + 15 mm` ellipse expressions and prior source, plus a fresh
+native SI mesh's volume, bounds, COM and oriented closure. Equal mass alone is
+insufficient. Use opaque canonical Undo/Redo; refusals preserve source/history.
+No model calls or native mouse-event coverage is claimed by typed MCP tests.

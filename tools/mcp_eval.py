@@ -527,6 +527,20 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_selected_construction" in task:
+        from selected_construction_eval import source_problems, placed_problems, graph_source
+        desired=task['expected_selected_construction']
+        problems.extend(source_problems(document,desired,graph_source(ROOT/task['source'])))
+        if musubicad is None:
+            problems.append("construction grader requires fresh native physical export")
+        elif not problems:
+            try:
+                with tempfile.TemporaryDirectory(prefix="musubicad-construction-grade-") as folder:
+                    target=Path(folder)/"actual.stl"
+                    result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                    problems.extend(placed_problems(target.read_bytes(),desired['case']) if result.returncode==0 else ["construction physical export failed"])
+            except (OSError,subprocess.TimeoutExpired):
+                problems.append("construction physical export unavailable")
     if "expected_selected_constraints" in task:
         from selected_constraint_eval import source_problems, placed_problems, graph_source, solved_problems
         desired=task['expected_selected_constraints']

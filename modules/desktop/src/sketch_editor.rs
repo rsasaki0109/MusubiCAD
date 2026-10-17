@@ -36,6 +36,32 @@ pub struct SketchEditorRow {
     pub resolved_frame: ResolvedSketchFrame,
     pub constraint_targets: SketchConstraintTargets,
     pub suggested_constraint_id: String,
+    pub construction_targets: Vec<SketchConstructionTarget>,
+}
+/// Disposable source eligibility, independent of constraint-target admission.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SketchConstructionTarget {
+    pub id: String,
+    pub kind: String,
+    pub construction: bool,
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SketchClosedProfile {
+    pub profile_ref: String,
+    pub entity_ids: Vec<String>,
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SketchProfileConsumer {
+    pub feature_id: String,
+    pub profile_ref: String,
+    pub suppressed: bool,
+}
+/// Prepared backend loops, never frontend-inferred eligibility or bindings.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SketchProfileEffect {
+    pub before: Vec<SketchClosedProfile>,
+    pub after: Vec<SketchClosedProfile>,
+    pub consumers: Vec<SketchProfileConsumer>,
 }
 /// Disposable source catalogue; the planner still rechecks every target.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -152,6 +178,55 @@ pub struct SketchEditPlan {
     pub patch: DesignPatch,
     pub state: SketchEditorState,
     pub evidence: EditorEvidence,
+    pub profile_effect: SketchProfileEffect,
+}
+
+fn construction_kind(sketch: &Sketch, entity: &SketchEntity) -> Option<&'static str> {
+    match entity {
+        SketchEntity::Point(_) if point_constraint_allowed(sketch, entity.id().as_str()) => {
+            Some("point")
+        }
+        SketchEntity::Line(_) => Some("line"),
+        SketchEntity::Circle(_) => Some("circle"),
+        SketchEntity::Ellipse(_) => Some("ellipse"),
+        SketchEntity::Arc(_) => Some("arc"),
+        _ => None,
+    }
+}
+fn closed_profiles(sketch: &Sketch) -> Result<Vec<SketchClosedProfile>> {
+    let mut prepared = sketch.clone();
+    opencad_feature::prepare_sketch(&mut prepared)?;
+    Ok(prepared
+        .profiles
+        .iter()
+        .filter(|p| p.is_closed())
+        .map(|p| SketchClosedProfile {
+            profile_ref: p.profile_ref.clone().unwrap_or_else(|| p.id.clone()),
+            entity_ids: p.entity_ids.iter().map(|id| id.as_str().into()).collect(),
+        })
+        .collect())
+}
+fn profile_consumers(doc: &OcadDocument, sketch_id: &str) -> Vec<SketchProfileConsumer> {
+    let owners: Vec<_> = doc
+        .feature_nodes
+        .iter()
+        .filter(|n| n.definition.sketch_output_id() == Some(sketch_id))
+        .map(|n| n.id.as_str())
+        .collect();
+    doc.feature_nodes
+        .iter()
+        .flat_map(|node| {
+            node.definition
+                .profile_inputs()
+                .into_iter()
+                .filter(|(owner, _)| owners.contains(owner))
+                .map(|(_, reference)| SketchProfileConsumer {
+                    feature_id: node.id.clone(),
+                    profile_ref: reference.into(),
+                    suppressed: node.suppressed,
+                })
+        })
+        .collect()
 }
 
 fn point_constraint_allowed(sketch: &Sketch, id: &str) -> bool {
@@ -281,6 +356,17 @@ pub fn sketch_editor_state_with_kernel<K: GeometryKernel>(
         sketches.push(SketchEditorRow {
             constraint_targets: constraint_targets(sketch),
             suggested_constraint_id: suggested_constraint_id(sketch),
+            construction_targets: sketch
+                .entities
+                .iter()
+                .filter_map(|entity| {
+                    construction_kind(sketch, entity).map(|kind| SketchConstructionTarget {
+                        id: entity.id().as_str().into(),
+                        kind: kind.into(),
+                        construction: entity.is_construction(),
+                    })
+                })
+                .collect(),
             source: sketch.clone(),
             solved,
             workplane_label,
@@ -484,16 +570,11 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
             }
         }
         if let SketchForm::Construction { id, .. } = form {
-            if !matches!(
-                sketch.find_entity(id),
-                Some(
-                    SketchEntity::Point(_)
-                        | SketchEntity::Line(_)
-                        | SketchEntity::Circle(_)
-                        | SketchEntity::Ellipse(_)
-                        | SketchEntity::Arc(_)
-                )
-            ) {
+            if sketch
+                .find_entity(id)
+                .and_then(|e| construction_kind(sketch, e))
+                .is_none()
+            {
                 return Err(OpenCadError::validation(
                     "unsupported construction entity in sketch editor",
                 ));
@@ -693,6 +774,11 @@ pub fn plan_sketch_edit_with_kernel<K: GeometryKernel>(
         patch,
         state,
         evidence,
+        profile_effect: SketchProfileEffect {
+            before: closed_profiles(authored(doc, &edit.sketch_id)?)?,
+            after: closed_profiles(source)?,
+            consumers: profile_consumers(doc, &edit.sketch_id),
+        },
     })
 }
 pub fn apply_sketch_edit_with_kernel<K: GeometryKernel>(

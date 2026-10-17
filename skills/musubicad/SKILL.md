@@ -1269,3 +1269,29 @@ source/history/publication preservation. No same-patch removed-ID reuse,
 in-place dimension-value promise, arc/ellipse radius or cubic-control admission.
 Native reviews share existing guarded transactions and cancellation/late IPC
 handling; ADR-106 preserves solver policy, units, schemas and source ownership.
+
+
+### Selected construction geometry (P17-009)
+
+Use [the flag-only example](../../examples/agent/toggle_selected_construction.json)
+and [API](../../docs/api/sketch-editing.md). Inspect current source-bound
+`construction_targets` (point/line/circle/ellipse/arc plus flags), separately
+from constraint eligibility. Send only typed `construction` with exact ID and
+explicit flag through revision/identity-guarded plan/apply. Preserve all source
+coordinates, unit expressions, constraints, owner and workplane; changing a flag
+does not require rebuilding numeric circle/ellipse geometry.
+
+Review backend `profile_effect` closed loops before/after and existing consumers,
+plus verified candidate volume. Construction curves leave profiles. A point
+flag changes only that point and leaves referencing curves eligible. Ordinary
+open curves do not promise a closed profile. Unchanged consumer loop membership
+must remain; a consumed-profile toggle must refuse atomically. Do not silently
+rebind/suppress/remove consumers. Cubic/helper/derived/projected targets remain
+outside the admitted controls; no geometry/solver/schema expansion.
+
+Use canonical opaque history. Grade `toggle_selected_construction` with intended
+source flags/expressions and fresh native SI physical output: V=600*pi mm³,
++5 mm datum bounds (-8,-13,5)..(12,7,11) mm, COM (2,-3,8) mm. An unconsumed
+ellipse's wrong flag or a numeric rewrite of `1 cm` can produce identical solid
+mass and must fail source grading. Native controls additionally require actual
+Linux/Windows DOM/IPC acceptance; typed MCP expresses source intent only.
