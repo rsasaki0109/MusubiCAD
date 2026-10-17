@@ -1,0 +1,28 @@
+{
+  "task": "MCAD-P17-021",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Preserve authored arithmetic and parameter expressions while solving ordinary point and circle lengths in SI before geometry or analytic intersection planning.",
+  "parameters": [
+    {"id":"param:origin_x","name":"origin_x","expr":"1 mm"},
+    {"id":"param:origin_y","name":"origin_y","expr":"-2 mm"},
+    {"id":"param:diameter","name":"diameter","expr":"20 mm"}
+  ],
+  "primitives": [
+    {"operation":"point","id":"ent:center","x":"origin_x + 1 mm","y":"origin_y - 1 mm","create":true},
+    {"operation":"point","id":"ent:left","x":"origin_x - 19 mm","y":"origin_y + 5 mm","create":true},
+    {"operation":"point","id":"ent:right","x":"origin_x + 21 mm","y":"origin_y + 5 mm","create":true},
+    {"operation":"line","id":"ent:guide","start":"ent:left","end":"ent:right","construction":true},
+    {"operation":"circle","id":"ent:disc","center":"ent:center","radius":"5 mm + 5 mm","construction":false,"create":true}
+  ],
+  "parameter_radius": {"operation":"circle","id":"ent:disc","center":"ent:center","radius":"diameter / 4 + 5 mm","construction":false,"create":false},
+  "steps": [
+    "Add the three named length parameters through DesignPatch. Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum with current identity/revision.",
+    "Review/apply primitives through plan_sketch_edit/apply_sketch_edit. Inspect solved centre (2,-3) mm, radius 10 mm and unchanged authored arithmetic strings.",
+    "Extrude a 6 mm NewBody feature:disc_body of profile:circle:ent:disc. Review/apply parameter_radius. The authored radius changes while physical radius remains 10 mm; Undo/Redo must retain both exact source forms.",
+    "Read-only plan_curve_edit of ent:guide with cutter ent:disc, mode trim, end end, new_point_id ent:cut_end, intersection_index 1 yields (10,3) mm; index 0 yields (-6,3) mm. Omitting the branch refuses.",
+    "Reject angle/unknown units, unknown or angle-named length parameters and division by zero. Preserve source, history and publication on refusal.",
+    "Grade exact source expressions/dependencies and fresh native SI STL, not the reported volume alone."
+  ],
+  "analytic_final": {"volume_mm3":"600*pi","surface_area_mm2":"320*pi","bounds_mm":{"min":[-8,-13,5],"max":[12,7,11]},"centroid_mm":[2,-3,8]},
+  "compatibility": "ADR-108; existing expression grammar and geometry. Literal Coord numbers remain SI. Constraints drive seeds as before. No new UI control, schema or score."
+}

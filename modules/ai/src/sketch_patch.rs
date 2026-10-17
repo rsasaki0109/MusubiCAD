@@ -284,6 +284,7 @@ pub(crate) fn validate_sketch_candidate(
                     s.entities
                         .iter()
                         .any(|e| matches!(e, SketchEntity::CubicBezier(_)))
+                        || has_source_lengths(s)
                 })
                 .map(|s| s.id.as_str()),
         );
@@ -479,12 +480,37 @@ pub(crate) fn validate_construction_bindings(
     }
 }
 
+fn has_source_lengths(sketch: &Sketch) -> bool {
+    sketch.entities.iter().any(|entity| match entity {
+        SketchEntity::Point(point) => {
+            matches!(point.x, opencad_sketch::Coord::Expr(_))
+                || matches!(point.y, opencad_sketch::Coord::Expr(_))
+        }
+        SketchEntity::Circle(circle) => matches!(circle.radius, opencad_sketch::Coord::Expr(_)),
+        SketchEntity::Arc(arc) => matches!(arc.radius, opencad_sketch::Coord::Expr(_)),
+        _ => false,
+    })
+}
+
 pub(crate) fn validate_sketch_references(
     sketch: &Sketch,
     after: &DesignState,
     failures: &mut BTreeSet<String>,
 ) {
     let sketch_id = sketch.id.as_str();
+    // Validate expression seeds, independently of constraint solvability. Raw
+    // patches must not admit units that a later solver would silently discard.
+    if has_source_lengths(sketch) {
+        let lengths =
+            opencad_graph::evaluate_param_graph_strict(&after.parameters).and_then(|scope| {
+                opencad_feature::param_apply::validate_sketch_source_lengths(sketch, &scope)
+            });
+        if let Err(error) = lengths {
+            failures.insert(format!(
+                "sketch '{sketch_id}': source lengths invalid: {error}"
+            ));
+        }
+    }
     if sketch
         .entities
         .iter()

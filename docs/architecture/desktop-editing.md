@@ -204,3 +204,16 @@ after the existing 44 groups. Both-kernel placed physical/source/refusal/history
 checks and real MCP/Agent parity plus independent source/fresh SI grading are
 required separately. Wrong unconsumed flags and equal-volume wrong placement
 fail grading; no repeated checkbox/geometry/solver/host maturity credit.
+
+
+ADR-108 / P17-021 corrects the existing expression-to-solver boundary before
+P17-010 controls. Ordinary point x/y and circle radii resolve on disposable
+inspection/regeneration copies using the existing strict length evaluator, as
+cubic controls and arc/ellipse sources already did. Parameter-only raw patches
+validate expression-backed source lengths without introducing a whole-sketch
+constraint-admission rule. Analytic curve-edit/offset planners evaluate a strict
+current parameter scope. The low-level literal parser/radius seed rejects
+unresolved/invalid units rather than silently treating them as metres or zero.
+Authored graph source is preserved; regenerate a fresh PartModel from current
+source after parameter changes, including when reusing RegenerationCache. No
+new persisted fields, geometry admission, solver constraint or native control.

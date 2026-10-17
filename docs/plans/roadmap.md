@@ -1048,9 +1048,10 @@ workplanes. Preserve the original fixed maturity rubric and ADR-058's backend
 ownership. P14's existing feature editing and point/line/circle/ellipse forms
 receive no duplicate credit. P16-008 completed in PR #148; its explicitly
 faceted approximation receives no additional score. The merged baseline before
-P17-009 is weighted CAD 53.95, GUI 54 and agent operation 95 after
-P17-008 / PR #157. The new usable selected-constraint lifecycle and actual backend
-diagnostics earned GUI 53 to 54; existing geometry/solver received no repeat credit.
+P17-010 is weighted CAD 54.10, GUI 55 and agent operation 95 after
+P17-009 / PR #158. Source-selected flag-only construction controls and explicit
+backend profile/solid consequences earned GUI 54 to 55; existing operations,
+geometry/solver and host coverage received no repeat credit.
 
 **Dependencies:** completed Phase 14 shared DesignPatch/verification/history
 gateways; existing sketch entities, solver, datum and modeling admission
@@ -1072,8 +1073,9 @@ ADR rather than silently broadening a UI task.
 | MCAD-P17-006 | Draft admitted arcs with pointer controls | Depends on P17-020 physical kernel parity. Explicit center/endpoints and orientation/branch, bounded existing arc representation, reviewed atomic source commit; branch/degeneracy/refusal and independent arc/profile measurements; no sampling admission by UI; ADR-104 | Complete: PR #155 |
 | MCAD-P17-007 | Draft ellipses with pointer controls | Centre/major endpoint/point-on-ellipse gesture, explicit units and backend-owned two-entity expansion; preserve existing analytic ellipse admission, independent placed area/solid dimensions, invalid-axis/refusal/history and new native Linux/Windows evidence; ADR-105 | Complete: PR #156 |
 | MCAD-P17-008 | Interact with sketch dimensions and constraints | ADR-106: source-selected admitted points/lines/circles, usable add/remove dimension/constraint controls, backend target catalogue and DOF/contradiction diagnostics, atomic reviewed changes; independent placed physical results and actual new native Linux/Windows controls; no repeat raw-form/solver/geometry credit or ellipse constraints | Complete: PR #157 |
-| MCAD-P17-009 | Edit construction geometry through direct selection | ADR-107: backend-catalogued authored points/lines/circles/ellipses/arcs; direct selection and explicit reviewed flag-only controls, backend before/after closed loops and consumers plus verified solid consequences; source expression/identity, refusal/history, both-kernel and actual Linux/Windows evidence; no duplicate raw-checkbox credit | In progress |
-| MCAD-P17-010 | Trim sketches through reviewed native controls | Exact admitted trim/extend planner, explicit source targets/branch and profile consequences, bounded backend operations and protected history; unsupported intersections refuse | Planned |
+| MCAD-P17-009 | Edit construction geometry through direct selection | ADR-107: backend-catalogued authored points/lines/circles/ellipses/arcs; direct selection and explicit reviewed flag-only controls, backend before/after closed loops and consumers plus verified solid consequences; source expression/identity, refusal/history, both-kernel and actual Linux/Windows evidence; no duplicate raw-checkbox credit | Complete: PR #158 |
+| MCAD-P17-021 | Resolve point and circle source lengths before solving | Prerequisite to P17-010: ADR-108, existing strict expression evaluator on disposable ordinary point/circle source, explicit length/angle scope checks, fail-closed low-level literals/radius seeds; independently measured placed solids in analytic Mock/native OCCT, exact intersection/source/refusal/history/round-trip/MCP evidence; no UI or score credit | In progress |
+| MCAD-P17-010 | Trim sketches through reviewed native controls | Depends on P17-021 source-length correctness. Exact admitted trim/extend planner, explicit source targets/branch and profile consequences, bounded backend operations and protected history; unsupported intersections refuse | Planned |
 | MCAD-P17-011 | Offset sketches through reviewed native controls | Existing admitted literal offset planner, explicit distance/side/source selection and reviewed generated IDs; independent dimensions and history; no claim of associative offset without its later source contract | Planned |
 | MCAD-P17-012 | Create admitted holes through native controls | Backend-owned stock/entry/axis selection and unit-bearing hole/seat forms for explicitly advertised existing admission; independently checked removal volume/contact dimensions and failure isolation | Planned |
 | MCAD-P17-013 | Create admitted revolves through native controls | Explicit profile, admitted axis and angular units/extent; existing backend guards, independent volume/bounds/placement and native review/apply/history evidence | Planned |

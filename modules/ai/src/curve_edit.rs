@@ -63,7 +63,7 @@ pub fn plan_curve_edit(state: &DesignState, request: &CurveEditRequest) -> Resul
             .ok_or_else(|| OpenCadError::not_found(format!("constraint '{id}'")))?;
         prepared.constraints.remove(position);
     }
-    let values = opencad_graph::evaluate_param_graph(&state.parameters)?;
+    let values = opencad_graph::evaluate_param_graph_strict(&state.parameters)?;
     // Geometry for the cut comes from the original valid solution. Removal is
     // checked separately; it must not change the selected original intersection.
     let solved = opencad_feature::param_apply::solved_sketch_copy(source, &values)?;

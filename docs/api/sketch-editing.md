@@ -44,9 +44,11 @@ frames are never accepted as mutation intent or written over source references.
 | `remove_constraint` | Existing constraint `id` |
 
 Coordinates and dimensions carry explicit units, for example `0 mm`, `25 mm`
-and `30 deg`. Same-kind named parameters use the existing expression resolver;
-point/circle source parameter expressions that the current solver cannot resolve
-refuse rather than losing the expression. Radius/distance must be positive,
+and `30 deg`. Same-kind named parameters use the existing expression resolver.
+ADR-108 resolves ordinary point coordinates and circle radii before solving,
+including `origin_x + 1 mm` and `diameter / 4 + 5 mm`, while retaining the exact
+authored expressions. Invalid/angle units or parameter kinds, unknown names and
+non-finite results refuse before solving. Radius/distance must be positive,
 coordinates finite within 1e6 SI units, and ellipse admission remains unchanged.
 Point replacement preserves its construction flag. Primitive replacements
 preserve primitive kind; constraints are added/removed by stable ID.
@@ -346,3 +348,15 @@ final point flag does not remove the consumed circle. Both kernels check
 V=600*pi mm³, A=320*pi mm² and independent placed bounds/COM/meshes.
 Eval `toggle_selected_construction` grades exact flags/source and fresh native
 SI output; a wrong unconsumed ellipse flag fails despite identical solid mass.
+
+
+ADR-108 also applies strict parameter evaluation to analytic curve-edit/offset
+planning and raw source-length patch validation.
+`opencad_feature::param_apply::validate_sketch_source_lengths(sketch, scope)`
+validates point/radius source without mutation or constraint admission; supply
+a strictly evaluated SI scope. `solved_sketch_copy` resolves those lengths on
+a clone before solving. The low-level `parse_length_expr` deliberately accepts
+only finite simple literals and known length units; arithmetic/parameters belong
+to the higher-level evaluator. See
+[the source-length example](../../examples/agent/resolve_sketch_source_lengths.json)
+and eval `resolve_sketch_source_lengths`. No `.ocad` codec/schema changes.
