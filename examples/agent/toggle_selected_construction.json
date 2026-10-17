@@ -1,0 +1,27 @@
+{
+  "task": "MCAD-P17-009",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Select existing source geometry and change only its construction flag. Keep coordinates, expressions, constraints, stable IDs, owner and datum association.",
+  "steps": [
+    "Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum using current identity/revision. Plan/apply the primitives below through the existing typed sketch gateway.",
+    "Inspect construction_targets (separate from constraint_targets). Select ent:disc and plan operation construction=false: profile_effect goes from zero to one closed loop. Review does not publish source.",
+    "Apply that flag-only operation, then create a 6 mm NewBody extrusion feature:disc_body of profile:circle:ent:disc.",
+    "Plan/apply ent:ellipse construction=false: one to two closed profiles, with existing circle consumer unchanged. Plan/apply ent:a construction=true: two to two closed profiles; a point flag does not remove curves using that point.",
+    "Inspect the exact original expressions, including radius '1 cm'. The unconsumed ellipse has construction=false; grade it independently of solid volume.",
+    "Attempt ent:disc construction=true: the consumer loop would disappear and must refuse atomically. Undo/Redo restores complete source and flags through opaque history."
+  ],
+  "primitives": [
+    {"operation":"point","id":"ent:a","x":"2 mm","y":"-3 mm","create":true},
+    {"operation":"point","id":"ent:b","x":"26 mm","y":"15 mm","create":true},
+    {"operation":"line","id":"ent:guide","start":"ent:a","end":"ent:b","construction":true},
+    {"operation":"circle","id":"ent:disc","center":"ent:a","radius":"1 cm","construction":true,"create":true},
+    {"operation":"ellipse","id":"ent:ellipse","center":"ent:a","major_radius":"15 mm + 15 mm","minor_radius":"20 mm","axis_angle":"30 deg","construction":true,"create":true}
+  ],
+  "ordinary_circle": [{"operation":"construction","id":"ent:disc","construction":false}],
+  "final_flags": [
+    {"operation":"construction","id":"ent:ellipse","construction":false},
+    {"operation":"construction","id":"ent:a","construction":true}
+  ],
+  "analytic_final": {"volume_mm3":"600*pi","surface_area_mm2":"320*pi","bounds_mm":{"min":[-8,-13,5],"max":[12,7,11]},"centroid_mm":[2,-3,8]},
+  "compatibility": "ADR-107; existing authored point/line/circle/ellipse/arc flags only. Construction point flags do not remove referencing curves. Existing consumers must retain exact profile membership. No new geometry, solver, sampler, schema or cubic/helper editing. MCP expresses typed intent, not mouse events."
+}

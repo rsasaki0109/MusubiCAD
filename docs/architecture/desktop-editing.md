@@ -182,3 +182,25 @@ existing 38 groups. New actual Linux/Windows controls, both-kernel independent
 physics and actual MCP/Agent parity/fresh SI grading are separate acceptance
 requirements. Source grading also rejects a direct radius overwrite producing
 the same solid. No duplicate solver/geometry/host credit.
+
+
+## Source-selected construction flags (ADR-107)
+
+[ADR-107](../adr/ADR-107-selected-construction-geometry.md) uses the existing
+SketchEdit/SetSketchConstruction transaction and history boundary. Backend
+`construction_targets` uses the same authored-target predicate as planning,
+independent of the constraint catalogue. No frontend numeric reconstruction,
+profile inference, source mutation, schema or geometry/solver expansion.
+
+Plans expose prepared before/after closed loops and existing profile consumers.
+UI displays exact loop consequences and verified candidate solid evidence.
+Point flags do not remove referencing curves. Existing consumed-loop binding
+and solve/assertion/native publication guards remain mandatory. Current source
+catalogues drive selection even during candidate previews; target/control/file/
+upstream changes and Escape invalidate the shared review sequence and late IPC.
+
+Both actual native drivers append six unconditional construction-control groups
+after the existing 44 groups. Both-kernel placed physical/source/refusal/history
+checks and real MCP/Agent parity plus independent source/fresh SI grading are
+required separately. Wrong unconsumed flags and equal-volume wrong placement
+fail grading; no repeated checkbox/geometry/solver/host maturity credit.

@@ -8,6 +8,7 @@ import {checkPointerRectangles} from './pointer_rectangle_ui_checks.mjs';
 import {checkPointerArcs} from './pointer_arc_ui_checks.mjs';
 import {checkPointerEllipses} from './pointer_ellipse_ui_checks.mjs';
 import {checkSelectedConstraints} from './selected_constraint_ui_checks.mjs';
+import {checkSelectedConstruction} from './selected_construction_ui_checks.mjs';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -121,5 +122,6 @@ try {
   results.push(...await checkPointerArcs({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkPointerEllipses({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkSelectedConstraints({evaluate,until,source,logicalSource,partPath}));
+  results.push(...await checkSelectedConstruction({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_windows_tauri_webview2_forms:'passed',webview_url:pages[0].url,results}, null, 2));
 } finally { socket.close(); }

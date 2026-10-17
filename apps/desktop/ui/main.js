@@ -1108,7 +1108,22 @@ function clearSketchDraft(keepConstraintSelection = false) {
   if (!keepConstraintSelection) {
     sketchConstraintSelection=[];
     for(const id of ["constraint-target-a","constraint-target-b","constraint-remove"])document.getElementById(id).value="";
+    document.getElementById("construction-target").value="";
   }
+}
+function renderConstructionControls(row) {
+  const select=document.getElementById("construction-target"),old=select.value;select.replaceChildren();
+  const empty=document.createElement("option");empty.value="";empty.textContent="Choose source geometry";select.append(empty);
+  for(const target of row?.construction_targets??[]) {
+    const option=document.createElement("option");option.value=target.id;
+    option.textContent=`${target.kind} · ${target.id} · ${target.construction?"construction":"ordinary"}`;select.append(option);
+  }
+  select.value=[...select.options].some(o=>o.value===old)?old:"";
+  const target=row?.construction_targets.find(t=>t.id===select.value),button=document.getElementById("construction-review");
+  button.disabled=!target;button.textContent=target?`Review make ${target.construction?"ordinary":"construction"}`:"Choose geometry";
+  document.getElementById("construction-info").textContent=target?
+    `${target.id} is ${target.construction?"construction":"ordinary"}. ${target.kind==="point"?"A point flag affects this point only; curves using it remain eligible for profiles.":"Construction curves are excluded from profiles; an ordinary open curve may still form no closed profile."} Review shows closed loops and verified solid consequences. Existing consumers must retain their exact loop.`:
+    "Select a source point or curve on the canvas, or choose one above. Coordinates, expressions and constraints are preserved.";
 }
 function sketchSolveLabel(state) {
   if(state.status==="under_constrained")return `Underconstrained · ${state.dof} DOF`;
@@ -1160,7 +1175,7 @@ function renderSketchEditor(state) {
   drawSketch();
 }
 function drawSketch(row = sketchRow()) {
-  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; renderSketchConstraintControls(null); return; }
+  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; renderSketchConstraintControls(null); renderConstructionControls(null); return; }
   const span=Number(document.getElementById("sketch-span").value); if (!Number.isFinite(span)||span<=0) return;
   sketchCanvas.setAttribute("viewBox", `${-span/2} ${-span/3} ${span} ${span*2/3}`);
   const entities=row.solved.entities;
@@ -1180,9 +1195,11 @@ function drawSketch(row = sketchRow()) {
     }
   }
   const authored=new Set(row.source.entities.filter(e=>e.type==="point").map(e=>e.id));
-  for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:"sketch-point"},p.id);
+  for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:p.construction?"sketch-point construction":"sketch-point"},p.id);
   renderSketchConstraintControls(sketchRow());
-  for(const element of sketchCanvas.querySelectorAll("[data-source-id]"))if(sketchConstraintSelection.includes(element.dataset.sourceId))element.classList.add("sketch-selected");
+  renderConstructionControls(sketchRow());
+  const constructionTarget=document.getElementById("construction-target").value;
+  for(const element of sketchCanvas.querySelectorAll("[data-source-id]"))if(sketchConstraintSelection.includes(element.dataset.sourceId)||element.dataset.sourceId===constructionTarget)element.classList.add("sketch-selected");
   document.getElementById("sketch-diagnostics").textContent=`${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${sketchSolveLabel(row.solved.solve_state)} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arcs support pointer creation and construction selection; radius/angle field editing, cubic and stored rectangle-helper editing remain outside this form scope.`;
 }
 function draftPoint(event) {
@@ -1272,6 +1289,10 @@ sketchCanvas.addEventListener("click",event=> {
   const id=event.target.dataset.sourceId;
   const source=sketchRow().source.entities.find(e=>e.id===id);
   if(source)selectSketchConstraintTarget(id,event.shiftKey);
+  if(source) {
+    document.getElementById("construction-target").value=sketchRow().construction_targets.some(t=>t.id===id)?id:"";
+    drawSketch();
+  }
   if(source?.type==="point") { document.getElementById("sketch-action").value="point";document.getElementById("sketch-id").value=id;document.getElementById("sketch-create").checked=false; }
   else if(source?.type==="line"||source?.type==="arc") { document.getElementById("sketch-action").value="construction";document.getElementById("sketch-id").value=id;document.getElementById("sketch-a").value=id;document.getElementById("sketch-construction").checked=source.construction;sketchDraft=null;return; }
   else if(source?.type==="circle"||source?.type==="ellipse") {
@@ -1316,9 +1337,24 @@ async function reviewSketchOperations(operations) {
   const edit={document_id:sketchEditorState.document_id,revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations};sketchBusy=true;
   try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
     reviewedSketch={path,edit}; const row=plan.state.sketches.find(r=>r.source.id===edit.sketch_id);drawSketch(row);
-    document.getElementById("sketch-effect").textContent=`${sketchSolveLabel(row.solved.solve_state)}. Verified volume: ${plan.evidence.volume_m3==null?"—":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}. ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
+    const loops=profiles=>profiles.length?profiles.map(p=>`${p.profile_ref} [${p.entity_ids.join(", ")}]`).join("; "):"none";
+    const profiles=edit.operations.some(o=>o.operation==="construction")?
+      ` Closed profiles: ${plan.profile_effect.before.length} → ${plan.profile_effect.after.length}. Before: ${loops(plan.profile_effect.before)}. After: ${loops(plan.profile_effect.after)}. Consumers: ${plan.profile_effect.consumers.length?plan.profile_effect.consumers.map(c=>`${c.feature_id} → ${c.profile_ref}${c.suppressed?" (suppressed)":""}`).join("; ")+" (existing loop bindings retained)":"none"}.`:"";
+    document.getElementById("sketch-effect").textContent=`${sketchSolveLabel(row.solved.solve_state)}. Verified volume: ${plan.evidence.volume_m3==null?"No solid":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}.${profiles} ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
   }catch(error){if(seq===sketchReviewSequence){clearSketchDraft();drawSketch();setStatus(`Sketch refused: ${error}`);}}finally{sketchBusy=false;}
 }
+document.getElementById("construction-target").addEventListener("change",()=>{
+  const target=document.getElementById("construction-target").value;clearSketchDraft();
+  document.getElementById("construction-target").value=target;drawSketch();
+});
+document.getElementById("sketch-construction-form").addEventListener("submit",async event=>{
+  event.preventDefault();if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
+  const target=sketchRow().construction_targets.find(t=>t.id===document.getElementById("construction-target").value);
+  if(!target){setStatus("Choose admitted source geometry.");return;}
+  const form={operation:"construction",id:target.id,construction:!target.construction};
+  clearSketchDraft(true);document.getElementById("sketch-tool").value="select";drawSketch();
+  await reviewSketchOperations([form]);
+});
 document.getElementById("sketch-constraint-form").addEventListener("submit",async event=>{
   event.preventDefault();if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
   const row=sketchRow(),operation=document.getElementById("constraint-kind").value,a=document.getElementById("constraint-target-a").value,b=document.getElementById("constraint-target-b").value,expr=document.getElementById("constraint-value").value.trim();
@@ -1348,7 +1384,7 @@ document.getElementById("sketch-apply").addEventListener("click",async()=> {
 document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
 document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});
 document.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch||sketchConstraintSelection.length)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
+  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch||sketchConstraintSelection.length||document.getElementById("construction-target").value)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
 });
 
 // Creation drafts contain only typed intent; the backend owns IDs and source.

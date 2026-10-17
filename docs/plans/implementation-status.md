@@ -1923,3 +1923,55 @@ Eval self-test, Desktop policy, repository hygiene, changed-document local links
 JavaScript/Python syntax and whitespace checks pass. Actual new Windows controls
 and the complete exact-head CI inventory remain required for its qualifying
 main merge and conditional GUI credit. No score is awarded before that merge.
+
+P17-008 completed in PR #157: merge 9956038284a9a64086db1c1944708bb2c48a15bc,
+tested head d162f394cb525856f43da75f74d9f5c217bac785, tested base
+ed41a31fcb85eec970358405860f4cc475426585. Exact parents, identical tested/merged
+trees and clean synchronized main were verified. Four workflows/full eleven
+jobs passed (ten successes, expected skipped publisher): CI 38998735639,
+Design Review 38998735685, Desktop 38998735669, Release 38998735743.
+Actual Linux and Windows native 44-group acceptance passed, including the six
+new selected-constraint groups. Windows step job 117296958743 succeeded
+2026-10-17 03:30:46–03:31:44 UTC. All four local checks passed; workspace tests
+1328 passed, zero failed, 37 existing ignored across 201 suites. New native
+source-selected constraint controls/diagnostics earn GUI 53 to 54, weighted
+CAD 53.80 to 53.95; agent operation remains 95. No repeated solver/geometry credit.
+
+P17-009 begins from that clean main under ADR-107: dedicated source-selected
+flag-only construction controls, independent backend eligibility, and backend
+before/after closed loops plus consumer/verified-solid consequences. Existing
+DesignPatch, solve/profile/assertion/publication/history gates stay unchanged.
+Both-kernel source/physical/refusal/history and actual new Linux/Windows controls,
+MCP/Agent parity and independent grading, examples/docs and all checks/CI remain
+required. No score is awarded before its qualifying main merge.
+
+P17-009 implements backend source construction eligibility/current flags and
+prepared closed-profile/consumer consequences. Dedicated canvas/dropdown controls
+review only SetSketchConstruction, preserving all other source expressions and
+IDs through the existing verified plan/apply/history boundary. Six new desktop
+regressions pass: all admitted families, point semantics, genuine analytic
+Mock/native OCCT placed circle V=600*pi mm3/A=320*pi mm2 and meshes, exact Mock
+ellipse records, consumed ellipse/rectangle/circle and outer-alias refusal,
+required assertions, no-op/stale/cubic/helper exclusion and packed/expanded
+history. No synthetic Mock mass is used as physical evidence.
+
+Five actual MCP/Agent placement cases pass with real target/profile inspection,
+flag-only parity, source/history/refusal and independent exact source plus
+fresh native SI grading. Wrong unconsumed flags, equivalent-unit numeric
+rewrites and equal-volume translated output fail grading. Example, ADR-107,
+API/architecture, MCP guide, skill and eval are included. Locked Tauri build,
+JavaScript/Python syntax, eval self-test, Desktop policy and hygiene pass.
+Six new control groups are appended unconditionally after the existing 44 in
+both native drivers. Local actual Linux GUI execution was interrupted while
+requesting its required environment GUI permission; it is not claimed as run.
+All four final local mandatory checks, actual Linux/Windows controls and the
+complete exact-head CI inventory still gate completion/merge/conditional credit.
+
+All four final P17-009 local checks passed: formatting, workspace/all-target
+Clippy with denied warnings, workspace tests (1335 passed, zero failed,
+37 existing ignored across 203 suites), and the agent-plugin contract.
+The locked Tauri build and static syntax/policy/hygiene/link/eval checks pass.
+Actual new Linux native 50-group controls remain unrun because environment GUI
+launch approval was interrupted. Actual new Windows acceptance and complete
+exact-head CI also remain required. This task stays in progress/draft until
+all native/CI gates pass; no P17-009 score is awarded before qualifying merge.

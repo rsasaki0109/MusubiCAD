@@ -306,3 +306,43 @@ SI output. A direct radius overwrite with the same solid fails source grading.
 These controls add/remove constraints. They do not edit a dimension value
 in place: removing and reusing an ID inside one patch still refuses. Arc/ellipse
 radius, cubic controls and new solver/geometry families remain outside scope.
+
+
+## Selected construction geometry (MCAD-P17-009)
+
+[ADR-107](../adr/ADR-107-selected-construction-geometry.md) adds disposable
+`construction_targets: [{ id, kind, construction }]` to each sketch editor row,
+in authored order. Eligible kinds are point, line, circle, ellipse and arc.
+Cubic controls/entities, stored rectangle helpers and their derived members,
+and projected geometry are excluded. This catalogue is separate from the
+circle-only radius constraint catalogue; the backend rechecks eligibility.
+No `.ocad` schema, migration or mutation operation changes.
+
+Select a source on the canvas or in Construction geometry. The explicit Review
+make construction / Review make ordinary button emits only
+`{ "operation": "construction", "id": "ent:disc", "construction": false }`.
+The common typed plan produces SetSketchConstruction, preserving all other
+source fields, including source units/expressions, references and constraints.
+No numeric circle/ellipse replacement is needed to change its flag. Existing
+coordinate/dimension expression admission remains unchanged; this feature does
+not add arithmetic circle-coordinate/radius expression evaluation.
+
+Every successful plan also returns `profile_effect` with `before` and `after`
+closed profiles (`profile_ref`, `entity_ids`), and existing `consumers`
+(`feature_id`, `profile_ref`, `suppressed`). These are prepared backend loops,
+not frontend-inferred eligibility. Review shows loop counts/membership and the
+verified candidate volume or absence of a solid. An ordinary open curve may
+form no closed profile. A point construction flag affects that point only;
+referencing curves still participate according to their own flags. Removing
+or silently rebinding an unchanged consumer's loop refuses atomically.
+
+Review/Apply reuse identity/revision, solve, profile, required assertion,
+native tessellation, publication and opaque history guards. Target/sketch/tool/
+view/file/upstream changes, Escape/discard and late IPC cancel old results.
+The current source catalogue remains in use while candidate geometry previews.
+See [the example](../../examples/agent/toggle_selected_construction.json): the
+source circle retains `1 cm`, the ellipse retains `15 mm + 15 mm`, and the
+final point flag does not remove the consumed circle. Both kernels check
+V=600*pi mm³, A=320*pi mm² and independent placed bounds/COM/meshes.
+Eval `toggle_selected_construction` grades exact flags/source and fresh native
+SI output; a wrong unconsumed ellipse flag fails despite identical solid mass.
