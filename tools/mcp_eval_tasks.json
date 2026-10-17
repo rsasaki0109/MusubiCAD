@@ -2193,6 +2193,24 @@
         "case": "seeded_XY",
         "clockwise": true
       }
+    },
+    {
+      "id": "create_pointer_ellipse",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "pointer_ellipse.ocad.d",
+      "prompt": "In {document}, follow examples/agent/create_pointer_ellipse.json through typed sketch creation and plan_sketch_edit/apply_sketch_edit. Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum. Use operation ellipse_axes with the exact constant centre (2,-3) mm, major endpoint (26,15) mm and point ON ellipse (14,21) mm, construction=false. Backend derives major radius 30 mm, minor 20 mm and the major direction (.8,.6); perpendicular projection of the third point is only 12 mm and is wrong. Preserve prior source, parameters and datum dependency. Extrude 6 mm NewBody feature:pointer_body. Verify intended source and fresh SI output: volume 3600*pi mm3, absolute bounds, COM, oriented closure and major/minor directional supports. A sign-reflected ellipse can have identical volume, COM and axis-aligned bounds. No helper, schema, dummy parameters or inferred constraints. MCP expresses typed intent, not mouse events.",
+      "expected_volume_mm3": 11309.733552923255,
+      "required_parameters": [],
+      "expected_pointer_ellipse": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:pointer_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
     }
   ]
 }

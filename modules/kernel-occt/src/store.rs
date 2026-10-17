@@ -16,6 +16,9 @@ pub struct KernelStore {
     pub wires: HashMap<u64, Vec<Edge>>,
     #[cfg(feature = "occt")]
     pub ellipse_wires: HashMap<u64, opencad_geometry::EllipseFrame>,
+    /// ADR-105: existing whole ellipse prisms use physical triangle display normals.
+    #[cfg(feature = "occt")]
+    pub ellipse_bodies: std::collections::HashSet<u64>,
     #[cfg(feature = "occt")]
     pub cubic_wires: HashMap<u64, opencad_geometry::CubicBezierFrame>,
     #[cfg(feature = "occt")]

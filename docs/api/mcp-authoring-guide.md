@@ -1725,3 +1725,29 @@ OCCT validate the closed sector. Evals `create_pointer_arc` and
 SI bounds, centroid, volume and oriented closure. Actual ten-case protocol
 parity is distinct from new actual Linux/Windows pointer acceptance and from
 external model-host verification. No new sampler or NURBS editing is admitted.
+
+## Three-point ellipse creation (MCAD-P17-007)
+
+Use current `inspect_sketches.document_id` and revision with
+`plan_sketch_edit` / `apply_sketch_edit`, including on global planes. See
+[the typed example](../../examples/agent/create_pointer_ellipse.json) and
+[the public contract](sketch-editing.md#pointer-ellipse-intent-mcad-p17-007).
+`ellipse_axes` requires fresh `id`, constant explicit-length `center_x/y`,
+`major_x/y`, `through_x/y`, and `construction`. The third point is ON the
+ellipse; do not substitute perpendicular width or supply derived radii/angle.
+
+For centre (2,-3), major endpoint (26,15) and through point (14,21) mm, the
+local major-frame point is (24,12) and radii are 30/20 mm. Backend expansion
+adds one ordinary centre point and existing Ellipse in one identity/revision-
+guarded patch; preserve source datum/owner, prior parameters and opaque history.
+Review is read-only and Undo/Redo is one entry. Expanded cap remains 64.
+Named parameters are outside this constant creation intent; legacy numeric/
+parametric Ellipse editing remains available. No axis helper or schema tag.
+
+Eval `create_pointer_ellipse` independently checks intended source plus fresh
+SI mesh placement, centroid, 3600*pi mm3 volume, oriented closure and directional
+major/minor supports. A sign-reflected ellipse can share volume, COM and world
+bounds and must still fail. Mock provides genuine analytic ellipse mass/bounds;
+its unsupported ellipse mesh stays a refusal. Native display normals for whole
+ellipse prisms/copies follow existing physical triangles. Native pointer tests
+and model-host verification are separate from actual five-case typed parity.

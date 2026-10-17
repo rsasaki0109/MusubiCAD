@@ -1,6 +1,6 @@
 # MusubiCAD implementation status
 
-Last reviewed: 2026-10-16
+Last reviewed: 2026-10-17
 
 This inventory is evidence-based against the current repository. **Implemented**
 means the capability has code and focused tests; **Partial** means the primary
@@ -1825,3 +1825,53 @@ merge changes GUI 51 to 52 and weighted CAD 53.50 to 53.65; agent operation
 stays 95. The increment is solely the new usable three-click arc branch/
 radial-closure lifecycle with atomic source/history; no repeated geometry,
 workplane, old-form, physical-parity or external-host credit.
+
+P17-006 completed in PR #155, merge b40404624ef8d7b02141dfe48558df592bd749ec,
+tested head 93cc19e26dcf7375b9ee8c27caaaf318eeb7b5e0 and base
+180c02ae6c9f9c85a23cfa16ea66cfaf2db77094. Exact parents, identical tested/merged
+trees and clean synchronized main were verified. All four workflows/full eleven
+jobs passed (ten successes, expected skipped publisher): CI 38977162174,
+Design Review 38977162116, Desktop 38977162099, Release 38977162102. New actual
+Linux Tauri and Windows WebView2 arc acceptance passed; local tests were 1310
+passed, zero failed, 37 existing ignored across 196 suites. New three-click
+arc/branch/radial-closure operation and atomic history earn GUI 51 to 52,
+weighted CAD 53.50 to 53.65; agent operation stays 95.
+
+P17-007 begins under ADR-105: three-click centre/major endpoint/point ON ellipse
+intent. The shared backend derives radii and local orientation, then adds an
+ordinary centre Point and existing Ellipse in one guarded DesignPatch. No new
+geometry family, persisted source tag, helper or sampler. Existing physical
+Mock ellipse mass/bounds and native exact extrusion remain the physical base;
+default Mock ellipse tessellation still refuses. New native interaction,
+independent source/placed physical evidence, all required checks and exact-head
+CI are required before completion or any conditional GUI credit.
+
+P17-007 implements the ADR-105 constant-unit three-click ellipse intent and
+backend-only radius/orientation derivation. Eight new desktop tests pass for
+placed Mock/native physical/source/history evidence, construction, strict
+units/axes/identity/revision/late-ID refusal, expanded budgets and packed/expanded
+round trips. Two new native tests cover outward display normals on existing
+ellipse prisms and proper rigid copies/compounds, with improper transforms
+refused. Actual MCP/Agent regression passes five placements, independently
+grading ordinary intended source and fresh SI native export. An orientation
+decoy preserves volume, COM and axis-aligned bounds but fails directional
+support checks; wrong-axis and equal-volume translated controls also fail.
+The locked Tauri build and actual Linux Tauri/WebKit driver pass all 38
+interaction groups, including six new ellipse groups with real coordinate
+events, product handlers and IPC. The same new helper runs unconditionally in
+the required Windows WebView2 gate. Example, API/architecture/ADR, guide, skill
+and feasible eval are included. No schema, migration, dependency or golden
+change. Mandatory whole-workspace checks and full applicable exact-head CI,
+including new actual Windows acceptance, remain pending; completion and the
+conditional GUI 52 to 53 / weighted CAD 53.65 to 53.80 credit require main merge.
+Agent operation remains 95; existing geometry and old forms earn no repeat credit.
+
+All four required P17-007 local checks pass: formatting, workspace/all-target
+Clippy, workspace tests (1321 passed, zero failed, 37 existing ignored across
+199 suites) and the agent-plugin contract. MCP eval self-test, desktop workflow
+policy, Python cache hygiene, JavaScript/Python syntax, 121 changed-document
+local links and whitespace checks also pass. The locked Tauri build and actual
+Linux native 38-group acceptance passed. Full applicable exact-head CI and new
+actual Windows native ellipse acceptance still gate this task's qualifying
+main merge and conditional GUI credit; no completion/score is claimed from
+local or protocol evidence alone.

@@ -1015,7 +1015,33 @@ let circleStart = null;
 let rectangleStart = null;
 let arcCenter = null;
 let arcStart = null;
+let ellipseCenter = null;
+let ellipseMajor = null;
 const sketchCanvas = document.getElementById("sketch-canvas");
+function ellipsePreview(center,major,through) {
+  const mm=value=>Number(value.split(" ")[0]);
+  const c={x:mm(center.x),y:mm(center.y)},m={x:mm(major.x),y:mm(major.y)},q={x:mm(through.x),y:mm(through.y)};
+  const a=Math.hypot(m.x-c.x,m.y-c.y);
+  if(!Number.isFinite(a)||a<=0.000001||a>1e9)return null;
+  const ux=(m.x-c.x)/a,uy=(m.y-c.y)/a,x=(q.x-c.x)*ux+(q.y-c.y)*uy,y=(q.y-c.y)*ux-(q.x-c.x)*uy,k=1-(x/a)**2;
+  if(!Number.isFinite(k)||k<=1e-9)return null;
+  const b=Math.abs(y)/Math.sqrt(k);
+  if(!Number.isFinite(b)||b<=0.000001||b>a)return null;
+  return {c,a,b,angle:Math.atan2(m.y-c.y,m.x-c.x)};
+}
+function drawEllipseDraft(center,major,through) {
+  document.getElementById("sketch-draft-ellipse")?.remove();
+  const ns="http://www.w3.org/2000/svg",group=document.createElementNS(ns,"g");group.id="sketch-draft-ellipse";
+  const add=(tag,attrs)=>{const e=document.createElementNS(ns,tag);for(const [key,value] of Object.entries({...attrs,class:"sketch-geometry construction"}))e.setAttribute(key,String(value));group.append(e);};
+  const mm=value=>Number(value.split(" ")[0]);
+  add("circle",{cx:mm(center.x),cy:-mm(center.y),r:Number(document.getElementById("sketch-span").value)/150});
+  if(major) {
+    add("line",{x1:mm(center.x),y1:-mm(center.y),x2:mm(major.x),y2:-mm(major.y)});
+    const preview=ellipsePreview(center,major,through);
+    if(preview)add("ellipse",{cx:preview.c.x,cy:-preview.c.y,rx:preview.a,ry:preview.b,transform:`rotate(${-preview.angle*180/Math.PI} ${preview.c.x} ${-preview.c.y})`});
+  }
+  sketchCanvas.append(group);
+}
 function arcPreview(center,start,direction) {
   const mm=value=>Number(value.split(" ")[0]);
   const c={x:mm(center.x),y:mm(center.y)},s={x:mm(start.x),y:mm(start.y)},d={x:mm(direction.x),y:mm(direction.y)};
@@ -1072,10 +1098,11 @@ function drawCircleDraft(start, end) {
 function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
 function clearSketchDraft() {
   cancelSketchCreationReview();
-  sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null; circleStart = null; rectangleStart = null; arcCenter = null; arcStart = null;
+  sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null; circleStart = null; rectangleStart = null; arcCenter = null; arcStart = null; ellipseCenter = null; ellipseMajor = null;
   document.getElementById("sketch-draft-circle")?.remove();
   document.getElementById("sketch-draft-rectangle")?.remove();
   document.getElementById("sketch-draft-arc")?.remove();
+  document.getElementById("sketch-draft-ellipse")?.remove();
   document.getElementById("sketch-review").hidden = true;
 }
 function renderSketchEditor(state) {
@@ -1118,6 +1145,24 @@ sketchCanvas.addEventListener("click",event=> {
   if(documentMutationBusy||sketchBusy||!sketchRow())return;
   reviewedSketch=null; sketchReviewSequence++; document.getElementById("sketch-review").hidden=true;
   const p=draftPoint(event),tool=document.getElementById("sketch-tool").value;
+  if(tool==="ellipse") {
+    if(!ellipseCenter) {
+      sketchDraft=null;lineStart=null;circleStart=null;rectangleStart=null;arcCenter=null;arcStart=null;drawSketch();ellipseCenter=p;drawEllipseDraft(p,null,p);
+      setStatus("Choose ellipse major-axis endpoint (local mm).");return;
+    }
+    if(!ellipseMajor) {
+      const a=circleRadius(ellipseCenter,p);
+      if(!Number.isFinite(a)||a<=0.000001||a>1e9) {clearSketchDraft();drawSketch();setStatus("Ellipse refused: choose a finite major radius above 1 nm and at most 1e6 m.");return;}
+      ellipseMajor=p;drawEllipseDraft(ellipseCenter,p,p);setStatus("Choose a point on the ellipse inside the major-axis span.");return;
+    }
+    if(!ellipsePreview(ellipseCenter,ellipseMajor,p)) {clearSketchDraft();drawSketch();setStatus("Ellipse refused: choose an unambiguous point on the ellipse with 0 < minor radius <= major radius.");return;}
+    const used=new Set(sketchRow().source.entities.map(e=>e.id));let n=1;
+    while(["","_center"].some(suffix=>used.has(`ent:ellipse_${n}${suffix}`)))n++;
+    const id=`ent:ellipse_${n}`;
+    sketchDraft=[{operation:"ellipse_axes",id,center_x:ellipseCenter.x,center_y:ellipseCenter.y,major_x:ellipseMajor.x,major_y:ellipseMajor.y,through_x:p.x,through_y:p.y,construction:document.getElementById("sketch-construction").checked}];
+    drawEllipseDraft(ellipseCenter,ellipseMajor,p);ellipseCenter=null;ellipseMajor=null;
+    document.getElementById("sketch-id").value=id;setStatus("Ellipse drafted. Review before committing.");return;
+  }
   if(tool==="arc") {
     if(!arcCenter) {
       sketchDraft=null;lineStart=null;circleStart=null;rectangleStart=null;drawSketch();arcCenter=p;drawArcDraft(p,null,p);
@@ -1192,6 +1237,7 @@ sketchCanvas.addEventListener("pointermove", event=>{
   if(circleStart)drawCircleDraft(circleStart,draftPoint(event));
   if(rectangleStart)drawRectangleDraft(rectangleStart,draftPoint(event));
   if(arcCenter)drawArcDraft(arcCenter,arcStart,draftPoint(event));
+  if(ellipseCenter)drawEllipseDraft(ellipseCenter,ellipseMajor,draftPoint(event));
 });
 function sketchForm() {
   const value=id=>document.getElementById("sketch-"+id).value.trim(),operation=value("action"),id=value("id"),create=document.getElementById("sketch-create").checked,construction=document.getElementById("sketch-construction").checked;
@@ -1212,6 +1258,7 @@ document.getElementById("sketch-form").addEventListener("submit",async event=> {
   if(circleStart) {setStatus("Choose circle radius point or discard the draft before review.");return;}
   if(rectangleStart) {setStatus("Choose opposite rectangle corner or discard the draft before review.");return;}
   if(arcCenter||(document.getElementById("sketch-tool").value==="arc"&&!sketchDraft)) {setStatus("Finish arc centre/start/end direction, or choose Select to use the numeric fields.");return;}
+  if(ellipseCenter||(document.getElementById("sketch-tool").value==="ellipse"&&!sketchDraft)) {setStatus("Finish ellipse centre/major endpoint/point on ellipse, or choose Select to use the numeric fields.");return;}
   cancelFeatureReview();const seq=++sketchReviewSequence,path=currentPath;
   const edit={document_id:sketchEditorState.document_id,revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations:sketchDraft??[sketchForm()]};sketchBusy=true;
   try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
@@ -1230,7 +1277,7 @@ document.getElementById("sketch-apply").addEventListener("click",async()=> {
 document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
 document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});
 document.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||sketchDraft||reviewedSketch)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
+  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
 });
 
 // Creation drafts contain only typed intent; the backend owns IDs and source.

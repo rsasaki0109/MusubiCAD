@@ -576,6 +576,9 @@ impl GeometryKernel for OcctGeometryKernel {
             }
 
             let id = self.store.borrow_mut().insert_body(solid);
+            if ellipse.is_some() {
+                self.store.borrow_mut().ellipse_bodies.insert(id);
+            }
             if self.store.borrow().sector_wires.contains(&profile.0) {
                 self.store.borrow_mut().sector_bodies.insert(id);
             }
@@ -1193,7 +1196,9 @@ impl GeometryKernel for OcctGeometryKernel {
             let grid_members: Vec<bool> = member_ids
                 .iter()
                 .map(|id| {
-                    store.circular_grid_bodies.contains(id) || store.sector_bodies.contains(id)
+                    store.circular_grid_bodies.contains(id)
+                        || store.sector_bodies.contains(id)
+                        || store.ellipse_bodies.contains(id)
                 })
                 .collect();
             let mut thread = false;
@@ -1204,6 +1209,8 @@ impl GeometryKernel for OcctGeometryKernel {
                 }
             }
             drop(store);
+            // ADR-105: whole ellipse prisms also use these existing oriented
+            // triangle display normals. Their BREP/triangle geometry is unchanged.
             // ADR-103: portable arc-sector display faces also use oriented
             // triangle normals; the exact analytic native solid stays intact.
             // ADR-101: marked grid members are actual planar facets. Their
@@ -1918,6 +1925,9 @@ impl GeometryKernel for OcctGeometryKernel {
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
+            if self.store.borrow().ellipse_bodies.contains(&body.0) {
+                return self.transform_body(body, RigidTransform::from_translation(translation_m));
+            }
             let thread = self
                 .store
                 .borrow()
@@ -1968,7 +1978,9 @@ impl GeometryKernel for OcctGeometryKernel {
             let source_ids = collect_body_member_ids(&self.store.borrow(), body.0)?;
             if source_ids.iter().any(|id| {
                 let store = self.store.borrow();
-                store.circular_grid_bodies.contains(id) || store.sector_bodies.contains(id)
+                store.circular_grid_bodies.contains(id)
+                    || store.sector_bodies.contains(id)
+                    || store.ellipse_bodies.contains(id)
             }) {
                 opencad_geometry::cubic_bezier::validate_rigid_transform(transform)?;
             }
@@ -2008,7 +2020,11 @@ impl GeometryKernel for OcctGeometryKernel {
                     .circular_grid_bodies
                     .contains(&source_id);
                 let sector = self.store.borrow().sector_bodies.contains(&source_id);
+                let ellipse = self.store.borrow().ellipse_bodies.contains(&source_id);
                 let id = self.store.borrow_mut().insert_body(transformed);
+                if ellipse {
+                    self.store.borrow_mut().ellipse_bodies.insert(id);
+                }
                 if sector {
                     self.store.borrow_mut().sector_bodies.insert(id);
                 }

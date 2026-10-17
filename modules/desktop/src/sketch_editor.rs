@@ -20,6 +20,7 @@ use opencad_sketch::{
 };
 use serde::{Deserialize, Serialize};
 mod arc;
+mod ellipse_axes;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SketchEditorState {
@@ -93,6 +94,16 @@ pub enum SketchForm {
         axis_angle: String,
         construction: bool,
         create: bool,
+    },
+    EllipseAxes {
+        id: String,
+        center_x: String,
+        center_y: String,
+        major_x: String,
+        major_y: String,
+        through_x: String,
+        through_y: String,
+        construction: bool,
     },
     Construction {
         id: String,
@@ -357,10 +368,12 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
         .as_deref()
         .is_some_and(|id| id != doc.metadata.id.as_str())
         || ((matches!(sketch.workplane, Workplane::DatumPlane { .. })
-            || edit
-                .operations
-                .iter()
-                .any(|form| matches!(form, SketchForm::Arc { .. })))
+            || edit.operations.iter().any(|form| {
+                matches!(
+                    form,
+                    SketchForm::Arc { .. } | SketchForm::EllipseAxes { .. }
+                )
+            }))
             && edit.document_id.as_deref() != Some(doc.metadata.id.as_str()))
     {
         return Err(OpenCadError::validation(
@@ -375,6 +388,15 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
     let mut ops = Vec::new();
     for form in &edit.operations {
         let sketch = authored(doc, &edit.sketch_id)?;
+        if matches!(form, SketchForm::EllipseAxes { .. }) {
+            for entity in ellipse_axes::entities(doc, sketch, form)? {
+                ops.push(PatchOperation::AddSketchEntity {
+                    sketch_id: edit.sketch_id.clone(),
+                    entity,
+                });
+            }
+            continue;
+        }
         if matches!(form, SketchForm::Arc { .. }) {
             for entity in arc::entities(doc, sketch, form)? {
                 ops.push(PatchOperation::AddSketchEntity {

@@ -212,3 +212,54 @@ grade exact source, prior graph/parameters and a fresh native export. Actual
 MCP/Agent regression covers both branches on five placements without model
 calls. New native Linux/Windows pointer controls have separate acceptance;
 MCP expresses typed intent rather than simulating a mouse.
+
+## Pointer ellipse intent (MCAD-P17-007)
+
+[ADR-105](../adr/ADR-105-pointer-ellipse-intent.md) adds creation-only
+`ellipse_axes` to the existing sketch planner/applicator. Send current
+`document_id`, `revision`, owned `sketch_id` and this operation:
+
+```json
+{"operation":"ellipse_axes","id":"ent:ellipse_1","center_x":"2.000 mm","center_y":"-3.000 mm","major_x":"26.000 mm","major_y":"15.000 mm","through_x":"14.000 mm","through_y":"21.000 mm","construction":false}
+```
+
+The three clicks mean centre, major-axis endpoint, then a point ON the ellipse.
+In major-axis coordinates the third point is (24,12) mm. The backend computes
+`a=30 mm`, `b=abs(12)/sqrt(1-(24/30)^2)=20 mm`, with major direction (.8,.6).
+Perpendicular projection alone gives 12 mm and creates the wrong ellipse.
+The new tool follows this point-on-curve interaction; no implicit axis swap.
+
+All six coordinates are constant explicit local lengths in the editor's finite
+absolute 1e6 m bound. Named parameters refuse because this creation form does
+not create an associative axis helper. Require finite `1-(x/a)^2 > 1e-9` to
+avoid ambiguous inversion near/outside the major span, then reuse ADR-053's
+existing `major >= minor > 1 nm`, major at most 1e6 m admission. Bad units,
+degenerate axes/third point, foreign/missing identity (including global planes),
+stale source/datum and any ID collision refuse the complete edit.
+
+One DesignPatch adds ordinary `id_center` Point and Ellipse `id`, preserving
+centre expressions and authored plane/owner. Derived radii are fixed explicit-mm
+strings; local angle is explicit radians in [0,2*pi). There are no persistent
+axis points, helper, new source tag or schema/migration. Construction marks only
+the ellipse. The expanded budget stays 64 additions, hence 32 such intents.
+Review is read-only; one apply/Undo/Redo handles both entities. Cancel/Escape,
+control/file/upstream changes and late IPC discard incomplete gestures/reviews.
+An empty ellipse tool cannot submit unrelated numeric fields. Existing numeric
+and raw parametric Ellipse editing remains supported separately.
+
+The [typed example](../../examples/agent/create_pointer_ellipse.json) has profile
+area 600*pi mm2 and 6 mm prism volume 3600*pi mm3. On +5 mm XY datum its bounds
+are `(2 +/- 12*sqrt(5), -3 +/- 2*sqrt(145), [5,11])` mm and COM (2,-3,8) mm.
+Analytic Mock/OCCT mass, area and absolute placed bounds have independent
+oracles. Keep ADR-053's 30/20 mm area comparisons: Mock 1e-12 m2, native 5e-9
+m2 for existing default surface quadrature; volume 1e-12 m3 and positions 3e-7 m.
+Default Mock ellipse tessellation remains explicitly unsupported. Existing whole
+native ellipse prisms/copies now use oriented-triangle display normals instead
+of legacy +Z placeholders, retaining exact BREP and physical triangle geometry.
+
+Eval `create_pointer_ellipse` checks intended source and a fresh native SI
+export, including 0.1 mm bounds/COM/directional supports, 1% volume and 1 nm
+oriented closure. Independent major/minor supports detect a sign-reflected
+orientation even when volume, COM and world bounds all match. Actual five-case
+MCP/Agent parity and new Linux/Windows native interaction are separate evidence;
+neither establishes external model-host verification or new sampling admission.
