@@ -1,0 +1,38 @@
+{
+  "task": "MCAD-P17-007",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Same constant typed intent as native centre/major endpoint/point ON ellipse clicks. Backend derives radii/orientation; the third point is not a perpendicular width.",
+  "steps": [
+    "Inspect/create one source-owned sketch on existing feature:datum with current identity and revision.",
+    "Inspect sketches, plan_sketch_edit using the operation below; review must be read-only.",
+    "apply_sketch_edit with the same intent and current opaque history; native verification is required.",
+    "Create feature:pointer_body as a 6 mm NewBody extrusion using its admitted closed profile.",
+    "Grade intended source plus a fresh native SI export: world bounds, COM, volume, closure and independently oriented major/minor supports.",
+    "Undo the extrusion first; the next single Undo/Redo removes/restores both the ordinary centre point and ellipse."
+  ],
+  "operations": [
+    {
+      "operation": "ellipse_axes",
+      "id": "ent:ellipse_1",
+      "center_x": "2.000 mm",
+      "center_y": "-3.000 mm",
+      "major_x": "26.000 mm",
+      "major_y": "15.000 mm",
+      "through_x": "14.000 mm",
+      "through_y": "21.000 mm",
+      "construction": false
+    }
+  ],
+  "analytic_final": {
+    "major_radius_mm": 30,
+    "minor_radius_mm": 20,
+    "local_major_direction": [0.8,0.6],
+    "through_point_in_major_frame_mm": [24,12],
+    "profile_area_mm2": "600*pi",
+    "volume_mm3": "3600*pi",
+    "surface_area_mm2": "1200*pi+6*158.6543958929059",
+    "bounds_mm": {"min":["2-12*sqrt(5)","-3-2*sqrt(145)",5],"max":["2+12*sqrt(5)","-3+2*sqrt(145)",11]},
+    "centroid_mm": [2,-3,8]
+  },
+  "compatibility": "ADR-105: constant unit-bearing creation only; existing numeric/parametric Ellipse editing remains available. One ordinary point + existing Ellipse, no associative axis helper or new source tag/schema/sampler/NURBS. Current identity/revision, expanded cap 64, atomic verified DesignPatch/history. Mock has genuine ellipse mass/bounds but its unsupported ellipse tessellation remains an explicit refusal. Native whole-prism display normals use existing oriented triangles without changing BREP or triangle geometry. MCP expresses typed intent, not mouse events."
+}

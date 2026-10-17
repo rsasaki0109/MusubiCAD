@@ -86,9 +86,9 @@ face-plane editing are not implicitly included. Acceptance requires actual new
 Linux Tauri/Windows WebView2 interactions and independent both-kernel physical
 results, including absolute placement and equal-volume wrong-placement controls.
 Existing Phase 14 operations receive no duplicate credit. P17-005 /
-PR #153 established weighted CAD 53.50 and agent operation 95. P17-006
-changes weighted CAD to 53.65 only on its qualifying main merge, under the
-new native arc acceptance and explicit evidence ledger below. Further
+PR #153 established weighted CAD 53.50 and agent operation 95. P17-006 /
+PR #155 then earned weighted CAD 53.65 with new native arc acceptance and
+the explicit evidence ledger below. Further
 feature credit requires its own main merge and justified evidence ledger.
 
 ## Following phase: associative sketch and drawing coverage
@@ -246,14 +246,31 @@ OCCT already supports exact line/arc extrusion, so this prerequisite receives
 no CAD or agent-operation increment. Current scores remain weighted CAD 53.50,
 GUI 51 and agent operation 95 until a later qualifying feature main merge.
 
-## P17-006 conditional evidence ledger
+## P17-006 merged evidence ledger
 
-Baseline before P17-006 is GUI 51, weighted CAD 53.50 and agent operation 95.
-Only after its main merge with complete new Linux/Windows native arc acceptance,
-independent both-kernel physical/source/history evidence and all required
-checks/exact-head CI: GUI 51→52, weighted CAD 53.50→53.65 (about 54%), agent
-operation 95 unchanged. Credit covers the usable three-click arc lifecycle,
+P17-006 merged in PR #155 (`b404046`) with complete new Linux/Windows native
+arc acceptance, independent both-kernel physical/source/history evidence and
+all required checks/exact-head CI: GUI 51→52, weighted CAD 53.50→53.65
+(about 54%), agent operation 95 unchanged. Credit covers the usable three-click arc lifecycle,
 explicit minor/major/CW/CCW choice, optional radial closure, cancellation and
 atomic reviewed source/history. Existing exact arc/sector geometry, P17-020
 physical parity, workplanes and old numeric/pointer forms earn no repeat credit.
 The fixed rubric and weights are unchanged; no external host increment.
+
+All four workflows and the full eleven-job inventory passed. Current merged
+scores are GUI 52, weighted CAD 53.65 and agent operation 95. The original
+rubric and approximately 60% objective are unchanged.
+
+## P17-007 conditional evidence ledger
+
+Baseline before P17-007 is GUI 52, weighted CAD 53.65 and agent operation 95.
+Only after its main merge with all required checks, full applicable exact-head
+CI and new actual Linux/Windows native ellipse acceptance: GUI 52→53, weighted
+CAD 53.65→53.80 (about 54%); agent operation stays 95. Partial credit covers
+the usable centre/major-endpoint/point-on-ellipse gesture, backend-derived
+ordinary source, preview/cancellation, reviewed atomic apply and history.
+Independent source, placed Mock/native physical measurements and actual
+MCP/Agent parity with fresh native output grading remain required. Existing
+ellipse geometry, legacy numeric editing, workplanes and prior pointer tools
+receive no repeat credit. No external model-host increment; default Mock
+ellipse tessellation remains unsupported. Fixed rubric and weights are unchanged.

@@ -30,6 +30,7 @@ on:
       - tools/pointer_circle_ui_checks.mjs
       - tools/pointer_rectangle_ui_checks.mjs
       - tools/pointer_arc_ui_checks.mjs
+      - tools/pointer_ellipse_ui_checks.mjs
   push:
     branches: [main]
     tags:

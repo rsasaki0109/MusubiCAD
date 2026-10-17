@@ -135,3 +135,27 @@ kernel-neutral validator. Consumers, source ownership, required assertions,
 native candidate verification and atomic history retain their shared gates.
 Both native drivers execute new arc checks unconditionally; workflow path policy
 includes the helper. No new kernel representation, sampler or NURBS admission.
+
+## Backend-owned pointer ellipses
+
+P17-007 / [ADR-105](../adr/ADR-105-pointer-ellipse-intent.md) adds a creation-only
+centre/major endpoint/point-on-curve intent to the shared sketch gateway.
+The backend inverts the existing analytic ellipse equation and derives radii/
+local angle; the frontend owns only disposable SVG and original click intent.
+One identity/revision-guarded DesignPatch adds ordinary Point + existing Ellipse,
+with centre expressions, datum association and owner preserved. No persistent
+axis helper or new `.ocad` source family. Legacy numeric/parametric editing stays.
+
+Keep strict inversion/geometry/unit/ID admission, candidate solve/assertions,
+native verification, atomic publication/history and late-reply invalidation.
+The existing native whole-prism display path had +Z placeholder normals; mark
+ellipse prisms and their proper rigid copies for the existing oriented-triangle
+display-normal path. BREP, physical triangles, topology ownership and sampling
+are unchanged. Default Mock ellipse tessellation remains an explicit refusal;
+its genuine analytic mass/bounds are checked independently. No new geometry
+admission, sampler, NURBS editing or external-host claim.
+
+Both native drivers unconditionally execute the new ellipse helper; Desktop
+path policy includes it. Independent directional supports distinguish reflected
+orientations that preserve volume, COM and world bounds, alongside intended
+source checks and actual MCP parity/fresh SI export grading.

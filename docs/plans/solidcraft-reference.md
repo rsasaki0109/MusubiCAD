@@ -52,3 +52,14 @@ Tauri interactions are recorded. No upstream code/application execution or
 Fusion benchmark parity is claimed.
 
 P14-003 applies the shared-command principle to selection: stable declared source identities and native scene revisions admit a reviewed DesignPatch, with refusal and checkpoint retention. Native Tauri pointer interaction, Mock/OCCT analytic verification and real MCP parity provide local evidence; this is not upstream application or Fusion benchmark parity.
+
+P17-007 additionally reads the pinned snapshot's
+[native sketch tools](https://github.com/bherbruck/solidcraft/blob/07e263d7e95cac9a6851e48bffcb79f302aabfb8/crates/ui-egui/src/sketch_tools.rs)
+and [ellipse command](https://github.com/bherbruck/solidcraft/blob/07e263d7e95cac9a6851e48bffcb79f302aabfb8/crates/engine/src/cmd/sketch_create.rs).
+Three clicks collect centre, major endpoint and a point ON the ellipse; the
+engine derives the minor radius through the ellipse equation. The third point
+is not just a projected width. MusubiCAD's ADR-105 adopts the interaction and
+shared-command practice through existing radius/angle Ellipse source and atomic
+DesignPatch/history. It does not add upstream's persistent major-point reference
+or claim associative axis editing. No upstream code/assets or application run;
+independent source/orientation/physical and native interaction gates still apply.

@@ -1218,3 +1218,29 @@ Evals `create_pointer_arc` / `create_pointer_arc_clockwise_major` check exact
 source and fresh SI placement/centroid/volume/closure. See [API](../../docs/api/sketch-editing.md#pointer-arc-intent-mcad-p17-006)
 and ADR-104. Native pointer acceptance and external host verification remain
 separate from actual MCP/Agent ten-case typed parity.
+
+### Three-click ellipse intent (MCAD-P17-007)
+
+Use [the typed example](../../examples/agent/create_pointer_ellipse.json) with
+current document identity/revision and an owned source sketch. Send
+`ellipse_axes`: fresh `id`, constant explicit local lengths `center_x/y`,
+`major_x/y`, `through_x/y`, plus `construction`. The native gesture means
+centre, major-axis endpoint, then a point ON the ellipse. The backend owns
+axis inversion and expands an ordinary centre point + existing Ellipse; do not
+publish guessed radii, angle, separate points or an associative helper.
+
+Centre (2,-3), major endpoint (26,15), through point (14,21) mm gives radii
+30/20 mm and direction (.8,.6). Its perpendicular width is only 12 mm, which
+is wrong. A 6 mm prism has volume 3600*pi mm3. Use native read-only review,
+verified apply and opaque history; one Undo/Redo restores both source entities.
+Keep datum/owner and prior source. Units/axes/ambiguous through point/parameters/
+identity/revision/late-ID/required-assertion failures preserve source/history.
+Existing numeric/parametric Ellipse editing remains available separately.
+
+Eval `create_pointer_ellipse` grades intended source plus fresh SI bounds, COM,
+volume, oriented closure and major/minor supports. Wrong orientation must fail
+even with identical mass and axis-aligned bounds. Default Mock ellipse mesh is
+unsupported; analytic Mock mass/bounds and native exact geometry are separate.
+See [API](../../docs/api/sketch-editing.md#pointer-ellipse-intent-mcad-p17-007)
+and ADR-105. New native Linux/Windows interaction, actual five-case MCP/Agent
+parity and external model-host evidence remain separate. No new sampler/NURBS.

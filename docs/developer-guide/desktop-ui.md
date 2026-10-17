@@ -176,3 +176,27 @@ closed construction, one-edit history, fresh IDs, cancellation, and actual stale
 refusal after datum motion. Linux now runs 32 groups; Windows uses the same
 helper through actual WebView2. This is separate from the ten-case MCP/Agent
 parity regression and does not establish an external model-host session.
+
+## Ellipse pointer acceptance (P17-007)
+
+Choose Draw ellipse, then click centre, major-axis endpoint and a point ON the
+ellipse. Backend inversion derives both radii and local orientation. Review/
+apply creates the ordinary centre point and Ellipse as one source/history edit.
+The existing Select/numeric ellipse editing remains available. Half/discarded
+ellipse gestures cannot submit unrelated numeric fields.
+
+Both drivers unconditionally execute [the ellipse helper](../../tools/pointer_ellipse_ui_checks.mjs)
+after the existing 32 groups, for 38 total. Six groups check actual coordinates
+for centre (2,-3), major endpoint (26,15), through point (14,21) mm: rotated
+30/20 mm preview, typed intent, incomplete review, Escape/Discard, late real IPC,
+invalid axes/points, view/tool/sketch/reload cancellation, construction-only
+source, one-edit Undo/Redo, fresh IDs, native 3600*pi mm3 prism, legacy numeric
+editing and upstream/stale command refusal. Only the existing SVG-origin pixel
+alignment is used; input properties, product helpers, IPC and model results are
+never replaced. Execute Linux and the required exact-head Windows WebView2 step
+separately. This is distinct from the five-case actual typed protocol regression.
+
+The regression also checks source/physical orientation independently. A reflected
+ellipse can preserve volume, COM and world bounds; native SI major/minor supports
+must differ. Whole native ellipse prisms/copies now derive display normals from
+their existing oriented triangles. Exact BREP and sampler settings are preserved.
