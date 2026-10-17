@@ -60,6 +60,16 @@
           <label>View span (mm) <input id="sketch-span" type="number" min="1" max="1000000" value="120" /></label>
           <svg id="sketch-canvas" viewBox="-60 -40 120 80" aria-label="Sketch in local mm"></svg>
           <p id="sketch-diagnostics"></p>
+          <form id="sketch-constraint-form">
+            <h3>Constrain selected geometry</h3>
+            <p>Choose a source curve or point on the canvas. Shift-click a second point for a pair, or choose the targets below. Review before applying.</p>
+            <label>Constraint <select id="constraint-kind"><option value="horizontal">Horizontal line</option><option value="vertical">Vertical line</option><option value="distance">Point distance</option><option value="coincident">Coincident points</option><option value="radius">Circle radius</option><option value="remove_constraint">Remove existing constraint</option></select></label>
+            <label id="constraint-a-label">Target <select id="constraint-target-a"></select></label>
+            <label id="constraint-b-label">Second point <select id="constraint-target-b"></select></label>
+            <label id="constraint-value-label">Length (explicit units or length parameter) <input id="constraint-value" value="10 mm" /></label>
+            <label id="constraint-remove-label">Existing constraint <select id="constraint-remove"></select></label>
+            <button id="constraint-review" type="submit">Review constraint</button>
+          </form>
           <form id="sketch-form">
             <label>Action <select id="sketch-action"><option value="point">Point</option><option value="ellipse">Ellipse</option><option value="circle">Circle</option><option value="construction">Construction flag</option><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option><option value="coincident">Coincident points</option><option value="distance">Point distance</option><option value="radius">Radius</option><option value="remove_constraint">Remove constraint</option></select></label>
             <label>Source entity / constraint ID <input id="sketch-id" value="ent:center" required /></label>

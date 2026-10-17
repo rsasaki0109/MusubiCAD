@@ -2211,6 +2211,24 @@
         },
         "case": "seeded_XY"
       }
+    },
+    {
+      "id": "constrain_selected_circle",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "selected_constraints.ocad.d",
+      "prompt": "In {document}, follow examples/agent/constrain_selected_circle.json. Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum. Author exactly the two source points A=(2,-3) mm and B=(26,15) mm, construction guide ent:guide, and ordinary circle ent:disc with source radius 5 mm. Extrude a 6 mm NewBody feature:disc_body. Through typed plan_sketch_edit/apply_sketch_edit add con:control_1 Horizontal on ent:guide, con:control_2 point-to-point Distance 20 mm on A/B, and con:control_3 Radius 10 mm on ent:disc. Preserve original source expressions, prior source and datum dependency. Inspect actual backend solved B=(22,-3) mm, radius 10 mm, remaining DOF 0. Independently grade exact constraint source plus fresh native SI STL volume 600*pi mm3, bounds, centroid and oriented closure. Direct radius editing alone produces the same volume but fails the intended design. No helper geometry/schema or frontend solver. MCP expresses typed intent, not mouse events.",
+      "expected_volume_mm3": 1884.9555921538758,
+      "required_parameters": [],
+      "expected_selected_constraints": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:disc_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
     }
   ]
 }

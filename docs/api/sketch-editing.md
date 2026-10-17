@@ -13,7 +13,7 @@ local-plane presentation and unit-labelled form drafts only (ADR-058).
 
 | MCP tool / Agent method suffix | Request | Result |
 | --- | --- | --- |
-| `inspect_sketches` | `path` | `document_id`, `revision`, rows with unchanged `source`, disposable SI `solved`, `workplane_label` and regenerated `resolved_frame` |
+| `inspect_sketches` | `path` | `document_id`, `revision`, rows with unchanged `source`, disposable SI `solved`, `workplane_label`, regenerated `resolved_frame`, `constraint_targets` and `suggested_constraint_id` |
 | `plan_sketch_edit` | `path`, `edit` | Concrete guarded `patch`, solved candidate `state`, verified SI `evidence`; no writes |
 | `apply_sketch_edit` | `path`, `edit`, optional opaque `history` | Shared feature tree, opaque history and verified SI evidence |
 
@@ -263,3 +263,46 @@ oriented closure. Independent major/minor supports detect a sign-reflected
 orientation even when volume, COM and world bounds all match. Actual five-case
 MCP/Agent parity and new Linux/Windows native interaction are separate evidence;
 neither establishes external model-host verification or new sampling admission.
+
+## Selected constraint controls (MCAD-P17-008)
+
+[ADR-106](../adr/ADR-106-selected-sketch-constraints.md) adds a disposable
+`constraint_targets` catalogue to each inspection/candidate row: `points`,
+`lines`, `circles`, each in authored source order. Points exclude cubic control
+points; circles exclude arcs/ellipses. Stored rectangle helpers, projected
+geometry and derived IDs are absent. `suggested_constraint_id` is the first
+unused `con:control_N` in that sketch. These fields guide clients; every target,
+ID, document identity and revision is still rechecked on plan/apply. They are
+not persisted in `.ocad` and introduce no schema or mutation operation.
+
+In Select mode, click a line for horizontal/vertical, a circle for radius, or
+click a point then Shift-click a distinct second point for distance/coincidence.
+The corresponding target lists also support explicit selection. Enter length
+with units (or an admitted length parameter), choose Review constraint, inspect
+the solved overlay/remaining DOF and verified volume, then Apply. The removal
+list uses existing authored constraint IDs. Target/value/control changes,
+Escape/Discard, sketch/tool/view/reload/upstream changes invalidate reviews
+and late real IPC. Apply shares the existing verified transaction/history path.
+
+`UnderConstrained { dof }` displays its actual remaining DOF; FullyConstrained
+displays zero. Refused solves retain the validation class/error prefix and
+explain the actual runtime contradiction, redundant count or nonconvergence.
+The backend solves admitted copies before resolving dependent datum frames,
+so a failed downstream solid cannot hide this diagnosis. No solver rank,
+implicit first-point anchor, tolerance, persisted solve state or admission
+changes. Existing policy may admit underconstrained states with redundant rows;
+these controls do not invent another classification.
+
+Use [the example](../../examples/agent/constrain_selected_circle.json): original
+A=(2,-3), B=(26,15) mm, construction guide and radius-5 mm circle remain authored
+unchanged. Horizontal, 20 mm point distance and 10 mm radius reduce remaining
+DOF 3→2→1→0; solved B=(22,-3) mm. A 6 mm extrusion has volume 600*pi mm³,
+surface 320*pi mm² and +5 mm XY datum bounds (-8,-13,5)..(12,7,11) mm, COM
+(2,-3,8) mm. Both genuine analytic Mock and OCCT are checked independently,
+including alternate/tilted placements. Eval `constrain_selected_circle` requires
+the exact intended source, actual backend solved inspection and fresh native
+SI output. A direct radius overwrite with the same solid fails source grading.
+
+These controls add/remove constraints. They do not edit a dimension value
+in place: removing and reusing an ID inside one patch still refuses. Arc/ellipse
+radius, cubic controls and new solver/geometry families remain outside scope.

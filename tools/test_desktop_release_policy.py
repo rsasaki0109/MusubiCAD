@@ -197,6 +197,7 @@ def test_windows_ui_is_a_required_real_app_gate() -> None:
         assert "tools/pointer_rectangle_ui_checks.mjs" in parsed["on"]["pull_request"]["paths"]
         assert "tools/pointer_arc_ui_checks.mjs" in parsed["on"]["pull_request"]["paths"]
         assert "tools/pointer_ellipse_ui_checks.mjs" in parsed["on"]["pull_request"]["paths"]
+        assert "tools/selected_constraint_ui_checks.mjs" in parsed["on"]["pull_request"]["paths"]
         steps = parsed["jobs"]["build"]["steps"]
         ui = next(step for step in steps if step.get("name") == "Exercise actual Windows native Tauri forms")
         assert ui["if"] == "${{ matrix.platform == 'windows-x86_64' }}"

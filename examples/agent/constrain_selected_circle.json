@@ -1,0 +1,29 @@
+{
+  "task": "MCAD-P17-008",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Add reviewed constraints to ordinary authored points, a construction guide and a circle. Keep the initial point/radius expressions; the backend solves a disposable copy.",
+  "steps": [
+    "Inspect/create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum with current identity and revision.",
+    "Plan/apply primitives with the existing sketch gateway; create feature:disc_body, a 6 mm NewBody extrusion of the circle's admitted closed profile.",
+    "Inspect sketches: backend constraint_targets lists ent:a, ent:b, ent:guide, ent:disc and suggests con:control_1. Initial remaining DOF is 3.",
+    "Plan/apply each constraint below using the current revision and opaque history. Readonly review reduces remaining DOF 3 -> 2 -> 1 -> 0. A single batch is also one atomic edit.",
+    "Verify source entities still contain B=(26,15) mm and radius=5 mm, while solved B=(22,-3) mm and radius=10 mm. Grade exact constraints and a fresh native SI export independently.",
+    "Remove con:control_3 with remove_constraint: DOF returns to 1 and the circle radius to 5 mm. Undo restores the radius constraint and volume. Removal and reuse of the same ID inside one patch remain forbidden."
+  ],
+  "primitives": [
+    {"operation":"point","id":"ent:a","x":"2 mm","y":"-3 mm","create":true},
+    {"operation":"point","id":"ent:b","x":"26 mm","y":"15 mm","create":true},
+    {"operation":"line","id":"ent:guide","start":"ent:a","end":"ent:b","construction":true},
+    {"operation":"circle","id":"ent:disc","center":"ent:a","radius":"5 mm","construction":false,"create":true}
+  ],
+  "constraints": [
+    {"operation":"horizontal","id":"con:control_1","line":"ent:guide"},
+    {"operation":"distance","id":"con:control_2","a":"ent:a","b":"ent:b","expr":"20 mm"},
+    {"operation":"radius","id":"con:control_3","target":"ent:disc","expr":"10 mm"}
+  ],
+  "analytic_final": {
+    "radius_mm":10,"height_mm":6,"volume_mm3":"600*pi","surface_area_mm2":"320*pi",
+    "bounds_mm":{"min":[-8,-13,5],"max":[12,7,11]},"centroid_mm":[2,-3,8]
+  },
+  "compatibility": "ADR-106: existing horizontal/vertical, authored point-pair distance/coincident, circle-only radius and remove_constraint. No new solver admission, schema, sampler, ellipse/arc radius or cubic control editing. Constraint target catalog and suggested IDs are disposable inspection data. No model calls or mouse-event claim for typed MCP intent."
+}

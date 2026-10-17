@@ -1244,3 +1244,28 @@ unsupported; analytic Mock mass/bounds and native exact geometry are separate.
 See [API](../../docs/api/sketch-editing.md#pointer-ellipse-intent-mcad-p17-007)
 and ADR-105. New native Linux/Windows interaction, actual five-case MCP/Agent
 parity and external model-host evidence remain separate. No new sampler/NURBS.
+
+### Selected source constraints (MCAD-P17-008)
+
+Use [the circle/guide example](../../examples/agent/constrain_selected_circle.json)
+with current identity/revision and opaque history. Inspect backend
+`constraint_targets` (authored points excluding cubic controls, lines, circles)
+and `suggested_constraint_id`. Plan/apply the existing horizontal/vertical,
+point-pair distance/coincident, circle-only radius or exact-ID removal.
+Catalogues, numeric solved geometry, remaining DOF and suggested IDs are
+disposable; never write them over source or invent a frontend solve result.
+
+A=(2,-3), B=(26,15) mm and radius 5 mm stay authored unchanged. Horizontal,
+20 mm point distance and radius 10 mm give backend remaining DOF 3→2→1→0,
+solved B=(22,-3) mm. The 6 mm circle prism is 600*pi mm³. Eval
+`constrain_selected_circle` requires intended constraint source, actual backend
+solved inspection and fresh native SI volume/bounds/COM/oriented closure; direct
+radius edits and equal-volume wrong placement fail. Actual MCP/Agent regression
+is zero-model-call protocol evidence, separate from native selection controls
+and external authenticated hosts.
+
+Respect actual backend contradiction/redundancy/nonconvergence refusals and
+source/history/publication preservation. No same-patch removed-ID reuse,
+in-place dimension-value promise, arc/ellipse radius or cubic-control admission.
+Native reviews share existing guarded transactions and cancellation/late IPC
+handling; ADR-106 preserves solver policy, units, schemas and source ownership.
