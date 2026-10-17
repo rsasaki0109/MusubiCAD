@@ -52,7 +52,7 @@ pub fn solve_sketch(sketch: &mut Sketch, options: &SolverOptions) -> Result<Solv
             values[y_id.index()] = *y;
         }
     }
-    seed_radius_values(&registry, &mut values, sketch);
+    seed_radius_values(&registry, &mut values, sketch)?;
 
     let vars = VarSet::new(values);
     let (output, status) = solve_with_diagnostics(&equations, vars, options);
@@ -69,7 +69,11 @@ pub fn solve_sketch(sketch: &mut Sketch, options: &SolverOptions) -> Result<Solv
     Ok(status)
 }
 
-fn seed_radius_values(registry: &VariableRegistry, values: &mut [f64], sketch: &Sketch) {
+fn seed_radius_values(
+    registry: &VariableRegistry,
+    values: &mut [f64],
+    sketch: &Sketch,
+) -> Result<()> {
     for entity in &sketch.entities {
         let (id, radius) = match entity {
             SketchEntity::Circle(circle) => (&circle.base.id, &circle.radius),
@@ -79,13 +83,11 @@ fn seed_radius_values(registry: &VariableRegistry, values: &mut [f64], sketch: &
         let Some(r_id) = registry.get(&format!("{}.radius", id.as_str())) else {
             continue;
         };
-        // Radius expressions may be simple unit-bearing literals (for example,
-        // `80 mm`).  Symbolic expressions are evaluated by a higher-level
-        // parameter context and retain the existing zero seed here.
-        if let Ok(r) = coord_literal(radius) {
-            values[r_id.index()] = r;
-        }
+        // Arithmetic/parameters must be resolved by the higher-level context.
+        // Never discard invalid source units and silently fit from a zero seed.
+        values[r_id.index()] = coord_literal(radius)?;
     }
+    Ok(())
 }
 
 fn map_status(status: &SolveStatus) -> SolveState {
@@ -705,10 +707,14 @@ pub fn arc_angle(arc: &crate::entity::ArcEntity, angle: &Coord) -> Result<f64> {
 }
 
 fn coord_literal(coord: &Coord) -> Result<f64> {
-    match coord {
-        Coord::Literal(v) => Ok(*v),
-        Coord::Expr(expr) => parse_length_expr(expr.as_str()),
+    let value = match coord {
+        Coord::Literal(v) => *v,
+        Coord::Expr(expr) => parse_length_expr(expr.as_str())?,
+    };
+    if !value.is_finite() {
+        return Err(OpenCadError::validation("sketch length must be finite"));
     }
+    Ok(value)
 }
 
 /// Parse simple angle literals in radians: `0.5`, `0.5 rad`, `30 deg`.
@@ -731,26 +737,24 @@ pub fn parse_angle_expr(expr: &str) -> Result<f64> {
 /// Parse simple length literals: `80`, `80 mm`, `0.08 m`.
 pub fn parse_length_expr(expr: &str) -> Result<f64> {
     let trimmed = expr.trim();
-    if let Some((value, unit)) = trimmed.split_once(char::is_whitespace) {
-        let value: f64 = value
-            .trim()
-            .parse()
-            .map_err(|_| OpenCadError::InvalidExpression(expr.into()))?;
-        return Ok(convert_length(value, unit.trim()));
-    }
-    trimmed
+    let (value, unit) = trimmed
+        .split_once(char::is_whitespace)
+        .map(|(value, unit)| (value.trim(), unit.trim()))
+        .unwrap_or((trimmed, "m"));
+    let value = value
         .parse::<f64>()
-        .map_err(|_| OpenCadError::InvalidExpression(expr.into()))
-}
-
-fn convert_length(value: f64, unit: &str) -> f64 {
-    match unit {
+        .map_err(|_| OpenCadError::InvalidExpression(expr.into()))?;
+    let meters = match unit {
         "m" => value,
         "mm" => value * 0.001,
         "cm" => value * 0.01,
         "in" => value * 0.0254,
-        _ => value,
+        _ => return Err(OpenCadError::InvalidExpression(expr.into())),
+    };
+    if !meters.is_finite() {
+        return Err(OpenCadError::InvalidExpression(expr.into()));
     }
+    Ok(meters)
 }
 
 fn apply_solution(sketch: &mut Sketch, registry: &VariableRegistry, vars: &VarSet) -> Result<()> {
@@ -849,6 +853,72 @@ pub fn cubic_control_points(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn literal_lengths_never_discard_units_arithmetic_or_nonfinite_values() {
+        for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(coord_value(&Coord::Literal(value)).is_err());
+        }
+        for (source, meters) in [
+            ("80", 80.),
+            ("80 mm", 0.08),
+            ("1 cm", 0.01),
+            ("1 in", 0.0254),
+            ("-1e-3 m", -0.001),
+        ] {
+            assert!((parse_length_expr(source).unwrap() - meters).abs() < 1e-12);
+        }
+        for source in [
+            "5 mm + 5 mm",
+            "5 deg",
+            "5 furlong",
+            "radius",
+            "NaN",
+            "inf m",
+            "1e309 m",
+        ] {
+            assert!(parse_length_expr(source).is_err(), "{source}");
+        }
+    }
+
+    #[test]
+    fn invalid_radius_seed_cannot_be_hidden_by_a_valid_radius_constraint() {
+        let mut sketch = Sketch::new(
+            opencad_core::SketchId::new("sketch:seed").unwrap(),
+            "Seed",
+            crate::Workplane::xy(),
+        );
+        sketch
+            .add_entity(SketchEntity::Point(PointEntity {
+                base: crate::EntityBase {
+                    id: opencad_core::EntityId::new("ent:center").unwrap(),
+                    construction: false,
+                },
+                x: Coord::Literal(0.),
+                y: Coord::Literal(0.),
+            }))
+            .unwrap();
+        sketch
+            .add_entity(SketchEntity::Circle(crate::CircleEntity {
+                base: crate::EntityBase {
+                    id: opencad_core::EntityId::new("ent:circle").unwrap(),
+                    construction: false,
+                },
+                center: opencad_core::EntityId::new("ent:center").unwrap(),
+                radius: Coord::expr("5 deg").unwrap(),
+            }))
+            .unwrap();
+        sketch
+            .add_constraint(Constraint::Radius {
+                id: opencad_core::ConstraintId::new("con:radius").unwrap(),
+                target: opencad_core::EntityId::new("ent:circle").unwrap(),
+                expr: opencad_core::Expression::new("10 mm").unwrap(),
+            })
+            .unwrap();
+        let before = sketch.clone();
+        assert!(solve_sketch(&mut sketch, &SolverOptions::default()).is_err());
+        assert_eq!(sketch, before);
+    }
     use crate::constraint::{Constraint, DistanceTarget, EntityRef, EqualTarget};
     use crate::entity::{ArcEntity, CircleEntity, EntityBase, LineEntity, PointEntity};
     use crate::workplane::Workplane;
@@ -1185,7 +1255,7 @@ mod tests {
 
         let (_, registry, _) = build_problem(&sketch).expect("problem");
         let mut values = registry.initial_values();
-        seed_radius_values(&registry, &mut values, &sketch);
+        seed_radius_values(&registry, &mut values, &sketch).expect("valid radius seed");
         let radius = registry.get("ent:arc.radius").expect("radius variable");
         assert!((values[radius.index()] - 0.04).abs() < 1e-12);
     }

@@ -1804,3 +1804,29 @@ grades exact source flags (including the unconsumed ordinary ellipse), unchanged
 native SI mesh's volume, bounds, COM and oriented closure. Equal mass alone is
 insufficient. Use opaque canonical Undo/Redo; refusals preserve source/history.
 No model calls or native mouse-event coverage is claimed by typed MCP tests.
+
+
+## Sketch source length correction (P17-021 / ADR-108)
+
+Ordinary point x/y and circle radius expressions resolve through the existing
+strict length evaluator on disposable sketch copies before solving. For example,
+`5 mm + 5 mm` is 10 mm, not 5 m; `origin_x + 1 mm` and
+`diameter / 4 + 5 mm` use current length parameters. The exact authored strings,
+IDs, constraints, owner and workplane remain source. Existing constraints still
+drive solver seeds. Unknown/angle units, angle-named length parameters, missing
+names and non-finite values refuse before publication, including parameter-only
+raw patches. The low-level sketch solver accepts simple finite SI or m/mm/cm/in
+literals; callers must resolve arithmetic/parameters first. Literal Coord numbers
+retain their existing SI meaning.
+
+See [ADR-108](../adr/ADR-108-sketch-source-length-resolution.md) and
+[the example](../../examples/agent/resolve_sketch_source_lengths.json). Inspect,
+plan and apply through existing sketch/DesignPatch gateways and opaque history.
+Read-only `plan_curve_edit` and `plan_offset` use the same current resolved SI
+source; trim still requires an explicit intersection branch when ambiguous.
+The example's guide intersects the 10 mm circle at (-6,3) and (10,3) mm.
+Its 6 mm extrusion has V=600*pi mm3, A=320*pi mm2. On the source datum,
+bounds are (-8,-13,5)..(12,7,11) mm and COM is (2,-3,8) mm.
+`resolve_sketch_source_lengths` independently grades exact source and fresh
+native SI export; a numerically equivalent source rewrite or equal-volume wrong
+placement fails. This prerequisite adds no native control or geometry admission.

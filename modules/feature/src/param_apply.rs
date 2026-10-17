@@ -98,15 +98,16 @@ pub fn apply_parameters(model: &mut PartModel, parameters: &ParamGraph) -> Resul
                 | FeatureDefinition::FacetedCircularFillet(_)
                 | FeatureDefinition::TaperedRib(_)
         )
-    }) || model.sketches.values().any(|s| {
-        s.entities.iter().any(|e| {
-            matches!(
-                e,
-                opencad_sketch::SketchEntity::Ellipse(_)
-                    | opencad_sketch::SketchEntity::CubicBezier(_)
-            )
-        })
-    }) {
+    }) || has_sketch_form_source(model)
+        || model.sketches.values().any(|s| {
+            s.entities.iter().any(|e| {
+                matches!(
+                    e,
+                    opencad_sketch::SketchEntity::Ellipse(_)
+                        | opencad_sketch::SketchEntity::CubicBezier(_)
+                )
+            })
+        }) {
         opencad_graph::evaluate_param_graph_strict(parameters)?
     } else {
         evaluate_param_graph(parameters)?
@@ -378,38 +379,25 @@ pub(crate) fn resolve_sketch_constraints(
             curve.resolved_controls_m = None;
         }
     }
-    let cubic_points: std::collections::BTreeSet<_> = sketch
-        .entities
-        .iter()
-        .filter_map(|entity| match entity {
-            opencad_sketch::SketchEntity::CubicBezier(e) => Some(
-                e.control_points[..3]
-                    .iter()
-                    .map(|id| id.as_str().to_owned()),
-            ),
-            _ => None,
-        })
-        .flatten()
-        .collect();
+    // ADR-108: every point coordinate and circle radius uses the same strict
+    // source resolution as cubic controls, before a solver seed can lose units.
+    let cubic_points = cubic_point_ids(sketch);
     for entity in &mut sketch.entities {
-        if let opencad_sketch::SketchEntity::Point(point) = entity {
-            if cubic_points.contains(point.base.id.as_str()) {
+        match entity {
+            opencad_sketch::SketchEntity::Point(point) => {
                 for coord in [&mut point.x, &mut point.y] {
-                    if let opencad_sketch::Coord::Expr(expr) = coord {
-                        if opencad_graph::parameter_names_in_expr(expr.as_str())
-                            .iter()
-                            .any(|name| opencad_graph::param_eval::is_angle_parameter(name))
-                        {
-                            return Err(OpenCadError::validation(
-                                "cubic coordinates cannot reference angle parameters",
-                            ));
-                        }
-                        *coord = opencad_sketch::Coord::Literal(
-                            opencad_graph::eval_length_expr_strict(expr.as_str(), scope)?,
-                        );
-                    }
+                    *coord = opencad_sketch::Coord::Literal(source_length(
+                        coord,
+                        scope,
+                        !cubic_points.contains(point.base.id.as_str()),
+                    )?);
                 }
             }
+            opencad_sketch::SketchEntity::Circle(circle) => {
+                circle.radius =
+                    opencad_sketch::Coord::Literal(source_length(&circle.radius, scope, true)?);
+            }
+            _ => {}
         }
     }
     for entity in &mut sketch.entities {
@@ -426,11 +414,8 @@ pub(crate) fn resolve_sketch_constraints(
         // ADR-103: invalid radius units must fail before the solver's optional
         // radius seed can discard a parse error and fit a different radius.
         // This only resolves the disposable regeneration/inspection copy.
-        if let opencad_sketch::Coord::Expr(expr) = &arc.radius {
-            arc.radius = opencad_sketch::Coord::Literal(opencad_graph::eval_length_expr_strict(
-                expr.as_str(),
-                scope,
-            )?);
+        if matches!(arc.radius, opencad_sketch::Coord::Expr(_)) {
+            arc.radius = opencad_sketch::Coord::Literal(source_length(&arc.radius, scope, false)?);
         }
         let parametric = [&arc.start_angle, &arc.end_angle]
             .iter()
@@ -458,6 +443,82 @@ pub(crate) fn resolve_sketch_constraints(
                 let value_rad = eval_angle_expr(expr.as_str(), scope)?;
                 *expr = Expression::new(format!("{value_rad} rad"))
                     .map_err(|_| OpenCadError::InvalidExpression(expr.as_str().into()))?;
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn cubic_point_ids(sketch: &Sketch) -> std::collections::BTreeSet<String> {
+    sketch
+        .entities
+        .iter()
+        .filter_map(|entity| match entity {
+            opencad_sketch::SketchEntity::CubicBezier(curve) => Some(
+                curve.control_points[..3]
+                    .iter()
+                    .map(|id| id.as_str().to_owned()),
+            ),
+            _ => None,
+        })
+        .flatten()
+        .collect()
+}
+
+fn source_length(
+    coord: &opencad_sketch::Coord,
+    scope: &IndexMap<String, f64>,
+    simple_literals: bool,
+) -> Result<f64> {
+    let value = match coord {
+        opencad_sketch::Coord::Literal(value) => *value,
+        opencad_sketch::Coord::Expr(expr) => {
+            if opencad_graph::parameter_names_in_expr(expr.as_str())
+                .iter()
+                .any(|name| opencad_graph::param_eval::is_angle_parameter(name))
+            {
+                return Err(OpenCadError::validation(
+                    "sketch lengths cannot reference angle parameters",
+                ));
+            }
+            // Preserve legacy ordinary point/circle simple literals, including
+            // exponents. Cubic/arc admission keeps its existing strict grammar.
+            if simple_literals {
+                opencad_sketch::solve::parse_length_expr(expr.as_str())
+                    .or_else(|_| opencad_graph::eval_length_expr_strict(expr.as_str(), scope))?
+            } else {
+                opencad_graph::eval_length_expr_strict(expr.as_str(), scope)?
+            }
+        }
+    };
+    if !value.is_finite() {
+        return Err(OpenCadError::validation(
+            "sketch source length must be finite",
+        ));
+    }
+    Ok(value)
+}
+
+/// Validate source point/radius lengths without solving or changing the sketch.
+/// Callers evaluate the parameter graph strictly before supplying the SI scope.
+pub fn validate_sketch_source_lengths(
+    sketch: &Sketch,
+    scope: &IndexMap<String, f64>,
+) -> Result<()> {
+    let cubic_points = cubic_point_ids(sketch);
+    for entity in &sketch.entities {
+        match entity {
+            opencad_sketch::SketchEntity::Point(point) => {
+                let simple_literals = !cubic_points.contains(point.base.id.as_str());
+                source_length(&point.x, scope, simple_literals)?;
+                source_length(&point.y, scope, simple_literals)?;
+            }
+            opencad_sketch::SketchEntity::Circle(circle) => {
+                source_length(&circle.radius, scope, true)?;
+            }
+            opencad_sketch::SketchEntity::Arc(arc) => {
+                source_length(&arc.radius, scope, false)?;
             }
             _ => {}
         }
@@ -542,6 +603,28 @@ pub fn resolve_ellipse_parameters(
 mod tests {
     use super::*;
     use opencad_graph::ParamGraph;
+
+    #[test]
+    fn ordinary_source_lengths_retain_legacy_scientific_literals_and_never_mutate_source() {
+        let mut sketch = Sketch::new(
+            opencad_core::SketchId::new("sketch:source").unwrap(),
+            "Source",
+            opencad_sketch::Workplane::xy(),
+        );
+        sketch.entities = serde_json::from_value(serde_json::json!([
+                {"type":"point","id":"ent:center","x":"2e-3 m","y":"-3e-3 m"},
+                {"type":"circle","id":"ent:circle","center":"ent:center","radius":"1e-2 m"}
+        ]))
+        .unwrap();
+        let saved = sketch.clone();
+        let copy = solved_sketch_copy(&sketch, &IndexMap::new()).unwrap();
+        let Some(opencad_sketch::SketchEntity::Circle(circle)) = copy.find_entity("ent:circle")
+        else {
+            panic!("circle")
+        };
+        assert!(matches!(circle.radius,opencad_sketch::Coord::Literal(r) if (r-0.01).abs()<1e-12));
+        assert_eq!(sketch, saved);
+    }
 
     #[test]
     fn angle_constraint_expressions_resolve_to_radians_and_restore() {

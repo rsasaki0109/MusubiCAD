@@ -2247,6 +2247,28 @@
         },
         "case": "seeded_XY"
       }
+    },
+    {
+      "id": "resolve_sketch_source_lengths",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "source_lengths.ocad.d",
+      "prompt": "In {document}, follow examples/agent/resolve_sketch_source_lengths.json. Add exactly its origin_x/origin_y/diameter length parameters through DesignPatch. Create sketch:new_1 owned by feature:sketch_new_1 on existing feature:datum. Plan/apply exactly its authored primitives; inspect resolved ordinary point coordinates and 10 mm circle radius while preserving source arithmetic. Extrude 6 mm NewBody feature:disc_body of profile:circle:ent:disc. Review/apply parameter_radius preserving exact expression 'diameter / 4 + 5 mm'. Keep all prior source, parameters, datum dependency and empty constraints. Read-only plan_curve_edit with explicit branch 1 of ent:guide against ent:disc yields (10,3) mm. Independently grade exact source plus fresh native SI STL: 600*pi mm3, bounds (-8,-13,5)..(12,7,11) mm, COM (2,-3,8) mm and oriented closure. Equivalent literal radius or unconsumed point source rewrite fails the intent. Reject wrong units and preserve canonical history/refusal. No new geometry, schema or UI control.",
+      "expected_volume_mm3": 1884.9555921538758,
+      "required_parameters": [
+        "origin_x",
+        "origin_y",
+        "diameter"
+      ],
+      "expected_sketch_source_lengths": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:disc_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
     }
   ]
 }

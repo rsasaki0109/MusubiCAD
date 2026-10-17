@@ -76,7 +76,7 @@ pub fn plan_offset(state: &DesignState, request: &OffsetRequest) -> Result<Offse
             return Err(OpenCadError::validation("duplicate offset source curve"));
         }
     }
-    let values = opencad_graph::evaluate_param_graph(&state.parameters)?;
+    let values = opencad_graph::evaluate_param_graph_strict(&state.parameters)?;
     let solved = opencad_feature::param_apply::solved_sketch_copy(source, &values)?;
     let input: Vec<_> = request
         .curve_ids

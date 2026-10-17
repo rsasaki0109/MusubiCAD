@@ -1975,3 +1975,40 @@ Actual new Linux native 50-group controls remain unrun because environment GUI
 launch approval was interrupted. Actual new Windows acceptance and complete
 exact-head CI also remain required. This task stays in progress/draft until
 all native/CI gates pass; no P17-009 score is awarded before qualifying merge.
+
+P17-009 completed in PR #158: merge 62a1b3654451c4d352d7dbbc07bbf8d7f085b7fc,
+tested head a256cef6c2d7aae733a0a5ecc54baf827fb47933 on base
+9956038284a9a64086db1c1944708bb2c48a15bc. The final local required checks
+passed (1335 passed, zero failed, 37 existing ignored across 203 suites), as did
+the locked Tauri build. The earlier interrupted Linux permission requests were
+superseded by an approved actual 50-group Linux native run. The unconditional
+Windows native step also passed all 50 groups. All four exact-head workflows
+CI 39038776291, Design Review 39038776275, Desktop 39038776247 and Release
+39038776412 passed; merge parents and identical tested/merged trees were verified.
+New usable selected-flag controls and backend profile/solid consequence review
+earn GUI 54 to 55, weighted CAD 53.95 to 54.10 (about 54%). Agent operation
+remains 95; existing operations, geometry/solver and host coverage earn no
+repeated credit.
+
+P17-021 begins from that clean main under ADR-108, before P17-010 trim controls.
+It corrects ordinary point/circle source-length resolution and fail-closed
+literal/radius handling without new UI, schema, geometry admission or score.
+Completion requires independent both-kernel placed physics, intersection/source
+regressions, real MCP/Agent/history/round-trip evidence, documentation/example/eval
+and all mandatory local/exact-head CI gates.
+
+P17-021 implements strict ordinary point/circle source resolution, fail-closed
+literal/radius seeds and parameter-only raw-patch length validation. Analytic
+curve-edit/offset planners evaluate the current strict parameter scope. Existing
+cubic/arc expression admission stays bounded; ordinary point/circle legacy
+scientific literals are retained. Five desktop regressions cover genuine
+analytic Mock/native OCCT V=600*pi mm3/A=320*pi mm2 with XY/YZ/XZ/tilted
+placement and oriented meshes, source-driven shared-cache changes, line/circle
+and line/arc intersections, raw/typed/parameter-only invalid units, assertions,
+packed/expanded source round trips, read-only review and canonical history.
+Actual MCP/Agent parity covers five placements, explicit branches/offsets,
+source/history/refusal and independent exact-source/fresh SI STL grading with
+wrong-placement and equivalent-source adversaries. An example, ADR-108,
+API/architecture, MCP guide, skill and feasible eval are included. Targeted
+regressions and eval self-test pass; final mandatory local and exact-head CI
+gates remain required. No new UI control, schema/golden change or score.
