@@ -34,6 +34,15 @@ pub struct SketchEditorRow {
     pub solved: Sketch,
     pub workplane_label: String,
     pub resolved_frame: ResolvedSketchFrame,
+    pub constraint_targets: SketchConstraintTargets,
+    pub suggested_constraint_id: String,
+}
+/// Disposable source catalogue; the planner still rechecks every target.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SketchConstraintTargets {
+    pub points: Vec<String>,
+    pub lines: Vec<String>,
+    pub circles: Vec<String>,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -145,6 +154,43 @@ pub struct SketchEditPlan {
     pub evidence: EditorEvidence,
 }
 
+fn point_constraint_allowed(sketch: &Sketch, id: &str) -> bool {
+    matches!(sketch.find_entity(id), Some(SketchEntity::Point(_)))
+        && !sketch.entities.iter().any(|e| {
+            matches!(e, SketchEntity::CubicBezier(c) if c.control_points.iter().any(|p| p.as_str()==id))
+        })
+}
+fn constraint_targets(sketch: &Sketch) -> SketchConstraintTargets {
+    let mut targets = SketchConstraintTargets {
+        points: Vec::new(),
+        lines: Vec::new(),
+        circles: Vec::new(),
+    };
+    for entity in &sketch.entities {
+        let id = entity.id().as_str();
+        match entity {
+            SketchEntity::Point(_) if point_constraint_allowed(sketch, id) => {
+                targets.points.push(id.into());
+            }
+            SketchEntity::Line(_) => targets.lines.push(id.into()),
+            SketchEntity::Circle(_) => targets.circles.push(id.into()),
+            _ => {}
+        }
+    }
+    targets
+}
+fn suggested_constraint_id(sketch: &Sketch) -> String {
+    let mut n = 1;
+    while sketch
+        .constraints
+        .iter()
+        .any(|c| c.id().as_str() == format!("con:control_{n}"))
+    {
+        n += 1;
+    }
+    format!("con:control_{n}")
+}
+
 fn authored<'a>(doc: &'a OcadDocument, id: &str) -> Result<&'a Sketch> {
     let sketch = doc
         .sketches
@@ -188,50 +234,58 @@ pub fn sketch_editor_state_with_kernel<K: GeometryKernel>(
     kernel: &K,
 ) -> Result<SketchEditorState> {
     let values = opencad_graph::evaluate_param_graph_strict(&doc.parameters)?;
-    let datums = admitted_datum_planes_with_kernel(doc, kernel)?;
-    let mut sketches = Vec::new();
+    // Diagnose the actual sketch solve before datum-frame regeneration can
+    // obscure a rejected candidate with a downstream profile/solid error.
+    let mut admitted = Vec::new();
     for sketch in &doc.sketches {
         if authored(doc, sketch.id.as_str()).is_ok() {
-            let mut solved = opencad_feature::param_apply::solved_sketch_copy(sketch, &values)?;
-            for entity in &mut solved.entities {
-                if let SketchEntity::Arc(arc) = entity {
-                    let (start, end) = opencad_sketch::solve::arc_angles(arc)?;
-                    arc.start_angle = Coord::Literal(start);
-                    arc.end_angle = Coord::Literal(end);
-                }
-                if let SketchEntity::Ellipse(e) = entity {
-                    let [a, b, angle] = opencad_sketch::solve::ellipse_parameters(e)?;
-                    e.major_radius = Coord::Literal(a);
-                    e.minor_radius = Coord::Literal(b);
-                    e.axis_angle = Coord::Literal(angle);
-                }
-            }
-            let (workplane_label, resolved_frame) = match &sketch.workplane {
-                Workplane::Global { plane } => {
-                    (format!("{plane:?}"), resolved_frame(&sketch.workplane)?)
-                }
-                Workplane::DatumPlane { feature_id } => {
-                    let plane = datums
-                        .iter()
-                        .find(|p| &p.feature_id == feature_id)
-                        .ok_or_else(|| {
-                            OpenCadError::validation("sketch datum frame unavailable")
-                        })?;
-                    (format!("Datum · {}", plane.name), plane.frame.clone())
-                }
-                _ => {
-                    return Err(OpenCadError::validation(
-                        "unsupported sketch editor workplane",
-                    ))
-                }
-            };
-            sketches.push(SketchEditorRow {
-                source: sketch.clone(),
-                solved,
-                workplane_label,
-                resolved_frame,
-            });
+            admitted.push((
+                sketch,
+                opencad_feature::param_apply::solved_sketch_copy(sketch, &values)?,
+            ));
         }
+    }
+    let datums = admitted_datum_planes_with_kernel(doc, kernel)?;
+    let mut sketches = Vec::new();
+    for (sketch, mut solved) in admitted {
+        for entity in &mut solved.entities {
+            if let SketchEntity::Arc(arc) = entity {
+                let (start, end) = opencad_sketch::solve::arc_angles(arc)?;
+                arc.start_angle = Coord::Literal(start);
+                arc.end_angle = Coord::Literal(end);
+            }
+            if let SketchEntity::Ellipse(e) = entity {
+                let [a, b, angle] = opencad_sketch::solve::ellipse_parameters(e)?;
+                e.major_radius = Coord::Literal(a);
+                e.minor_radius = Coord::Literal(b);
+                e.axis_angle = Coord::Literal(angle);
+            }
+        }
+        let (workplane_label, resolved_frame) = match &sketch.workplane {
+            Workplane::Global { plane } => {
+                (format!("{plane:?}"), resolved_frame(&sketch.workplane)?)
+            }
+            Workplane::DatumPlane { feature_id } => {
+                let plane = datums
+                    .iter()
+                    .find(|p| &p.feature_id == feature_id)
+                    .ok_or_else(|| OpenCadError::validation("sketch datum frame unavailable"))?;
+                (format!("Datum · {}", plane.name), plane.frame.clone())
+            }
+            _ => {
+                return Err(OpenCadError::validation(
+                    "unsupported sketch editor workplane",
+                ))
+            }
+        };
+        sketches.push(SketchEditorRow {
+            constraint_targets: constraint_targets(sketch),
+            suggested_constraint_id: suggested_constraint_id(sketch),
+            source: sketch.clone(),
+            solved,
+            workplane_label,
+            resolved_frame,
+        });
     }
     Ok(SketchEditorState {
         document_id: doc.metadata.id.as_str().into(),
@@ -603,16 +657,13 @@ pub fn plan_sketch_edit_with_kernel<K: GeometryKernel>(
     let mut candidate = doc.clone();
     opencad_file::apply_patch_to_document(&mut candidate, &patch)?;
     let source = authored(&candidate, &edit.sketch_id)?;
-    let point_allowed = |id: &str| {
-        matches!(source.find_entity(id), Some(SketchEntity::Point(_))) && !source.entities.iter().any(|e| matches!(e, SketchEntity::CubicBezier(c) if c.control_points.iter().any(|p| p.as_str()==id)))
-    };
     for form in &edit.operations {
         let allowed = match form {
             SketchForm::Horizontal { line, .. } | SketchForm::Vertical { line, .. } => {
                 matches!(source.find_entity(line), Some(SketchEntity::Line(_)))
             }
             SketchForm::Coincident { a, b, .. } | SketchForm::Distance { a, b, .. } => {
-                point_allowed(a) && point_allowed(b)
+                point_constraint_allowed(source, a) && point_constraint_allowed(source, b)
             }
             SketchForm::Radius { target, .. } => {
                 matches!(source.find_entity(target), Some(SketchEntity::Circle(_)))

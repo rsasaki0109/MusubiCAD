@@ -316,9 +316,14 @@ button:disabled:hover {
 .sketch-axis { stroke: #38485c; stroke-width: .15; }
 .sketch-geometry { fill: none; stroke: #63c4f4; stroke-width: .4; }
 .sketch-geometry.construction { stroke-dasharray: 1 1; stroke: #a0aab6; }
+.sketch-selected { stroke: #ffbe63; stroke-width: .9; }
+.sketch-point.sketch-selected { fill: #ffbe63; }
 .sketch-point { fill: #ffbe70; cursor: pointer; }
 #sketch-form { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; }
 #sketch-form label { display: grid; gap: .2rem; }
+#sketch-constraint-form { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; margin: .75rem 0; }
+#sketch-constraint-form label:not([hidden]) { display: grid; gap: .2rem; }
+#sketch-constraint-form h3, #sketch-constraint-form p { grid-column: 1 / -1; margin: .25rem 0; }
 #sketch-new-form { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; padding-bottom: .75rem; }
 #sketch-new-form h3 { width: 100%; margin: 0; }
 #sketch-new-form label { display: grid; gap: .2rem; }

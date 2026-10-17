@@ -1017,6 +1017,7 @@ let arcCenter = null;
 let arcStart = null;
 let ellipseCenter = null;
 let ellipseMajor = null;
+let sketchConstraintSelection = [];
 const sketchCanvas = document.getElementById("sketch-canvas");
 function ellipsePreview(center,major,through) {
   const mm=value=>Number(value.split(" ")[0]);
@@ -1096,7 +1097,7 @@ function drawCircleDraft(start, end) {
   sketchCanvas.append(group);
 }
 function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
-function clearSketchDraft() {
+function clearSketchDraft(keepConstraintSelection = false) {
   cancelSketchCreationReview();
   sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null; circleStart = null; rectangleStart = null; arcCenter = null; arcStart = null; ellipseCenter = null; ellipseMajor = null;
   document.getElementById("sketch-draft-circle")?.remove();
@@ -1104,6 +1105,52 @@ function clearSketchDraft() {
   document.getElementById("sketch-draft-arc")?.remove();
   document.getElementById("sketch-draft-ellipse")?.remove();
   document.getElementById("sketch-review").hidden = true;
+  if (!keepConstraintSelection) {
+    sketchConstraintSelection=[];
+    for(const id of ["constraint-target-a","constraint-target-b","constraint-remove"])document.getElementById(id).value="";
+  }
+}
+function sketchSolveLabel(state) {
+  if(state.status==="under_constrained")return `Underconstrained · ${state.dof} DOF`;
+  if(state.status==="fully_constrained")return "Fully constrained · 0 DOF";
+  if(state.status==="over_constrained")return `Overconstrained · ${state.redundant} redundant constraints`;
+  return state.status;
+}
+function renderSketchConstraintControls(row) {
+  const kind=document.getElementById("constraint-kind").value,pair=kind==="distance"||kind==="coincident",remove=kind==="remove_constraint";
+  const targets=row?.constraint_targets;
+  const ids=remove?[]:(pair?targets?.points:kind==="radius"?targets?.circles:targets?.lines)??[];
+  const label=id=>{
+    const entity=row.solved.entities.find(e=>e.id===id);
+    return entity?.type==="point"?`${id} · (${(entity.x*1000).toFixed(3)}, ${(entity.y*1000).toFixed(3)}) mm`:id;
+  };
+  const fill=(id,options,describe)=>{
+    const select=document.getElementById(id),old=select.value;select.replaceChildren();
+    const empty=document.createElement("option");empty.value="";empty.textContent="Choose a target";select.append(empty);
+    for(const value of options){const option=document.createElement("option");option.value=value;option.textContent=describe(value);select.append(option);}
+    select.value=options.includes(old)?old:"";
+  };
+  fill("constraint-target-a",ids,label);fill("constraint-target-b",pair?ids:[],label);
+  fill("constraint-remove",row?.source.constraints.map(c=>c.id)??[],id=>{const c=row.source.constraints.find(c=>c.id===id);return `${c.type} · ${id}${c.expr?` · ${c.expr}`:""}`;});
+  document.getElementById("constraint-a-label").hidden=remove;
+  document.getElementById("constraint-b-label").hidden=!pair;
+  document.getElementById("constraint-value-label").hidden=kind!=="distance"&&kind!=="radius";
+  document.getElementById("constraint-remove-label").hidden=!remove;
+  document.getElementById("constraint-review").disabled=!row;
+  sketchConstraintSelection=[document.getElementById("constraint-target-a").value,document.getElementById("constraint-target-b").value].filter(Boolean);
+}
+function selectSketchConstraintTarget(id,extend) {
+  const row=sketchRow(),targets=row?.constraint_targets;if(!targets)return;
+  const old=[...sketchConstraintSelection];clearSketchDraft(true);
+  const kind=document.getElementById("constraint-kind");
+  if(targets.circles.includes(id))kind.value="radius";
+  else if(targets.lines.includes(id)){if(!["horizontal","vertical"].includes(kind.value))kind.value="horizontal";}
+  else if(targets.points.includes(id)){if(!["distance","coincident"].includes(kind.value))kind.value="distance";}
+  else {clearSketchDraft();drawSketch();return;}
+  renderSketchConstraintControls(row);
+  document.getElementById("constraint-target-a").value=extend&&targets.points.includes(id)&&old.length&&targets.points.includes(old[0])?old[0]:id;
+  document.getElementById("constraint-target-b").value=extend&&targets.points.includes(id)&&old.length&&id!==old[0]?id:"";
+  drawSketch();
 }
 function renderSketchEditor(state) {
   sketchEditorState = state;
@@ -1113,7 +1160,7 @@ function renderSketchEditor(state) {
   drawSketch();
 }
 function drawSketch(row = sketchRow()) {
-  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; return; }
+  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; renderSketchConstraintControls(null); return; }
   const span=Number(document.getElementById("sketch-span").value); if (!Number.isFinite(span)||span<=0) return;
   sketchCanvas.setAttribute("viewBox", `${-span/2} ${-span/3} ${span} ${span*2/3}`);
   const entities=row.solved.entities;
@@ -1134,7 +1181,9 @@ function drawSketch(row = sketchRow()) {
   }
   const authored=new Set(row.source.entities.filter(e=>e.type==="point").map(e=>e.id));
   for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:"sketch-point"},p.id);
-  document.getElementById("sketch-diagnostics").textContent=`${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${row.solved.solve_state.status} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arcs support pointer creation and construction selection; radius/angle field editing, cubic and stored rectangle-helper editing remain outside this form scope.`;
+  renderSketchConstraintControls(sketchRow());
+  for(const element of sketchCanvas.querySelectorAll("[data-source-id]"))if(sketchConstraintSelection.includes(element.dataset.sourceId))element.classList.add("sketch-selected");
+  document.getElementById("sketch-diagnostics").textContent=`${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${sketchSolveLabel(row.solved.solve_state)} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arcs support pointer creation and construction selection; radius/angle field editing, cubic and stored rectangle-helper editing remain outside this form scope.`;
 }
 function draftPoint(event) {
   const p=sketchCanvas.createSVGPoint(); p.x=event.clientX;p.y=event.clientY;const local=p.matrixTransform(sketchCanvas.getScreenCTM().inverse());
@@ -1222,6 +1271,7 @@ sketchCanvas.addEventListener("click",event=> {
   }
   const id=event.target.dataset.sourceId;
   const source=sketchRow().source.entities.find(e=>e.id===id);
+  if(source)selectSketchConstraintTarget(id,event.shiftKey);
   if(source?.type==="point") { document.getElementById("sketch-action").value="point";document.getElementById("sketch-id").value=id;document.getElementById("sketch-create").checked=false; }
   else if(source?.type==="line"||source?.type==="arc") { document.getElementById("sketch-action").value="construction";document.getElementById("sketch-id").value=id;document.getElementById("sketch-a").value=id;document.getElementById("sketch-construction").checked=source.construction;sketchDraft=null;return; }
   else if(source?.type==="circle"||source?.type==="ellipse") {
@@ -1259,13 +1309,34 @@ document.getElementById("sketch-form").addEventListener("submit",async event=> {
   if(rectangleStart) {setStatus("Choose opposite rectangle corner or discard the draft before review.");return;}
   if(arcCenter||(document.getElementById("sketch-tool").value==="arc"&&!sketchDraft)) {setStatus("Finish arc centre/start/end direction, or choose Select to use the numeric fields.");return;}
   if(ellipseCenter||(document.getElementById("sketch-tool").value==="ellipse"&&!sketchDraft)) {setStatus("Finish ellipse centre/major endpoint/point on ellipse, or choose Select to use the numeric fields.");return;}
+  await reviewSketchOperations(sketchDraft??[sketchForm()]);
+});
+async function reviewSketchOperations(operations) {
   cancelFeatureReview();const seq=++sketchReviewSequence,path=currentPath;
-  const edit={document_id:sketchEditorState.document_id,revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations:sketchDraft??[sketchForm()]};sketchBusy=true;
+  const edit={document_id:sketchEditorState.document_id,revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations};sketchBusy=true;
   try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
     reviewedSketch={path,edit}; const row=plan.state.sketches.find(r=>r.source.id===edit.sketch_id);drawSketch(row);
-    document.getElementById("sketch-effect").textContent=`${row.solved.solve_state.status}. Verified volume: ${plan.evidence.volume_m3==null?"—":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}. ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
+    document.getElementById("sketch-effect").textContent=`${sketchSolveLabel(row.solved.solve_state)}. Verified volume: ${plan.evidence.volume_m3==null?"—":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}. ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
   }catch(error){if(seq===sketchReviewSequence){clearSketchDraft();drawSketch();setStatus(`Sketch refused: ${error}`);}}finally{sketchBusy=false;}
+}
+document.getElementById("sketch-constraint-form").addEventListener("submit",async event=>{
+  event.preventDefault();if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
+  const row=sketchRow(),operation=document.getElementById("constraint-kind").value,a=document.getElementById("constraint-target-a").value,b=document.getElementById("constraint-target-b").value,expr=document.getElementById("constraint-value").value.trim();
+  let form={operation,id:row.suggested_constraint_id};
+  if(operation==="remove_constraint") {
+    form.id=document.getElementById("constraint-remove").value;
+    if(!row.source.constraints.some(c=>c.id===form.id)){setStatus("Choose an existing constraint.");return;}
+  }else {
+    if(!a||(["distance","coincident"].includes(operation)&&(!b||a===b))){setStatus("Choose the required distinct source targets.");return;}
+    if(operation==="horizontal"||operation==="vertical")form.line=a;
+    else if(operation==="radius"){form.target=a;form.expr=expr;}
+    else {form.a=a;form.b=b;if(operation==="distance")form.expr=expr;}
+  }
+  clearSketchDraft(true);document.getElementById("sketch-tool").value="select";drawSketch();
+  await reviewSketchOperations([form]);
 });
+for(const id of ["constraint-kind","constraint-target-a","constraint-target-b","constraint-remove"])document.getElementById(id).addEventListener("change",()=>{clearSketchDraft(true);drawSketch();});
+document.getElementById("constraint-value").addEventListener("input",()=>{clearSketchDraft(true);drawSketch();});
 document.getElementById("sketch-apply").addEventListener("click",async()=> {
   if(sketchBusy||documentMutationBusy||!reviewedSketch)return;const reviewed=reviewedSketch;
   if(reviewed.path!==currentPath||reviewed.edit.revision!==featureTree?.revision){clearSketchDraft();return;}
@@ -1277,7 +1348,7 @@ document.getElementById("sketch-apply").addEventListener("click",async()=> {
 document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
 document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});
 document.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
+  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch||sketchConstraintSelection.length)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
 });
 
 // Creation drafts contain only typed intent; the backend owns IDs and source.

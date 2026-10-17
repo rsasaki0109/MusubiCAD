@@ -6,7 +6,7 @@ use opencad_core::{Expression, Length, OpenCadError, Result};
 use opencad_geometry::ExtrudeExtent;
 use opencad_graph::{eval_angle_expr, eval_length_expr, evaluate_param_graph, ParamGraph};
 use opencad_sketch::{solve_sketch, Constraint, Sketch};
-use opencad_solver::SolverOptions;
+use opencad_solver::{SolveStatus, SolverOptions};
 
 use crate::feature::{FeatureDefinition, FeatureNode};
 use crate::regenerate::PartModel;
@@ -144,14 +144,26 @@ pub fn solved_sketch_copy(sketch: &Sketch, values: &IndexMap<String, f64>) -> Re
     let mut copy = sketch.clone();
     crate::prepare_sketch(&mut copy)?;
     resolve_sketch_constraints(&mut copy, values)?;
-    solve_sketch(&mut copy, &SolverOptions::default())?;
+    let status = solve_sketch(&mut copy, &SolverOptions::default())?;
     retain_cubic_solution(&mut copy)?;
     match copy.solve_state {
         opencad_sketch::SolveState::FullyConstrained
         | opencad_sketch::SolveState::UnderConstrained { .. } => Ok(copy),
-        _ => Err(opencad_core::OpenCadError::validation(
-            "sketch edit requires a successfully solved sketch",
-        )),
+        _ => {
+            // ADR-106: explain the actual runtime outcome without changing
+            // admission, persisted SolveState or exposing mixed-unit residuals.
+            let reason = match status {
+                SolveStatus::OverConstrained { redundant, .. } => {
+                    format!("{redundant} redundant constraints")
+                }
+                SolveStatus::Contradictory { .. } => "constraints are contradictory".into(),
+                SolveStatus::NonConvergent { .. } => "constraint solve did not converge".into(),
+                _ => "constraint solve failed".into(),
+            };
+            Err(opencad_core::OpenCadError::validation(format!(
+                "sketch edit requires a successfully solved sketch: {reason}"
+            )))
+        }
     }
 }
 

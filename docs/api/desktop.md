@@ -171,3 +171,10 @@ late IPC replies cannot revive them. Existing source IDs are avoided when
 drafting, and the backend rejects collisions or stale intent without an orphan
 point. Construction circles use the same checkbox and gateway. See
 [sketch editing](sketch-editing.md#pointer-circle-intent-mcad-p17-004).
+
+P17-008 extends disposable sketch editor rows with backend-owned
+`constraint_targets` and `suggested_constraint_id`; see
+[selected constraint controls](sketch-editing.md#selected-constraint-controls-mcad-p17-008).
+The same inspection/plan/apply commands carry selected source constraints,
+actual remaining DOF and backend refusal diagnostics. No persisted field, new
+mutation command or solver policy is introduced.

@@ -1751,3 +1751,29 @@ bounds and must still fail. Mock provides genuine analytic ellipse mass/bounds;
 its unsupported ellipse mesh stays a refusal. Native display normals for whole
 ellipse prisms/copies follow existing physical triangles. Native pointer tests
 and model-host verification are separate from actual five-case typed parity.
+
+## Source-selected constraints and diagnostics (MCAD-P17-008)
+
+Follow [the circle/guide example](../../examples/agent/constrain_selected_circle.json)
+and [the sketch API](sketch-editing.md#selected-constraint-controls-mcad-p17-008).
+Inspect `constraint_targets` and `suggested_constraint_id` from the selected
+source sketch; use current document identity/revision and opaque history.
+Existing horizontal/vertical, authored point-pair distance/coincident, circle-only
+radius and remove_constraint forms share readonly plan and verified atomic apply.
+Returned catalogues, suggested IDs, solved SI coordinates and remaining DOF are
+disposable inspection data; do not persist them or assign solver state.
+
+Keep original source A=(2,-3), B=(26,15) mm and circle radius 5 mm. Add horizontal,
+20 mm point distance and 10 mm radius; backend DOF is 3→2→1→0, solved B=(22,-3) mm.
+The 6 mm circle prism is 600*pi mm³; its +5 mm XY datum bounds are
+(-8,-13,5)..(12,7,11) mm, COM (2,-3,8) mm. `constrain_selected_circle` grades
+exact source constraints, actual backend solved inspection and fresh native SI
+output independently. Changing the source radius directly is insufficient.
+Typed MCP/Agent parity uses zero model calls and is separate from actual native
+selection/control acceptance or an external model-host session.
+
+Actual backend refusal messages distinguish contradiction, redundant count and
+nonconvergence without changing solver policy or exposing mixed-unit residuals.
+A refusal retains all source/history/publication. Use separate verified removal
+and fresh addition when needed; same-patch remove/reuse of an ID remains forbidden.
+No arc/ellipse radius or cubic-control admission is added (ADR-106).

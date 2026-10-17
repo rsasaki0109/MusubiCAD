@@ -159,3 +159,26 @@ Both native drivers unconditionally execute the new ellipse helper; Desktop
 path policy includes it. Independent directional supports distinguish reflected
 orientations that preserve volume, COM and world bounds, alongside intended
 source checks and actual MCP parity/fresh SI export grading.
+
+## Source-selected sketch constraints
+
+P17-008 / [ADR-106](../adr/ADR-106-selected-sketch-constraints.md) adds only
+backend-derived target catalogues and suggested constraint IDs to disposable
+sketch inspection rows. The product offers declared-source line, circle and
+point-pair selection plus explicit authored-constraint removal. It displays
+actual backend DOF and solver refusal reasons. A shared review function, existing
+sequence/path invalidation and unchanged apply/history handler serve both
+selected controls and compatible raw forms. No frontend solve or graph write.
+
+The shared solved-copy boundary retains the actual runtime SolveStatus solely
+for refusal explanation. Solve admitted copies before dependent datum-frame
+regeneration so a failed solid cannot obscure contradiction/redundancy. Do not
+change solver classification/rank/tolerance, first-point anchoring, successful
+state admission, `.ocad` SolveState or profile/assertion/publication gates.
+Same-patch removed-ID tombstones remain enforced. No new source/geometry/sampler.
+
+Both native drivers unconditionally append the constraint helper after the
+existing 38 groups. New actual Linux/Windows controls, both-kernel independent
+physics and actual MCP/Agent parity/fresh SI grading are separate acceptance
+requirements. Source grading also rejects a direct radius overwrite producing
+the same solid. No duplicate solver/geometry/host credit.

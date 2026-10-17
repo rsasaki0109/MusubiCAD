@@ -1875,3 +1875,51 @@ Linux native 38-group acceptance passed. Full applicable exact-head CI and new
 actual Windows native ellipse acceptance still gate this task's qualifying
 main merge and conditional GUI credit; no completion/score is claimed from
 local or protocol evidence alone.
+
+P17-007 completed in PR #156, merge ed41a31fcb85eec970358405860f4cc475426585,
+tested head 4f64f882c675196c4a3a5372c500050b956c7f2c and base
+b40404624ef8d7b02141dfe48558df592bd749ec. Exact parents, identical tested/merged
+trees and clean synchronized main were verified. All four workflows/full eleven
+jobs passed (ten successes, expected skipped publisher): CI 38992105266,
+Design Review 38992105258, Desktop 38992105332, Release 38992105145. New actual
+Linux Tauri (38 groups) and Windows WebView2 ellipse acceptance passed; local
+tests were 1321 passed, zero failed, 37 existing ignored across 199 suites.
+New three-click ellipse operation and atomic source/history earn GUI 52 to 53,
+weighted CAD 53.65 to 53.80; agent operation stays 95.
+
+P17-008 begins under ADR-106: source-selected existing point/line/circle
+constraints, backend-owned target catalogue/DOF and actual solver refusal
+explanations. Existing guarded DesignPatch/history and admission remain the
+mutation path. New native controls, both-kernel placed physical/source evidence,
+MCP parity/grading and all mandatory checks/CI still gate completion and any
+conditional GUI credit. No schema, solver-policy or geometry expansion planned.
+
+P17-008 implements source-selected horizontal/vertical, authored point-pair
+distance/coincidence, circle radius and explicit authored constraint removal.
+Disposable backend catalogues/suggested IDs drive the new controls; backend
+remaining DOF and actual runtime solver refusal reasons are displayed. Solved
+copy admission precedes dependent datum regeneration so contradictory/redundant
+candidates retain meaningful diagnostics. Existing solver policy, source schema,
+DesignPatch/transaction/assertion/profile/history/publication gates are unchanged.
+
+Six new desktop Rust regressions pass, including genuine analytic Mock and OCCT
+volume 600*pi mm3 / area 320*pi mm2, independent XY/YZ/XZ/tilted bounds/COM,
+meshes, DOF 3→2→1→0, source retention, vertical/coincidence, required assertions,
+late-ID collision, same-patch tombstones and packed/expanded file history.
+The five-case actual MCP/Agent regression passes with independent intended
+constraint source, solved dimensions, fresh SI physical output and adversaries
+for direct-radius source substitution and equal-volume wrong placement.
+The locked Tauri build and actual Linux native 44-group acceptance pass; both
+native drivers append six new constraint groups unconditionally. New example,
+ADR-106, API/architecture, MCP guide, skill and eval are included. Full local
+mandatory checks, complete exact-head CI and actual Windows acceptance still
+gate completion and conditional GUI credit; no score is awarded here.
+
+All four required P17-008 local checks passed: formatting, workspace/all-target
+Clippy with denied warnings, workspace tests (1328 passed, zero failed,
+37 existing ignored across 201 suites), and the agent-plugin contract.
+The final locked Tauri build and actual Linux native 44-group acceptance pass.
+Eval self-test, Desktop policy, repository hygiene, changed-document local links,
+JavaScript/Python syntax and whitespace checks pass. Actual new Windows controls
+and the complete exact-head CI inventory remain required for its qualifying
+main merge and conditional GUI credit. No score is awarded before that merge.

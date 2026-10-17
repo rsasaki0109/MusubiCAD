@@ -200,3 +200,29 @@ The regression also checks source/physical orientation independently. A reflecte
 ellipse can preserve volume, COM and world bounds; native SI major/minor supports
 must differ. Whole native ellipse prisms/copies now derive display normals from
 their existing oriented triangles. Exact BREP and sampler settings are preserved.
+
+## Selected sketch constraint acceptance (P17-008)
+
+Choose Select, click a line/circle or a point and Shift-click another point.
+The constraint controls offer backend-admitted source targets and unit-bearing
+distance/radius values. Review shows the actual remaining DOF, solved overlay
+and verified volume. Apply uses the shared verified transaction/history; select
+an authored constraint for removal. Raw forms remain available. These controls
+add/remove constraints, without in-place value replacement or new solver kinds.
+
+Both native drivers unconditionally append
+[the constraint helper](../../tools/selected_constraint_ui_checks.mjs) after the
+existing 38 groups, for 44 total. Ordinary test geometry is seeded through real
+backend IPC, then actual DOM selection/form events test the new controls; no
+IPC bridge, product state, solver output or input property is replaced. Six new
+groups cover catalogues/highlights, Shift point pairs, real DOF 3→2→1→0,
+horizontal/vertical/distance/radius/coincidence, native 600*pi mm³ body, original
+source retention, removal/history, actual contradictory/redundant diagnostics,
+unit/range/unsupported ellipse refusals, late pending IPC cancellation and
+upstream/reload/stale publication protection. Execute and record Linux and the
+required exact-head Windows WebView2 step independently. No external-host claim.
+
+The five-placement MCP/Agent regression separately checks genuine authored
+constraints, actual solved inspection and independent fresh SI STL grading.
+The Mock tests use its existing genuine analytic primitives, never synthetic
+body-ID arithmetic. No schema, new constraint kind or sampler is admitted.

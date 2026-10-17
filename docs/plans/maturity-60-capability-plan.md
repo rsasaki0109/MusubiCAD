@@ -88,7 +88,8 @@ results, including absolute placement and equal-volume wrong-placement controls.
 Existing Phase 14 operations receive no duplicate credit. P17-005 /
 PR #153 established weighted CAD 53.50 and agent operation 95. P17-006 /
 PR #155 then earned weighted CAD 53.65 with new native arc acceptance and
-the explicit evidence ledger below. Further
+the explicit evidence ledger below. P17-007 / PR #156 then earned weighted
+CAD 53.80 (GUI 53) with new native ellipse controls and both-host acceptance. Further
 feature credit requires its own main merge and justified evidence ledger.
 
 ## Following phase: associative sketch and drawing coverage
@@ -274,3 +275,23 @@ MCP/Agent parity with fresh native output grading remain required. Existing
 ellipse geometry, legacy numeric editing, workplanes and prior pointer tools
 receive no repeat credit. No external model-host increment; default Mock
 ellipse tessellation remains unsupported. Fixed rubric and weights are unchanged.
+
+P17-007 earned that conditional increment in PR #156, merge
+`ed41a31fcb85eec970358405860f4cc475426585`, tested head
+`4f64f882c675196c4a3a5372c500050b956c7f2c`, base
+`b40404624ef8d7b02141dfe48558df592bd749ec`. All four workflows and the full
+eleven jobs passed, including actual new Linux/Windows ellipse acceptance.
+Current merged scores are GUI 53, weighted CAD 53.80, agent operation 95.
+
+## P17-008 conditional evidence ledger
+
+Baseline is GUI 53, weighted CAD 53.80, agent operation 95. Only a qualifying
+main merge after all four required checks, the full applicable exact-head CI
+inventory and new actual Linux/Windows selected-constraint controls earns
+GUI 53→54, weighted CAD 53.80→53.95 (about 54%); agent operation stays 95.
+Partial credit covers source-selected line/circle/point-pair constraints,
+authored constraint removal, usable DOF/refusal diagnostics and verified
+review/cancellation/history. Independent both-kernel physical results, actual
+protocol parity and intended-source/fresh native output grading are required.
+Existing raw forms, solver/constraint kinds, geometry, workplanes and host
+coverage receive no repeat credit. Fixed rubric and weights remain unchanged.

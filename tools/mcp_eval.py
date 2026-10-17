@@ -527,6 +527,29 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_selected_constraints" in task:
+        from selected_constraint_eval import source_problems, placed_problems, graph_source, solved_problems
+        desired=task['expected_selected_constraints']
+        problems.extend(source_problems(document,desired,graph_source(ROOT/task['source'])))
+        if musubicad is None:
+            problems.append("constraint grader requires actual backend inspection and fresh native export")
+        elif not problems:
+            try:
+                request={'jsonrpc':'2.0','id':1,'method':'opencad.inspect_sketches','params':{'path':str(document)}}
+                inspected=subprocess.run([str(musubicad),"agent"],input=json.dumps(request)+'\n',capture_output=True,text=True,timeout=60)
+                response=json.loads(inspected.stdout)
+                if inspected.returncode or not isinstance(response,dict) or response.get('id')!=1:
+                    problems.append("actual constraint inspection failed")
+                else:
+                    problems.extend(solved_problems(response.get('result',{}),desired['sketch_id']))
+                if not problems:
+                    with tempfile.TemporaryDirectory(prefix="musubicad-constraint-grade-") as folder:
+                        target=Path(folder)/"actual.stl"
+                        result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                        problems.extend(placed_problems(target.read_bytes(),desired['case'])
+                            if result.returncode==0 else ["constrained circle physical export failed"])
+            except (OSError,ValueError,subprocess.TimeoutExpired):
+                problems.append("actual constraint inspection or physical export unavailable")
     if "expected_pointer_ellipse" in task:
         from pointer_ellipse_eval import source_problems, placed_problems, graph_source
         desired=task['expected_pointer_ellipse']
