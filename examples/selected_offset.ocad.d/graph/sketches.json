@@ -1,0 +1,155 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "datum_plane",
+        "feature_id": "feature:datum"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:plate",
+          "construction": false,
+          "origin": [
+            0.0,
+            0.0
+          ],
+          "size": [
+            0.02,
+            0.01
+          ],
+          "corner_ids": [
+            "ent:c0",
+            "ent:c1",
+            "ent:c2",
+            "ent:c3"
+          ],
+          "edge_ids": [
+            "ent:e0",
+            "ent:e1",
+            "ent:e2",
+            "ent:e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    },
+    {
+      "id": "sketch:new_1",
+      "name": "Offset source",
+      "workplane": {
+        "type": "datum_plane",
+        "feature_id": "feature:datum"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:offset_center",
+          "construction": false,
+          "x": "origin_x + 1 mm",
+          "y": "origin_y - 1 mm"
+        },
+        {
+          "type": "circle",
+          "id": "ent:offset_disc",
+          "construction": false,
+          "center": "ent:offset_center",
+          "radius": "diameter / 4 + 5 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:offset_a",
+          "construction": false,
+          "x": "40 mm",
+          "y": "-30 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:offset_b",
+          "construction": false,
+          "x": "120 mm",
+          "y": "-30 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:offset_c",
+          "construction": false,
+          "x": "120 mm",
+          "y": "30 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:offset_d",
+          "construction": false,
+          "x": "40 mm",
+          "y": "30 mm"
+        },
+        {
+          "type": "line",
+          "id": "ent:offset_bottom",
+          "construction": false,
+          "start": "ent:offset_a",
+          "end": "ent:offset_b"
+        },
+        {
+          "type": "line",
+          "id": "ent:offset_right",
+          "construction": false,
+          "start": "ent:offset_b",
+          "end": "ent:offset_c"
+        },
+        {
+          "type": "line",
+          "id": "ent:offset_top",
+          "construction": false,
+          "start": "ent:offset_c",
+          "end": "ent:offset_d"
+        },
+        {
+          "type": "line",
+          "id": "ent:offset_left",
+          "construction": false,
+          "start": "ent:offset_d",
+          "end": "ent:offset_a"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "horizontal",
+          "id": "con:offset_horizontal",
+          "line": "ent:offset_bottom"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:offset_disc",
+          "entity_ids": [
+            "ent:offset_disc"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:new_1/profile:outer"
+        },
+        {
+          "id": "profile:loop:1",
+          "entity_ids": [
+            "ent:offset_bottom",
+            "ent:offset_right",
+            "ent:offset_top",
+            "ent:offset_left"
+          ],
+          "kind": "closed"
+        }
+      ]
+    }
+  ]
+}

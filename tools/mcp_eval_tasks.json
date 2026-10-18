@@ -2291,6 +2291,28 @@
         },
         "case": "seeded_XY"
       }
+    },
+    {
+      "id": "offset_selected_sketch",
+      "source": "examples/selected_offset.ocad.d",
+      "document": "offset_copy.ocad.d",
+      "prompt": "In {document}, follow examples/agent/offset_selected_sketch.json from the prepared original source. Use inspect_sketches.offset_targets and current identity/revision to plan_sketch_offset: source sketch:new_1, curve_ids [ent:offset_disc], constant distance '3 mm', explicit outward side and name 'Independent circle offset'. Review literal 13 mm radius at (2,-3) mm, backend-generated sketch:offset_1 / feature:offset_1 / ent:offset_1_point_1 / ent:offset_1_curve_1, same symbolic feature:datum and unchanged original 600*pi mm3 solid. Apply atomically with opaque history, then create feature:offset_body as a 6 mm NewBody extrusion of profile:circle:ent:offset_1_curve_1. Original curves, expressions, constraints, owners, parameters, consumers and order must remain exact. Copy has literal SI coordinates/radius and no source constraints or curve association. Independently grade fresh native SI STL: 1014*pi mm3, bounds (-11,-16,5)..(15,10,11) mm, COM (2,-3,8) mm and oriented closure plus exact source/history. Equivalent expression radius, wrong side/centre, source rewrite or removed source constraint must fail. Unitless/negative/collapsed distance, unsupported/reordered/open source, stale or foreign intent refuses without publication. No new geometry, solver or source schema.",
+      "expected_volume_mm3": 3185.57495074005,
+      "required_parameters": [
+        "origin_x",
+        "origin_y",
+        "diameter"
+      ],
+      "expected_selected_offset": {
+        "copy_sketch": "sketch:offset_1",
+        "copy_owner": "feature:offset_1",
+        "body_feature": "feature:offset_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
     }
   ]
 }

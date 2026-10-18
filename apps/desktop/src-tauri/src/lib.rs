@@ -23,6 +23,23 @@ fn map_error(err: opencad_core::OpenCadError) -> String {
 }
 
 #[tauri::command]
+fn plan_sketch_offset_cmd(
+    path: String,
+    offset: opencad_desktop::sketch_offset::SketchOffset,
+) -> Result<opencad_desktop::sketch_offset::SketchOffsetPlan, String> {
+    opencad_desktop::sketch_offset::plan_document_sketch_offset(&path, &offset).map_err(map_error)
+}
+#[tauri::command]
+fn apply_sketch_offset_cmd(
+    path: String,
+    offset: opencad_desktop::sketch_offset::SketchOffset,
+    history: Option<DocumentHistory>,
+) -> Result<opencad_desktop::FeatureEditResult, String> {
+    opencad_desktop::sketch_offset::apply_document_sketch_offset(&path, &offset, history)
+        .map_err(map_error)
+}
+
+#[tauri::command]
 fn inspect_sketch_creation_cmd(
     path: String,
 ) -> Result<opencad_desktop::sketch_creation::SketchCreationState, String> {
@@ -335,6 +352,8 @@ fn run_gui() {
             apply_sketch_create_cmd,
             plan_sketch_edit_cmd,
             apply_sketch_edit_cmd,
+            plan_sketch_offset_cmd,
+            apply_sketch_offset_cmd,
             plan_selection_edit_cmd,
             apply_selection_edit_cmd,
             list_templates,

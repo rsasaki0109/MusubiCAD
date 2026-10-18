@@ -54,7 +54,7 @@
           </div>
           <p>Global or admitted datum workplane, local coordinates in mm. Click twice for a line, circle or rectangle. For an arc, choose its centre, start point, then end direction; the radius stays fixed. Choose the direction and optional radial closure before drawing. Review before applying. Escape discards the draft.</p>
           <select id="sketch-select" aria-label="Authored sketch"></select>
-          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="curve_edit">Trim / extend</option><option value="line">Draw line</option><option value="circle">Draw circle</option><option value="rectangle">Draw rectangle</option><option value="arc">Draw arc</option><option value="ellipse">Draw ellipse (centre, major end, point on ellipse)</option></select>
+          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="curve_edit">Trim / extend</option><option value="offset">Offset independent copy</option><option value="line">Draw line</option><option value="circle">Draw circle</option><option value="rectangle">Draw rectangle</option><option value="arc">Draw arc</option><option value="ellipse">Draw ellipse (centre, major end, point on ellipse)</option></select>
           <label>Arc direction <select id="sketch-arc-direction"><option value="ccw">Counterclockwise</option><option value="cw">Clockwise</option></select></label>
           <label><input id="sketch-arc-sector" type="checkbox" /> Close arc with radii</label>
           <label>View span (mm) <input id="sketch-span" type="number" min="1" max="1000000" value="120" /></label>
@@ -74,6 +74,22 @@
             <p id="curve-info" aria-live="polite"></p>
             <button id="curve-review" type="submit" disabled>Review curve edit</button>
           </form>
+          <form id="sketch-offset-form">
+            <h3>Offset independent copy</h3>
+            <p>Pick one circle, or add stored curves in closed counterclockwise order. Only convex contours with mitred lines and tangent arc joins are supported. Source constraints are retained in the original; the copy has no curve association.</p>
+            <label>Source curve <select id="offset-source"></select></label>
+            <button id="offset-add" type="button">Add selected curve</button>
+            <ol id="offset-curves" aria-label="Ordered offset source curves"></ol>
+            <label>Distance (positive, explicit units) <input id="offset-distance" value="3 mm" required /></label>
+            <label>Side <select id="offset-side"><option value="outward">Outward</option><option value="inward">Inward</option></select></label>
+            <label>Copy name <input id="offset-name" value="Independent offset" required /></label>
+            <button id="offset-review" type="submit" disabled>Review offset copy</button>
+          </form>
+          <div id="offset-preview" hidden>
+            <p id="offset-effect" aria-live="polite"></p>
+            <button id="offset-apply" type="button">Create reviewed offset</button>
+            <button id="offset-cancel" type="button">Discard offset</button>
+          </div>
           <form id="sketch-construction-form">
             <h3>Construction geometry</h3>
             <label>Selected source <select id="construction-target" aria-describedby="construction-info"></select></label>

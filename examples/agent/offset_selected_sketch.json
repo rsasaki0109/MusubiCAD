@@ -1,0 +1,37 @@
+{
+  "task": "MCAD-P17-011",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Review a 3 mm outward independent copy of the expression-backed authored circle on the same symbolic datum plane, then extrude only the copy by 6 mm.",
+  "parameters": [
+    {"id":"param:origin_x","name":"origin_x","expr":"1 mm"},
+    {"id":"param:origin_y","name":"origin_y","expr":"-2 mm"},
+    {"id":"param:diameter","name":"diameter","expr":"20 mm"}
+  ],
+  "primitives": [
+    {"operation":"point","id":"ent:offset_center","x":"origin_x + 1 mm","y":"origin_y - 1 mm","create":true},
+    {"operation":"circle","id":"ent:offset_disc","center":"ent:offset_center","radius":"diameter / 4 + 5 mm","construction":false,"create":true},
+    {"operation":"point","id":"ent:offset_a","x":"40 mm","y":"-30 mm","create":true},
+    {"operation":"point","id":"ent:offset_b","x":"120 mm","y":"-30 mm","create":true},
+    {"operation":"point","id":"ent:offset_c","x":"120 mm","y":"30 mm","create":true},
+    {"operation":"point","id":"ent:offset_d","x":"40 mm","y":"30 mm","create":true},
+    {"operation":"line","id":"ent:offset_bottom","start":"ent:offset_a","end":"ent:offset_b","construction":false},
+    {"operation":"line","id":"ent:offset_right","start":"ent:offset_b","end":"ent:offset_c","construction":false},
+    {"operation":"line","id":"ent:offset_top","start":"ent:offset_c","end":"ent:offset_d","construction":false},
+    {"operation":"line","id":"ent:offset_left","start":"ent:offset_d","end":"ent:offset_a","construction":false}
+  ],
+  "constraints": [
+    {"type":"horizontal","id":"con:offset_horizontal","line":"ent:offset_bottom"}
+  ],
+  "offset": {"source_sketch_id":"sketch:new_1","curve_ids":["ent:offset_disc"],"distance":"3 mm","side":"outward","name":"Independent circle offset"},
+  "rectangle_curve_ids": ["ent:offset_bottom","ent:offset_right","ent:offset_top","ent:offset_left"],
+  "steps": [
+    "Add parameters by DesignPatch, create sketch:new_1 and feature:sketch_new_1 on the existing feature:datum with current document identity/revision, then apply the primitives and the source horizontal constraint through verified patch/history gateways.",
+    "Create feature:offset_source_body as a 6 mm NewBody of profile:circle:ent:offset_disc. This is the native fixture: examples/selected_offset.ocad.d contains the original source before any copy.",
+    "Read inspect_sketches.offset_targets. Call plan_sketch_offset with the offset intent and current document_id/revision. Review the concrete fresh sketch/owner/curve/point IDs, 13 mm radius at (2,-3) mm, original symbolic datum plane, closed profile and unchanged original 600*pi mm3 solid. Review must not write.",
+    "Call apply_sketch_offset with the identical intent/revision and opaque history. A single atomic patch creates the independent copy and authored owner. No constraints or curve association are copied. Undo/Redo restores complete canonical source.",
+    "Create feature:offset_body as a 6 mm NewBody extrusion of the backend-returned copy's closed profile. The result is V=1014*pi mm3, A=494*pi mm2. Editing diameter later leaves the copy coordinates/radius unchanged; editing the shared datum moves both sketches.",
+    "For a rectangle instead, select rectangle_curve_ids in exactly that CCW order: +3 mm gives 86 by 66 mm, -3 mm gives 74 by 54 mm. Open/reordered/reversed selections, non-tangent/concave contours and collapsed insets refuse without publishing. Distance must be a positive constant explicit length; choose side separately."
+  ],
+  "analytic_final": {"radius_mm":13,"center_mm":[2,-3],"volume_mm3":"1014*pi","surface_area_mm2":"494*pi","bounds_mm":{"min":[-11,-16,5],"max":[15,10,11]},"centroid_mm":[2,-3,8]},
+  "compatibility": "ADR-110 and ADR-052; existing bounded independent-copy offset, ordinary authored lines/arcs/circles only, no geometry/sampler/schema admission or persistent curve association."
+}

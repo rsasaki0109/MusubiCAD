@@ -107,10 +107,13 @@ fn part_examples() -> Vec<(String, OcadDocument)> {
 fn every_part_example_is_rebuilt_from_structural_patches() {
     let parts = part_examples();
     // Include the reviewed-curve source fixture in the full native patch-rebuild corpus.
-    assert_eq!(parts.len(), 35);
+    assert_eq!(parts.len(), 36);
     assert!(parts
         .iter()
         .any(|(name, _)| name == "selected_curve_edit.ocad.d"));
+    assert!(parts
+        .iter()
+        .any(|(name, _)| name == "selected_offset.ocad.d"));
     assert!(parts
         .iter()
         .any(|(name, _)| name == "faceted_circular_fillet.ocad.d"));

@@ -1343,3 +1343,24 @@ IPC invalidate review. No new geometry or `.ocad` schema is admitted. The runnab
 pre-trim example is `examples/selected_curve_edit.ocad.d`; eval
 `trim_selected_guide` requires exact source and independently measured fresh
 SI volume/bounds/COM/closure, rejecting wrong branches with the same solid.
+
+
+### Reviewed independent offset copies (P17-011 / ADR-110)
+
+For selected offset workflows use `inspect_sketches.offset_targets`, then
+`plan_sketch_offset` / `apply_sketch_offset` (same Agent/Tauri backend).
+Submit `offset` with current document_id/revision, source_sketch_id, explicitly
+ordered curve_ids, a positive constant explicit length string `distance`, an
+explicit outward/inward `side` and name. Review backend-generated globally free
+sketch/owner/entity IDs, solved SI curves, same symbolic workplane and complete
+solid consequences. Apply only that current intent with opaque history. No source
+constraints are copied; literal copies do not track source curve/parameter edits.
+Shared datum association remains live. Existing ADR-052 convex CCW shared-endpoint
+line/arc mitre/tangent contours or one circle only; no order inference, topology
+repair, helper/ellipse/cubic/construction admission or associative claim.
+Failures must retain files, source and history. Use explicit returned owner/profile
+for subsequent extrusion. See `examples/agent/offset_selected_sketch.json` and
+`examples/selected_offset.ocad.d`; +3 mm makes the 10 mm circle a 13 mm copy,
+whose 6 mm extrusion is 1014*pi mm3 with independent source/placed SI grading in
+`offset_selected_sketch`. Preserve original expressions/constraints/consumer/order;
+wrong placement or equivalent associative/literal source rewrites fail the intent.
