@@ -43,6 +43,7 @@ pub struct SketchEditorRow {
     pub suggested_constraint_id: String,
     pub construction_targets: Vec<SketchConstructionTarget>,
     pub curve_edit_targets: SketchCurveTargets,
+    pub offset_targets: Vec<String>,
 }
 /// Disposable source eligibility, independent of constraint-target admission.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -371,6 +372,21 @@ pub fn sketch_editor_state_with_kernel<K: GeometryKernel>(
             }
         };
         sketches.push(SketchEditorRow {
+            offset_targets: curve_edit::targets(doc, sketch)?
+                .cutters
+                .into_iter()
+                .filter(|id| {
+                    sketch.find_entity(id).is_some_and(|e| {
+                        !e.is_construction()
+                            && match e {
+                                SketchEntity::Arc(a) => {
+                                    a.start_point.is_some() && a.end_point.is_some()
+                                }
+                                _ => true,
+                            }
+                    })
+                })
+                .collect(),
             curve_edit_targets: curve_edit::targets(doc, sketch)?,
             constraint_targets: constraint_targets(sketch),
             suggested_constraint_id: suggested_constraint_id(sketch),

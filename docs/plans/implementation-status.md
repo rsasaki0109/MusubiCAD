@@ -10,7 +10,8 @@ are defined in the [canonical roadmap](roadmap.md).
 
 | Area | Status | Current evidence | Remaining work |
 |---|---|---|---|
-| Reviewed native trim/extend (MCAD-P17-010) | Implemented; complete upon qualifying PR merge | ADR-109 source catalogues, backend-only discovery, explicit end/branch/removals and solved endpoint verification, protected DesignPatch/history; analytic Mock/native OCCT independent placed solids, packed/expanded source and actual MCP/Agent/eval evidence; actual Linux native 56 groups including six new curve groups | Authored line/arc targets and line/circle/arc cutters only; Windows exact-head native 56 groups and complete local/CI inventory plus main merge gate completion/GUI credit; no helper/projected/ellipse/cubic admission or automatic constraint/consumer repair |
+| Reviewed native independent offsets (MCAD-P17-011) | Implemented; complete upon qualifying PR merge | ADR-110 ordinary source catalogue, explicit ordered selection/constant distance/side, backend-generated sketch/owner/entity IDs, solved candidate and protected atomic DesignPatch/history; six both-kernel/source/file regressions, actual MCP/Agent five placements and independent source/physical/adversary eval; actual Linux native 62 groups | Existing convex CCW shared-endpoint mitre/tangent contours or one circle only; no automatic repair or persistent curve association; exact-head Windows native and full local/CI inventory plus main merge still gate completion and credit |
+| Reviewed native trim/extend (MCAD-P17-010) | Complete: PR #160 | ADR-109 source catalogues, backend-only discovery, explicit end/branch/removals and solved endpoint verification, protected DesignPatch/history; analytic Mock/native OCCT independent placed solids, packed/expanded source and actual MCP/Agent/eval evidence; actual Linux and exact-head Windows native 56 groups including six new curve groups; qualifying main merge 8512b229 | Authored line/arc targets and line/circle/arc cutters only; no helper/projected/ellipse/cubic admission or automatic constraint/consumer repair |
 | Counterbored standard holes (MCAD-P16-003) | Implemented; complete upon PR merge | ADR-063 strict source/seat and lengths; source/physical stock/entry ownership, actual union volume/first moments/closed faces, producer metadata and warm-cache rechecks; both kernels, schema/migration/round trips, patch-authored example, guide/skill/eval, actual MCP creation/review/edit/refusal and Agent history | Original rectangle/distance/NewBody stock and owned end faces only; no side/oblique/already-cut/imported/fused targets, through-all, inferred head sizes, countersinks or threads; default Mock unsupported |
 | Parent-context flexible constraints (MCAD-P13-012) | Complete upon PR merge | ADR-061; exact connector scopes/owners, analytic distance/angle solve, explicit angular branch, bounded unique coordinates/coupled followers, fully bound DOF and shared physical leaves; DesignPatch/schema/migration/history, Mock/OCCT analytic fixtures, actual MCP, examples/guide/skill/eval | Fixed outer instances and immediate root-child drivers only; unsupported nonlinear/deeper/free scopes and motion/reach/URDF/HTML refuse; Mock exact mesh intersection/inertia refuse |
 | Independent articulated copies (MCAD-P13-011) | Complete upon PR merge | ADR-059/060; strict parent-owned coordinates, source inspection/snapshots, scoped physical leaves, consumer gates, DesignPatch/history/schema round trips, both-kernel analytic example, guide/skill/eval | Parent-context constraints remain P13-012; full hierarchical DOF/motion/reach/URDF/HTML and nested articulated/pattern scopes refuse; Mock exact mesh intersection/inertia refuse; no maturity credit |
@@ -2063,3 +2064,72 @@ Existing planner/kernel/solver/workplanes and host coverage receive no repeat
 credit. Before the qualifying P17-010 main merge, the baseline is CAD 54.10 /
 GUI 55 / agent 95; after it, CAD 54.25 / GUI 56 / agent 95. The task PR records
 tested head/base, all exact-head CI runs/native step and actual merge parents/tree.
+
+
+P17-010 qualifying merge (2026-10-18): PR #160 merged as
+8512b229dcbd57d1900e4bfe95496a61cbd40ec8, parents tested base
+86b5ebfaba7ec09bef1a7e034e5778505aedb97d and tested head
+491298280acf59a2013ffca200f1ba1aeb8c9c45, with identical tested/merged trees
+and clean synchronized main. Exact-head CI 39095243925, Design Review
+39095243919, Desktop 39095243935 and Release 39095244130 all succeeded:
+11 jobs, ten success and only the expected PR release publisher skipped.
+The actual Windows native 56-group step succeeded 04:00:33Z–04:01:58Z;
+Linux actual 56 groups and all four local checks (1,350 passed, zero failed,
+37 existing ignored, 207 suites) passed. This earns GUI 55 to 56, weighted CAD
+54.10 to 54.25 (about 54%) for usable selected trim/extend controls and the
+explicit branch/removal/review lifecycle. Agent operation stays 95. Existing
+planner/kernel/solver/workplanes/host evidence receives no repeated credit.
+
+P17-011 starts from that clean merged main under ADR-110. Selected independent
+offset copies reuse ADR-052's bounded analytic planner and create one new sketch
+and authored owner through reviewed DesignPatch/history. Source selection/order,
+constant positive unit-bearing magnitude, side, backend-generated IDs and
+independence are explicit. Source/physical/refusal/history/MCP evidence, actual
+new Linux/Windows controls, example/guide/skill/eval and all local/CI gates plus
+main merge are required before completion or conditional GUI credit. Current
+baseline remains weighted CAD 54.25 / GUI 56 / agent operation 95.
+
+
+P17-011 implementation evidence (2026-10-18): six focused desktop regressions
+pass using genuine analytic Mock and native OCCT, including independent outward/
+inward circle and ordered rectangle dimensions, placed XY/YZ/XZ/tilted cylinder
+V=1014*pi mm3 and A=494*pi mm2, world bounds/COM and oriented closed meshes,
+source parameter independence, existing exact tangent line/arc topology, globally
+free IDs, catalogue exclusions, assertions/refusals, packed/expanded source and
+canonical Undo/Redo. Actual stdio MCP/Agent parity passes in five placements,
+with independent exact literal/original-source grading and fresh SI STL plus
+wrong-side/centre/association/source-rewrite/nonfinite adversaries; zero model
+turns. All 36 native part examples rebuild from structural patches, all 53
+example documents validate, all 35 feature graphs derive exactly and canonical
+writer-form checks pass. Existing goldens/schemas/solver/kernel admission stay
+unchanged. API/architecture/ADR-110, MCP guide/skill, runnable original source,
+recipe and independently graded offset_selected_sketch eval are included.
+
+The locked Tauri build and actual Linux WebKit product controls pass all 62
+groups, including six unconditional new offset groups shared with Windows:
+source/canvas/keyboard picks and explicit sides/generated IDs, read-only review,
+atomic copy/owner apply and canonical history, independent parameter edits and
+real circle/rectangle extrusion dimensions, ordered list moves/removal/refusal,
+unit/collapse/open refusal and complete form/tool/view/source/upstream/reload/
+stale/late-real-IPC cancellation. No IPC or geometry is mocked.
+
+All four final mandatory local checks, exact-head Windows native 62 groups,
+complete CI inventory and actual main merge still gate completion/credit. Only
+the qualifying merge earns GUI 56 to 57 and weighted CAD 54.25 to 54.40 (about
+54%) for usable selected offset controls and their protected review lifecycle.
+Agent operation stays 95; existing planner/kernel/solver/workplanes/host evidence
+receives no repeat credit. Before that merge, baseline remains CAD 54.25 / GUI
+56 / agent 95. The task PR records tested head/base and qualifying merge proof.
+
+
+P17-011 final mandatory local evidence (2026-10-18): all four checks pass,
+including 1,357 workspace tests passed, zero failed and 37 existing ignored
+across 209 suites. Formatting, workspace/all-target clippy with warnings denied,
+and the actual agent-plugin test pass. Required exact-head Windows native,
+complete four-workflow/11-job CI inventory and qualifying main merge remain
+pending; score stays CAD 54.25 / GUI 56 / agent operation 95 until that merge.
+
+The final locked Tauri rebuild also passes. Actual Linux native 62 groups pass
+again on that final binary (2026-10-18 05:50:06Z–05:52:36Z), with unchanged
+source/binary SHA-256 hashes throughout the run. Exact-head Windows native and
+the complete CI inventory plus qualifying main merge still gate completion.

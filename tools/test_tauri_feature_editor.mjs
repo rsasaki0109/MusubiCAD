@@ -11,6 +11,7 @@ import {checkPointerEllipses} from './pointer_ellipse_ui_checks.mjs';
 import {checkSelectedConstraints} from './selected_constraint_ui_checks.mjs';
 import {checkSelectedConstruction} from './selected_construction_ui_checks.mjs';
 import {checkSelectedCurveEdits} from './selected_curve_edit_ui_checks.mjs';
+import {checkSelectedOffsets} from './selected_offset_ui_checks.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -107,5 +108,6 @@ try {
   results.push(...await checkSelectedConstraints({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkSelectedConstruction({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkSelectedCurveEdits({evaluate,until,source,logicalSource,partPath}));
+  results.push(...await checkSelectedOffsets({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_tauri_editor_interactions_match_verified_backend_results:'passed',results}, null, 2));
 } finally { socket.close(); }

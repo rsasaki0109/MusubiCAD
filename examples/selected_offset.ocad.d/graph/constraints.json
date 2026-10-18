@@ -1,0 +1,12 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:new_1",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:offset_horizontal",
+        "line": "ent:offset_bottom"
+      }
+    }
+  ]
+}

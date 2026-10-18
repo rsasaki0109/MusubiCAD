@@ -237,3 +237,24 @@ never replace source catalogues. Six new unconditional real native groups
 follow the existing 50 in both Linux and Windows drivers. Separate both-kernel
 absolute physical/source/history evidence and real MCP/Agent/eval gates remain
 required. No new solver, sampler, kernel admission or persisted schema.
+
+
+### Reviewed independent offset creation (ADR-110)
+
+MCAD-P17-011 adds `sketch_offset` beside sketch editing/creation because offset
+creates both a new authored sketch and owner. Typed identity/revision-bound
+intent selects ordered backend-catalogued ordinary curves, a constant explicit
+positive length, outward/inward side and a name. Existing ADR-052 planning and
+ADR-108 current-source resolution produce literal independent entities; the
+backend allocates globally free stable IDs and appends the owner in one patch.
+The symbolic global/datum workplane is retained. Original sources, constraints,
+consumers, expressions and parameters remain exact; constraints are not copied.
+There is no new geometry, sampler, solver, schema or associative dependency.
+
+Read-only review and apply share complete solve/profile/assertion/solid/native
+display verification, transaction/history and file re-read/publication guards.
+Tauri and Agent/MCP call the same gateway. UI closure state holds disposable
+ordered intent and reviewed rows only, with the common sketch review sequence
+invalidating source/file/form/tool/view/upstream changes and late IPC. Candidate
+rows never replace source catalogues. Real Linux WebKit and Windows WebView2
+checks append six unconditional offset groups after the existing 56.

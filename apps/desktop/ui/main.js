@@ -1006,6 +1006,87 @@ let reviewedSketch = null;
 let sketchReviewSequence = 0;
 let sketchBusy = false;
 let curveOptions = null;
+// Disposable offset intent/review only. Source and generated IDs stay backend-owned.
+const offsetControls = (() => {
+  const control = id => document.getElementById("offset-" + id);
+  let selected = [], reviewed = null;
+  function clear(keepSelection) {
+    reviewed = null; control("preview").hidden = true;
+    if (!keepSelection) { selected = []; control("source").value = ""; }
+  }
+  function add(id) {
+    if (sketchBusy || documentMutationBusy || !sketchRow()?.offset_targets.includes(id)) return;
+    clearSketchDraft(true); document.getElementById("sketch-tool").value = "offset";
+    if (!selected.includes(id)) selected.push(id);
+    drawSketch();
+  }
+  function render(row) {
+    const select = control("source"), old = select.value, ids = row?.offset_targets ?? [];
+    select.replaceChildren(); const empty = document.createElement("option");
+    empty.value = ""; empty.textContent = "Choose source curve"; select.append(empty);
+    for (const id of ids) { const o = document.createElement("option"); o.value = id; o.textContent = id; select.append(o); }
+    select.value = ids.includes(old) ? old : "";
+    const list = control("curves"); list.replaceChildren();
+    for (const [index, id] of selected.entries()) {
+      const item = document.createElement("li"); item.dataset.offsetId = id;
+      item.append(document.createTextNode(id + " "));
+      for (const [label, delta] of [["Move up", -1], ["Move down", 1], ["Remove", 0]]) {
+        const button = document.createElement("button"); button.type = "button"; button.textContent = label;
+        button.setAttribute("aria-label", `${label} ${id}`);
+        button.disabled = delta !== 0 && (index + delta < 0 || index + delta >= selected.length);
+        button.addEventListener("click", () => {
+          clearSketchDraft(true);
+          if (delta === 0) selected.splice(index, 1);
+          else [selected[index], selected[index + delta]] = [selected[index + delta], selected[index]];
+          drawSketch();
+        }); item.append(button);
+      }
+      list.append(item);
+    }
+    control("add").disabled = !row || !select.value;
+    control("review").disabled = !row || selected.length === 0;
+  }
+  control("add").addEventListener("click", () => add(control("source").value));
+  control("source").addEventListener("change", () => { clearSketchDraft(true); drawSketch(); });
+  for (const id of ["distance", "name", "side"]) control(id).addEventListener(id === "side" ? "change" : "input", () => { clearSketchDraft(true); drawSketch(); });
+  control("cancel").addEventListener("click", () => { clearSketchDraft(); drawSketch(); });
+  document.getElementById("sketch-offset-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (sketchBusy || documentMutationBusy || !currentPath || !sketchRow() || !selected.length) return;
+    const offset = { document_id: sketchEditorState.document_id, revision: sketchEditorState.revision,
+      source_sketch_id: sketchRow().source.id, curve_ids: [...selected], distance: control("distance").value.trim(),
+      side: control("side").value, name: control("name").value.trim() };
+    clearSketchDraft(true); cancelFeatureReview();
+    const seq = ++sketchReviewSequence, path = currentPath; sketchBusy = true;
+    try {
+      const plan = await invoke("plan_sketch_offset_cmd", { path, offset });
+      if (seq !== sketchReviewSequence || path !== currentPath || documentMutationBusy) return;
+      const row = plan.state.sketches.find(r => r.source.id === plan.destination_sketch_id);
+      reviewed = { path, offset, row };
+      const point = p => `(${p.map(v => (v * 1000).toFixed(6)).join(", ")}) mm`;
+      const curves = plan.curves.map(c => c.type === "circle" ? `circle centre ${point(c.center_m)}, radius ${(c.radius_m * 1000).toFixed(6)} mm`
+        : c.type === "line" ? `line ${point(c.start_m)} → ${point(c.end_m)}`
+        : `arc centre ${point(c.center_m)}, radius ${(c.radius_m * 1000).toFixed(6)} mm, start ${(c.start_rad * 180 / Math.PI).toFixed(6)} deg, sweep ${(c.sweep_rad * 180 / Math.PI).toFixed(6)} deg`).join("; ");
+      control("effect").textContent = `${offset.side} ${offset.distance}. Independent copy: later source curve/parameter edits do not update it. Same workplane: ${row.workplane_label}. New sketch ${plan.destination_sketch_id}; owner ${plan.destination_feature_id}; curves ${plan.destination_curve_ids.join(", ")}; points ${plan.destination_point_ids.join(", ")}. ${curves}. Closed profiles: ${row.solved.profiles.length}. Existing verified volume: ${plan.evidence.volume_m3 == null ? "No solid" : (plan.evidence.volume_m3 * 1e9).toFixed(3) + " mm³"}. Source and consumers unchanged; no constraints copied. Review only until Create.`;
+      control("preview").hidden = false; drawSketch();
+    } catch (error) { if (seq === sketchReviewSequence) { clearSketchDraft(true); drawSketch(); setStatus(`Offset refused: ${error}`); } }
+    finally { sketchBusy = false; }
+  });
+  control("apply").addEventListener("click", async () => {
+    if (sketchBusy || documentMutationBusy || !reviewed) return;
+    const draft = reviewed;
+    if (draft.path !== currentPath || draft.offset.revision !== featureTree?.revision) { clearSketchDraft(); drawSketch(); return; }
+    sketchBusy = true; documentMutationBusy = true;
+    try {
+      const result = await invoke("apply_sketch_offset_cmd", { path: draft.path, offset: draft.offset, history: documentHistoryState?.history ?? null });
+      acceptDocumentHistory(result.history); await loadDocument(draft.path, { keepParamHistory: true });
+      setStatus("Created verified independent offset.");
+    } catch (error) { setStatus(`Offset refused: ${error}`); }
+    finally { sketchBusy = false; documentMutationBusy = false; clearSketchDraft(); drawSketch(); }
+  });
+  return { clear, render, add, previewRow: () => reviewed?.row,
+    hasDraft: () => selected.length > 0 || reviewed !== null, selected: () => [...selected] };
+})();
 function clearCurveEdit(keepSelection) {
   curveOptions=null;
   document.getElementById("curve-branch").value="";
@@ -1172,6 +1253,7 @@ function drawCircleDraft(start, end) {
 }
 function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
 function clearSketchDraft(keepConstraintSelection = false) {
+  offsetControls.clear(keepConstraintSelection);
   clearCurveEdit(keepConstraintSelection);
   cancelSketchCreationReview();
   sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null; circleStart = null; rectangleStart = null; arcCenter = null; arcStart = null; ellipseCenter = null; ellipseMajor = null;
@@ -1249,7 +1331,8 @@ function renderSketchEditor(state) {
   if ([...select.options].some(o=>o.value===old)) select.value=old;
   drawSketch();
 }
-function drawSketch(row = sketchRow()) {
+function drawSketch(row = offsetControls.previewRow() ?? sketchRow()) {
+  offsetControls.render(sketchRow());
   sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; renderSketchConstraintControls(null); renderConstructionControls(null); renderCurveControls(null); return; }
   const span=Number(document.getElementById("sketch-span").value); if (!Number.isFinite(span)||span<=0) return;
   sketchCanvas.setAttribute("viewBox", `${-span/2} ${-span/3} ${span} ${span*2/3}`);
@@ -1274,6 +1357,13 @@ function drawSketch(row = sketchRow()) {
   renderSketchConstraintControls(sketchRow());
   renderConstructionControls(sketchRow());
   renderCurveControls(sketchRow());
+  for (const e of sketchCanvas.querySelectorAll("[data-source-id]")) {
+    if (offsetControls.selected().includes(e.dataset.sourceId)) e.classList.add("sketch-selected");
+    if (document.getElementById("sketch-tool").value === "offset" && sketchRow()?.offset_targets.includes(e.dataset.sourceId)) {
+      e.setAttribute("role", "button"); e.setAttribute("tabindex", "0"); e.setAttribute("aria-label", `Add offset curve ${e.dataset.sourceId}`);
+      e.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); offsetControls.add(e.dataset.sourceId); } });
+    }
+  }
   const constructionTarget=document.getElementById("construction-target").value;
   const curveTargets=[document.getElementById("curve-target").value,document.getElementById("curve-cutter").value];
   for(const element of sketchCanvas.querySelectorAll("[data-source-id]"))if(sketchConstraintSelection.includes(element.dataset.sourceId)||element.dataset.sourceId===constructionTarget||curveTargets.includes(element.dataset.sourceId))element.classList.add("sketch-selected");
@@ -1293,6 +1383,7 @@ function draftPoint(event) {
 }
 sketchCanvas.addEventListener("click",event=> {
   if(documentMutationBusy||sketchBusy||!sketchRow())return;
+  if(document.getElementById("sketch-tool").value==="offset") { offsetControls.add(event.target.dataset.sourceId); return; }
   if(document.getElementById("sketch-tool").value==="curve_edit") {
     if(event.target.dataset.curveBranch!==undefined){selectCurveBranch(event.target.dataset.curveBranch);return;}
     const id=event.target.dataset.sourceId,role=document.getElementById("curve-pick-role").value;
@@ -1424,6 +1515,7 @@ document.getElementById("sketch-form").addEventListener("submit",async event=> {
   await reviewSketchOperations(sketchDraft??[sketchForm()]);
 });
 async function reviewSketchOperations(operations) {
+  offsetControls.clear(false);
   cancelFeatureReview();const seq=++sketchReviewSequence,path=currentPath;
   const edit={document_id:sketchEditorState.document_id,revision:sketchEditorState.revision,sketch_id:sketchRow().source.id,operations};sketchBusy=true;
   try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
@@ -1477,7 +1569,7 @@ document.getElementById("sketch-apply").addEventListener("click",async()=> {
 document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
 document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});
 document.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch||sketchConstraintSelection.length||document.getElementById("construction-target").value||curveOptions||document.getElementById("curve-target").value||document.getElementById("curve-cutter").value)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
+  if(event.key==="Escape"&&(offsetControls.hasDraft()||circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch||sketchConstraintSelection.length||document.getElementById("construction-target").value||curveOptions||document.getElementById("curve-target").value||document.getElementById("curve-cutter").value)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
 });
 
 // Creation drafts contain only typed intent; the backend owns IDs and source.

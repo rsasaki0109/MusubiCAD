@@ -399,3 +399,60 @@ Escape/discard and late IPC invalidate old discovery/review.
 See [the recipe](../../examples/agent/trim_selected_guide.json) and the runnable
 `examples/selected_curve_edit.ocad.d` source before trimming. Its branch 1 is
 (10,3) mm; the unchanged cylinder has V=600*pi mm³ and A=320*pi mm².
+
+
+## Reviewed independent offset copies (P17-011, ADR-110)
+
+`inspect_sketches` rows include backend `offset_targets`: stored ordinary
+lines/arcs with stored authored point references (arcs need explicit ends), or
+circles. Stored Rectangle helpers/generated edges, projected/cubic/ellipse and
+construction curves are excluded. Source must have one active authored owner on
+an admitted global/datum workplane. Select a single circle or explicitly ordered
+shared-endpoint convex CCW line/arc contour; do not sort/reverse/repair it in UI.
+Existing ADR-052 analytic mitre/tangent joins, 256 curves, 1 nm contact/collapse
+and finite coordinate limits remain unchanged.
+
+Tauri `plan_sketch_offset_cmd` / `apply_sketch_offset_cmd`, Agent
+`opencad.plan_sketch_offset` / `opencad.apply_sketch_offset` and MCP
+`plan_sketch_offset` / `apply_sketch_offset` share this transport intent:
+
+```json
+{"path":"part.ocad.d","offset":{"document_id":"doc:part","revision":"<inspect_sketches.revision>","source_sketch_id":"sketch:new_1","curve_ids":["ent:offset_disc"],"distance":"3 mm","side":"outward","name":"Independent circle offset"}}
+```
+
+`distance` is a positive constant length above 1 nm and at most 1e6 m with
+explicit m/mm/cm/in units. `side` is separately `outward` or `inward`.
+Unitless/negative/zero/nonfinite/angle/parameter distance refuses. Source
+expressions resolve strictly at the current revision. Unknown fields refuse;
+clients supply neither output IDs, frames, patches nor an associative mode.
+
+Read-only plan returns `offset`, deterministic globally free
+`destination_sketch_id`, `destination_feature_id`, `destination_curve_ids`,
+`destination_point_ids`, `signed_distance_m`, `association: independent_copy`,
+analytic SI `curves`, solved candidate `state`, whole-document `evidence` and the
+revision-guarded DesignPatch. The patch creates the new sketch, literal ordinary
+entities and its authored owner atomically; source entities/expressions/flags,
+constraints, consumers, parameters and order are retained. The copy uses the
+original symbolic workplane; no source constraints are copied. Later source
+parameter edits do not update the literal copy, while shared datum edits move
+both sketches. There is no persistent curve association.
+
+Review displays actual backend dimensions, new IDs, closed profiles and retained
+solid consequences; use `list_features.rows[].closed_profiles` for a subsequent
+explicit extrusion. Apply takes the identical current intent plus optional opaque
+`history`, recomputes/reverifies the complete candidate including assertions and
+native display, re-reads the source before publication and returns
+`FeatureEditResult`. Refusal leaves document/history/file/publication unchanged.
+Packed/expanded source and canonical Undo/Redo use the existing history gateway.
+No .ocad schema changes.
+
+Native controls provide dropdown/canvas/keyboard source picks, an ordered list
+with Move up/down/Remove, explicit distance/side/name and separate Review/Create.
+Candidate geometry never enters source catalogues. Source/file/tool/view/form,
+selection/order/upstream changes, Escape/Discard, another command and late IPC
+invalidate the old review. See
+[the recipe](../../examples/agent/offset_selected_sketch.json) and the runnable
+`examples/selected_offset.ocad.d` original source. Its outward 3 mm circle copy
+has radius 13 mm, centre (2,-3) mm; a separate 6 mm copy extrusion has
+V=1014*pi mm3, A=494*pi mm2 and datum-plane bounds (-11,-16,5)..(15,10,11) mm.
+A rectangle source 80x60 mm becomes 86x66 mm outward or 74x54 mm inward.

@@ -1,0 +1,172 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:datum",
+      "feature:axis",
+      "feature:sketch",
+      "feature:extrude",
+      "feature:sketch_new_1",
+      "feature:offset_source_body"
+    ],
+    "features": {
+      "feature:datum": {
+        "id": "feature:datum",
+        "name": "datum",
+        "feature_type": "datum_plane",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:axis": {
+        "id": "feature:axis",
+        "name": "axis",
+        "feature_type": "datum_axis",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch": {
+        "id": "feature:sketch",
+        "name": "sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude": {
+        "id": "feature:extrude",
+        "name": "extrude",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_new_1": {
+        "id": "feature:sketch_new_1",
+        "name": "Offset source",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:offset_source_body": {
+        "id": "feature:offset_source_body",
+        "name": "Original circle body",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:datum",
+        "target": "feature:sketch",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch",
+        "target": "feature:extrude",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:datum",
+        "target": "feature:sketch_new_1",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:sketch_new_1",
+        "target": "feature:offset_source_body",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:axis",
+      "name": "axis",
+      "definition": {
+        "type": "datum_axis",
+        "origin_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "origin_expr": [
+          "axis_x",
+          null,
+          null
+        ]
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:datum",
+      "name": "datum",
+      "definition": {
+        "type": "datum_plane",
+        "base": {
+          "type": "global",
+          "plane": "XY"
+        },
+        "offset": {
+          "value_si": 0.005
+        },
+        "offset_expr": "offset"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:extrude",
+      "name": "extrude",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch",
+        "profile_ref": "sketch:plate/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.004
+          }
+        },
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:offset_source_body",
+      "name": "Original circle body",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_new_1",
+        "profile_ref": "profile:circle:ent:offset_disc",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.006
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "6 mm"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch",
+      "name": "sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:plate"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_new_1",
+      "name": "Offset source",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:new_1"
+      },
+      "suppressed": false
+    }
+  ]
+}

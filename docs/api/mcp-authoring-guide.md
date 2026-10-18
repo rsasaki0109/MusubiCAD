@@ -1852,3 +1852,33 @@ branch/removals/old source and fresh native SI output independently: cylinder
 V=600*pi mm3, bounds (-8,-13,5)..(12,7,11) mm and COM (2,-3,8) mm.
 Wrong branch or rewriting an old unconsumed point fails despite equal mass.
 MCP describes typed intent; it does not simulate pointer events.
+
+
+## Reviewed selected independent offsets (P17-011)
+
+Follow [the recipe](../../examples/agent/offset_selected_sketch.json) and
+[the shared API](sketch-editing.md#reviewed-independent-offset-copies-p17-011-adr-110).
+`examples/selected_offset.ocad.d` is the runnable original source before copying.
+Read `inspect_sketches.offset_targets`; supply current document_id/revision,
+source_sketch_id, explicit ordered curve_ids, positive constant unit-bearing
+`distance`, `side: outward|inward` and `name` inside `offset` to
+`plan_sketch_offset`, then `apply_sketch_offset` with the identical intent and
+opaque history. Backend review returns the concrete patch, globally free output
+sketch/owner/point/curve IDs, solved SI curves, profile and solid evidence. No
+output IDs or patch need be authored by the client. Keep source owners and
+consumer bindings exact; copied literal geometry has no source constraints or
+persistent curve association. The same symbolic datum still moves both sketches.
+
+Only one circle or existing bounded ordered convex CCW line/arc contours with
+shared endpoints and mitre/tangent joins are admitted. Do not auto-sort/reverse,
+repair topology, project helpers or sample unsupported curves. Reject unitless,
+negative, zero, angle/parameter magnitude, collapse, construction/ellipse/cubic/
+helper/foreign/unsupported selections and stale identity/revision atomically.
+For the recipe choose ent:offset_disc, 3 mm outward: 10 to 13 mm radius at
+(2,-3) mm. Create a separate explicit 6 mm NewBody copy extrusion from the
+returned owner/profile; fresh native SI evidence is 1014*pi mm3, A=494*pi mm2,
+bounds (-11,-16,5)..(15,10,11) mm and COM (2,-3,8) mm. Eval
+`offset_selected_sketch` grades exact independent literal/source/constraint/
+owner/workplane intent plus fresh oriented closed SI STL. Equal-volume wrong
+placement or rewriting an original unconsumed source fails. Model-free actual
+MCP/Agent tests also prove parity, refusal and canonical history in five placements.

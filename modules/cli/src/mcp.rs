@@ -224,6 +224,8 @@ fn tools() -> Vec<Tool> {
             handler: Handler::Agent("opencad.apply_feature_edit"),
             schema: feature_edit_schema,
         },
+        Tool { name: "plan_sketch_offset", description: "Review an independent analytic offset on the same source workplane. Require current document identity/revision, explicit ordered ordinary authored curve IDs, constant unit-bearing positive distance, outward/inward side and name. Backend assigns globally free sketch/owner/entity IDs; returns solved candidate and verified whole-document evidence without writing. Convex CCW/tangent joins or one circle only; no association or constraints copied.", handler: Handler::Agent("opencad.plan_sketch_offset"), schema: sketch_offset_schema },
+        Tool { name: "apply_sketch_offset", description: "Reverify and atomically publish an independent offset sketch and owner using the same DesignPatch/history gateway as Tauri. Refuse stale identity/revision, unsupported topology, units, collapse or assertions without source/history writes.", handler: Handler::Agent("opencad.apply_sketch_offset"), schema: sketch_offset_schema },
         Tool { name: "inspect_sketch_creation", description: "Read part identity/revision, deterministic free sketch/owner IDs, global planes and source-bound regenerated datum-plane choices without writing.", handler: Handler::Agent("opencad.inspect_sketch_creation"), schema: path_schema },
         Tool { name: "plan_sketch_create", description: "Review atomic empty sketch/owner creation on exactly one global or admitted existing datum plane. Require current document identity/revision and stable IDs; verify candidate without writes.", handler: Handler::Agent("opencad.plan_sketch_create"), schema: sketch_create_schema },
         Tool { name: "apply_sketch_create", description: "Reverify and atomically create the reviewed source-bound sketch/owner through DesignPatch and history. Refuse stale identity/revision or ID collisions without writes.", handler: Handler::Agent("opencad.apply_sketch_create"), schema: sketch_create_schema },
@@ -405,6 +407,10 @@ fn feature_edit_schema() -> Value {
 
 fn selection_edit_schema() -> Value {
     json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","required":["source_revision","scene_revision","target","field","expr"],"properties":{"source_revision":{"type":"string"},"scene_revision":{"type":"string"},"target":{"type":"object","description":"{kind:face_reference,ref_id} or {kind:sketch_entity,sketch_id,entity_id}, from selection_frame.bindings"},"field":{"type":"string"},"expr":{"type":"string"}},"additionalProperties":false},"history":{"type":"object"}},"required":["path","edit"],"additionalProperties":false})
+}
+
+fn sketch_offset_schema() -> Value {
+    json!({"type":"object","properties":{"path":{"type":"string"},"offset":{"type":"object","required":["document_id","revision","source_sketch_id","curve_ids","distance","side","name"],"properties":{"document_id":{"type":"string"},"revision":{"type":"string"},"source_sketch_id":{"type":"string"},"curve_ids":{"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"type":"string"}},"distance":{"type":"string","description":"Constant positive length with explicit units, e.g. 3 mm; side is separate"},"side":{"type":"string","enum":["outward","inward"]},"name":{"type":"string","minLength":1}},"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","offset"],"additionalProperties":false})
 }
 
 fn sketch_create_schema() -> Value {
@@ -793,7 +799,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 40);
+        assert_eq!(tools.len(), 42);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
