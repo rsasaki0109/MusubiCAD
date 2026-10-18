@@ -1,0 +1,35 @@
+{
+  "parameters": {
+    "param:offset": {
+      "id": "param:offset",
+      "name": "offset",
+      "expr": "5 mm",
+      "dirty": false
+    },
+    "param:axis_x": {
+      "id": "param:axis_x",
+      "name": "axis_x",
+      "expr": "5 mm",
+      "dirty": false
+    },
+    "param:origin_x": {
+      "id": "param:origin_x",
+      "name": "origin_x",
+      "expr": "1 mm",
+      "dirty": false
+    },
+    "param:origin_y": {
+      "id": "param:origin_y",
+      "name": "origin_y",
+      "expr": "-2 mm",
+      "dirty": false
+    },
+    "param:diameter": {
+      "id": "param:diameter",
+      "name": "diameter",
+      "expr": "20 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

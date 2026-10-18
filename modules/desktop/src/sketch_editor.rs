@@ -20,7 +20,12 @@ use opencad_sketch::{
 };
 use serde::{Deserialize, Serialize};
 mod arc;
+mod curve_edit;
 mod ellipse_axes;
+pub use curve_edit::{
+    inspect_document_curve_edit, sketch_curve_edit_options_with_kernel, SketchCurveEditEffect,
+    SketchCurveEditOptions, SketchCurveEditQuery, SketchCurveTargets,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SketchEditorState {
@@ -37,6 +42,7 @@ pub struct SketchEditorRow {
     pub constraint_targets: SketchConstraintTargets,
     pub suggested_constraint_id: String,
     pub construction_targets: Vec<SketchConstructionTarget>,
+    pub curve_edit_targets: SketchCurveTargets,
 }
 /// Disposable source eligibility, independent of constraint-target admission.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -144,6 +150,16 @@ pub enum SketchForm {
         id: String,
         construction: bool,
     },
+    CurveEdit {
+        target_id: String,
+        cutter_id: String,
+        mode: opencad_sketch::curve_edit::CurveEditMode,
+        end: opencad_sketch::curve_edit::CurveEditEnd,
+        new_point_id: String,
+        intersection_index: usize,
+        #[serde(default)]
+        remove_constraints: Vec<String>,
+    },
     Horizontal {
         id: String,
         line: String,
@@ -179,6 +195,7 @@ pub struct SketchEditPlan {
     pub state: SketchEditorState,
     pub evidence: EditorEvidence,
     pub profile_effect: SketchProfileEffect,
+    pub curve_edit_effect: Option<SketchCurveEditEffect>,
 }
 
 fn construction_kind(sketch: &Sketch, entity: &SketchEntity) -> Option<&'static str> {
@@ -354,6 +371,7 @@ pub fn sketch_editor_state_with_kernel<K: GeometryKernel>(
             }
         };
         sketches.push(SketchEditorRow {
+            curve_edit_targets: curve_edit::targets(doc, sketch)?,
             constraint_targets: constraint_targets(sketch),
             suggested_constraint_id: suggested_constraint_id(sketch),
             construction_targets: sketch
@@ -511,7 +529,9 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
             || edit.operations.iter().any(|form| {
                 matches!(
                     form,
-                    SketchForm::Arc { .. } | SketchForm::EllipseAxes { .. }
+                    SketchForm::Arc { .. }
+                        | SketchForm::EllipseAxes { .. }
+                        | SketchForm::CurveEdit { .. }
                 )
             }))
             && edit.document_id.as_deref() != Some(doc.metadata.id.as_str()))
@@ -524,6 +544,18 @@ fn sketch_patch(doc: &OcadDocument, edit: &SketchEdit) -> Result<DesignPatch> {
         return Err(OpenCadError::validation(
             "sketch form batch must contain 1..64 operations",
         ));
+    }
+    if edit
+        .operations
+        .iter()
+        .any(|form| matches!(form, SketchForm::CurveEdit { .. }))
+    {
+        if edit.operations.len() != 1 {
+            return Err(OpenCadError::validation(
+                "curve edit must be the sole sketch form operation",
+            ));
+        }
+        return curve_edit::patch(doc, edit);
     }
     let mut ops = Vec::new();
     for form in &edit.operations {
@@ -759,6 +791,7 @@ pub fn plan_sketch_edit_with_kernel<K: GeometryKernel>(
     }
     // Explicitly solve every admitted sketch, including unconsumed construction geometry.
     let state = sketch_editor_state_with_kernel(&candidate, kernel)?;
+    let curve_edit_effect = curve_edit::effect(doc, edit, &state)?;
     let evidence = if dry.impact.no_op {
         EditorEvidence {
             no_op: true,
@@ -774,6 +807,7 @@ pub fn plan_sketch_edit_with_kernel<K: GeometryKernel>(
         patch,
         state,
         evidence,
+        curve_edit_effect,
         profile_effect: SketchProfileEffect {
             before: closed_profiles(authored(doc, &edit.sketch_id)?)?,
             after: closed_profiles(source)?,

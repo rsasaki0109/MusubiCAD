@@ -1,0 +1,118 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:plate",
+      "name": "Plate",
+      "workplane": {
+        "type": "datum_plane",
+        "feature_id": "feature:datum"
+      },
+      "entities": [
+        {
+          "type": "rectangle",
+          "id": "ent:plate",
+          "construction": false,
+          "origin": [
+            0.0,
+            0.0
+          ],
+          "size": [
+            0.02,
+            0.01
+          ],
+          "corner_ids": [
+            "ent:c0",
+            "ent:c1",
+            "ent:c2",
+            "ent:c3"
+          ],
+          "edge_ids": [
+            "ent:e0",
+            "ent:e1",
+            "ent:e2",
+            "ent:e3"
+          ]
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      }
+    },
+    {
+      "id": "sketch:new_1",
+      "name": "Selected guide",
+      "workplane": {
+        "type": "datum_plane",
+        "feature_id": "feature:datum"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:center",
+          "construction": false,
+          "x": "origin_x + 1 mm",
+          "y": "origin_y - 1 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:left",
+          "construction": false,
+          "x": "origin_x - 19 mm",
+          "y": "origin_y + 5 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:right",
+          "construction": false,
+          "x": "origin_x + 21 mm",
+          "y": "origin_y + 5 mm"
+        },
+        {
+          "type": "line",
+          "id": "ent:guide",
+          "construction": true,
+          "start": "ent:left",
+          "end": "ent:right"
+        },
+        {
+          "type": "circle",
+          "id": "ent:disc",
+          "construction": false,
+          "center": "ent:center",
+          "radius": "diameter / 4 + 5 mm"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "horizontal",
+          "id": "con:guide_horizontal",
+          "line": "ent:guide"
+        },
+        {
+          "type": "distance",
+          "id": "con:guide_length",
+          "target": {
+            "line": "ent:guide"
+          },
+          "expr": "40 mm"
+        }
+      ],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:circle:ent:disc",
+          "entity_ids": [
+            "ent:disc"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:new_1/profile:outer"
+        }
+      ]
+    }
+  ]
+}

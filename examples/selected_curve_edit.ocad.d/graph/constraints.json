@@ -1,0 +1,23 @@
+{
+  "constraints": [
+    {
+      "sketch_id": "sketch:new_1",
+      "constraint": {
+        "type": "horizontal",
+        "id": "con:guide_horizontal",
+        "line": "ent:guide"
+      }
+    },
+    {
+      "sketch_id": "sketch:new_1",
+      "constraint": {
+        "type": "distance",
+        "id": "con:guide_length",
+        "target": {
+          "line": "ent:guide"
+        },
+        "expr": "40 mm"
+      }
+    }
+  ]
+}

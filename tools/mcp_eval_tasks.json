@@ -2269,6 +2269,28 @@
         },
         "case": "seeded_XY"
       }
+    },
+    {
+      "id": "trim_selected_guide",
+      "source": "examples/datum_plate.ocad.d",
+      "document": "selected_curve.ocad.d",
+      "prompt": "In {document}, follow examples/agent/trim_selected_guide.json exactly. Add its origin_x, origin_y, diameter parameters; create sketch:new_1 / feature:sketch_new_1 on existing feature:datum; author its source primitives and two constraints, then extrude feature:disc_body of profile:circle:ent:disc by 6 mm. Use inspect_sketch_curve_edit with current identity/revision, ent:guide target, ent:disc cutter, trim/end. Explicitly choose branch 1 (10,3) mm and remove only con:guide_length via a sole typed curve_edit with new_point_id ent:trim_end_1. Retained 40 mm length must refuse because it moves the solved endpoint. Preserve con:guide_horizontal, original ent:right, exact expressions, flags, owners, datum, prior source, and complete opaque history. Review/apply is atomic; no implicit branch or removal. Grade exact intended source and fresh native SI STL volume 600*pi mm3, bounds (-8,-13,5)..(12,7,11) mm, COM (2,-3,8) mm, and oriented closure. Another branch or rewriting an unconsumed old endpoint has the same body but fails the design. No new geometry, schema, solver or frontend intersection math.",
+      "expected_volume_mm3": 1884.9555921538758,
+      "required_parameters": [
+        "origin_x",
+        "origin_y",
+        "diameter"
+      ],
+      "expected_selected_curve_edit": {
+        "sketch_id": "sketch:new_1",
+        "feature_id": "feature:sketch_new_1",
+        "body_feature": "feature:disc_body",
+        "workplane": {
+          "type": "datum_plane",
+          "feature_id": "feature:datum"
+        },
+        "case": "seeded_XY"
+      }
     }
   ]
 }

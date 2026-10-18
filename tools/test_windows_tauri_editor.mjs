@@ -9,6 +9,7 @@ import {checkPointerArcs} from './pointer_arc_ui_checks.mjs';
 import {checkPointerEllipses} from './pointer_ellipse_ui_checks.mjs';
 import {checkSelectedConstraints} from './selected_constraint_ui_checks.mjs';
 import {checkSelectedConstruction} from './selected_construction_ui_checks.mjs';
+import {checkSelectedCurveEdits} from './selected_curve_edit_ui_checks.mjs';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -86,7 +87,7 @@ try {
   // Windows may expose the same temp directory through a short-name/case alias.
   assert.equal(realpathSync.native(await evaluate('currentPath')).toLowerCase(),
     realpathSync.native(partPath).toLowerCase(), 'Actual UI must edit the disposable directory');
-  await until('featureTree?.rows?.length === 2 && document.getElementById("status").textContent === "Loaded Closed cubic plate"', 'Initial part load');
+  await until('typeof featureTree !== "undefined" && featureTree?.rows?.length === 2 && document.getElementById("status").textContent === "Loaded Closed cubic plate"', 'Initial part load');
   await review('document.getElementById("feature-id").value="feature:second"; document.getElementById("feature-name").value="Second cubic prism"; document.getElementById("feature-length").value="12 mm"; document.getElementById("feature-create").requestSubmit();');
   await apply(); results.push('create via product form');
   await review(`${row('feature:second')}.querySelector("input").value="10 mm"; ${click('feature:second','Review dimension')}`);
@@ -123,5 +124,6 @@ try {
   results.push(...await checkPointerEllipses({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkSelectedConstraints({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkSelectedConstruction({evaluate,until,source,logicalSource,partPath}));
+  results.push(...await checkSelectedCurveEdits({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_windows_tauri_webview2_forms:'passed',webview_url:pages[0].url,results}, null, 2));
 } finally { socket.close(); }

@@ -333,3 +333,9 @@ button:disabled:hover {
 #sketch-new-form h3 { width: 100%; margin: 0; }
 #sketch-new-form label { display: grid; gap: .2rem; }
 #sketch-new-preview { border: 1px solid #596574; padding: .75rem; margin-bottom: .75rem; }
+
+#sketch-curve-form { border-top: 1px solid #52606d; padding-top: 0.6rem; }
+#curve-removals { display: grid; gap: 0.25rem; }
+#curve-removals label { display: flex; gap: 0.4rem; align-items: center; }
+.curve-intersection { fill: #fff; stroke: #135b96; stroke-width: 0.5; cursor: pointer; }
+.curve-intersection.chosen { fill: #f5a623; stroke: #674100; }

@@ -13,7 +13,7 @@ local-plane presentation and unit-labelled form drafts only (ADR-058).
 
 | MCP tool / Agent method suffix | Request | Result |
 | --- | --- | --- |
-| `inspect_sketches` | `path` | `document_id`, `revision`, rows with unchanged `source`, disposable SI `solved`, `workplane_label`, regenerated `resolved_frame`, `constraint_targets` and `suggested_constraint_id` |
+| `inspect_sketches` | `path` | `document_id`, `revision`, rows with unchanged `source`, disposable SI `solved`, `workplane_label`, regenerated `resolved_frame`, `constraint_targets`, `suggested_constraint_id` and `curve_edit_targets` |
 | `plan_sketch_edit` | `path`, `edit` | Concrete guarded `patch`, solved candidate `state`, verified SI `evidence`; no writes |
 | `apply_sketch_edit` | `path`, `edit`, optional opaque `history` | Shared feature tree, opaque history and verified SI evidence |
 
@@ -360,3 +360,42 @@ only finite simple literals and known length units; arithmetic/parameters belong
 to the higher-level evaluator. See
 [the source-length example](../../examples/agent/resolve_sketch_source_lengths.json)
 and eval `resolve_sketch_source_lengths`. No `.ocad` codec/schema changes.
+
+
+## Reviewed selected trim and extend (MCAD-P17-010)
+
+ADR-109 adds `curve_edit_targets` to each source row: stored authored line/arc
+targets, line/circle/arc cutters and a globally free `suggested_point_id`.
+Helpers, derived/projected geometry, cubic controls and ellipses are excluded.
+Use `inspect_sketch_curve_edit` (Agent `opencad.inspect_sketch_curve_edit`) with
+`path` and `query={document_id,revision,sketch_id,target_id,cutter_id,mode,end}`.
+`mode` is `trim|extend`, `end` is `start|end`; identity/revision are required.
+It returns unchanged `query`, `new_point_id`, and ordered `intersections` with
+`position_m` and target parameter. Discovery is read-only and selects no branch.
+
+Send exactly one operation to the existing plan/apply gateway:
+
+```json
+{"operation":"curve_edit","target_id":"ent:guide","cutter_id":"ent:disc",
+ "mode":"trim","end":"end","new_point_id":"ent:trim_end_1",
+ "intersection_index":1,"remove_constraints":["con:guide_length"]}
+```
+
+The explicit index is required even for one intersection. Removals default to
+empty, must name unique existing source constraints, and are never inferred.
+Expanded operations are capped at 64. Old shared endpoints and source expressions
+are retained. The plan includes `curve_edit_effect` with source options, selected
+index and actual `solved_position_m`, plus existing profile/consumer/solid effects.
+A retained constraint moving the solved endpoint more than 1 nm from the chosen
+original intersection refuses. Missing/foreign/stale targets, identity/revision,
+ID collisions, invalid branches and consumed-loop loss/rebinding refuse atomically.
+Apply rebuilds the plan from current source, checks assertions/display/publication
+and preserves opaque Undo/Redo; no `.ocad` schema change.
+
+Native Trim / extend supplies source dropdowns and canvas target/cutter picks,
+explicit end/mode/removals, backend intersection dropdowns/keyboard markers,
+read-only Review and verified Apply. Control/source/file/view/upstream changes,
+Escape/discard and late IPC invalidate old discovery/review.
+See [the recipe](../../examples/agent/trim_selected_guide.json) and the runnable
+`examples/selected_curve_edit.ocad.d` source before trimming. Its branch 1 is
+(10,3) mm; the unchanged cylinder has V=600*pi mm³ and A=320*pi mm².

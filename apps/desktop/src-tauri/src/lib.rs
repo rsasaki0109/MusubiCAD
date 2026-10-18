@@ -59,6 +59,13 @@ fn plan_sketch_edit_cmd(
     opencad_desktop::sketch_editor::plan_document_sketch_edit(&path, &edit).map_err(map_error)
 }
 #[tauri::command]
+fn inspect_sketch_curve_edit_cmd(
+    path: String,
+    query: opencad_desktop::sketch_editor::SketchCurveEditQuery,
+) -> Result<opencad_desktop::sketch_editor::SketchCurveEditOptions, String> {
+    opencad_desktop::sketch_editor::inspect_document_curve_edit(&path, &query).map_err(map_error)
+}
+#[tauri::command]
 fn apply_sketch_edit_cmd(
     path: String,
     edit: opencad_desktop::sketch_editor::SketchEdit,
@@ -322,6 +329,7 @@ fn run_gui() {
             plan_feature_edit_cmd,
             apply_feature_edit_cmd,
             inspect_sketches_cmd,
+            inspect_sketch_curve_edit_cmd,
             inspect_sketch_creation_cmd,
             plan_sketch_create_cmd,
             apply_sketch_create_cmd,

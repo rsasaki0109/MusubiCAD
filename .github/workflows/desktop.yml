@@ -33,6 +33,7 @@ on:
       - tools/pointer_ellipse_ui_checks.mjs
       - tools/selected_constraint_ui_checks.mjs
       - tools/selected_construction_ui_checks.mjs
+      - tools/selected_curve_edit_ui_checks.mjs
   push:
     branches: [main]
     tags:
