@@ -54,12 +54,26 @@
           </div>
           <p>Global or admitted datum workplane, local coordinates in mm. Click twice for a line, circle or rectangle. For an arc, choose its centre, start point, then end direction; the radius stays fixed. Choose the direction and optional radial closure before drawing. Review before applying. Escape discards the draft.</p>
           <select id="sketch-select" aria-label="Authored sketch"></select>
-          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="line">Draw line</option><option value="circle">Draw circle</option><option value="rectangle">Draw rectangle</option><option value="arc">Draw arc</option><option value="ellipse">Draw ellipse (centre, major end, point on ellipse)</option></select>
+          <select id="sketch-tool" aria-label="Sketch tool"><option value="select">Select / move point</option><option value="curve_edit">Trim / extend</option><option value="line">Draw line</option><option value="circle">Draw circle</option><option value="rectangle">Draw rectangle</option><option value="arc">Draw arc</option><option value="ellipse">Draw ellipse (centre, major end, point on ellipse)</option></select>
           <label>Arc direction <select id="sketch-arc-direction"><option value="ccw">Counterclockwise</option><option value="cw">Clockwise</option></select></label>
           <label><input id="sketch-arc-sector" type="checkbox" /> Close arc with radii</label>
           <label>View span (mm) <input id="sketch-span" type="number" min="1" max="1000000" value="120" /></label>
           <svg id="sketch-canvas" viewBox="-60 -40 120 80" aria-label="Sketch in local mm"></svg>
           <p id="sketch-diagnostics"></p>
+          <form id="sketch-curve-form">
+            <h3>Trim / extend</h3>
+            <p>Choose the target and cutter, explicit constraint removals, then find and select an intersection. Review the solved result before applying.</p>
+            <label>Canvas pick <select id="curve-pick-role"><option value="target">Target to edit</option><option value="cutter">Cutter to intersect</option></select></label>
+            <label>Target <select id="curve-target"></select></label>
+            <label>Cutter <select id="curve-cutter"></select></label>
+            <label>Operation <select id="curve-mode"><option value="trim">Trim</option><option value="extend">Extend</option></select></label>
+            <label>Target end <select id="curve-end"><option value="end">End</option><option value="start">Start</option></select></label>
+            <fieldset id="curve-removals"><legend>Explicit constraint removals</legend></fieldset>
+            <button id="curve-find" type="button" disabled>Find intersections</button>
+            <label>Intersection (local mm) <select id="curve-branch"></select></label>
+            <p id="curve-info" aria-live="polite"></p>
+            <button id="curve-review" type="submit" disabled>Review curve edit</button>
+          </form>
           <form id="sketch-construction-form">
             <h3>Construction geometry</h3>
             <label>Selected source <select id="construction-target" aria-describedby="construction-info"></select></label>

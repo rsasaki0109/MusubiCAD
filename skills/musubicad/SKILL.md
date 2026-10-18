@@ -1321,3 +1321,25 @@ bounds are (-8,-13,5)..(12,7,11) mm and COM is (2,-3,8) mm.
 `resolve_sketch_source_lengths` independently grades exact source and fresh
 native SI export; a numerically equivalent source rewrite or equal-volume wrong
 placement fails. This prerequisite adds no native control or geometry admission.
+
+
+### Reviewed selected trim and extend (P17-010)
+
+Use [the recipe](../../examples/agent/trim_selected_guide.json),
+`inspect_sketches.curve_edit_targets`, then `inspect_sketch_curve_edit` with
+current `document_id`, `revision`, `sketch_id`, `target_id`, `cutter_id`,
+`mode=trim|extend`, `end=start|end`. Discovery returns all backend SI intersections
+and a fresh endpoint ID; choose an explicit `intersection_index`. Send a sole
+`curve_edit` through existing plan/apply with `new_point_id` and explicit
+`remove_constraints` (default empty). Never infer branch or constraint removals.
+Retained constraints moving the actual solved endpoint over 1 nm from the
+chosen original intersection refuse. Inspect `curve_edit_effect`, profile/
+consumer/solid consequences and retain opaque history. Old shared endpoints,
+source expressions and associations remain. Consumed loops cannot vanish/rebind.
+
+Native controls provide target/cutter picks, mode/end/removals, keyboard or
+dropdown branch selection, Review and Apply. Changes/Escape/upstream/reload/late
+IPC invalidate review. No new geometry or `.ocad` schema is admitted. The runnable
+pre-trim example is `examples/selected_curve_edit.ocad.d`; eval
+`trim_selected_guide` requires exact source and independently measured fresh
+SI volume/bounds/COM/closure, rejecting wrong branches with the same solid.

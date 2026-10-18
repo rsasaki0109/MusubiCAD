@@ -228,7 +228,8 @@ fn tools() -> Vec<Tool> {
         Tool { name: "plan_sketch_create", description: "Review atomic empty sketch/owner creation on exactly one global or admitted existing datum plane. Require current document identity/revision and stable IDs; verify candidate without writes.", handler: Handler::Agent("opencad.plan_sketch_create"), schema: sketch_create_schema },
         Tool { name: "apply_sketch_create", description: "Reverify and atomically create the reviewed source-bound sketch/owner through DesignPatch and history. Refuse stale identity/revision or ID collisions without writes.", handler: Handler::Agent("opencad.apply_sketch_create"), schema: sketch_create_schema },
         Tool { name: "inspect_sketches", description: "Read admitted authored global/datum sketches, solved local SI entities/remaining DOF, original source associations, constraint target catalogs/suggested IDs and regenerated display frames without writing.", handler: Handler::Agent("opencad.inspect_sketches"), schema: path_schema },
-        Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, opposite-corner rectangle, constant centre/start/end-direction arc (CW/CCW, optional radial closure), circle, numeric ellipse, constant centre/major/point-on-ellipse creation (ellipse_axes), construction and basic constraints. Inputs require explicit units; arc and ellipse_axes creation require document identity. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
+        Tool { name: "inspect_sketch_curve_edit", description: "Read source-bound analytic trim/extend intersections and a globally free endpoint ID without choosing a branch or applying a candidate. Use explicit target/cutter/mode/end and current identity/revision, then choose an intersection for a sole curve_edit sketch form.", handler: Handler::Agent("opencad.inspect_sketch_curve_edit"), schema: sketch_curve_edit_schema },
+        Tool { name: "plan_sketch_edit", description: "Plan a bounded revision-guarded sketch form batch: point, line, opposite-corner rectangle, constant centre/start/end-direction arc (CW/CCW, optional radial closure), circle, numeric ellipse, constant centre/major/point-on-ellipse creation (ellipse_axes), construction flags, basic constraints and a sole curve_edit with explicit branch/end/removals. Inputs require explicit units; arc, ellipse_axes and curve_edit require document identity. Return solved candidate and native verified DesignPatch without writing.", handler: Handler::Agent("opencad.plan_sketch_edit"), schema: sketch_edit_schema },
         Tool { name: "apply_sketch_edit", description: "Reverify and atomically apply the same sketch commands as Tauri; preserve source/history on stale, unit, solve, profile or geometry failure.", handler: Handler::Agent("opencad.apply_sketch_edit"), schema: sketch_edit_schema },
         Tool {
             name: "inspect_selection_frame",
@@ -410,6 +411,10 @@ fn sketch_create_schema() -> Value {
     json!({"type":"object","properties":{"path":{"type":"string"},"create":{"type":"object","required":["document_id","revision","sketch_id","feature_id","name"],"oneOf":[{"required":["plane"]},{"required":["datum_plane"]}],"properties":{"document_id":{"type":"string"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"feature_id":{"type":"string"},"name":{"type":"string","minLength":1},"plane":{"type":"string","enum":["XY","XZ","YZ"]},"datum_plane":{"type":"string","description":"Existing admitted datum feature_id from inspect_sketch_creation; do not submit a cached frame"}},"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","create"],"additionalProperties":false})
 }
 
+fn sketch_curve_edit_schema() -> Value {
+    json!({"type":"object","properties":{"path":{"type":"string"},"query":{"type":"object","properties":{"document_id":{"type":"string"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"target_id":{"type":"string"},"cutter_id":{"type":"string"},"mode":{"enum":["trim","extend"]},"end":{"enum":["start","end"]}},"required":["document_id","revision","sketch_id","target_id","cutter_id","mode","end"],"additionalProperties":false}},"required":["path","query"],"additionalProperties":false})
+}
+
 fn sketch_edit_schema() -> Value {
     let forms = [
         ("point", vec!["id", "x", "y"], vec!["create"]),
@@ -463,14 +468,15 @@ fn sketch_edit_schema() -> Value {
         ("radius", vec!["id", "target", "expr"], vec![]),
         ("remove_constraint", vec!["id"], vec![]),
     ];
-    let operations: Vec<Value> = forms.into_iter().map(|(operation, strings, booleans)| {
+    let mut operations: Vec<Value> = forms.into_iter().map(|(operation, strings, booleans)| {
         let mut properties=serde_json::Map::new();properties.insert("operation".into(),json!({"const":operation}));
         let mut required=vec!["operation"];
         for field in strings { properties.insert(field.into(),json!({"type":"string"}));required.push(field); }
         for field in booleans { properties.insert(field.into(),json!({"type":"boolean"}));required.push(field); }
         json!({"type":"object","properties":properties,"required":required,"additionalProperties":false})
     }).collect();
-    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","properties":{"document_id":{"type":"string","description":"Required for datum-plane edits or arc/ellipse_axes creation; match inspect_sketches.document_id"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"operations":{"type":"array","minItems":1,"maxItems":64,"items":{"oneOf":operations}}},"required":["revision","sketch_id","operations"],"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","edit"],"additionalProperties":false})
+    operations.push(json!({"type":"object","properties":{"operation":{"const":"curve_edit"},"target_id":{"type":"string"},"cutter_id":{"type":"string"},"mode":{"enum":["trim","extend"]},"end":{"enum":["start","end"]},"new_point_id":{"type":"string"},"intersection_index":{"type":"integer","minimum":0},"remove_constraints":{"type":"array","maxItems":62,"uniqueItems":true,"items":{"type":"string"}}},"required":["operation","target_id","cutter_id","mode","end","new_point_id","intersection_index"],"additionalProperties":false}));
+    json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","properties":{"document_id":{"type":"string","description":"Required for datum-plane edits or arc/ellipse_axes/curve_edit forms; match inspect_sketches.document_id"},"revision":{"type":"string"},"sketch_id":{"type":"string"},"operations":{"type":"array","minItems":1,"maxItems":64,"items":{"oneOf":operations}}},"required":["revision","sketch_id","operations"],"additionalProperties":false},"history":{"type":["object","null"]}},"required":["path","edit"],"additionalProperties":false})
 }
 
 #[cfg(test)]
@@ -787,7 +793,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 39);
+        assert_eq!(tools.len(), 40);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

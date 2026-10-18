@@ -1,0 +1,36 @@
+{
+  "task": "MCAD-P17-010",
+  "source": "examples/datum_plate.ocad.d",
+  "intent": "Select an authored construction guide and circle cutter, explicitly remove only the guide-length constraint, choose the right intersection, and review/apply through the verified sketch gateway.",
+  "parameters": [
+    {"id":"param:origin_x","name":"origin_x","expr":"1 mm"},
+    {"id":"param:origin_y","name":"origin_y","expr":"-2 mm"},
+    {"id":"param:diameter","name":"diameter","expr":"20 mm"}
+  ],
+  "primitives": [
+    {"operation":"point","id":"ent:center","x":"origin_x + 1 mm","y":"origin_y - 1 mm","create":true},
+    {"operation":"point","id":"ent:left","x":"origin_x - 19 mm","y":"origin_y + 5 mm","create":true},
+    {"operation":"point","id":"ent:right","x":"origin_x + 21 mm","y":"origin_y + 5 mm","create":true},
+    {"operation":"line","id":"ent:guide","start":"ent:left","end":"ent:right","construction":true},
+    {"operation":"circle","id":"ent:disc","center":"ent:center","radius":"diameter / 4 + 5 mm","construction":false,"create":true}
+  ],
+  "constraints": [
+    {"type":"horizontal","id":"con:guide_horizontal","line":"ent:guide"},
+    {"type":"distance","id":"con:guide_length","target":{"line":"ent:guide"},"expr":"40 mm"}
+  ],
+  "curve_edit": {
+    "operation":"curve_edit","target_id":"ent:guide","cutter_id":"ent:disc",
+    "mode":"trim","end":"end","new_point_id":"ent:trim_end_1",
+    "intersection_index":1,"remove_constraints":["con:guide_length"]
+  },
+  "steps": [
+    "Add the three parameters by DesignPatch. Create sketch:new_1 / feature:sketch_new_1 on existing feature:datum with current identity/revision. Plan/apply primitives, then add exactly the two source constraints with add_sketch_constraint patches and preserve opaque history.",
+    "Create a 6 mm NewBody feature:disc_body of profile:circle:ent:disc.",
+    "Read inspect_sketches.curve_edit_targets; inspect_sketch_curve_edit with current document_id/revision/sketch_id, target ent:guide, cutter ent:disc, mode trim, end end. Discovery returns two unselected intersections (-6,3) and (10,3) mm and fresh ent:trim_end_1. No file changes.",
+    "Review a sole curve_edit with intersection_index=1 and no removals: retained 40 mm line length moves the solved endpoint and must refuse without publishing.",
+    "Explicitly remove only con:guide_length using the curve_edit form below. Review chosen branch, verified endpoint (10,3) mm, closed loops 1 to 1 and unchanged consumed circle/solid. Apply with the same revision and history.",
+    "Keep old ent:right, all original coordinate/radius expressions, horizontal constraint, flags, owner, datum and prior source. Undo/Redo restores complete canonical source. No implicit rewire or constraint removal."
+  ],
+  "analytic_final": {"new_endpoint_mm":[10,3],"other_intersection_mm":[-6,3],"volume_mm3":"600*pi","surface_area_mm2":"320*pi","bounds_mm":{"min":[-8,-13,5],"max":[12,7,11]},"centroid_mm":[2,-3,8]},
+  "compatibility": "ADR-109; existing analytic line/arc targets and line/circle/arc cutters, globally fresh endpoints, no new geometry/solver/sampler/schema. MCP expresses typed intent, not pointer events."
+}

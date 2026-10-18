@@ -197,9 +197,10 @@ pub fn handle_agent_request_with_plugins(
         "opencad.inspect_sketch_creation"
         | "opencad.plan_sketch_create"
         | "opencad.apply_sketch_create" => handle_sketch_creation(request),
-        "opencad.inspect_sketches" | "opencad.plan_sketch_edit" | "opencad.apply_sketch_edit" => {
-            handle_sketch_editor(request)
-        }
+        "opencad.inspect_sketches"
+        | "opencad.inspect_sketch_curve_edit"
+        | "opencad.plan_sketch_edit"
+        | "opencad.apply_sketch_edit" => handle_sketch_editor(request),
         "opencad.inspect" => handle_inspect(request),
         "opencad.validate" => handle_validate(request),
         "opencad.patch_dry_run_document" => handle_patch_dry_run_document(request),
@@ -1378,10 +1379,19 @@ fn handle_sketch_editor(request: &JsonRpcRequest) -> JsonRpcResponse {
     struct Params {
         path: String,
         edit: Option<opencad_desktop::sketch_editor::SketchEdit>,
+        query: Option<opencad_desktop::sketch_editor::SketchCurveEditQuery>,
         history: Option<opencad_file::DocumentHistory>,
     }
     let result = (|| -> opencad_core::Result<Value> {
         let p: Params = serde_json::from_value(request.params.clone())?;
+        if request.method == "opencad.inspect_sketch_curve_edit" {
+            let query = p
+                .query
+                .ok_or_else(|| opencad_core::OpenCadError::validation("query is required"))?;
+            return Ok(serde_json::to_value(
+                opencad_desktop::sketch_editor::inspect_document_curve_edit(&p.path, &query)?,
+            )?);
+        }
         if request.method == "opencad.inspect_sketches" {
             return Ok(serde_json::to_value(
                 opencad_desktop::sketch_editor::inspect_document_sketches(&p.path)?,

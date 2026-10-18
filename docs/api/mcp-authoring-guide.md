@@ -1830,3 +1830,25 @@ bounds are (-8,-13,5)..(12,7,11) mm and COM is (2,-3,8) mm.
 `resolve_sketch_source_lengths` independently grades exact source and fresh
 native SI export; a numerically equivalent source rewrite or equal-volume wrong
 placement fails. This prerequisite adds no native control or geometry admission.
+
+
+## Reviewed selected trim and extend (P17-010)
+
+Follow [the recipe](../../examples/agent/trim_selected_guide.json) and
+[the sketch API](sketch-editing.md#reviewed-selected-trim-and-extend-mcad-p17-010).
+Inspect current `curve_edit_targets`, then call `inspect_sketch_curve_edit` with
+current document identity/revision and explicit target/cutter/mode/end. Treat
+all returned SI intersections as unselected. Send a sole typed `curve_edit` to
+`plan_sketch_edit` / `apply_sketch_edit` with explicit `intersection_index`,
+globally fresh `new_point_id` and only user-requested `remove_constraints`.
+Preserve opaque history. Never guess a nearest branch or remove constraints
+automatically; retained constraints that move the solved endpoint refuse.
+
+Read `curve_edit_effect`, closed-loop/consumer and verified solid consequences.
+Old shared points and exact expressions stay source. A consumed loop cannot
+vanish or rebind. The runnable pre-trim source is
+`examples/selected_curve_edit.ocad.d`. Eval `trim_selected_guide` grades exact
+branch/removals/old source and fresh native SI output independently: cylinder
+V=600*pi mm3, bounds (-8,-13,5)..(12,7,11) mm and COM (2,-3,8) mm.
+Wrong branch or rewriting an old unconsumed point fails despite equal mass.
+MCP describes typed intent; it does not simulate pointer events.

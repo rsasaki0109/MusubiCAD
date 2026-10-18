@@ -1,6 +1,6 @@
 # MusubiCAD implementation status
 
-Last reviewed: 2026-10-17
+Last reviewed: 2026-10-18
 
 This inventory is evidence-based against the current repository. **Implemented**
 means the capability has code and focused tests; **Partial** means the primary
@@ -10,6 +10,7 @@ are defined in the [canonical roadmap](roadmap.md).
 
 | Area | Status | Current evidence | Remaining work |
 |---|---|---|---|
+| Reviewed native trim/extend (MCAD-P17-010) | Implemented; complete upon qualifying PR merge | ADR-109 source catalogues, backend-only discovery, explicit end/branch/removals and solved endpoint verification, protected DesignPatch/history; analytic Mock/native OCCT independent placed solids, packed/expanded source and actual MCP/Agent/eval evidence; actual Linux native 56 groups including six new curve groups | Authored line/arc targets and line/circle/arc cutters only; Windows exact-head native 56 groups and complete local/CI inventory plus main merge gate completion/GUI credit; no helper/projected/ellipse/cubic admission or automatic constraint/consumer repair |
 | Counterbored standard holes (MCAD-P16-003) | Implemented; complete upon PR merge | ADR-063 strict source/seat and lengths; source/physical stock/entry ownership, actual union volume/first moments/closed faces, producer metadata and warm-cache rechecks; both kernels, schema/migration/round trips, patch-authored example, guide/skill/eval, actual MCP creation/review/edit/refusal and Agent history | Original rectangle/distance/NewBody stock and owned end faces only; no side/oblique/already-cut/imported/fused targets, through-all, inferred head sizes, countersinks or threads; default Mock unsupported |
 | Parent-context flexible constraints (MCAD-P13-012) | Complete upon PR merge | ADR-061; exact connector scopes/owners, analytic distance/angle solve, explicit angular branch, bounded unique coordinates/coupled followers, fully bound DOF and shared physical leaves; DesignPatch/schema/migration/history, Mock/OCCT analytic fixtures, actual MCP, examples/guide/skill/eval | Fixed outer instances and immediate root-child drivers only; unsupported nonlinear/deeper/free scopes and motion/reach/URDF/HTML refuse; Mock exact mesh intersection/inertia refuse |
 | Independent articulated copies (MCAD-P13-011) | Complete upon PR merge | ADR-059/060; strict parent-owned coordinates, source inspection/snapshots, scoped physical leaves, consumer gates, DesignPatch/history/schema round trips, both-kernel analytic example, guide/skill/eval | Parent-context constraints remain P13-012; full hierarchical DOF/motion/reach/URDF/HTML and nested articulated/pattern scopes refuse; Mock exact mesh intersection/inertia refuse; no maturity credit |
@@ -2012,3 +2013,53 @@ wrong-placement and equivalent-source adversaries. An example, ADR-108,
 API/architecture, MCP guide, skill and feasible eval are included. Targeted
 regressions and eval self-test pass; final mandatory local and exact-head CI
 gates remain required. No new UI control, schema/golden change or score.
+
+P17-021 completed in PR #159: merge 86b5ebfaba7ec09bef1a7e034e5778505aedb97d,
+tested head 376a9a70f19e0c71a22e4f1bbc6ce96e85df740e on base
+62a1b3654451c4d352d7dbbc07bbf8d7f085b7fc. All four local required checks
+passed (1344 passed, zero failed, 37 existing ignored across 205 suites),
+as did the locked Tauri build and four exact-head workflows: CI 39048171994,
+Design Review 39048171993, Desktop 39048171969, Release 39048171951. The actual
+existing Windows 50-group native compatibility step passed 16:16:12Z–16:17:22Z
+on 2026-10-17. Exact parents, identical tested/merged trees and clean synchronized
+main were verified. This source-length prerequisite earns no increment: weighted
+CAD 54.10, GUI 55 and agent operation 95 remain the baseline.
+
+P17-010 starts from that clean main under ADR-109: source-selected trim/extend,
+read-only backend intersections, explicit branch/end/constraint removals and
+verified solved endpoint/profile/solid consequences through protected atomic
+DesignPatch/history. No new geometry or solver admission. Independent both-kernel
+physics, source/refusal/history/MCP evidence, actual new Linux/Windows controls,
+example/guide/skill/eval and all local/CI gates remain required before completion
+and any conditional GUI credit.
+
+P17-010 implementation evidence (2026-10-18): five focused desktop regressions
+pass on genuine analytic Mock and native OCCT, including independent cylinder
+V=600*pi mm3, A=320*pi mm2 and placed XY/YZ/XZ/tilted bounds/COM/closed meshes,
+strict source/end/branch/removal/identity checks, open no-solid drafts, consumed
+loop refusal, required assertions, globally fresh IDs, packed/expanded files
+and canonical history. Actual MCP/Agent parity passes in five placements with
+independent intended-source/fresh SI grading and adversaries.
+
+The locked Tauri build and actual Linux WebKit product controls pass all 56
+groups, including six unconditional new curve groups shared with Windows:
+canvas/source picks and explicit discovery, retained-length endpoint refusal
+and explicit removals, keyboard branch choice/read-only review/analytic apply/
+history, line start/extension plus arc cutter/target edits, loop/consumer refusal,
+and control/view/upstream/reload/stale/late-IPC cancellation. No IPC response or
+geometry is mocked. Source fixtures were generated through the verified backend.
+
+All four mandatory local checks pass: 1,350 workspace tests passed, zero failed
+and 37 existing ignored across 207 suites; fmt/clippy/plugin are clean. The
+final locked Tauri rebuild passes and its binary/source hashes still match the
+actual Linux 56-group evidence. All 35 native part examples rebuild through
+structural patches; all 52 documents validate, all 34 persisted feature graphs
+derive exactly, and canonical writer-form checks include the new source.
+Existing golden files are unchanged. Exact-head Windows native 56 and all
+applicable CI plus actual main merge still gate completion and credit.
+Only that qualifying merge earns GUI 55 to 56 and weighted CAD 54.10 to 54.25
+for the new usable selected trim/extend lifecycle; agent operation stays 95.
+Existing planner/kernel/solver/workplanes and host coverage receive no repeat
+credit. Before the qualifying P17-010 main merge, the baseline is CAD 54.10 /
+GUI 55 / agent 95; after it, CAD 54.25 / GUI 56 / agent 95. The task PR records
+tested head/base, all exact-head CI runs/native step and actual merge parents/tree.

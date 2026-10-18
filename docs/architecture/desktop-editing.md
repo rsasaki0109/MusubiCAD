@@ -217,3 +217,23 @@ unresolved/invalid units rather than silently treating them as metres or zero.
 Authored graph source is preserved; regenerate a fresh PartModel from current
 source after parameter changes, including when reusing RegenerationCache. No
 new persisted fields, geometry admission, solver constraint or native control.
+
+
+ADR-109 / P17-010 exposes the existing analytic curve planner through the shared
+SketchEdit verification boundary. Source catalogues and read-only intersection
+discovery are shared by Tauri, Agent and MCP; UI performs no intersection math.
+The user explicitly supplies end, branch and constraint removals. A sole typed
+form expands into a revision-guarded DesignPatch, capped at 64 operations.
+Candidate solving must leave the new endpoint within 1 nm of the selected
+original source intersection; generic editor verification alone does not
+evaluate arbitrary patch expected effects. Keep old shared points/source and
+verify loop/consumer/solid/assertion/display consequences before publication.
+
+Apply re-derives current source, preserves transaction/file re-read and opaque
+history guards, and cannot silently repair a consumed loop. Common review
+sequence invalidation handles target/cutter/mode/end/removal/branch, source/file/
+view/tool/upstream changes, Escape/discard and late actual IPC. Candidate IDs
+never replace source catalogues. Six new unconditional real native groups
+follow the existing 50 in both Linux and Windows drivers. Separate both-kernel
+absolute physical/source/history evidence and real MCP/Agent/eval gates remain
+required. No new solver, sampler, kernel admission or persisted schema.

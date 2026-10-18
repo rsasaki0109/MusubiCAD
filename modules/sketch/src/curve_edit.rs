@@ -24,19 +24,19 @@ pub enum EditCurve {
         sweep_rad: f64,
     },
 }
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CurveEditMode {
     Trim,
     Extend,
 }
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CurveEditEnd {
     Start,
     End,
 }
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct CurveEditIntersection {
     /// Line fraction, or arc angle relative to its original start in radians.
     pub target_parameter: f64,

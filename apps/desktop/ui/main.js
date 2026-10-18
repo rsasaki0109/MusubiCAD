@@ -1005,6 +1005,80 @@ let sketchDraft = null;
 let reviewedSketch = null;
 let sketchReviewSequence = 0;
 let sketchBusy = false;
+let curveOptions = null;
+function clearCurveEdit(keepSelection) {
+  curveOptions=null;
+  document.getElementById("curve-branch").value="";
+  if(!keepSelection) {
+    for(const id of ["curve-target","curve-cutter"])document.getElementById(id).value="";
+    for(const checkbox of document.querySelectorAll("#curve-removals input"))checkbox.checked=false;
+  }
+}
+function currentCurveQuery() {
+  return {document_id:sketchEditorState?.document_id,revision:sketchEditorState?.revision,
+    sketch_id:sketchRow()?.source.id,target_id:document.getElementById("curve-target").value,
+    cutter_id:document.getElementById("curve-cutter").value,mode:document.getElementById("curve-mode").value,
+    end:document.getElementById("curve-end").value};
+}
+function currentCurveOptions() {
+  const query=currentCurveQuery();
+  return curveOptions&&Object.keys(query).every(key=>curveOptions.query[key]===query[key])?curveOptions:null;
+}
+function renderCurveControls(row) {
+  const catalog=row?.curve_edit_targets;
+  for(const [id,ids] of [["curve-target",catalog?.targets??[]],["curve-cutter",catalog?.cutters??[]]]) {
+    const select=document.getElementById(id),old=select.value;select.replaceChildren();
+    const empty=document.createElement("option");empty.value="";empty.textContent="Choose source curve";select.append(empty);
+    for(const value of ids) {const option=document.createElement("option");option.value=value;option.textContent=`${value} · ${row.source.entities.find(e=>e.id===value)?.type}`;select.append(option);}
+    select.value=ids.includes(old)?old:"";
+  }
+  const removals=document.getElementById("curve-removals"),checked=new Set(Array.from(removals.querySelectorAll("input:checked"),e=>e.value));
+  removals.replaceChildren();const legend=document.createElement("legend");legend.textContent="Explicit constraint removals";removals.append(legend);
+  for(const constraint of row?.source.constraints??[]) {
+    const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.value=constraint.id;input.checked=checked.has(constraint.id);
+    label.append(input,document.createTextNode(`${constraint.type} · ${constraint.id}${constraint.expr?" · "+constraint.expr:""}`));removals.append(label);
+  }
+  const options=currentCurveOptions(),select=document.getElementById("curve-branch"),old=select.value;select.replaceChildren();
+  const empty=document.createElement("option");empty.value="";empty.textContent="Choose an intersection";select.append(empty);
+  for(const [index,intersection] of (options?.intersections??[]).entries()) {
+    const option=document.createElement("option");option.value=String(index);option.textContent=`${index+1}: (${intersection.position_m.map(v=>(v*1000).toFixed(6)).join(", ")}) mm`;select.append(option);
+  }
+  select.value=options&&old!==""&&Number(old)<options.intersections.length?old:"";
+  const query=currentCurveQuery();
+  document.getElementById("curve-find").disabled=!row||!query.target_id||!query.cutter_id||query.target_id===query.cutter_id;
+  document.getElementById("curve-review").disabled=!options||select.value==="";
+  document.getElementById("curve-info").textContent=options?`${options.intersections.length} backend intersections. Choose one explicitly; retained constraints must preserve that endpoint.`:"Choose curves and constraint removals, then find intersections. Old shared endpoints are retained.";
+}
+function selectCurveBranch(value) {
+  const options=currentCurveOptions();clearSketchDraft(true);curveOptions=options;
+  if(options&&value!==""&&options.intersections[Number(value)])document.getElementById("curve-branch").value=String(value);
+  drawSketch();
+}
+for(const id of ["curve-target","curve-cutter","curve-mode","curve-end"])document.getElementById(id).addEventListener("change",()=>{
+  clearSketchDraft(true);document.getElementById("sketch-tool").value="curve_edit";drawSketch();
+});
+document.getElementById("curve-pick-role").addEventListener("change",()=>{clearSketchDraft(true);document.getElementById("sketch-tool").value="curve_edit";drawSketch();});
+document.getElementById("curve-removals").addEventListener("change",()=>{clearSketchDraft(true);drawSketch();});
+document.getElementById("curve-branch").addEventListener("change",event=>selectCurveBranch(event.target.value));
+document.getElementById("curve-find").addEventListener("click",async()=>{
+  if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
+  clearSketchDraft(true);document.getElementById("sketch-tool").value="curve_edit";drawSketch();
+  const query=currentCurveQuery(),seq=++sketchReviewSequence,path=currentPath;sketchBusy=true;
+  try {
+    const options=await invoke("inspect_sketch_curve_edit_cmd",{path,query});
+    if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
+    curveOptions=options;drawSketch();setStatus("Choose a backend intersection before review.");
+  }catch(error){if(seq===sketchReviewSequence){clearSketchDraft(true);drawSketch();setStatus(`Curve discovery refused: ${error}`);}}
+  finally{sketchBusy=false;}
+});
+document.getElementById("sketch-curve-form").addEventListener("submit",async event=>{
+  event.preventDefault();if(sketchBusy||documentMutationBusy||!currentPath||!sketchRow())return;
+  const options=currentCurveOptions(),branch=document.getElementById("curve-branch").value;if(!options||branch==="")return;
+  cancelSketchCreationReview();reviewedSketch=null;document.getElementById("sketch-review").hidden=true;
+  await reviewSketchOperations([{operation:"curve_edit",target_id:options.query.target_id,cutter_id:options.query.cutter_id,
+    mode:options.query.mode,end:options.query.end,new_point_id:options.new_point_id,intersection_index:Number(branch),
+    remove_constraints:Array.from(document.querySelectorAll("#curve-removals input:checked"),e=>e.value)}]);
+});
 function drawLineDraft(start, end) {
   const e=document.createElementNS("http://www.w3.org/2000/svg","line"); e.id="sketch-draft-line"; e.setAttribute("class","sketch-geometry construction");
   const number=s=>Number(s.split(" ")[0]); for(const [k,v] of Object.entries({x1:number(start.x),y1:-number(start.y),x2:number(end.x),y2:-number(end.y)}))e.setAttribute(k,String(v));
@@ -1098,6 +1172,7 @@ function drawCircleDraft(start, end) {
 }
 function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
 function clearSketchDraft(keepConstraintSelection = false) {
+  clearCurveEdit(keepConstraintSelection);
   cancelSketchCreationReview();
   sketchReviewSequence++; reviewedSketch = null; sketchDraft = null; lineStart = null; circleStart = null; rectangleStart = null; arcCenter = null; arcStart = null; ellipseCenter = null; ellipseMajor = null;
   document.getElementById("sketch-draft-circle")?.remove();
@@ -1175,7 +1250,7 @@ function renderSketchEditor(state) {
   drawSketch();
 }
 function drawSketch(row = sketchRow()) {
-  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; renderSketchConstraintControls(null); renderConstructionControls(null); return; }
+  sketchCanvas.replaceChildren(); if (!row) { document.getElementById("sketch-diagnostics").textContent="No admitted source sketch."; renderSketchConstraintControls(null); renderConstructionControls(null); renderCurveControls(null); return; }
   const span=Number(document.getElementById("sketch-span").value); if (!Number.isFinite(span)||span<=0) return;
   sketchCanvas.setAttribute("viewBox", `${-span/2} ${-span/3} ${span} ${span*2/3}`);
   const entities=row.solved.entities;
@@ -1198,8 +1273,17 @@ function drawSketch(row = sketchRow()) {
   for(const p of points.values()) if(authored.has(p.id)) element("circle",{cx:p.x*1000,cy:-p.y*1000,r:span/150,class:p.construction?"sketch-point construction":"sketch-point"},p.id);
   renderSketchConstraintControls(sketchRow());
   renderConstructionControls(sketchRow());
+  renderCurveControls(sketchRow());
   const constructionTarget=document.getElementById("construction-target").value;
-  for(const element of sketchCanvas.querySelectorAll("[data-source-id]"))if(sketchConstraintSelection.includes(element.dataset.sourceId)||element.dataset.sourceId===constructionTarget)element.classList.add("sketch-selected");
+  const curveTargets=[document.getElementById("curve-target").value,document.getElementById("curve-cutter").value];
+  for(const element of sketchCanvas.querySelectorAll("[data-source-id]"))if(sketchConstraintSelection.includes(element.dataset.sourceId)||element.dataset.sourceId===constructionTarget||curveTargets.includes(element.dataset.sourceId))element.classList.add("sketch-selected");
+  const options=currentCurveOptions();
+  if(options)for(const [index,intersection] of options.intersections.entries()) {
+    const marker=element("circle",{cx:intersection.position_m[0]*1000,cy:-intersection.position_m[1]*1000,r:span/100,
+      class:"curve-intersection"+(document.getElementById("curve-branch").value===String(index)?" chosen":""),role:"button",tabindex:0,"aria-label":`Choose intersection ${index+1}`});
+    marker.dataset.curveBranch=String(index);
+    marker.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();selectCurveBranch(String(index));}});
+  }
   document.getElementById("sketch-diagnostics").textContent=`${row.workplane_label} · origin ${row.resolved_frame.origin_m.map(v=>(v*1000).toFixed(3)).join(", ")} mm · ${sketchSolveLabel(row.solved.solve_state)} · ${(row.solved.profiles??[]).length} profiles · ${row.source.constraints.length} constraints. Arcs support pointer creation and construction selection; radius/angle field editing, cubic and stored rectangle-helper editing remain outside this form scope.`;
 }
 function draftPoint(event) {
@@ -1209,6 +1293,13 @@ function draftPoint(event) {
 }
 sketchCanvas.addEventListener("click",event=> {
   if(documentMutationBusy||sketchBusy||!sketchRow())return;
+  if(document.getElementById("sketch-tool").value==="curve_edit") {
+    if(event.target.dataset.curveBranch!==undefined){selectCurveBranch(event.target.dataset.curveBranch);return;}
+    const id=event.target.dataset.sourceId,role=document.getElementById("curve-pick-role").value;
+    const ids=role==="target"?sketchRow().curve_edit_targets.targets:sketchRow().curve_edit_targets.cutters;
+    if(ids.includes(id)){clearSketchDraft(true);document.getElementById(role==="target"?"curve-target":"curve-cutter").value=id;drawSketch();}
+    return;
+  }
   reviewedSketch=null; sketchReviewSequence++; document.getElementById("sketch-review").hidden=true;
   const p=draftPoint(event),tool=document.getElementById("sketch-tool").value;
   if(tool==="ellipse") {
@@ -1338,9 +1429,11 @@ async function reviewSketchOperations(operations) {
   try {const plan=await invoke("plan_sketch_edit_cmd",{path,edit});if(seq!==sketchReviewSequence||path!==currentPath||documentMutationBusy)return;
     reviewedSketch={path,edit}; const row=plan.state.sketches.find(r=>r.source.id===edit.sketch_id);drawSketch(row);
     const loops=profiles=>profiles.length?profiles.map(p=>`${p.profile_ref} [${p.entity_ids.join(", ")}]`).join("; "):"none";
-    const profiles=edit.operations.some(o=>o.operation==="construction")?
+    const profiles=edit.operations.some(o=>o.operation==="construction"||o.operation==="curve_edit")?
       ` Closed profiles: ${plan.profile_effect.before.length} → ${plan.profile_effect.after.length}. Before: ${loops(plan.profile_effect.before)}. After: ${loops(plan.profile_effect.after)}. Consumers: ${plan.profile_effect.consumers.length?plan.profile_effect.consumers.map(c=>`${c.feature_id} → ${c.profile_ref}${c.suppressed?" (suppressed)":""}`).join("; ")+" (existing loop bindings retained)":"none"}.`:"";
-    document.getElementById("sketch-effect").textContent=`${sketchSolveLabel(row.solved.solve_state)}. Verified volume: ${plan.evidence.volume_m3==null?"No solid":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}.${profiles} ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
+    const curve=plan.curve_edit_effect;
+    const cut=curve?` ${curve.options.query.mode} ${curve.options.query.end} of ${curve.options.query.target_id} against ${curve.options.query.cutter_id}; intersection ${curve.selected_index+1}; verified solved endpoint (${curve.solved_position_m.map(v=>(v*1000).toFixed(6)).join(", ")}) mm.`:"";
+    document.getElementById("sketch-effect").textContent=`${sketchSolveLabel(row.solved.solve_state)}. Verified volume: ${plan.evidence.volume_m3==null?"No solid":(plan.evidence.volume_m3*1e9).toFixed(3)+" mm³"}.${cut}${profiles} ${edit.operations.length} operations; source unchanged until Apply.`;document.getElementById("sketch-review").hidden=false;
   }catch(error){if(seq===sketchReviewSequence){clearSketchDraft();drawSketch();setStatus(`Sketch refused: ${error}`);}}finally{sketchBusy=false;}
 }
 document.getElementById("construction-target").addEventListener("change",()=>{
@@ -1384,7 +1477,7 @@ document.getElementById("sketch-apply").addEventListener("click",async()=> {
 document.getElementById("sketch-form").addEventListener("input",()=>{clearSketchDraft();drawSketch();});
 document.getElementById("sketch-clear").addEventListener("click",()=>{clearSketchDraft();drawSketch();});
 document.addEventListener("keydown",event=>{
-  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch||sketchConstraintSelection.length||document.getElementById("construction-target").value)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
+  if(event.key==="Escape"&&(circleStart||rectangleStart||arcCenter||ellipseCenter||sketchDraft||reviewedSketch||sketchConstraintSelection.length||document.getElementById("construction-target").value||curveOptions||document.getElementById("curve-target").value||document.getElementById("curve-cutter").value)) {clearSketchDraft();drawSketch();setStatus("Discarded sketch draft.");}
 });
 
 // Creation drafts contain only typed intent; the backend owns IDs and source.
