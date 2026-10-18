@@ -8,7 +8,10 @@ export async function checkSelectedCurveEdits({evaluate,until,source,logicalSour
   assert.notEqual(realpathSync(partPath),realpathSync(fixture));
   await until('!documentMutationBusy && !sketchBusy && !sketchCreateBusy && !featureBusy','Prior native fixture idle');
   cpSync(fixture,partPath,{recursive:true});await evaluate('loadDocument(currentPath)');
-  await until('sketchEditorState?.sketches.some(s=>s.source.id==="sketch:new_1") && !documentMutationBusy','Real curve fixture loaded');
+  // Inspector evaluation does not await loadDocument's Promise. The previous
+  // fixture also owns sketch:new_1, so wait for this source and the completed
+  // product load, rather than accepting the previous fixture's revision.
+  await until('sketchCreationState && !documentMutationBusy && document.getElementById("status").textContent.startsWith("Loaded ") && featureTree?.revision===sketchEditorState?.revision && sketchEditorState?.sketches.some(s=>s.source.id==="sketch:new_1" && s.source.entities.some(e=>e.id==="ent:left") && s.source.constraints.some(c=>c.id==="con:guide_length"))','Real curve fixture loaded');
   await evaluate('document.getElementById("sketch-select").value="sketch:new_1";document.getElementById("sketch-select").dispatchEvent(new Event("change",{bubbles:true}))');
   const initial=logicalSource(),sketch=()=>logicalSource()['sketches.json'].sketches.find(s=>s.id==='sketch:new_1');
   async function change(id,value) {
