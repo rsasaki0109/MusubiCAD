@@ -1,5 +1,17 @@
 # MusubiCAD structural patch authoring guide
 
+MCAD-P17-012 adds [reviewed standard-hole creation](hole-creation.md): call
+`inspect_hole_creation`, select an advertised original-stock/owned-entry/existing
+circle tuple and matching standard, then `plan_hole_create` and
+`apply_hole_create`. Use current document identity/revision, explicit unit-bearing
+depth and a closed `none`/`counterbore`/`countersink` seat intent. Backend IDs,
+source/physical ownership, contained removal and first moments are verified;
+apply uses the same atomic DesignPatch/history gateway as native controls.
+Do not invent workplanes, references or screen-index axes. See
+`examples/agent/create_native_hole.json`, `examples/native_hole_stock.ocad.d`,
+actual stdio `tools/test_native_hole_mcp.py` and independently source/contact/
+fresh-native-physical graded `create_native_standard_hole` eval.
+
 This guide is served to MCP clients as the resource
 `musubicad://guide/structural-patch`. The exact JSON shapes are in
 `musubicad://schema/design-patch`.

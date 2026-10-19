@@ -1,6 +1,6 @@
 # MusubiCAD implementation status
 
-Last reviewed: 2026-10-18
+Last reviewed: 2026-10-19
 
 This inventory is evidence-based against the current repository. **Implemented**
 means the capability has code and focused tests; **Partial** means the primary
@@ -10,7 +10,8 @@ are defined in the [canonical roadmap](roadmap.md).
 
 | Area | Status | Current evidence | Remaining work |
 |---|---|---|---|
-| Reviewed native independent offsets (MCAD-P17-011) | Implemented; complete upon qualifying PR merge | ADR-110 ordinary source catalogue, explicit ordered selection/constant distance/side, backend-generated sketch/owner/entity IDs, solved candidate and protected atomic DesignPatch/history; six both-kernel/source/file regressions, actual MCP/Agent five placements and independent source/physical/adversary eval; actual Linux native 62 groups | Existing convex CCW shared-endpoint mitre/tangent contours or one circle only; no automatic repair or persistent curve association; exact-head Windows native and full local/CI inventory plus main merge still gate completion and credit |
+| Reviewed native standard holes (MCAD-P17-012) | Implemented; complete upon qualifying PR merge | ADR-111 current original-stock/owned end-entry/existing exact-circle catalogue, explicit standard/distance/optional counterbore or countersink forms, shared DesignPatch/history and independent removal/contact/first-moment gates; both-kernel and actual MCP/Agent evidence; actual Linux native 68 groups | Current active original rectangle/distance/NewBody stock and existing outward custom/face/datum circles only; full local checks, actual Linux/Windows native, exact-head CI and main merge still gate completion/credit |
+| Reviewed native independent offsets (MCAD-P17-011) | Complete: PR #161 | ADR-110 ordinary source catalogue, explicit ordered selection/constant distance/side, backend-generated sketch/owner/entity IDs, solved candidate and protected atomic DesignPatch/history; six both-kernel/source/file regressions, actual MCP/Agent five placements and independent source/physical/adversary eval; actual Linux and exact-head Windows native 62 groups, all four local checks and four workflows/11 jobs; qualifying merge 7e742047 | Existing convex CCW shared-endpoint mitre/tangent contours or one circle only; no automatic repair or persistent curve association |
 | Reviewed native trim/extend (MCAD-P17-010) | Complete: PR #160 | ADR-109 source catalogues, backend-only discovery, explicit end/branch/removals and solved endpoint verification, protected DesignPatch/history; analytic Mock/native OCCT independent placed solids, packed/expanded source and actual MCP/Agent/eval evidence; actual Linux and exact-head Windows native 56 groups including six new curve groups; qualifying main merge 8512b229 | Authored line/arc targets and line/circle/arc cutters only; no helper/projected/ellipse/cubic admission or automatic constraint/consumer repair |
 | Counterbored standard holes (MCAD-P16-003) | Implemented; complete upon PR merge | ADR-063 strict source/seat and lengths; source/physical stock/entry ownership, actual union volume/first moments/closed faces, producer metadata and warm-cache rechecks; both kernels, schema/migration/round trips, patch-authored example, guide/skill/eval, actual MCP creation/review/edit/refusal and Agent history | Original rectangle/distance/NewBody stock and owned end faces only; no side/oblique/already-cut/imported/fused targets, through-all, inferred head sizes, countersinks or threads; default Mock unsupported |
 | Parent-context flexible constraints (MCAD-P13-012) | Complete upon PR merge | ADR-061; exact connector scopes/owners, analytic distance/angle solve, explicit angular branch, bounded unique coordinates/coupled followers, fully bound DOF and shared physical leaves; DesignPatch/schema/migration/history, Mock/OCCT analytic fixtures, actual MCP, examples/guide/skill/eval | Fixed outer instances and immediate root-child drivers only; unsupported nonlinear/deeper/free scopes and motion/reach/URDF/HTML refuse; Mock exact mesh intersection/inertia refuse |
@@ -2133,3 +2134,70 @@ The final locked Tauri rebuild also passes. Actual Linux native 62 groups pass
 again on that final binary (2026-10-18 05:50:06Z–05:52:36Z), with unchanged
 source/binary SHA-256 hashes throughout the run. Exact-head Windows native and
 the complete CI inventory plus qualifying main merge still gate completion.
+
+
+P17-011 qualifying merge (2026-10-18): PR #161 merged as
+7e74204770a96c82c47496e402c64969ae1ea8da, parents tested base
+8512b229dcbd57d1900e4bfe95496a61cbd40ec8 and tested head
+3a0bca7c80cfa1f3566f4dd73217e3152659966c, with identical tested/merged trees
+and clean synchronized main. Exact-head CI 39102077011, Design Review
+39102077029, Desktop 39102077017 and Release 39102076984 all succeeded:
+11 jobs, ten success and only the expected PR release publisher skipped.
+Windows actual native 62 groups succeeded 06:03:26Z–06:05:06Z; final Linux
+actual native 62 groups succeeded 05:50:06Z–05:52:36Z with unchanged source/
+binary hashes. All four local checks passed: 1,357 tests, zero failed,
+37 existing ignored, 209 suites. This qualifying merge earns GUI 56 to 57,
+weighted CAD 54.25 to 54.40 (about 54%) for selected independent offset controls
+and their protected review lifecycle. Agent operation stays 95; existing
+planner/kernel/solver/workplanes/host evidence receives no repeated credit.
+
+P17-012 starts from that clean merged main under ADR-111. Backend-owned
+original stock/semantic entry/existing circle-axis choices feed shared verified
+standard-hole and optional explicit seat controls. Both-kernel independent
+physical/source/refusal/history and actual MCP/Agent/eval evidence, example,
+guide/skill, actual new Linux/Windows controls and all mandatory local/CI gates
+plus a qualifying main merge are required before completion or credit.
+Current baseline: weighted CAD 54.40 / GUI 57 / agent operation 95.
+
+
+P17-012 focused implementation evidence (2026-10-19): five desktop regressions
+pass in genuine analytic Mock and native OCCT. They independently measure plain,
+counterbored and countersunk holes, blind/through distance, both end entries,
+removal volume, first moments, unchanged stock bounds, oriented closed meshes
+and actual bore/seat contact rings. Additional YZ/XZ/tilted placements preserve
+axis/entry and source ownership; collision-free feature IDs, required assertions,
+unit/shape/ref/stale refusals, expanded/packed read-only review, live seat
+parameters and canonical Undo/Redo are covered. Existing standard-hole and both
+seat feature suites remain green after factoring their shared input guard.
+
+Actual stdio MCP/Agent parity passes all six seat/entry combinations with no
+model turns. Independent eval verifies exact original stock/sketch/reference/
+parameter intent and fresh native SI STL contact/volume/COM/closure; equal-volume
+translation, wrong entry/axis/standard, unused-source rewrite, literal/expression
+substitution and nonfinite adversaries fail. The executable source is authored
+through actual MCP DesignPatch. All 37 native part examples rebuild structurally,
+all 54 example documents validate, all 36 feature graphs derive exactly and
+canonical writer-form checks pass. No existing golden or schema changes.
+
+ADR-111, API/architecture, MCP authoring guide, skill, source/typed recipes and
+create_native_standard_hole eval are included. Actual new Linux/Windows controls,
+all four final mandatory local checks, complete exact-head CI and a qualifying
+main merge still gate completion/credit. Only that qualifying merge conditionally
+earns GUI 57 to 58 and weighted CAD 54.40 to 54.55 (about 55%) for newly usable
+source-selected standard-hole and explicit seat creation with protected review/
+history. Existing standards/kernel/workplanes/host capability receives no repeat
+credit. Current actual baseline remains CAD 54.40 / GUI 57 / agent operation 95.
+
+
+P17-012 final locked native Tauri build and actual Linux WebKit controls pass
+all 68 groups, including six new unconditional hole groups shared with Windows:
+backend stock/owned entry/circle/standard choices and read-only contacts; plain
+bore creation; explicit counterbore and countersink with independent analytic
+review dimensions/volume; byte/history/preview-preserving unit/containment/angle
+refusal; every form/source/tool/view/upstream/reload/cancel and late-real-IPC
+invalidation, live datum/stock entry motion and stale actual apply. Original
+source and canonical Undo/Redo are checked. No IPC or geometry is mocked.
+Final actual run 2026-10-19T03:11:58.022581+00:00 to 2026-10-19T03:14:54.753314+00:00
+retains identical source/binary hashes. Whole-workspace mandatory checks,
+exact-head Windows native and all applicable CI plus the qualifying main merge
+still gate completion/credit. Baseline stays CAD 54.40 / GUI 57 / agent 95.

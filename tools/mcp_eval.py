@@ -527,6 +527,21 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_native_hole" in task:
+        from native_hole_eval import source_problems, placed_problems, graph_source
+        desired=task['expected_native_hole']
+        problems.extend(source_problems(document,desired,graph_source(ROOT/task['source'])))
+        if musubicad is None:
+            problems.append("hole grader requires fresh native physical export")
+        elif not problems:
+            try:
+                with tempfile.TemporaryDirectory(prefix="musubicad-hole-grade-") as folder:
+                    target=Path(folder)/"actual.stl"
+                    result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                    problems.extend(placed_problems(target.read_bytes(),desired.get('seat','counterbore'),desired.get('bottom',False))
+                        if result.returncode==0 else ["hole physical export failed"])
+            except (OSError,subprocess.TimeoutExpired):
+                problems.append("hole physical export unavailable")
     if "expected_selected_offset" in task:
         from selected_offset_eval import source_problems, placed_problems, graph_source
         desired=task['expected_selected_offset']

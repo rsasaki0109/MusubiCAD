@@ -1,0 +1,22 @@
+{
+  "create": {
+    "document_id": "doc:native_hole_stock",
+    "revision": "READ_CURRENT_FROM_INSPECT_HOLE_CREATION",
+    "target_feature": "feature:extrude_base",
+    "face_ref": "ref:face:plate_entry",
+    "sketch_feature": "feature:sketch_seat",
+    "profile_ref": "sketch:seat/profile:outer",
+    "standard": {
+      "type": "iso273",
+      "size": "M6",
+      "fit": "normal"
+    },
+    "depth": "bore_depth",
+    "seat": {
+      "type": "counterbore",
+      "diameter": "seat_diameter",
+      "depth": "seat_depth"
+    },
+    "name": "Reviewed M6 counterbore"
+  }
+}

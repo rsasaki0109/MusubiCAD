@@ -35,6 +35,7 @@ on:
       - tools/selected_construction_ui_checks.mjs
       - tools/selected_curve_edit_ui_checks.mjs
       - tools/selected_offset_ui_checks.mjs
+      - tools/native_hole_ui_checks.mjs
   push:
     branches: [main]
     tags:

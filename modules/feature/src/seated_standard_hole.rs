@@ -394,10 +394,62 @@ fn admit_inputs(
     ctx: &dyn RegenContext,
 ) -> Result<(KernelBody, opencad_geometry::SolvedSketch, [f64; 3])> {
     def.validate_dimensions()?;
+    let inputs = admit_owned_hole_inputs(
+        &crate::StandardHoleFeature {
+            hole: crate::HoleFeature {
+                sketch_feature: def.sketch_feature.clone(),
+                profile_ref: def.profile_ref.clone(),
+                target_feature: def.target_feature.clone(),
+                face_ref: Some(def.face_ref.clone()),
+                depth: ExtrudeExtent::Distance {
+                    length: def.bore_depth,
+                },
+                depth_expr: def.bore_depth_expr.clone(),
+            },
+            standard: def.standard.clone(),
+        },
+        def.seat
+            .dimensions(def.standard.dimensions().cut_diameter)?
+            .0,
+        ctx,
+    )?;
+    Ok((inputs.target, inputs.profile, inputs.inward_direction))
+}
+
+/// Transient existing source/semantic/physical admission; no persisted handles.
+pub struct OwnedHoleInputs {
+    pub target: KernelBody,
+    pub profile: opencad_geometry::SolvedSketch,
+    pub inward_direction: [f64; 3],
+    pub stock: opencad_geometry::RectangularStockGeometry,
+}
+
+/// Same original-stock/end-face guard used by seated features and native forms.
+/// The profile normal is outward; callers must verify the actual inward cut.
+pub fn admit_owned_hole_inputs(
+    def: &crate::StandardHoleFeature,
+    outer_diameter: Length,
+    ctx: &dyn RegenContext,
+) -> Result<OwnedHoleInputs> {
+    let ExtrudeExtent::Distance { length: depth } = def.hole.depth else {
+        return Err(invalid("owned hole requires explicit distance depth"));
+    };
+    if [depth.meters(), outer_diameter.meters()]
+        .iter()
+        .any(|v| !v.is_finite() || *v <= EPS || *v > 1000.)
+        || outer_diameter.meters() + EPS < def.standard.dimensions().cut_diameter.meters()
+    {
+        return Err(invalid("invalid owned hole depth or outer diameter"));
+    }
+    let face_ref = def
+        .hole
+        .face_ref
+        .as_ref()
+        .ok_or_else(|| invalid("owned entry reference required"))?;
     let sources = ctx.source_feature_nodes()?;
     let source: Vec<_> = sources
         .iter()
-        .filter(|n| n.id == def.target_feature && !n.suppressed)
+        .filter(|n| n.id == def.hole.target_feature && !n.suppressed)
         .collect();
     if source.len() != 1 {
         return Err(invalid("missing/ambiguous target source"));
@@ -405,7 +457,7 @@ fn admit_inputs(
     if sources.iter().any(|n| {
         n.definition
             .consumed_face_refs()
-            .contains(&def.face_ref.as_str())
+            .contains(&face_ref.as_str())
     }) {
         return Err(invalid("consumed entry reference"));
     }
@@ -455,8 +507,8 @@ fn admit_inputs(
     {
         return Err(invalid("stock source is not a right rectangle"));
     }
-    let sketch = ctx.sketch_for_feature(&def.sketch_feature)?;
-    let profile = profile_to_solved_with_context(sketch, &def.profile_ref, ctx)?;
+    let sketch = ctx.sketch_for_feature(&def.hole.sketch_feature)?;
+    let profile = profile_to_solved_with_context(sketch, &def.hole.profile_ref, ctx)?;
     let circle = profile
         .circle
         .ok_or_else(|| invalid("requires an exact source circle"))?;
@@ -474,7 +526,7 @@ fn admit_inputs(
         .ok_or_else(|| invalid("missing circle frame"))?;
     let normal = frame(plane)?;
     let center = plane.map_point(circle.center_m[0], circle.center_m[1]);
-    let target = ctx.body_for_feature(&def.target_feature)?;
+    let target = ctx.body_for_feature(&def.hole.target_feature)?;
     let kernel = ctx.kernel();
     let witness = kernel.rectangular_stock_geometry(
         &target,
@@ -489,7 +541,7 @@ fn admit_inputs(
         return Err(invalid("side/oblique stock entry unsupported"));
     }
     if (witness.inward_thickness_m - height.meters()).abs() > EPS
-        || def.bore_depth.meters() > height.meters() + 64. * f64::EPSILON * height.meters().max(1.)
+        || depth.meters() > height.meters() + 64. * f64::EPSILON * height.meters().max(1.)
     {
         return Err(invalid("source thickness mismatch or out-of-stock bore"));
     }
@@ -519,10 +571,7 @@ fn admit_inputs(
             return Err(invalid("actual stock corners disagree with source"));
         }
     }
-    let (seat_diameter, _) = def
-        .seat
-        .dimensions(def.standard.dimensions().cut_diameter)?;
-    let radius = seat_diameter.meters() / 2.;
+    let radius = outer_diameter.meters() / 2.;
     let local = sub(center, witness.origin_m);
     for (c, size) in [dot(local, witness.u_axis), dot(local, witness.v_axis)]
         .into_iter()
@@ -535,11 +584,11 @@ fn admit_inputs(
     let refs: Vec<_> = ctx
         .semantic_refs()
         .iter()
-        .filter(|r| r.ref_id.as_str() == def.face_ref)
+        .filter(|r| r.ref_id.as_str() == face_ref.as_str())
         .collect();
     if refs.len() != 1
         || refs[0].kind != TopoRefKind::Face
-        || refs[0].semantic.created_by != def.target_feature
+        || refs[0].semantic.created_by != def.hole.target_feature
     {
         return Err(invalid("entry reference missing, ambiguous or foreign"));
     }
@@ -603,7 +652,12 @@ fn admit_inputs(
         }
     }
     kernel.assign_face_ref(&target, witness.entry_face_id, reference.ref_id.clone())?;
-    Ok((target, profile, normal.map(|v| -v)))
+    Ok(OwnedHoleInputs {
+        target,
+        profile,
+        inward_direction: normal.map(|v| -v),
+        stock: witness,
+    })
 }
 fn require_output(
     kernel: &dyn GeometryKernel,
@@ -718,4 +772,15 @@ pub(crate) fn validate_closed_mesh(mesh: &MeshSet) -> Result<()> {
         return Err(invalid("mesh must be outward and closed"));
     }
     Ok(())
+}
+
+/// Existing closed physical hole mesh gate, shared with reviewed native forms.
+pub fn validate_owned_hole_mesh(mesh: &MeshSet) -> Result<()> {
+    if mesh.triangle_count() == 0
+        || mesh.triangle_face_ids.len() != mesh.triangle_count()
+        || mesh.triangle_face_ids.contains(&0)
+    {
+        return Err(invalid("physical mesh/face metadata required"));
+    }
+    validate_closed_mesh(mesh)
 }

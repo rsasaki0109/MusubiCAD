@@ -224,6 +224,9 @@ fn tools() -> Vec<Tool> {
             handler: Handler::Agent("opencad.apply_feature_edit"),
             schema: feature_edit_schema,
         },
+        Tool { name: "inspect_hole_creation", description: "Read current original rectangular stock, owned semantic end entries and admitted existing exact circle axes with matching standards and SI contact dimensions. No invented faces, workplanes, axes or source writes.", handler: Handler::Agent("opencad.inspect_hole_creation"), schema: path_schema },
+        Tool { name: "plan_hole_create", description: "Review a source-bound standard bore, counterbore or countersink on an advertised stock/entry/circle tuple. Require current document identity/revision, explicit standard and unit-bearing depth/seat dimensions. Backend assigns feature ID and verifies actual removal, first moments, closed mesh and assertions without writing.", handler: Handler::Agent("opencad.plan_hole_create"), schema: hole_create_schema },
+        Tool { name: "apply_hole_create", description: "Reverify and atomically create an admitted standard hole through the same DesignPatch/history gateway as Tauri. Preserve original stock, circle axis and reference sources; stale, ownership, units, containment, kernel and assertion failures refuse without publication.", handler: Handler::Agent("opencad.apply_hole_create"), schema: hole_create_schema },
         Tool { name: "plan_sketch_offset", description: "Review an independent analytic offset on the same source workplane. Require current document identity/revision, explicit ordered ordinary authored curve IDs, constant unit-bearing positive distance, outward/inward side and name. Backend assigns globally free sketch/owner/entity IDs; returns solved candidate and verified whole-document evidence without writing. Convex CCW/tangent joins or one circle only; no association or constraints copied.", handler: Handler::Agent("opencad.plan_sketch_offset"), schema: sketch_offset_schema },
         Tool { name: "apply_sketch_offset", description: "Reverify and atomically publish an independent offset sketch and owner using the same DesignPatch/history gateway as Tauri. Refuse stale identity/revision, unsupported topology, units, collapse or assertions without source/history writes.", handler: Handler::Agent("opencad.apply_sketch_offset"), schema: sketch_offset_schema },
         Tool { name: "inspect_sketch_creation", description: "Read part identity/revision, deterministic free sketch/owner IDs, global planes and source-bound regenerated datum-plane choices without writing.", handler: Handler::Agent("opencad.inspect_sketch_creation"), schema: path_schema },
@@ -407,6 +410,24 @@ fn feature_edit_schema() -> Value {
 
 fn selection_edit_schema() -> Value {
     json!({"type":"object","properties":{"path":{"type":"string"},"edit":{"type":"object","required":["source_revision","scene_revision","target","field","expr"],"properties":{"source_revision":{"type":"string"},"scene_revision":{"type":"string"},"target":{"type":"object","description":"{kind:face_reference,ref_id} or {kind:sketch_entity,sketch_id,entity_id}, from selection_frame.bindings"},"field":{"type":"string"},"expr":{"type":"string"}},"additionalProperties":false},"history":{"type":"object"}},"required":["path","edit"],"additionalProperties":false})
+}
+
+fn hole_create_schema() -> Value {
+    let size = json!({"type":"string","enum":["M3","M4","M5","M6","M8","M10","M12"]});
+    let standard = json!({"oneOf":[
+        {"type":"object","required":["type","size","fit"],"properties":{"type":{"const":"iso273"},"size":size,"fit":{"enum":["close","normal","loose"]}},"additionalProperties":false},
+        {"type":"object","required":["type","size","representation"],"properties":{"type":{"const":"iso_metric_coarse"},"size":size,"representation":{"const":"tap_drill"}},"additionalProperties":false}
+    ]});
+    let length = json!({"type":"string","description":"Explicit length units or same-kind length parameter; positive distance, never through-all"});
+    let seat = json!({"oneOf":[
+        {"type":"object","required":["type"],"properties":{"type":{"const":"none"}},"additionalProperties":false},
+        {"type":"object","required":["type","diameter","depth"],"properties":{"type":{"const":"counterbore"},"diameter":length,"depth":length},"additionalProperties":false},
+        {"type":"object","required":["type","diameter","included_angle"],"properties":{"type":{"const":"countersink"},"diameter":length,"included_angle":{"type":"string","description":"Explicit angle units or angle parameter; strictly between 0 and 180 deg"}},"additionalProperties":false}
+    ]});
+    json!({"type":"object","properties":{"path":{"type":"string"},"create":{"type":"object",
+        "required":["document_id","revision","target_feature","face_ref","sketch_feature","profile_ref","standard","depth","seat","name"],
+        "properties":{"document_id":{"type":"string"},"revision":{"type":"string"},"target_feature":{"type":"string"},"face_ref":{"type":"string"},"sketch_feature":{"type":"string"},"profile_ref":{"type":"string"},"standard":standard,"depth":length,"seat":seat,"name":{"type":"string","minLength":1}},"additionalProperties":false},
+        "history":{"type":["object","null"]}},"required":["path","create"],"additionalProperties":false})
 }
 
 fn sketch_offset_schema() -> Value {
@@ -799,7 +820,7 @@ mod tests {
     fn every_tool_is_listed_with_an_object_schema() {
         let listed = call("tools/list", json!({}));
         let tools = listed["result"]["tools"].as_array().expect("tools");
-        assert_eq!(tools.len(), 42);
+        assert_eq!(tools.len(), 45);
         assert!(tools.iter().any(|tool| tool["name"] == "bom_document"));
         for tool in tools {
             assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);

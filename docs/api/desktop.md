@@ -9,6 +9,14 @@ render/viewport layer and are not written to the document.
 
 ## Shared backend API
 
+P17-012 adds [reviewed standard-hole controls](hole-creation.md):
+`inspect_document_hole_creation`, `plan_document_hole_create`,
+`apply_document_hole_create` share the native Tauri, Agent and MCP gateway.
+Stock/owned entry/existing circle choices are backend-owned; unit-bearing bore
+and optional counterbore/countersink dimensions produce one verified AddFeature
+DesignPatch with atomic source/history and independently checked removal/contact.
+No persisted schema or geometry admission is expanded.
+
 P17-002/003 add the shared [global/datum sketch creation API](sketch-creation.md):
 `inspect_document_sketch_creation`, `plan_document_sketch_create` and
 `apply_document_sketch_create` (in `sketch_creation`). Tauri delegates through

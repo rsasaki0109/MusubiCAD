@@ -3,6 +3,7 @@
 pub mod editor;
 pub mod export;
 pub mod fixture;
+pub mod hole_creation;
 pub mod inspect;
 pub mod intent;
 pub mod parameters;

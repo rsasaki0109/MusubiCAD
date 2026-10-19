@@ -11,6 +11,7 @@ import {checkSelectedConstraints} from './selected_constraint_ui_checks.mjs';
 import {checkSelectedConstruction} from './selected_construction_ui_checks.mjs';
 import {checkSelectedCurveEdits} from './selected_curve_edit_ui_checks.mjs';
 import {checkSelectedOffsets} from './selected_offset_ui_checks.mjs';
+import {checkNativeHoles} from './native_hole_ui_checks.mjs';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -127,5 +128,6 @@ try {
   results.push(...await checkSelectedConstruction({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkSelectedCurveEdits({evaluate,until,source,logicalSource,partPath}));
   results.push(...await checkSelectedOffsets({evaluate,until,source,logicalSource,partPath}));
+  results.push(...await checkNativeHoles({evaluate,until,source,logicalSource,partPath}));
   console.log(JSON.stringify({actual_windows_tauri_webview2_forms:'passed',webview_url:pages[0].url,results}, null, 2));
 } finally { socket.close(); }
