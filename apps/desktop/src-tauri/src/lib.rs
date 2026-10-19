@@ -23,6 +23,29 @@ fn map_error(err: opencad_core::OpenCadError) -> String {
 }
 
 #[tauri::command]
+fn inspect_hole_creation_cmd(
+    path: String,
+) -> Result<opencad_desktop::hole_creation::HoleCreationState, String> {
+    opencad_desktop::hole_creation::inspect_document_hole_creation(&path).map_err(map_error)
+}
+#[tauri::command]
+fn plan_hole_create_cmd(
+    path: String,
+    create: opencad_desktop::hole_creation::HoleCreate,
+) -> Result<opencad_desktop::hole_creation::HoleCreatePlan, String> {
+    opencad_desktop::hole_creation::plan_document_hole_create(&path, &create).map_err(map_error)
+}
+#[tauri::command]
+fn apply_hole_create_cmd(
+    path: String,
+    create: opencad_desktop::hole_creation::HoleCreate,
+    history: Option<DocumentHistory>,
+) -> Result<opencad_desktop::FeatureEditResult, String> {
+    opencad_desktop::hole_creation::apply_document_hole_create(&path, &create, history)
+        .map_err(map_error)
+}
+
+#[tauri::command]
 fn plan_sketch_offset_cmd(
     path: String,
     offset: opencad_desktop::sketch_offset::SketchOffset,
@@ -347,6 +370,9 @@ fn run_gui() {
             apply_feature_edit_cmd,
             inspect_sketches_cmd,
             inspect_sketch_curve_edit_cmd,
+            inspect_hole_creation_cmd,
+            plan_hole_create_cmd,
+            apply_hole_create_cmd,
             inspect_sketch_creation_cmd,
             plan_sketch_create_cmd,
             apply_sketch_create_cmd,

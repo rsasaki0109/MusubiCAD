@@ -1,0 +1,30 @@
+{
+  "semantic_refs": [
+    {
+      "ref_id": "ref:face:plate_entry",
+      "kind": "face",
+      "semantic": {
+        "created_by": "feature:extrude_base",
+        "role": "top",
+        "normal_hint": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "ref_id": "ref:face:plate_bottom",
+      "kind": "face",
+      "semantic": {
+        "created_by": "feature:extrude_base",
+        "role": "bottom",
+        "normal_hint": [
+          0.0,
+          0.0,
+          -1.0
+        ]
+      }
+    }
+  ]
+}

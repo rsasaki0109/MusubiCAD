@@ -527,6 +527,27 @@ def check(
 ) -> tuple[bool, list[str]]:
     """Independently verify a finished task; returns (passed, problems)."""
     problems = []
+    if "expected_native_hole" in task:
+        from native_hole_eval import source_problems, placed_problems, graph_source
+        desired=task['expected_native_hole']
+        problems.extend(source_problems(document,desired,graph_source(ROOT/task['source'])))
+        if musubicad is None:
+            problems.append("hole grader requires fresh native physical export")
+        elif not problems:
+            try:
+                regenerated=subprocess.run([str(musubicad),"regen",str(document),"--json"],capture_output=True,text=True,timeout=60)
+                refs=json.loads(regenerated.stdout).get('reference_provenance',[]) if regenerated.returncode==0 else []
+                expected_ref='ref:face:plate_bottom' if desired.get('bottom',False) else 'ref:face:plate_entry'
+                selected=[r for r in refs if r.get('ref_id')==expected_ref]
+                if len(selected)!=1 or selected[0].get('status') not in ['exact','derived','fingerprint'] or selected[0].get('resolved_kernel_id') is None:
+                    problems.append("hole selected entry is not uniquely resolved on the fresh final body")
+                with tempfile.TemporaryDirectory(prefix="musubicad-hole-grade-") as folder:
+                    target=Path(folder)/"actual.stl"
+                    result=subprocess.run([str(musubicad),"export",str(document),str(target)],capture_output=True,text=True,timeout=60)
+                    problems.extend(placed_problems(target.read_bytes(),desired.get('seat','counterbore'),desired.get('bottom',False),desired.get('depth_m',.01)*1000)
+                        if result.returncode==0 else ["hole physical export failed"])
+            except (OSError,ValueError,subprocess.TimeoutExpired):
+                problems.append("hole physical export unavailable")
     if "expected_selected_offset" in task:
         from selected_offset_eval import source_problems, placed_problems, graph_source
         desired=task['expected_selected_offset']

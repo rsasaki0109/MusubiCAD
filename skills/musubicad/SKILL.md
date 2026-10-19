@@ -42,6 +42,23 @@ the CLI commands in section 7 instead; they enforce the same checks.
 
 ## 2. Edit an existing design (the common case)
 
+For a new admitted standard hole (P17-012), use `inspect_hole_creation`, then
+`plan_hole_create` and `apply_hole_create`. Select a returned original-stock,
+owned semantic end-entry and existing exact circle-axis tuple plus a matching
+standard; keep current document identity/revision. Depth needs explicit length
+units or a length parameter. Seat is `none`, `counterbore` with explicit diameter/
+depth, or `countersink` with diameter/included angle. Backend creates the free
+feature ID and verifies actual contained removal, first moments and display
+before atomic source/history publication. Preserve all original source and use
+returned opaque `result.history.history`; never guess a face index, copy a frame
+or silently repair unsupported stock/axes. See `docs/api/hole-creation.md`,
+`examples/native_hole_stock.md` and `examples/agent/create_native_hole.json`.
+`create_native_standard_hole` and `create_native_blind_hole` evals check original
+source, uniquely resolved final entry and fresh native SI contacts/volume/COM;
+stdio regression uses zero model turns. A blind floor must belong to the hole,
+so it cannot be confused with the stock entry in semantic selection. No new host or
+geometry credit is implied.
+
 1. Find the parameter: `query_document` with `{"kind": "list_parameters"}`
    (CLI: `musubicad params <doc> --json`). To see what a parameter drives and
    what an edit would change: `{"kind": "inspect_parameter", "id": "param:bore_diameter"}`.

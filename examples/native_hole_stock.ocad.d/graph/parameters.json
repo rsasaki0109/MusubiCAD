@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "param:stock_height": {
+      "id": "param:stock_height",
+      "name": "stock_height",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:hole_x": {
+      "id": "param:hole_x",
+      "name": "hole_x",
+      "expr": "12 mm",
+      "dirty": false
+    },
+    "param:hole_y": {
+      "id": "param:hole_y",
+      "name": "hole_y",
+      "expr": "9 mm",
+      "dirty": false
+    },
+    "param:seat_angle": {
+      "id": "param:seat_angle",
+      "name": "seat_angle",
+      "expr": "90 deg",
+      "dirty": false
+    },
+    "param:bore_depth": {
+      "id": "param:bore_depth",
+      "name": "bore_depth",
+      "expr": "10 mm",
+      "dirty": false
+    },
+    "param:seat_diameter": {
+      "id": "param:seat_diameter",
+      "name": "seat_diameter",
+      "expr": "11 mm",
+      "dirty": false
+    },
+    "param:seat_depth": {
+      "id": "param:seat_depth",
+      "name": "seat_depth",
+      "expr": "4 mm",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

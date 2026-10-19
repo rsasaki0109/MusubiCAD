@@ -75,5 +75,5 @@ fn every_example_feature_graph_is_derivable() {
         checked += 1;
     }
     // The reviewed-curve fixture is included in derivation and exact edge checks.
-    assert_eq!(checked, 35, "every part example must be checked");
+    assert_eq!(checked, 36, "every part example must be checked");
 }

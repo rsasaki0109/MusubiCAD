@@ -6,6 +6,7 @@
 
 const TAURI_SOURCE: &str = include_str!("../../../apps/desktop/src-tauri/src/lib.rs");
 const UI_SOURCE: &str = include_str!("../../../apps/desktop/ui/main.js");
+const HOLE_UI_SOURCE: &str = include_str!("../../../apps/desktop/ui/hole-controls.js");
 const CLI_SOURCE: &str = include_str!("../../../modules/cli/src/commands.rs");
 const CLI_PATCH_SOURCE: &str = include_str!("../../../modules/cli/src/patch.rs");
 const AGENT_SOURCE: &str = include_str!("../../../modules/cli/src/agent.rs");
@@ -24,6 +25,21 @@ fn every_ui_model_command_has_a_tauri_handler_and_cli_or_agent_route() {
     // load path; regeneration/export stay reusable backend operations for the
     // headless smoke contract and are not Tauri/UI commands.
     let parity = [
+        (
+            "inspect_hole_creation_cmd",
+            "inspect_hole_creation_cmd",
+            "opencad.inspect_hole_creation",
+        ),
+        (
+            "plan_hole_create_cmd",
+            "plan_hole_create_cmd",
+            "opencad.plan_hole_create",
+        ),
+        (
+            "apply_hole_create_cmd",
+            "apply_hole_create_cmd",
+            "opencad.apply_hole_create",
+        ),
         (
             "inspect_sketch_creation_cmd",
             "inspect_sketch_creation_cmd",
@@ -138,8 +154,9 @@ fn every_ui_model_command_has_a_tauri_handler_and_cli_or_agent_route() {
 
     for (ui_command, handler, parity_route) in parity {
         assert!(
-            UI_SOURCE.contains(&format!("invoke(\"{ui_command}\"")),
-            "UI command '{ui_command}' is not invoked by main.js"
+            UI_SOURCE.contains(&format!("invoke(\"{ui_command}\""))
+                || HOLE_UI_SOURCE.contains(&format!("invoke(\"{ui_command}\"")),
+            "UI command '{ui_command}' is not invoked by the product UI"
         );
         assert!(
             TAURI_SOURCE.contains(&format!("fn {handler}")),

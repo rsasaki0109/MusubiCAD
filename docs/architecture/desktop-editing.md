@@ -1,5 +1,18 @@
 # Desktop editing ownership
 
+P17-012 / [ADR-111](../adr/ADR-111-reviewed-native-hole-controls.md) adds usable
+standard-hole controls. `hole_creation` lists current source/physical stock,
+owned entry and existing exact-circle choices; typed plan/apply creates one
+existing standard/seated feature through verified DesignPatch/history. The
+product's `hole-controls.js` holds only disposable form/review state. Backend
+rebuilds choices and verifies removal/first moments/mesh; source IDs, current
+document identity/revision, file publication and history remain authoritative.
+Admitted ordinary holes share the seat feature's exact source-plane face
+classifier, preserving retained stock ownership and assigning blind floors to
+the hole. A unique resolved final entry is mandatory. Tauri/Agent/MCP share this
+gateway. Existing explicit analytic Mock/native OCCT
+admission is reused; no workplane/schema/sampling expansion or frontend geometry.
+
 [ADR-058](../adr/ADR-058-backend-only-desktop-editing.md) is the accepted Phase 14
 contract. P14-001 registers the architecture and acceptance plan; feature-tree,
 selection patch and interactive sketch implementation follow in P14-002/003/004.

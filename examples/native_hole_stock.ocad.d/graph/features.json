@@ -1,0 +1,123 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_base",
+      "feature:extrude_base",
+      "feature:entry_plane",
+      "feature:sketch_seat",
+      "feature:sketch_bottom"
+    ],
+    "features": {
+      "feature:sketch_base": {
+        "id": "feature:sketch_base",
+        "name": "Base Sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:extrude_base": {
+        "id": "feature:extrude_base",
+        "name": "Extrude Base",
+        "feature_type": "extrude",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:entry_plane": {
+        "id": "feature:entry_plane",
+        "name": "Source-bound top entry",
+        "feature_type": "datum_plane",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_seat": {
+        "id": "feature:sketch_seat",
+        "name": "M6 bore sketch",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:sketch_bottom": {
+        "id": "feature:sketch_bottom",
+        "name": "Bottom M6 circle axis",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_base",
+        "target": "feature:extrude_base",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:entry_plane",
+        "target": "feature:sketch_seat",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:entry_plane",
+      "name": "Source-bound top entry",
+      "definition": {
+        "type": "datum_plane",
+        "base": {
+          "type": "global",
+          "plane": "XY"
+        },
+        "offset": {
+          "value_si": 0.01
+        },
+        "offset_expr": "stock_height"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:extrude_base",
+      "name": "Extrude Base",
+      "definition": {
+        "type": "extrude",
+        "sketch_feature": "feature:sketch_base",
+        "profile_ref": "sketch:base/profile:outer",
+        "extent": {
+          "type": "distance",
+          "length": {
+            "value_si": 0.01
+          }
+        },
+        "operation": "new_body",
+        "length_expr": "stock_height"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_base",
+      "name": "Base Sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:base"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_bottom",
+      "name": "Bottom M6 circle axis",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:bottom_axis"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_seat",
+      "name": "M6 bore sketch",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:seat"
+      },
+      "suppressed": false
+    }
+  ]
+}

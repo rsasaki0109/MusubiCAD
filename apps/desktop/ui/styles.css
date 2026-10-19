@@ -309,6 +309,10 @@ button:disabled:hover {
 .feature-row input, #feature-create input, #feature-create select { width: 100%; box-sizing: border-box; }
 .feature-row button { margin: 3px; }
 #feature-create, #feature-review { border: 1px solid #596574; padding: 10px; margin-bottom: 14px; }
+#hole-form, #hole-preview { border: 1px solid #596574; padding: 10px; margin-bottom: 14px; }
+#hole-form label:not([hidden]) { display: grid; gap: .2rem; margin-bottom: 6px; }
+#hole-form input, #hole-form select { width: 100%; box-sizing: border-box; }
+#hole-info, #hole-effect { overflow-wrap: anywhere; }
 #feature-limit { font-size: 12px; }
 
 #sketch-editor { margin-top: 1rem; padding: 1rem; background: #182332; border-radius: 8px; }

@@ -1048,10 +1048,10 @@ workplanes. Preserve the original fixed maturity rubric and ADR-058's backend
 ownership. P14's existing feature editing and point/line/circle/ellipse forms
 receive no duplicate credit. P16-008 completed in PR #148; its explicitly
 faceted approximation receives no additional score. The merged baseline before
-P17-011 is weighted CAD 54.25, GUI 56 and agent operation 95 after
-P17-010 / PR #160 (merge 8512b229dcbd57d1900e4bfe95496a61cbd40ec8).
-Usable source-selected trim/extend with explicit branch/removal review earned
-GUI 55 to 56; existing planner/kernel/solver/workplanes and host coverage
+P17-012 is weighted CAD 54.40, GUI 57 and agent operation 95 after
+P17-011 / PR #161 (merge 7e74204770a96c82c47496e402c64969ae1ea8da).
+Usable source-selected independent offsets with explicit order/side review earned
+GUI 56 to 57; existing planner/kernel/solver/workplanes and host coverage
 received no repeat credit.
 
 **Dependencies:** completed Phase 14 shared DesignPatch/verification/history
@@ -1077,8 +1077,8 @@ ADR rather than silently broadening a UI task.
 | MCAD-P17-009 | Edit construction geometry through direct selection | ADR-107: backend-catalogued authored points/lines/circles/ellipses/arcs; direct selection and explicit reviewed flag-only controls, backend before/after closed loops and consumers plus verified solid consequences; source expression/identity, refusal/history, both-kernel and actual Linux/Windows evidence; no duplicate raw-checkbox credit | Complete: PR #158 |
 | MCAD-P17-021 | Resolve point and circle source lengths before solving | Prerequisite to P17-010: ADR-108, existing strict expression evaluator on disposable ordinary point/circle source, explicit length/angle scope checks, fail-closed low-level literals/radius seeds; independently measured placed solids in analytic Mock/native OCCT, exact intersection/source/refusal/history/round-trip/MCP evidence; no UI or score credit | Complete: PR #159 |
 | MCAD-P17-010 | Trim sketches through reviewed native controls | ADR-109 after P17-021: backend-catalogued authored line/arc targets and line/circle/arc cutters, explicit end/branch/constraint removals, read-only intersection discovery, solved endpoint verification, profile/solid consequences and protected atomic history; actual new Linux/Windows controls and independent source/physical grading; no new geometry admission | Complete: PR #160 |
-| MCAD-P17-011 | Offset sketches through reviewed native controls | ADR-110: existing bounded analytic independent-copy planner, backend-authored source catalogue and generated sketch/owner/entity IDs, explicit ordered selection/distance/side, verified read-only review and atomic history; independent placed physics/source/MCP and new actual Linux/Windows controls; no associative curve claim | Complete upon qualifying PR merge |
-| MCAD-P17-012 | Create admitted holes through native controls | Backend-owned stock/entry/axis selection and unit-bearing hole/seat forms for explicitly advertised existing admission; independently checked removal volume/contact dimensions and failure isolation | Planned |
+| MCAD-P17-011 | Offset sketches through reviewed native controls | ADR-110: existing bounded analytic independent-copy planner, backend-authored source catalogue and generated sketch/owner/entity IDs, explicit ordered selection/distance/side, verified read-only review and atomic history; independent placed physics/source/MCP and new actual Linux/Windows controls; no associative curve claim | Complete: PR #161 |
+| MCAD-P17-012 | Create admitted holes through native controls | ADR-111: backend-owned original stock/semantic end entry/existing circle-axis catalogue; explicit standard, distance and optional counterbore/countersink forms, verified removal/contact and atomic history; both kernels, independently graded MCP and actual Linux/Windows controls | Complete upon qualifying PR merge |
 | MCAD-P17-013 | Create admitted revolves through native controls | Explicit profile, admitted axis and angular units/extent; existing backend guards, independent volume/bounds/placement and native review/apply/history evidence | Planned |
 | MCAD-P17-014 | Create admitted lofts through native controls | Explicit ordered source sections and existing compatible section/operation admission; independently checked section contacts/volume, reorder and invalid-section refusal | Planned |
 | MCAD-P17-015 | Create admitted sweeps through native controls | Explicit admitted profile/path/frame and existing backend representation; independent path/contact/dimension/volume evidence and unsupported path refusal | Planned |

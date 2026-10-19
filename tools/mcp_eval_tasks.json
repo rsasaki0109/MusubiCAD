@@ -292,7 +292,7 @@
       "id": "drawing_polygonal_section",
       "source": "examples/section_plate_drawing.ocad.d",
       "document": "section_drawing.ocad.d",
-      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m\u00b2, two loops and eight edges; never store contour caches.",
+      "prompt": "In {document}, replace view:front with a new section view view:section_updated on sheet:a4. Preserve its part model reference, front projection, scale 0.5 and origin [0.05,0.05]. Move the section plane to z = 4 mm, normal [0,0,1], with hatch_spacing_m = 0.003. Use remove_drawing_view and add_drawing_view through DesignPatch, dry-run/apply, regenerate and export SVG. Verify fresh material area 0.0044 m², two loops and eight edges; never store contour caches.",
       "expected_views": [
         "front"
       ],
@@ -2036,7 +2036,7 @@
       "id": "tapered_rib_height",
       "source": "examples/tapered_rib_plate.ocad.d",
       "document": "tapered_rib_plate.ocad.d",
-      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm\u00b3. Do not substitute a constant-width rib or change source sketches/order.",
+      "prompt": "Change only rib_height in {document} from 20 mm to 12 mm. Preserve the explicit tapered_rib source, square ends, original 40x30x10 mm rectangle Distance/NewBody stock, complete construction centreline from (5,15) to (35,15) mm on its end, owned extrusion_end reference, 4 mm base thickness and 2.862405226111748 deg angle. Review then apply through DesignPatch and verify fresh native union volume 13224 mm³. Do not substitute a constant-width rib or change source sketches/order.",
       "expected_volume_mm3": 13224,
       "required_parameters": [
         "rib_height",
@@ -2313,6 +2313,34 @@
         },
         "case": "seeded_XY"
       }
+    },
+    {
+      "id": "create_native_standard_hole",
+      "category": "desktop",
+      "source": "examples/native_hole_stock.ocad.d",
+      "prompt": "For the part at {document}, use inspect_hole_creation, then plan_hole_create and apply_hole_create to create one reviewed ISO273 M6 normal counterbore on feature:extrude_base. Select ref:face:plate_entry and the existing feature:sketch_seat / sketch:seat/profile:outer circle. Name it Reviewed M6 counterbore. Keep depth expression bore_depth; seat diameter seat_diameter and seat depth seat_depth. Preserve all original stock/sketch/reference/parameter source and append exactly feature:hole_1. Review first; do not author raw topology or rewrite original geometry.",
+      "expected_native_hole": {
+        "feature_id": "feature:hole_1",
+        "seat": "counterbore",
+        "bottom": false,
+        "depth": "bore_depth"
+      },
+      "expected_volume_mm3": 11414.595624930078,
+      "document": "native_hole_stock.ocad.d"
+    },
+    {
+      "id": "create_native_blind_hole",
+      "document": "native_blind_hole.ocad.d",
+      "source": "examples/native_hole_stock.ocad.d",
+      "prompt": "For the part at {document}, use inspect_hole_creation, plan_hole_create and apply_hole_create to create exactly one ISO273 M6 normal plain blind bore of explicit depth 8 mm. Select feature:extrude_base, ref:face:plate_entry, feature:sketch_seat / sketch:seat/profile:outer, seat type none. Preserve all original source and parameters, append feature:hole_1, and keep the entry uniquely resolved after cutting: the blind floor must belong to the hole rather than being confused with the stock end. Review before applying.",
+      "expected_native_hole": {
+        "feature_id": "feature:hole_1",
+        "seat": "none",
+        "bottom": false,
+        "depth": "8 mm",
+        "depth_m": 0.008
+      },
+      "expected_volume_mm3": 11726.304448019257
     }
   ]
 }

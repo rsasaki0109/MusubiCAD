@@ -144,6 +144,26 @@
           <button id="feature-apply" type="button">Apply reviewed edit</button>
           <button id="feature-cancel" type="button">Cancel</button>
         </div>
+        <form id="hole-form">
+          <h3>Standard hole</h3>
+          <label>Original stock <select id="hole-stock" aria-label="Hole stock"></select></label>
+          <label>Entry face <select id="hole-entry" aria-label="Owned hole entry"></select></label>
+          <label>Existing circle axis <select id="hole-axis" aria-label="Hole circle axis"></select></label>
+          <p id="hole-info" aria-live="polite"></p>
+          <label>Standard <select id="hole-standard" aria-label="Matching hole standard"></select></label>
+          <label>Name <input id="hole-name" value="Standard hole" required /></label>
+          <label>Bore depth (explicit length or length parameter) <input id="hole-depth" value="8 mm" required /></label>
+          <label>Seat <select id="hole-seat"><option value="none">Plain bore</option><option value="counterbore">Counterbore</option><option value="countersink">Countersink</option></select></label>
+          <label id="hole-diameter-label">Seat diameter (explicit length) <input id="hole-diameter" value="11 mm" /></label>
+          <label id="hole-seat-depth-label">Seat depth (explicit length) <input id="hole-seat-depth" value="4 mm" /></label>
+          <label id="hole-angle-label">Included angle (explicit angle) <input id="hole-angle" value="90 deg" /></label>
+          <button id="hole-review" type="submit" disabled>Review hole</button>
+        </form>
+        <div id="hole-preview" hidden>
+          <p id="hole-effect" aria-live="polite"></p>
+          <button id="hole-apply" type="button">Create reviewed hole</button>
+          <button id="hole-cancel" type="button">Cancel</button>
+        </div>
         <h2>Parameters</h2>
         <div id="parameters" class="parameters"></div>
         <h2>Intent</h2>
@@ -162,6 +182,7 @@
       </aside>
     </main>
 
+    <script src="hole-controls.js"></script>
     <script src="main.js"></script>
   </body>
 </html>

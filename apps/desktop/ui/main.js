@@ -658,6 +658,7 @@ async function loadDocument(path, options = {}) {
 
   const loadSequence = ++documentLoadSequence;
   renderSketchCreation(null);
+  holeControls.render(null);
   cancelFeatureReview();
   clearSketchDraft();
   currentPath = path;
@@ -668,7 +669,7 @@ async function loadDocument(path, options = {}) {
 
   // A document that no longer regenerates has no preview, but its info,
   // parameters, and regeneration inspection still load so it can be repaired.
-  const [inspectResult, previewResult, regenerationResult, parametersResult, featuresResult, sketchesResult, sketchCreationResult] =
+  const [inspectResult, previewResult, regenerationResult, parametersResult, featuresResult, sketchesResult, sketchCreationResult, holesResult] =
     await Promise.allSettled([
       invoke("inspect_document_cmd", { path }),
       invoke("preview_document_cmd", { path }),
@@ -679,6 +680,7 @@ async function loadDocument(path, options = {}) {
       invoke("list_document_features_cmd", { path }),
       invoke("inspect_sketches_cmd", { path }),
       invoke("inspect_sketch_creation_cmd", { path }),
+      invoke("inspect_hole_creation_cmd", { path }),
     ]);
   if (loadSequence !== documentLoadSequence || currentPath !== path) return;
   renderSketchEditor(sketchesResult.status === "fulfilled" ? sketchesResult.value : null);
@@ -687,6 +689,7 @@ async function loadDocument(path, options = {}) {
     throw inspectResult.reason;
   }
   const inspect = inspectResult.value;
+  holeControls.render(holesResult.status === "fulfilled" && holesResult.value.document_id === inspect.id ? holesResult.value : null);
   renderSketchCreation(sketchCreationResult.status === "fulfilled" && sketchCreationResult.value.document_id === inspect.id ? sketchCreationResult.value : null);
 
   renderInfo(docInfo, [
@@ -871,6 +874,7 @@ createBtn.addEventListener("click", () => {
 boot();
 
 function cancelFeatureReview() {
+  holeControls.cancel();
   cancelSketchCreationReview();
   featureReviewSequence += 1;
   reviewedFeatureEdit = null;
@@ -997,6 +1001,14 @@ document.getElementById("selection-edit").addEventListener("submit", event => {
   if (!selectedBinding || !selectedFrame) return;
   const edit = { source_revision: selectedFrame.source_revision, scene_revision: selectedFrame.scene_revision, target: selectedBinding.target, field: document.getElementById("selection-field").value, expr: document.getElementById("selection-expr").value.trim() };
   reviewFeatureEdit(null, edit);
+});
+
+const holeControls = createHoleControls({
+  invoke, context: () => ({path: currentPath, revision: featureTree?.revision, loadSequence: documentLoadSequence,
+    busy: documentMutationBusy || featureBusy || sketchBusy || sketchCreateBusy, history: documentHistoryState?.history ?? null}),
+  clearOtherDrafts: () => { cancelFeatureReview(); clearSketchDraft(); drawSketch(); },
+  acceptHistory: acceptDocumentHistory, reload: loadDocument,
+  setBusy: value => { documentMutationBusy = value; }, setStatus,
 });
 
 // Disposable sketch presentation/drafts. All source changes go to typed backend forms.
@@ -1253,6 +1265,7 @@ function drawCircleDraft(start, end) {
 }
 function sketchRow() { return sketchEditorState?.sketches.find(row => row.source.id === document.getElementById("sketch-select").value); }
 function clearSketchDraft(keepConstraintSelection = false) {
+  holeControls.cancel();
   offsetControls.clear(keepConstraintSelection);
   clearCurveEdit(keepConstraintSelection);
   cancelSketchCreationReview();

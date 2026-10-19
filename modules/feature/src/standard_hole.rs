@@ -137,4 +137,35 @@ impl Feature for StandardHoleFeatureExecutor {
             ctx,
         )
     }
+    fn discover_output_faces(
+        &self,
+        node: &FeatureNode,
+        ctx: &dyn RegenContext,
+        output: &FeatureOutput,
+    ) -> Result<Option<Vec<opencad_geometry::FaceRefDiscovery>>> {
+        let FeatureDefinition::StandardHole(def) = &node.definition else {
+            return Err(OpenCadError::validation(
+                "expected standard_hole face owner",
+            ));
+        };
+        if def.hole.face_ref.is_none() {
+            return Ok(None);
+        }
+        // Preserve wider legacy source behavior. The reviewed creation gateway
+        // separately requires this exact admitted subset and final provenance.
+        let Ok(inputs) = crate::seated_standard_hole::admit_owned_hole_inputs(
+            def,
+            def.standard.dimensions().cut_diameter,
+            ctx,
+        ) else {
+            return Ok(None);
+        };
+        crate::seated_standard_hole::discover_owned_hole_faces(
+            node,
+            &def.hole.target_feature,
+            ctx,
+            output,
+            &inputs,
+        )
+    }
 }
