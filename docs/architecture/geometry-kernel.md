@@ -708,3 +708,18 @@ DesignPatch/history preserve the graph as truth. All physical facets have the
 new producer and ambiguous facet roles refuse. Canonical input-grid bounds stay
 separate from native/placed/f32 numerical checks; see
 [the source API](../api/faceted-circular-fillet-source.md).
+
+## Portable physical rectangular revolves
+
+P17-022 / [ADR-112](../adr/ADR-112-physical-rectangular-revolve-parity.md)
+adds a shared read-only admission/evidence record for a strictly one-sided
+right rectangle about a coplanar edge-parallel axis. Physical Mock stores exact
+annular-sector measurements and body-owned face keys; tessellation reuses the
+existing bounded oriented manifold builder. Native sweeps start at the actual
+profile radial direction, correcting negative-side half-turn placement, and
+portable revolve records select actual triangle display normals through proper
+rigid placement. These private records are disposable kernel state; caches
+remain bound to one kernel session. No OCCT type, persisted tag or new trait
+method crosses the boundary. Broader native admission remains available; UI
+clients must use the portable guard explicitly. See the
+[rectangular-revolve API](../api/rectangular-revolves.md).

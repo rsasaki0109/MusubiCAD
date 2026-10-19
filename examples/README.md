@@ -441,3 +441,14 @@ Edit `param:a` to `60 mm` without replacing point expressions; volume becomes
 2160 mm³. General NURBS, knot/weight editing and open/mixed spans are deferred.
 See ADR-057 and `docs/api/cubic-spline.md`; eval `cubic_edit_control` grades the
 source IDs/expressions and independent analytic volume.
+
+`physical_rectangular_revolve.ocad.d` demonstrates ADR-112's portable exact
+annular-sector revolve. Reproduce it in an empty part with
+`agent/physical_rectangular_revolve_patch.json` through verified DesignPatch.
+The global XY rectangle x=15..25/y=-7..13 mm and associated x=5 mm +Y datum
+axis make a 90 deg quarter bushing of radii 10/20 mm, height 20 mm and volume
+1500*pi mm3. In one verified patch set axis_u=10 mm and turn_angle=180 deg:
+volume becomes 2000*pi mm3, absolute bounds (-5,-7,-15)..(25,13,0) mm,
+COM (10,3,-65/(3*pi)) mm. Preserve the datum/angle expressions and dependencies.
+The independently graded MCP eval is `edit_physical_rectangular_revolve`;
+P17-013 creation controls follow the physical-parity prerequisite.

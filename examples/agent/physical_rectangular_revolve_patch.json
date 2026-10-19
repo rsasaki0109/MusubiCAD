@@ -1,0 +1,185 @@
+{
+  "intent": "Create an exact quarter annular bushing from a global rectangle and associated parametric datum axis",
+  "operations": [
+    {
+      "type": "add_parameter",
+      "id": "param:axis_u",
+      "name": "axis_u",
+      "expr": "5 mm"
+    },
+    {
+      "type": "add_parameter",
+      "id": "param:turn_angle",
+      "name": "turn_angle",
+      "expr": "90 deg"
+    },
+    {
+      "type": "add_sketch",
+      "id": "sketch:revolve_profile",
+      "name": "Offset radial rectangle",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "point",
+        "id": "ent:revolve_p0",
+        "construction": false,
+        "x": "15 mm",
+        "y": "-7 mm"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "point",
+        "id": "ent:revolve_p1",
+        "construction": false,
+        "x": "25 mm",
+        "y": "-7 mm"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "point",
+        "id": "ent:revolve_p2",
+        "construction": false,
+        "x": "25 mm",
+        "y": "13 mm"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "point",
+        "id": "ent:revolve_p3",
+        "construction": false,
+        "x": "15 mm",
+        "y": "13 mm"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "line",
+        "id": "ent:revolve_l0",
+        "construction": false,
+        "start": "ent:revolve_p0",
+        "end": "ent:revolve_p1"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "line",
+        "id": "ent:revolve_l1",
+        "construction": false,
+        "start": "ent:revolve_p1",
+        "end": "ent:revolve_p2"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "line",
+        "id": "ent:revolve_l2",
+        "construction": false,
+        "start": "ent:revolve_p2",
+        "end": "ent:revolve_p3"
+      }
+    },
+    {
+      "type": "add_sketch_entity",
+      "sketch_id": "sketch:revolve_profile",
+      "entity": {
+        "type": "line",
+        "id": "ent:revolve_l3",
+        "construction": false,
+        "start": "ent:revolve_p3",
+        "end": "ent:revolve_p0"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:sketch_revolve_profile",
+        "name": "Offset radial rectangle",
+        "definition": {
+          "type": "sketch",
+          "sketch_id": "sketch:revolve_profile"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:revolve_axis",
+        "name": "Movable in-plane axis",
+        "definition": {
+          "type": "datum_axis",
+          "origin_m": [
+            0.005,
+            0,
+            0
+          ],
+          "direction": [
+            0,
+            1,
+            0
+          ],
+          "origin_expr": [
+            "axis_u",
+            null,
+            null
+          ]
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    },
+    {
+      "type": "add_feature",
+      "node": {
+        "id": "feature:physical_revolve",
+        "name": "Quarter annular bushing",
+        "definition": {
+          "type": "revolve",
+          "sketch_feature": "feature:sketch_revolve_profile",
+          "profile_ref": "sketch:revolve_profile/profile:outer",
+          "axis_feature": "feature:revolve_axis",
+          "axis_origin_m": [
+            0,
+            0,
+            0
+          ],
+          "axis_direction_m": [
+            0,
+            1,
+            0
+          ],
+          "angle_rad": 1.5707963267948966,
+          "angle_expr": "turn_angle",
+          "operation": "new_body"
+        }
+      },
+      "position": {
+        "at": "end"
+      }
+    }
+  ]
+}

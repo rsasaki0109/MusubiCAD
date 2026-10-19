@@ -657,6 +657,21 @@ def check(
                         if result.returncode==0 else ["pointer arc physical export failed"])
             except (OSError,subprocess.TimeoutExpired):
                 problems.append("pointer arc physical export unavailable")
+    if "expected_rectangular_revolve" in task:
+        from rectangular_revolve_eval import source_problems, physical, graph_source
+        desired = task['expected_rectangular_revolve']
+        problems.extend(source_problems(document, desired, graph_source(ROOT/task['source'])))
+        if musubicad is None:
+            problems.append("revolve grader requires fresh native physical export")
+        elif not problems:
+            try:
+                with tempfile.TemporaryDirectory(prefix="musubicad-revolve-grade-") as folder:
+                    target = Path(folder)/"actual.stl"
+                    result = subprocess.run([str(musubicad), "export", str(document), str(target)], capture_output=True, text=True, timeout=60)
+                    problems.extend(physical(target.read_bytes(), desired['plane'], desired['degrees'], desired['axis_mm'])
+                                    if result.returncode == 0 else ["revolve native physical export failed"])
+            except (OSError, subprocess.TimeoutExpired):
+                problems.append("revolve native physical export unavailable")
     if "expected_arc_sector" in task:
         from arc_sector_eval import source_problems, placed_problems, graph_source
         desired=task['expected_arc_sector']

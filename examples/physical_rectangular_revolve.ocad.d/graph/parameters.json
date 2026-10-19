@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "param:axis_u": {
+      "id": "param:axis_u",
+      "name": "axis_u",
+      "expr": "5 mm",
+      "dirty": false
+    },
+    "param:turn_angle": {
+      "id": "param:turn_angle",
+      "name": "turn_angle",
+      "expr": "90 deg",
+      "dirty": false
+    }
+  },
+  "edges": []
+}

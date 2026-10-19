@@ -349,7 +349,11 @@ fn top_edge_role(midpoint: &[f64; 3], tangent: &[f64; 3], bb: &[[f64; 3]; 2]) ->
 }
 
 #[cfg(feature = "occt")]
-fn revolve_spine_edge(axis: DVec3, angle_rad: f64) -> opencad_core::Result<Edge> {
+fn revolve_spine_edge(
+    axis: DVec3,
+    angle_rad: f64,
+    radial_start: Option<DVec3>,
+) -> opencad_core::Result<Edge> {
     if angle_rad >= std::f64::consts::TAU - 1e-6 {
         return Edge::circle(1.0, axis).map_err(map_occt_error);
     }
@@ -359,7 +363,10 @@ fn revolve_spine_edge(axis: DVec3, angle_rad: f64) -> opencad_core::Result<Edge>
     } else {
         DVec3::X
     };
-    let u = axis.cross(helper).normalize();
+    // ADR-112: align the sweep spine with the actual profile's radial side.
+    // An unrelated helper start lets a half-turn choose the opposite physical
+    // branch when the profile lies on the negative side of the axis.
+    let u = radial_start.unwrap_or_else(|| axis.cross(helper).normalize());
     let v = axis.cross(u).normalize();
     let start = u;
     let end = u * angle_rad.cos() + v * angle_rad.sin();
@@ -643,7 +650,12 @@ impl GeometryKernel for OcctGeometryKernel {
                 profile_plane,
                 input.axis_origin_m.map(|value| -value),
             )?;
-            let spine = revolve_spine_edge(axis, angle_rad)?;
+            let portable = opencad_geometry::RectangularRevolveGeometry::from_input(input).ok();
+            let spine = revolve_spine_edge(
+                axis,
+                angle_rad,
+                portable.map(|g| DVec3::from_array(g.radial_direction)),
+            )?;
             let solid = Solid::sweep(
                 &edges,
                 std::slice::from_ref(&spine),
@@ -690,6 +702,9 @@ impl GeometryKernel for OcctGeometryKernel {
             }
 
             let id = self.store.borrow_mut().insert_body(solid);
+            if portable.is_some() {
+                self.store.borrow_mut().revolve_bodies.insert(id);
+            }
             Ok(KernelBody::new(id))
         }
         #[cfg(not(feature = "occt"))]
@@ -1198,6 +1213,7 @@ impl GeometryKernel for OcctGeometryKernel {
                 .map(|id| {
                     store.circular_grid_bodies.contains(id)
                         || store.sector_bodies.contains(id)
+                        || store.revolve_bodies.contains(id)
                         || store.ellipse_bodies.contains(id)
                 })
                 .collect();
@@ -1925,7 +1941,9 @@ impl GeometryKernel for OcctGeometryKernel {
     fn translate_body(&self, body: KernelBody, translation_m: [f64; 3]) -> Result<KernelBody> {
         #[cfg(feature = "occt")]
         {
-            if self.store.borrow().ellipse_bodies.contains(&body.0) {
+            if self.store.borrow().ellipse_bodies.contains(&body.0)
+                || self.store.borrow().revolve_bodies.contains(&body.0)
+            {
                 return self.transform_body(body, RigidTransform::from_translation(translation_m));
             }
             let thread = self
@@ -1980,6 +1998,7 @@ impl GeometryKernel for OcctGeometryKernel {
                 let store = self.store.borrow();
                 store.circular_grid_bodies.contains(id)
                     || store.sector_bodies.contains(id)
+                    || store.revolve_bodies.contains(id)
                     || store.ellipse_bodies.contains(id)
             }) {
                 opencad_geometry::cubic_bezier::validate_rigid_transform(transform)?;
@@ -2020,6 +2039,7 @@ impl GeometryKernel for OcctGeometryKernel {
                     .circular_grid_bodies
                     .contains(&source_id);
                 let sector = self.store.borrow().sector_bodies.contains(&source_id);
+                let revolve = self.store.borrow().revolve_bodies.contains(&source_id);
                 let ellipse = self.store.borrow().ellipse_bodies.contains(&source_id);
                 let id = self.store.borrow_mut().insert_body(transformed);
                 if ellipse {
@@ -2027,6 +2047,9 @@ impl GeometryKernel for OcctGeometryKernel {
                 }
                 if sector {
                     self.store.borrow_mut().sector_bodies.insert(id);
+                }
+                if revolve {
+                    self.store.borrow_mut().revolve_bodies.insert(id);
                 }
                 if circular_grid {
                     self.store.borrow_mut().circular_grid_bodies.insert(id);

@@ -107,7 +107,10 @@ fn part_examples() -> Vec<(String, OcadDocument)> {
 fn every_part_example_is_rebuilt_from_structural_patches() {
     let parts = part_examples();
     // Include the reviewed-curve source fixture in the full native patch-rebuild corpus.
-    assert_eq!(parts.len(), 37);
+    assert_eq!(parts.len(), 38);
+    assert!(parts
+        .iter()
+        .any(|(name, _)| name == "physical_rectangular_revolve.ocad.d"));
     assert!(parts
         .iter()
         .any(|(name, _)| name == "native_hole_stock.ocad.d"));

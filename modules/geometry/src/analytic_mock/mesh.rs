@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum FaceKey {
+    Revolve(usize),
     Outer(usize, bool),
     Wall(u64, u64, u64),
     Cone(u64, u64, u64, u64),
@@ -38,6 +39,10 @@ pub(super) fn validate_frame(frame: Frame) -> Result<()> {
 }
 pub(super) fn keys(body: &Body) -> Result<Vec<FaceKey>> {
     match body {
+        Body::Revolve(g) => Ok((0..6)
+            .filter(|i| *i < 4 || !g.full_turn)
+            .map(FaceKey::Revolve)
+            .collect()),
         Body::Sector(_) => Ok((0..5).map(FaceKey::Sector).collect()),
         Body::CircularReference(g) => Ok((0..g.triangles().len())
             .map(FaceKey::CircularReference)
@@ -148,6 +153,9 @@ impl AnalyticMock {
         }
         let body_record = self.body(body)?;
         let face_ids = &self.faces[&body.0];
+        if let Body::Revolve(g) = body_record {
+            return revolve_mesh(g, face_ids, linear, angular);
+        }
         if let Body::CircularReference(g) = body_record {
             let mut mesh = g.tessellate();
             for (i, id) in mesh.triangle_face_ids.iter_mut().enumerate() {
@@ -167,6 +175,7 @@ impl AnalyticMock {
             return ribbed_mesh(*frame, *dimensions, rib, face_ids, linear);
         }
         let radius = match body_record {
+            Body::Revolve(_) => return Err(unsupported()),
             Body::Sector(g) => g.profile.radius,
             Body::CircularReference(_) | Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock { .. } => 0.,
@@ -193,6 +202,7 @@ impl AnalyticMock {
             .collect();
         let mut builder = Builder::new();
         match body_record {
+            Body::Revolve(_) => return Err(unsupported()),
             Body::Sector(g) => sector_mesh(&mut builder, g, face_ids, &angles)?,
             Body::CircularReference(_) | Body::Thread(_) => return Err(unsupported()),
             Body::RibbedStock {
@@ -486,6 +496,105 @@ impl AnalyticMock {
         }
         builder.finish()
     }
+}
+fn revolve_mesh(
+    g: &crate::RectangularRevolveGeometry,
+    faces: &BTreeMap<FaceKey, u64>,
+    linear: f64,
+    angular: f64,
+) -> Result<MeshSet> {
+    let radius = g.outer_radius_m;
+    let bound = angular.min(2. * (1. - (linear / radius).min(2.)).acos());
+    let count = (2. * PI / (bound * 0.5)).ceil().max(8.);
+    if !count.is_finite() || count > 8192. {
+        return Err(invalid("8192 angular sample budget exceeded"));
+    }
+    let mut angles: Vec<_> = (0..count as usize)
+        .map(|i| 2. * PI * i as f64 / count)
+        .filter(|a| *a + roundoff(g.sweep_rad) < g.sweep_rad)
+        .collect();
+    if !g.full_turn {
+        angles.push(g.sweep_rad);
+    }
+    let mut b = Builder::new();
+    let key = |i| faces[&FaceKey::Revolve(i)];
+    let intervals = if g.full_turn {
+        angles.len()
+    } else {
+        angles.len() - 1
+    };
+    let mut max_gap = 0_f64;
+    for i in 0..intervals {
+        let j = (i + 1) % angles.len();
+        let end = if j == 0 { 2. * PI } else { angles[j] };
+        let middle = (angles[i] + end) / 2.;
+        max_gap = max_gap.max(end - angles[i]);
+        let at = |r, z, j| g.point(r, angles[j], z);
+        for (z, normal, face) in [
+            (0., scale(g.axis_direction, -1.), 0),
+            (g.height_m, g.axis_direction, 1),
+        ] {
+            b.quad(
+                [
+                    at(g.outer_radius_m, z, i),
+                    at(g.outer_radius_m, z, j),
+                    at(g.inner_radius_m, z, j),
+                    at(g.inner_radius_m, z, i),
+                ],
+                normal,
+                key(face),
+            )?;
+        }
+        let radial = add(
+            scale(g.radial_direction, middle.cos()),
+            scale(g.tangent_direction, middle.sin()),
+        );
+        for (r, normal, face) in [
+            (g.outer_radius_m, radial, 2),
+            (g.inner_radius_m, scale(radial, -1.), 3),
+        ] {
+            b.quad(
+                [
+                    at(r, 0., i),
+                    at(r, 0., j),
+                    at(r, g.height_m, j),
+                    at(r, g.height_m, i),
+                ],
+                normal,
+                key(face),
+            )?;
+        }
+    }
+    if !g.full_turn {
+        for (t, normal, face) in [
+            (0., scale(g.tangent_direction, -1.), 4),
+            (
+                g.sweep_rad,
+                add(
+                    scale(g.radial_direction, -g.sweep_rad.sin()),
+                    scale(g.tangent_direction, g.sweep_rad.cos()),
+                ),
+                5,
+            ),
+        ] {
+            b.quad(
+                [
+                    g.point(g.inner_radius_m, t, 0.),
+                    g.point(g.outer_radius_m, t, 0.),
+                    g.point(g.outer_radius_m, t, g.height_m),
+                    g.point(g.inner_radius_m, t, g.height_m),
+                ],
+                normal,
+                key(face),
+            )?;
+        }
+    }
+    if b.error + radius * (1. - (max_gap / 2.).cos()) + 64. * f64::EPSILON * radius > linear {
+        return Err(invalid(
+            "requested deflection is below representable coordinate error",
+        ));
+    }
+    b.finish()
 }
 fn ribbed_mesh(
     frame: Frame,
