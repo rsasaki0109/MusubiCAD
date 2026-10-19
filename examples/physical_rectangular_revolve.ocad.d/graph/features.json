@@ -1,0 +1,102 @@
+{
+  "feature_graph": {
+    "order": [
+      "feature:sketch_revolve_profile",
+      "feature:revolve_axis",
+      "feature:physical_revolve"
+    ],
+    "features": {
+      "feature:sketch_revolve_profile": {
+        "id": "feature:sketch_revolve_profile",
+        "name": "Offset radial rectangle",
+        "feature_type": "sketch",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:revolve_axis": {
+        "id": "feature:revolve_axis",
+        "name": "Movable in-plane axis",
+        "feature_type": "datum_axis",
+        "suppressed": false,
+        "dirty": false
+      },
+      "feature:physical_revolve": {
+        "id": "feature:physical_revolve",
+        "name": "Quarter annular bushing",
+        "feature_type": "revolve",
+        "suppressed": false,
+        "dirty": false
+      }
+    },
+    "edges": [
+      {
+        "source": "feature:sketch_revolve_profile",
+        "target": "feature:physical_revolve",
+        "kind": "depends_on"
+      },
+      {
+        "source": "feature:revolve_axis",
+        "target": "feature:physical_revolve",
+        "kind": "depends_on"
+      }
+    ]
+  },
+  "feature_nodes": [
+    {
+      "id": "feature:physical_revolve",
+      "name": "Quarter annular bushing",
+      "definition": {
+        "type": "revolve",
+        "sketch_feature": "feature:sketch_revolve_profile",
+        "profile_ref": "sketch:revolve_profile/profile:outer",
+        "axis_feature": "feature:revolve_axis",
+        "axis_origin_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "axis_direction_m": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "angle_rad": 1.5707963267948966,
+        "angle_expr": "turn_angle",
+        "operation": "new_body"
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:revolve_axis",
+      "name": "Movable in-plane axis",
+      "definition": {
+        "type": "datum_axis",
+        "origin_m": [
+          0.005,
+          0.0,
+          0.0
+        ],
+        "direction": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "origin_expr": [
+          "axis_u",
+          null,
+          null
+        ]
+      },
+      "suppressed": false
+    },
+    {
+      "id": "feature:sketch_revolve_profile",
+      "name": "Offset radial rectangle",
+      "definition": {
+        "type": "sketch",
+        "sketch_id": "sketch:revolve_profile"
+      },
+      "suppressed": false
+    }
+  ]
+}

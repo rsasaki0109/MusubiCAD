@@ -273,6 +273,7 @@ impl Cut {
 }
 #[derive(Clone, Debug)]
 enum Body {
+    Revolve(crate::RectangularRevolveGeometry),
     Sector(sector::Sector),
     CircularReference(crate::TriangleSolid),
     Thread(crate::NominalThreadGeometry),
@@ -431,6 +432,10 @@ impl Body {
             return Err(invalid("density must be finite and positive in kg/m^3"));
         }
         let (volume, area, center) = match self {
+            Self::Revolve(g) => {
+                let m = g.mass_properties(density)?;
+                (m.volume_m3, m.area_m2, m.center_of_mass)
+            }
             Self::Sector(g) => g.mass()?,
             Self::CircularReference(g) => {
                 let m = g.mass_properties(density)?;
@@ -537,6 +542,7 @@ impl Body {
     }
     pub(crate) fn bounds(&self) -> BoundingBox {
         match self {
+            Self::Revolve(g) => g.bounding_box(),
             Self::Sector(g) => g.bounds(),
             Self::CircularReference(g) => g.bounding_box(),
             Self::Thread(g) => g.bounding_box(),
@@ -629,6 +635,7 @@ impl Body {
             return Err(invalid("transform must be a finite proper rigid rotation"));
         }
         Ok(match self {
+            Self::Revolve(g) => Self::Revolve(g.transformed(transform)?),
             Self::Sector(g) => Self::Sector(g.transformed(transform)),
             Self::CircularReference(g) => Self::CircularReference(g.transformed(transform)?),
             Self::Thread(g) => Self::Thread(g.transformed(transform)?),
@@ -768,6 +775,10 @@ impl AnalyticMock {
         let id = Self::next_id(self.wires.len())?;
         self.wires.insert(id, profile);
         Ok(KernelWire::new(id))
+    }
+    pub(crate) fn revolve(&mut self, input: &crate::RevolveInput) -> Result<KernelBody> {
+        let geometry = crate::RectangularRevolveGeometry::from_input(input)?;
+        self.store(Body::Revolve(geometry), None, false)
     }
     pub(crate) fn extrude(
         &mut self,

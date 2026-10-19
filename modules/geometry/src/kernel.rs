@@ -947,8 +947,8 @@ impl GeometryKernel for MockGeometryKernel {
     }
 
     fn revolve(&self, input: &RevolveInput) -> Result<KernelBody> {
-        if self.analytic.is_some() {
-            return Err(crate::analytic_mock::unsupported());
+        if let Some(analytic) = &self.analytic {
+            return analytic.borrow_mut().revolve(input);
         }
         if input.sketch.ellipse.is_some() || input.sketch.cubic_bezier.is_some() {
             return Err(OpenCadError::validation(

@@ -3,6 +3,8 @@
 //! OCCT types must not leak outside `opencad-kernel-occt`.
 
 mod analytic_mock;
+pub mod rectangular_revolve;
+pub use rectangular_revolve::RectangularRevolveGeometry;
 pub mod arc_sector;
 pub use arc_sector::validate_arc_sector_profile;
 pub mod brep;

@@ -2341,6 +2341,26 @@
         "depth_m": 0.008
       },
       "expected_volume_mm3": 11726.304448019257
+    },
+    {
+      "id": "edit_physical_rectangular_revolve",
+      "source": "examples/physical_rectangular_revolve.ocad.d",
+      "document": "associated_revolve.ocad.d",
+      "prompt": "In {document}, preserve the exact original rectangle, global XY plane, feature:revolve_axis datum identity and feature:physical_revolve angle_expr=turn_angle/axis_feature association. With one verified DesignPatch set param:axis_u to 10 mm and param:turn_angle to 180 deg. Review read-only, apply atomically, and verify canonical Undo/Redo. Independent native regeneration/STL must produce a positive right-hand half annular bushing of radii 5/15 mm and height 20 mm, axis x=10 mm: volume 2000*pi mm3, bounds x=-5..25 mm/y=-7..13 mm/z=-15..0 mm, centroid (10,3,-65/(3*pi)) mm. Do not substitute an inline axis/angle, translate a cached solid or replace the profile.",
+      "expected_volume_mm3": 6283.185307179586,
+      "required_parameters": [
+        "axis_u",
+        "turn_angle"
+      ],
+      "expected_rectangular_revolve": {
+        "parameters": {
+          "param:axis_u": "10 mm",
+          "param:turn_angle": "180 deg"
+        },
+        "plane": "XY",
+        "degrees": 180,
+        "axis_mm": 10
+      }
     }
   ]
 }

@@ -15,7 +15,10 @@ fn every_example_is_a_valid_design_state() {
         .filter(|path| path.extension().is_some_and(|ext| ext == "d"))
         .collect();
     paths.sort();
-    assert_eq!(paths.len(), 54);
+    assert_eq!(paths.len(), 55);
+    assert!(paths
+        .iter()
+        .any(|path| path.ends_with("physical_rectangular_revolve.ocad.d")));
     assert!(paths
         .iter()
         .any(|path| path.ends_with("faceted_circular_fillet.ocad.d")));

@@ -1381,3 +1381,23 @@ for subsequent extrusion. See `examples/agent/offset_selected_sketch.json` and
 whose 6 mm extrusion is 1014*pi mm3 with independent source/placed SI grading in
 `offset_selected_sketch`. Preserve original expressions/constraints/consumer/order;
 wrong placement or equivalent associative/literal source rewrites fail the intent.
+
+### Physical rectangular revolves (P17-022 / ADR-112)
+
+For existing revolve source use verified `patch_dry_run` / `patch_apply` and
+opaque history; see `examples/agent/physical_rectangular_revolve_patch.json`
+and `examples/physical_rectangular_revolve.ocad.d`. Preserve the unique source
+sketch owner, `axis_feature` datum dependency and `angle_expr`; strict explicit
+length/angle expressions remain source. Common physical Mock/native admission
+is an exact global XY/YZ/XZ four-line right rectangle strictly on one side of
+an in-plane edge-parallel axis, positive inner radius, NewBody/no target and
+positive angle at most 360 deg. Touching/crossing/skew axes, unsupported planes,
+curves, Cut/Join and ambiguous near-full partial turns refuse portable admission.
+Do not infer general revolve coverage from legacy synthetic Mock.
+
+Changing axis_u=10 mm and turn_angle=180 deg in the example produces radii
+5/15 mm and height 20 mm, V=2000*pi mm3, bounds (-5,-7,-15)..(25,13,0) mm,
+COM (10,3,-65/(3*pi)) mm. Verify exact unchanged profile/axis/angle association
+and fresh native SI shape/contact/branch evidence; equal volume alone misses a
+reversed half-turn. `edit_physical_rectangular_revolve` independently grades
+both source and output. P17-013 remains the native creation-control task.

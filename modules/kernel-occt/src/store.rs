@@ -27,6 +27,9 @@ pub struct KernelStore {
     pub sector_wires: std::collections::HashSet<u64>,
     #[cfg(feature = "occt")]
     pub sector_bodies: std::collections::HashSet<u64>,
+    /// ADR-112: portable exact rectangular revolves use oriented display normals.
+    #[cfg(feature = "occt")]
+    pub revolve_bodies: std::collections::HashSet<u64>,
     /// ADR-094: actual grid reference bodies; placement must remain proper rigid.
     #[cfg(feature = "occt")]
     pub circular_grid_bodies: std::collections::HashSet<u64>,

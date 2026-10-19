@@ -1,0 +1,88 @@
+{
+  "sketches": [
+    {
+      "id": "sketch:revolve_profile",
+      "name": "Offset radial rectangle",
+      "workplane": {
+        "type": "global",
+        "plane": "XY"
+      },
+      "entities": [
+        {
+          "type": "point",
+          "id": "ent:revolve_p0",
+          "construction": false,
+          "x": "15 mm",
+          "y": "-7 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:revolve_p1",
+          "construction": false,
+          "x": "25 mm",
+          "y": "-7 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:revolve_p2",
+          "construction": false,
+          "x": "25 mm",
+          "y": "13 mm"
+        },
+        {
+          "type": "point",
+          "id": "ent:revolve_p3",
+          "construction": false,
+          "x": "15 mm",
+          "y": "13 mm"
+        },
+        {
+          "type": "line",
+          "id": "ent:revolve_l0",
+          "construction": false,
+          "start": "ent:revolve_p0",
+          "end": "ent:revolve_p1"
+        },
+        {
+          "type": "line",
+          "id": "ent:revolve_l1",
+          "construction": false,
+          "start": "ent:revolve_p1",
+          "end": "ent:revolve_p2"
+        },
+        {
+          "type": "line",
+          "id": "ent:revolve_l2",
+          "construction": false,
+          "start": "ent:revolve_p2",
+          "end": "ent:revolve_p3"
+        },
+        {
+          "type": "line",
+          "id": "ent:revolve_l3",
+          "construction": false,
+          "start": "ent:revolve_p3",
+          "end": "ent:revolve_p0"
+        }
+      ],
+      "constraints": [],
+      "dimensions": [],
+      "solve_state": {
+        "status": "unknown"
+      },
+      "profiles": [
+        {
+          "id": "profile:loop:0",
+          "entity_ids": [
+            "ent:revolve_l0",
+            "ent:revolve_l1",
+            "ent:revolve_l2",
+            "ent:revolve_l3"
+          ],
+          "kind": "closed",
+          "profile_ref": "sketch:revolve_profile/profile:outer"
+        }
+      ]
+    }
+  ]
+}

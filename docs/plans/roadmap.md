@@ -1048,11 +1048,11 @@ workplanes. Preserve the original fixed maturity rubric and ADR-058's backend
 ownership. P14's existing feature editing and point/line/circle/ellipse forms
 receive no duplicate credit. P16-008 completed in PR #148; its explicitly
 faceted approximation receives no additional score. The merged baseline before
-P17-012 is weighted CAD 54.40, GUI 57 and agent operation 95 after
-P17-011 / PR #161 (merge 7e74204770a96c82c47496e402c64969ae1ea8da).
-Usable source-selected independent offsets with explicit order/side review earned
-GUI 56 to 57; existing planner/kernel/solver/workplanes and host coverage
-received no repeat credit.
+P17-022/P17-013 is weighted CAD 54.55, GUI 58 and agent operation 95 after
+P17-012 / PR #162 (merge 1135d9884ff7cadab841c82ef63fec322d212dcd).
+Usable stock/owned-entry/circle-selected standard-hole and seat controls with
+verified review and atomic history earned GUI 57 to 58 (+0.15 weighted CAD).
+Existing kernel/standards/workplanes and host coverage received no repeat credit.
 
 **Dependencies:** completed Phase 14 shared DesignPatch/verification/history
 gateways; existing sketch entities, solver, datum and modeling admission
@@ -1078,8 +1078,9 @@ ADR rather than silently broadening a UI task.
 | MCAD-P17-021 | Resolve point and circle source lengths before solving | Prerequisite to P17-010: ADR-108, existing strict expression evaluator on disposable ordinary point/circle source, explicit length/angle scope checks, fail-closed low-level literals/radius seeds; independently measured placed solids in analytic Mock/native OCCT, exact intersection/source/refusal/history/round-trip/MCP evidence; no UI or score credit | Complete: PR #159 |
 | MCAD-P17-010 | Trim sketches through reviewed native controls | ADR-109 after P17-021: backend-catalogued authored line/arc targets and line/circle/arc cutters, explicit end/branch/constraint removals, read-only intersection discovery, solved endpoint verification, profile/solid consequences and protected atomic history; actual new Linux/Windows controls and independent source/physical grading; no new geometry admission | Complete: PR #160 |
 | MCAD-P17-011 | Offset sketches through reviewed native controls | ADR-110: existing bounded analytic independent-copy planner, backend-authored source catalogue and generated sketch/owner/entity IDs, explicit ordered selection/distance/side, verified read-only review and atomic history; independent placed physics/source/MCP and new actual Linux/Windows controls; no associative curve claim | Complete: PR #161 |
-| MCAD-P17-012 | Create admitted holes through native controls | ADR-111: backend-owned original stock/semantic end entry/existing circle-axis catalogue; explicit standard, distance and optional counterbore/countersink forms, verified removal/contact and atomic history; both kernels, independently graded MCP and actual Linux/Windows controls | Complete upon qualifying PR merge |
-| MCAD-P17-013 | Create admitted revolves through native controls | Explicit profile, admitted axis and angular units/extent; existing backend guards, independent volume/bounds/placement and native review/apply/history evidence | Planned |
+| MCAD-P17-012 | Create admitted holes through native controls | ADR-111: backend-owned original stock/semantic end entry/existing circle-axis catalogue; explicit standard, distance and optional counterbore/countersink forms, verified removal/contact and atomic history; both kernels, independently graded MCP and actual Linux/Windows controls | Complete: PR #162 |
+| MCAD-P17-022 | Establish physical rectangular-revolve kernel parity | Prerequisite to P17-013: ADR-112, bounded one-sided right rectangle about a coplanar edge-parallel axis, exact annular-sector mass and world bounds, genuine closed display mesh and native OCCT placement evidence; source/history/round trips/example/guide/skill/eval; no GUI or score credit | Complete upon qualifying PR merge |
+| MCAD-P17-013 | Create admitted revolves through native controls | Depends on P17-022. Explicit profile, admitted axis and angular units/extent; existing backend guards, independent volume/bounds/placement and native review/apply/history evidence | Planned |
 | MCAD-P17-014 | Create admitted lofts through native controls | Explicit ordered source sections and existing compatible section/operation admission; independently checked section contacts/volume, reorder and invalid-section refusal | Planned |
 | MCAD-P17-015 | Create admitted sweeps through native controls | Explicit admitted profile/path/frame and existing backend representation; independent path/contact/dimension/volume evidence and unsupported path refusal | Planned |
 | MCAD-P17-016 | Create admitted shells through native controls | Body-owned face selection and explicit thickness with backend admission; independent wall/removal measurements and protected failure/history | Planned |
@@ -1094,6 +1095,19 @@ increment. Its acceptance is new independent both-kernel physical and actual
 MCP evidence, bounded refusal and source/history preservation; existing native
 controls retain their normal CI compatibility gate. General line-arc outlines,
 chord segments, booleans and arbitrary new samplers are outside this admission.
+
+P17-022 is a separately registered prerequisite to P17-013: physical analytic
+Mock previously refused every revolve, while legacy Mock returned synthetic
+handles. ADR-112 admits only a closed right rectangle wholly on one side of a
+coplanar axis parallel to an edge, strictly positive inner radius and a positive bounded turn, NewBody and no
+target. Its completion requires independent both-kernel volume, surface area,
+centroid, absolute bounds, angular/end/radial contacts and closed oriented mesh;
+invalid/ambiguous input and unsupported operations must preserve prior bodies
+and source/history. Include expanded/packed and real MCP/Agent evidence, an
+example and independent eval. Reuse the existing deflection rule and hard mesh
+budgets; do not silently broaden profile/workplane/boolean admission. Native
+controls remain P17-013 and neither existing OCCT revolves nor this parity
+prerequisite earns duplicate maturity credit.
 
 **Completion definition:** P17-001 completes only after its design main merge;
 it adds no controls or score. Each subsequent task must deliver usable native

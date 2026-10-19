@@ -1897,3 +1897,29 @@ bounds (-11,-16,5)..(15,10,11) mm and COM (2,-3,8) mm. Eval
 owner/workplane intent plus fresh oriented closed SI STL. Equal-volume wrong
 placement or rewriting an original unconsumed source fails. Model-free actual
 MCP/Agent tests also prove parity, refusal and canonical history in five placements.
+
+### Physical rectangular revolves (P17-022 / ADR-112)
+
+Use `examples/agent/physical_rectangular_revolve_patch.json` in an empty part
+through `patch_dry_run` / `patch_apply` with `verify=true` and opaque history.
+It authors an exact global XY rectangle and its unique sketch feature owner,
+an existing parametric `datum_axis`, and one NewBody `revolve` with
+`axis_feature=feature:revolve_axis` and `angle_expr=turn_angle`. Keep those source
+associations and explicit angle/length units; no cached mesh or world axis is
+source truth. Resolve current revision before subsequent edits.
+
+The portable physical Mock/native subset requires a strictly positive inner
+radius, coplanar edge-parallel axis and an exact four-line right rectangle.
+Axis-touching/crossing, skew, custom/face/datum sketch planes, curve profiles,
+Cut/Join and near-full partial turns are outside this admission. Wider native
+operations are not proof of portable support. P17-013 will add creation forms;
+this prerequisite adds no native control or external-host evidence.
+
+In `examples/physical_rectangular_revolve.ocad.d`, set `param:axis_u` to `10 mm`
+and `param:turn_angle` to `180 deg` in one verified patch. Preserve all original
+rectangle/feature/datum IDs, expressions and dependencies. The resulting radii
+are 5/15 mm, height 20 mm, positive half-turn about +Y, V=2000*pi mm3;
+absolute bounds (-5,-7,-15)..(25,13,0) mm and COM (10,3,-65/(3*pi)) mm.
+Eval `edit_physical_rectangular_revolve` uses exact source intent plus fresh
+native oriented closed SI STL and radial/axial/angular contacts. Equal volume,
+wrong branch/placement or inline axis/angle substitutions fail.
