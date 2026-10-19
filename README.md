@@ -9,13 +9,6 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/agent-demo/hero.gif" alt="A Claude Code session with MusubiCAD: the agent enlarges an actuator hub with a verified diff and looks at the regenerated part, a 100 mm shaft bore is refused and the file stays unchanged, and the exported robot arm URDF moves in MuJoCo" width="900">
-  <br>
-  <sub>Abridged from a real Claude Code session with this plugin (<a href="docs/assets/agent-demo/hero-session.json">transcript</a>).
-  Every shape is a real regeneration, the preview is the exact PNG the agent looked at, and the arm is the URDF it exported, loaded in MuJoCo.</sub>
-</p>
-
-<p align="center">
   A parametric CAD plugin for coding agents such as Claude Code. Your agent edits named,
   unit-bearing parameters in a Design Graph; MusubiCAD dry-runs every change, rebuilds the solid
   with OpenCASCADE, checks it against what the agent said it would do, and only then writes the
@@ -32,6 +25,81 @@
   <a href="docs/architecture/overview.md">Architecture</a>
   ·
   <a href="docs/plans/roadmap.md">Roadmap</a>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Six-axis robot motion</strong><br>
+      <a href="examples/six_axis_arm.ocad.d"><img src="docs/assets/hero-gallery/six-axis-arm.gif" alt="A seven-part robot arm moving its base, shoulder, elbow, wrist, and flange through six declared joints" width="100%"></a><br>
+      <sub>Six joint angles, one assembly.</sub>
+    </td>
+    <td width="50%" align="center">
+      <strong>Parametric actuator</strong><br>
+      <a href="examples/robot_joint_actuator.ocad.d"><img src="docs/assets/hero-gallery/actuator-hub.gif" alt="The actuator housing regenerating as its upper hub grows from 24 mm to 60 mm tall and back" width="100%"></a><br>
+      <sub>Hub height: 24–60 mm.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Bearing carrier</strong><br>
+      <a href="examples/bearing_carrier.ocad.d"><img src="docs/assets/hero-gallery/bearing-bore.gif" alt="A bearing carrier rebuilding with a bore diameter sweeping from 8 mm to 26 mm and back" width="100%"></a><br>
+      <sub>Bore diameter: 8–26 mm.</sub>
+    </td>
+    <td width="50%" align="center">
+      <strong>Revolve a profile</strong><br>
+      <a href="examples/physical_rectangular_revolve.ocad.d"><img src="docs/assets/hero-gallery/revolve-angle.gif" alt="A rectangular profile revolving around its datum axis from a 60 degree annular sector to a 330 degree sector and back" width="100%"></a><br>
+      <sub>Turn angle: 60–330°.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Draft a cylinder</strong><br>
+      <a href="examples/cylindrical_draft.ocad.d"><img src="docs/assets/hero-gallery/cylindrical-draft.gif" alt="A cylinder tapering about its neutral plane as the draft angle changes from 2 degrees to 14 degrees" width="100%"></a><br>
+      <sub>Draft angle: 2–14°.</sub>
+    </td>
+    <td width="50%" align="center">
+      <strong>Tapered reinforcement</strong><br>
+      <a href="examples/tapered_rib_plate.ocad.d"><img src="docs/assets/hero-gallery/tapered-rib.gif" alt="A square-ended tapered rib growing from 8 mm to 26 mm above its plate, then returning" width="100%"></a><br>
+      <sub>Rib height: 8–26 mm.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Analytic sketch → solid</strong><br>
+      <a href="examples/ellipse_plate.ocad.d"><img src="docs/assets/hero-gallery/ellipse-profile.gif" alt="An extruded analytic ellipse widening as its minor radius changes from 8 mm to 24 mm" width="100%"></a><br>
+      <sub>Ellipse minor radius: 8–24 mm.</sub>
+    </td>
+    <td width="50%" align="center">
+      <strong>Variable-radius fillet</strong><br>
+      <a href="examples/variable_fillet_plate.ocad.d"><img src="docs/assets/hero-gallery/variable-fillet.gif" alt="A plate rebuilding its variable-radius edge fillet as the start radius changes from 0.5 mm to 2.5 mm, with a fixed 1.5 mm end radius" width="100%"></a><br>
+      <sub>Start radius: 0.5–2.5 mm; end radius: 1.5 mm.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Circular feature pattern</strong><br>
+      <a href="examples/bracket_pin_ring.ocad.d"><img src="docs/assets/hero-gallery/circular-pattern.gif" alt="A full camera orbit around a mounting plate with a circular pattern of raised pins" width="100%"></a><br>
+      <sub>One feature, repeated around an axis.</sub>
+    </td>
+    <td width="50%" align="center">
+      <strong>Feature Graph, step by step</strong><br>
+      <a href="examples/robot_joint_actuator.ocad.d"><img src="docs/assets/hero-gallery/feature-build.gif" alt="The actuator housing appearing through regenerated Feature Graph milestones, adding hubs, bores, ribs, and mounts in dependency order" width="100%"></a><br>
+      <sub>Watch the part build in dependency order.</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <sub>Real example documents, rendered by MusubiCAD. Click a clip for its source.
+  <a href="docs/assets/hero-gallery/README.md">Reproduce all ten GIFs</a>.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/assets/agent-demo/hero.gif" alt="A Claude Code session with MusubiCAD: the agent enlarges an actuator hub with a verified diff and looks at the regenerated part, a 100 mm shaft bore is refused and the file stays unchanged, and the exported robot arm URDF moves in MuJoCo" width="900">
+  <br>
+  <sub>Abridged from a real Claude Code session with this plugin (<a href="docs/assets/agent-demo/hero-session.json">transcript</a>).
+  Every shape is a real regeneration, the preview is the exact PNG the agent looked at, and the arm is the URDF it exported, loaded in MuJoCo.</sub>
 </p>
 
 <p align="center">
