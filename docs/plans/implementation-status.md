@@ -10,7 +10,8 @@ are defined in the [canonical roadmap](roadmap.md).
 
 | Area | Status | Current evidence | Remaining work |
 |---|---|---|---|
-| Physical rectangular revolves (MCAD-P17-022) | Implemented; qualifying main merge pending | ADR-112 shared strict portable admission, exact analytic Mock annular-sector measurements and closed mesh, native radial-start correction and placed normals; independent volume/area/COM/world bounds/contacts, source/patch/file/cache/history and actual MCP/Agent/eval evidence | Positive inner radius, global planes, coplanar edge-parallel axis and NewBody only; P17-013 controls follow this prerequisite; no maturity increment |
+| README hero gallery (MCAD-P15-010) | Implemented; complete upon qualifying main merge | Ten new 600 × 400 looping native CLI GIFs (5,892,465 bytes combined), opening two-column gallery with source links and early Install navigation; reproducible generator and source/output hash, command, frame and timing manifest | Existing rendering/features only; no new CAD or host evidence and no maturity increment |
+| Physical rectangular revolves (MCAD-P17-022) | Complete: PR #163 | ADR-112 shared strict portable admission, exact analytic Mock annular-sector measurements and closed mesh, native radial-start correction and placed normals; independent volume/area/COM/world bounds/contacts, source/patch/file/cache/history and actual MCP/Agent/eval evidence; qualifying main merge 04d74a58 | Positive inner radius, global planes, coplanar edge-parallel axis and NewBody only; P17-013 controls follow this prerequisite; no maturity increment |
 | Reviewed native standard holes (MCAD-P17-012) | Complete: PR #162 | ADR-111 source-owned stock/entry/circle catalogue and standard/seat controls; strict final entry provenance including blind bores; local four checks (1364 passed), actual Linux and exact-head Windows native 68 groups, four complete workflows/11 jobs; qualifying main merge 1135d988 | Current active original rectangle/distance/NewBody stock and existing outward custom/face/datum circles only |
 | Reviewed native independent offsets (MCAD-P17-011) | Complete: PR #161 | ADR-110 ordinary source catalogue, explicit ordered selection/constant distance/side, backend-generated sketch/owner/entity IDs, solved candidate and protected atomic DesignPatch/history; six both-kernel/source/file regressions, actual MCP/Agent five placements and independent source/physical/adversary eval; actual Linux and exact-head Windows native 62 groups, all four local checks and four workflows/11 jobs; qualifying merge 7e742047 | Existing convex CCW shared-endpoint mitre/tangent contours or one circle only; no automatic repair or persistent curve association |
 | Reviewed native trim/extend (MCAD-P17-010) | Complete: PR #160 | ADR-109 source catalogues, backend-only discovery, explicit end/branch/removals and solved endpoint verification, protected DesignPatch/history; analytic Mock/native OCCT independent placed solids, packed/expanded source and actual MCP/Agent/eval evidence; actual Linux and exact-head Windows native 56 groups including six new curve groups; qualifying main merge 8512b229 | Authored line/arc targets and line/circle/arc cutters only; no helper/projected/ellipse/cubic admission or automatic constraint/consumer repair |
@@ -2265,8 +2266,14 @@ failure output preservation, strict source/units/dependency/history and packed/
 expanded round trips, a patch-authored canonical example and six actual
 MCP/Agent placements/branches with no model turns. The independent source and
 fresh native SI STL grader rejects equal-volume wrong placement and loss of
-datum/angle association. Full required local checks, existing actual native
-Linux/Windows compatibility and exact-head CI/main merge still gate completion.
-This prerequisite earns no maturity credit; current actual baseline stays
-CAD 54.55 / GUI 58 / agent operation 95. P17-013 native creation controls follow
-only after P17-022 merges.
+datum/angle association. PR #163 merged 2026-10-19 as
+04d74a58d9f16f4ac372408e5622fcd67cb8a253, with exact tested base/head parents
+1135d9884ff7cadab841c82ef63fec322d212dcd and
+035fb05e8d2c5b72847dc2d2b048d250c3c435de. Tested/merged trees are identical;
+main was clean and synchronized. All four required local checks passed:
+1,375 tests successful, zero failed, 37 pre-existing ignored across 215 suites.
+Actual Linux/Windows native compatibility passed all 68 groups. All four
+exact-head workflows completed successfully: 11 jobs, ten successful and the
+expected PR release publisher skipped. This prerequisite earns no maturity
+credit; current actual baseline stays CAD 54.55 / GUI 58 / agent operation 95.
+P17-013 native creation controls remain the next modeling/UI task.
