@@ -198,6 +198,93 @@ fn analytic_mock_and_native_hole_seat_contacts_volume_com_and_both_entries() {
 }
 
 #[test]
+fn owned_blind_holes_keep_unique_entry_faces_through_cold_warm_and_parameter_regeneration() {
+    fn run<K: GeometryKernel>(kernel: &K) {
+        for bottom in [false, true] {
+            let mut doc = fixture();
+            doc.parameters.set_expr("param:bore_depth", "8 mm").unwrap();
+            let mut create = intent(&doc);
+            create.seat = HoleSeatInput::None;
+            if bottom {
+                create.face_ref = "ref:face:plate_bottom".into();
+                create.sketch_feature = "feature:sketch_bottom".into();
+                create.profile_ref = "sketch:bottom_axis/profile:outer".into();
+            }
+            let plan = plan_hole_create_with_kernel(&doc, &create, kernel).unwrap();
+            assert!(!plan.entry_reference.status.is_unresolved());
+            assert_eq!(plan.entry_reference.candidate_count, 1);
+            apply_hole_create_with_kernel(
+                &mut doc,
+                &create,
+                &mut DocumentHistory::default(),
+                kernel,
+            )
+            .unwrap();
+            let mut cache = opencad_feature::RegenerationCache::new();
+            for depth in ["8 mm", "6 mm"] {
+                doc.parameters.set_expr("param:bore_depth", depth).unwrap();
+                let mut model = doc.clone().into_part_model();
+                for warm in [false, true] {
+                    let report = model
+                        .regenerate_with_cache(
+                            kernel,
+                            &FeatureRegistry::with_defaults(),
+                            Some(&doc.parameters),
+                            Some(&doc.semantic_refs),
+                            &mut cache,
+                        )
+                        .unwrap();
+                    assert!(
+                        report
+                            .reference_provenance
+                            .iter()
+                            .all(|r| !r.status.is_unresolved()),
+                        "{:?}",
+                        report.reference_provenance
+                    );
+                    let entry = report
+                        .reference_provenance
+                        .iter()
+                        .find(|r| r.ref_id.as_str() == create.face_ref)
+                        .unwrap();
+                    assert_eq!(entry.candidate_count, 1);
+                    let id = entry.resolved_kernel_id.unwrap();
+                    let mesh = kernel
+                        .tessellate(
+                            model.active_body().unwrap(),
+                            &opencad_geometry::TessellationSettings::default(),
+                        )
+                        .unwrap();
+                    let faces: Vec<_> = mesh
+                        .indices
+                        .chunks_exact(3)
+                        .zip(&mesh.triangle_face_ids)
+                        .filter(|(_, face)| **face == id)
+                        .collect();
+                    assert!(!faces.is_empty());
+                    for (triangle, _) in faces {
+                        for vertex in triangle {
+                            assert!(
+                                (f64::from(mesh.positions[*vertex as usize][2])
+                                    - if bottom { 0. } else { 0.01 })
+                                .abs()
+                                    < 3e-7,
+                                "entry resolved to a blind floor"
+                            );
+                        }
+                    }
+                    if warm {
+                        assert!(report.cached_nodes.contains(&"feature:hole_1".into()));
+                    }
+                }
+            }
+        }
+    }
+    run(&MockGeometryKernel::with_analytic_primitives());
+    run(&OcctGeometryKernel::new());
+}
+
+#[test]
 fn placed_stock_axis_entries_and_generated_identity_preserve_source() {
     fn run<K: GeometryKernel>(k: &K) {
         for (origin, u, v, normal) in [

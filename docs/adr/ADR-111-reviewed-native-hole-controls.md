@@ -38,6 +38,15 @@ assigns a globally free feature identity. One AddFeature DesignPatch appends the
 existing standard_hole or seated_standard_hole source without rewriting stock,
 axis, references or parameters. No persisted schema changes are required.
 
+For admitted ordinary standard holes, reuse the seated feature's exact source-
+stock plane/outward-normal output classifier. Retained outer faces keep their
+stock producer; bore walls and blind floors belong to the new hole. Normal-only
+legacy discovery confuses a blind floor with the stock end and can leave an
+ambiguous entry. Require exactly one resolved selected-entry provenance record
+on the final candidate. Preserve classified identities on warm regeneration.
+Ordinary source outside this advertised admission retains its existing path;
+no new geometry, source tag or sampling method is introduced.
+
 Review verifies the whole source, required assertions, actual candidate body,
 display mesh, independently specified removal volume and first moments. Expose
 entry/axis in metres, inward unit vector, bore/seat contact dimensions and removed

@@ -2327,6 +2327,20 @@
       },
       "expected_volume_mm3": 11414.595624930078,
       "document": "native_hole_stock.ocad.d"
+    },
+    {
+      "id": "create_native_blind_hole",
+      "document": "native_blind_hole.ocad.d",
+      "source": "examples/native_hole_stock.ocad.d",
+      "prompt": "For the part at {document}, use inspect_hole_creation, plan_hole_create and apply_hole_create to create exactly one ISO273 M6 normal plain blind bore of explicit depth 8 mm. Select feature:extrude_base, ref:face:plate_entry, feature:sketch_seat / sketch:seat/profile:outer, seat type none. Preserve all original source and parameters, append feature:hole_1, and keep the entry uniquely resolved after cutting: the blind floor must belong to the hole rather than being confused with the stock end. Review before applying.",
+      "expected_native_hole": {
+        "feature_id": "feature:hole_1",
+        "seat": "none",
+        "bottom": false,
+        "depth": "8 mm",
+        "depth_m": 0.008
+      },
+      "expected_volume_mm3": 11726.304448019257
     }
   ]
 }

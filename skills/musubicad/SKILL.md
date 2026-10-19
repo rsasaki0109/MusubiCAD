@@ -53,8 +53,10 @@ before atomic source/history publication. Preserve all original source and use
 returned opaque `result.history.history`; never guess a face index, copy a frame
 or silently repair unsupported stock/axes. See `docs/api/hole-creation.md`,
 `examples/native_hole_stock.md` and `examples/agent/create_native_hole.json`.
-`create_native_standard_hole` eval checks original source and fresh native SI
-contacts/volume/COM; stdio regression uses zero model turns. No new host or
+`create_native_standard_hole` and `create_native_blind_hole` evals check original
+source, uniquely resolved final entry and fresh native SI contacts/volume/COM;
+stdio regression uses zero model turns. A blind floor must belong to the hole,
+so it cannot be confused with the stock entry in semantic selection. No new host or
 geometry credit is implied.
 
 1. Find the parameter: `query_document` with `{"kind": "list_parameters"}`

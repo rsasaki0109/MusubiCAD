@@ -36,7 +36,7 @@ export async function checkNativeHoles({evaluate,until,source,logicalSource,part
   assert.equal(await evaluate(`${$('hole-stock')}.options.length`),1);assert.equal(await evaluate(`${$('hole-entry')}.options.length`),2);
   assert.match(await evaluate(`${$('hole-axis')}.selectedOptions[0].textContent`),/ent:seat_circle/);
   assert.equal(await evaluate(`${$('hole-standard')}.selectedOptions[0].textContent`),'ISO 273 M6 normal');
-  await review();assert.match(await evaluate(`${$('hole-effect')}.textContent`),/bore 6\.600000 mm × 8\.000000 mm inward from top.*Plain bore.*12\.000000, 9\.000000, 10\.000000/);
+  await review();assert.match(await evaluate(`${$('hole-effect')}.textContent`),/Entry ownership verified/);assert.match(await evaluate(`${$('hole-effect')}.textContent`),/bore 6\.600000 mm × 8\.000000 mm inward from top.*Plain bore.*12\.000000, 9\.000000, 10\.000000/);
   const volume=12000-Math.PI*3.3**2*8;assert.match(await evaluate(`${$('hole-effect')}.textContent`),new RegExp(volume.toFixed(6).replace('.','\\.')));
   await choices('none',true);await review();assert.match(await evaluate(`${$('hole-effect')}.textContent`),/inward from bottom.*12\.000000, 9\.000000, 0\.000000.*0\.000000, 0\.000000, 1\.000000/);
   await evaluate(`${$('hole-cancel')}.click()`);assert.deepEqual(logicalSource(),initial);

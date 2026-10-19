@@ -2201,3 +2201,29 @@ Final actual run 2026-10-19T03:11:58.022581+00:00 to 2026-10-19T03:14:54.753314+
 retains identical source/binary hashes. Whole-workspace mandatory checks,
 exact-head Windows native and all applicable CI plus the qualifying main merge
 still gate completion/credit. Baseline stays CAD 54.40 / GUI 57 / agent 95.
+
+
+P17-012 qualification correction (2026-10-19, before merge): fresh provenance
+inspection of an 8 mm plain blind bore exposed the legacy normal-only discovery
+assigning its floor to the stock, tying the retained end reference. Reuse the
+existing seat source-plane/outward-normal classifier for admitted owned plain
+holes, assign internal floors/walls to their hole producer, validate the actual
+closed mesh and require one resolved final selected-entry provenance in every
+creation plan/apply. Wider ordinary feature geometry and source wire remain
+unchanged. A dedicated both-kernel cold/warm/parameter regression checks the
+actual selected face triangles lie on the original end plane. Actual MCP/Agent
+coverage expands to eight cases, adding both blind entries and fresh provenance
+checks; create_native_blind_hole grades exact source, final reference and fresh
+SI contacts/solid. All final mandatory, native and exact-head CI evidence must
+be repeated on this correction before merge or credit. The initial 1,363-pass
+head is superseded for qualification; current score remains 54.40 / GUI 57 / 95.
+
+
+P17-012 corrected final native evidence: six focused desktop regressions, actual
+MCP/Agent eight cases and both existing seat/standard suites pass. The final
+locked Tauri build and actual Linux 68 groups pass again from 2026-10-19T04:08:02.031248+00:00
+to 2026-10-19T04:10:59.810148+00:00 with identical source/binary hashes,
+including both hole producer implementations. The native review now confirms
+entry ownership after the backend final-reference gate. A fresh complete four-
+check local run and latest-head Windows/all CI plus merge remain required;
+initial-head evidence cannot qualify this correction. No score update yet.

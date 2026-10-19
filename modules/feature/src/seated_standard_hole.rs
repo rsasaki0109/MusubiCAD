@@ -226,7 +226,12 @@ impl Feature for SeatedStandardHoleFeatureExecutor {
         let FeatureDefinition::SeatedStandardHole(def) = &node.definition else {
             return Err(invalid("wrong executor definition"));
         };
-        let (target, mut profile, direction) = admit_inputs(def, ctx)?;
+        let OwnedHoleInputs {
+            target,
+            mut profile,
+            inward_direction: direction,
+            ..
+        } = admit_inputs(def, ctx)?;
         let kernel = ctx.kernel();
         let circle = profile
             .circle
@@ -289,94 +294,90 @@ impl Feature for SeatedStandardHoleFeatureExecutor {
         let FeatureDefinition::SeatedStandardHole(def) = &node.definition else {
             return Err(invalid("wrong face owner definition"));
         };
-        let (target, profile, _) = admit_inputs(def, ctx)?;
-        let circle = profile
-            .circle
-            .ok_or_else(|| invalid("missing admitted circle"))?;
-        let plane = profile
-            .placement
-            .ok_or_else(|| invalid("missing admitted frame"))?;
-        let center = plane.map_point(circle.center_m[0], circle.center_m[1]);
-        let outward = frame(plane)?;
-        let witness = ctx.kernel().rectangular_stock_geometry(
-            &target,
-            FacePick {
-                point_m: center,
-                normal: outward,
-            },
-        )?;
-        let body = output
-            .body
-            .as_ref()
-            .ok_or_else(|| invalid("no physical output"))?;
-        let mesh = ctx
-            .kernel()
-            .tessellate(body, &TessellationSettings::default())?;
-        let nodes: Vec<_> = ctx.source_feature_nodes()?.into_iter().cloned().collect();
-        let mut discoveries = crate::face_discover::discover_face_refs_from_mesh(&mesh, &nodes);
-        let axes = [witness.u_axis, witness.v_axis, outward.map(|v| -v)];
-        let spans = [
-            witness.face_spans_m[0],
-            witness.face_spans_m[1],
-            witness.inward_thickness_m,
-        ];
-        for d in &mut discoveries {
-            let triangles: Vec<_> = mesh
-                .indices
-                .chunks_exact(3)
-                .zip(&mesh.triangle_face_ids)
-                .filter(|(_, id)| **id == d.kernel_face_id)
-                .map(|(t, _)| t)
-                .collect();
-            let mut matches = Vec::new();
-            for axis in 0..3 {
-                for high in [false, true] {
-                    let normal = axes[axis].map(|v| v * if high { 1. } else { -1. });
-                    let offset = if high { spans[axis] } else { 0. };
-                    let is_outer = triangles.iter().all(|t| {
-                        let p: [[f64; 3]; 3] =
-                            std::array::from_fn(|i| mesh.positions[t[i] as usize].map(f64::from));
-                        // Componentwise f32 rounding bound, projected onto the exact
-                        // admitted source plane. No box or nearest-face inference.
-                        p.iter().all(|p| {
-                            let error: f64 = (0..3)
-                                .map(|i| {
-                                    axes[axis][i].abs()
-                                        * 4.
-                                        * f32::EPSILON as f64
-                                        * p[i].abs().max(witness.origin_m[i].abs())
-                                })
-                                .sum();
-                            (dot(sub(*p, witness.origin_m), axes[axis]) - offset).abs()
-                                <= EPS + error
-                        }) && dot(cross(sub(p[1], p[0]), sub(p[2], p[0])), normal) > 0.
-                    });
-                    if is_outer {
-                        matches.push(normal);
-                    }
+        let inputs = admit_inputs(def, ctx)?;
+        discover_owned_hole_faces(node, &def.target_feature, ctx, output, &inputs)
+    }
+}
+pub(crate) fn discover_owned_hole_faces(
+    node: &FeatureNode,
+    target_feature: &str,
+    ctx: &dyn RegenContext,
+    output: &FeatureOutput,
+    inputs: &OwnedHoleInputs,
+) -> Result<Option<Vec<opencad_geometry::FaceRefDiscovery>>> {
+    let witness = inputs.stock;
+    let outward = inputs.inward_direction.map(|v| -v);
+    let body = output
+        .body
+        .as_ref()
+        .ok_or_else(|| invalid("no physical output"))?;
+    let mesh = ctx
+        .kernel()
+        .tessellate(body, &TessellationSettings::default())?;
+    validate_owned_hole_mesh(&mesh)?;
+    let nodes: Vec<_> = ctx.source_feature_nodes()?.into_iter().cloned().collect();
+    let mut discoveries = crate::face_discover::discover_face_refs_from_mesh(&mesh, &nodes);
+    let axes = [witness.u_axis, witness.v_axis, outward.map(|v| -v)];
+    let spans = [
+        witness.face_spans_m[0],
+        witness.face_spans_m[1],
+        witness.inward_thickness_m,
+    ];
+    for d in &mut discoveries {
+        let triangles: Vec<_> = mesh
+            .indices
+            .chunks_exact(3)
+            .zip(&mesh.triangle_face_ids)
+            .filter(|(_, id)| **id == d.kernel_face_id)
+            .map(|(t, _)| t)
+            .collect();
+        let mut matches = Vec::new();
+        for axis in 0..3 {
+            for high in [false, true] {
+                let normal = axes[axis].map(|v| v * if high { 1. } else { -1. });
+                let offset = if high { spans[axis] } else { 0. };
+                let is_outer = triangles.iter().all(|t| {
+                    let p: [[f64; 3]; 3] =
+                        std::array::from_fn(|i| mesh.positions[t[i] as usize].map(f64::from));
+                    // Componentwise f32 rounding bound, projected onto the exact
+                    // admitted source plane. No box or nearest-face inference.
+                    p.iter().all(|p| {
+                        let error: f64 = (0..3)
+                            .map(|i| {
+                                axes[axis][i].abs()
+                                    * 4.
+                                    * f32::EPSILON as f64
+                                    * p[i].abs().max(witness.origin_m[i].abs())
+                            })
+                            .sum();
+                        (dot(sub(*p, witness.origin_m), axes[axis]) - offset).abs() <= EPS + error
+                    }) && dot(cross(sub(p[1], p[0]), sub(p[2], p[0])), normal) > 0.
+                });
+                if is_outer {
+                    matches.push(normal);
                 }
             }
-            if matches.len() > 1 {
-                return Err(invalid(
-                    "output face has ambiguous physical source ownership",
-                ));
-            }
-            if let Some(normal) = matches.first() {
-                d.feature_id = Some(def.target_feature.clone());
-                d.normal_m = normal.map(|v| v as f32);
-                d.role = crate::face_discover::role_from_normal(d.normal_m).into();
-            } else {
-                d.feature_id = Some(node.id.clone());
-            }
         }
-        if !discoveries.iter().any(|d| {
-            d.feature_id.as_deref() == Some(def.target_feature.as_str())
-                && dot(d.normal_m.map(f64::from), outward) > 0.999999
-        }) {
-            return Err(invalid("output lost physical entry face"));
+        if matches.len() > 1 {
+            return Err(invalid(
+                "output face has ambiguous physical source ownership",
+            ));
         }
-        Ok(Some(discoveries))
+        if let Some(normal) = matches.first() {
+            d.feature_id = Some(target_feature.into());
+            d.normal_m = normal.map(|v| v as f32);
+            d.role = crate::face_discover::role_from_normal(d.normal_m).into();
+        } else {
+            d.feature_id = Some(node.id.clone());
+        }
     }
+    if !discoveries.iter().any(|d| {
+        d.feature_id.as_deref() == Some(target_feature)
+            && dot(d.normal_m.map(f64::from), outward) > 0.999999
+    }) {
+        return Err(invalid("output lost physical entry face"));
+    }
+    Ok(Some(discoveries))
 }
 pub(crate) fn validate_cached_seated_hole(
     node: &FeatureNode,
@@ -386,15 +387,22 @@ pub(crate) fn validate_cached_seated_hole(
     let FeatureDefinition::SeatedStandardHole(def) = &node.definition else {
         return Err(invalid("wrong cached definition"));
     };
-    let (target, profile, direction) = admit_inputs(def, ctx)?;
-    require_output(ctx.kernel(), &target, body, &profile, def, direction)
+    let inputs = admit_inputs(def, ctx)?;
+    require_output(
+        ctx.kernel(),
+        &inputs.target,
+        body,
+        &inputs.profile,
+        def,
+        inputs.inward_direction,
+    )
 }
 fn admit_inputs(
     def: &SeatedStandardHoleFeature,
     ctx: &dyn RegenContext,
-) -> Result<(KernelBody, opencad_geometry::SolvedSketch, [f64; 3])> {
+) -> Result<OwnedHoleInputs> {
     def.validate_dimensions()?;
-    let inputs = admit_owned_hole_inputs(
+    admit_owned_hole_inputs(
         &crate::StandardHoleFeature {
             hole: crate::HoleFeature {
                 sketch_feature: def.sketch_feature.clone(),
@@ -412,8 +420,7 @@ fn admit_inputs(
             .dimensions(def.standard.dimensions().cut_diameter)?
             .0,
         ctx,
-    )?;
-    Ok((inputs.target, inputs.profile, inputs.inward_direction))
+    )
 }
 
 /// Transient existing source/semantic/physical admission; no persisted handles.
@@ -776,7 +783,8 @@ pub(crate) fn validate_closed_mesh(mesh: &MeshSet) -> Result<()> {
 
 /// Existing closed physical hole mesh gate, shared with reviewed native forms.
 pub fn validate_owned_hole_mesh(mesh: &MeshSet) -> Result<()> {
-    if mesh.triangle_count() == 0
+    if mesh.indices.len() % 3 != 0
+        || mesh.triangle_count() == 0
         || mesh.triangle_face_ids.len() != mesh.triangle_count()
         || mesh.triangle_face_ids.contains(&0)
     {

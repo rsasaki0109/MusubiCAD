@@ -7,10 +7,13 @@ circle tuple and matching standard, then `plan_hole_create` and
 depth and a closed `none`/`counterbore`/`countersink` seat intent. Backend IDs,
 source/physical ownership, contained removal and first moments are verified;
 apply uses the same atomic DesignPatch/history gateway as native controls.
+Final selected-entry provenance must resolve uniquely; admitted plain blind
+floors belong to the hole while retained outer faces keep their stock owner.
 Do not invent workplanes, references or screen-index axes. See
 `examples/agent/create_native_hole.json`, `examples/native_hole_stock.ocad.d`,
 actual stdio `tools/test_native_hole_mcp.py` and independently source/contact/
-fresh-native-physical graded `create_native_standard_hole` eval.
+fresh-native-physical graded `create_native_standard_hole` and
+`create_native_blind_hole` evals.
 
 This guide is served to MCP clients as the resource
 `musubicad://guide/structural-patch`. The exact JSON shapes are in

@@ -15,7 +15,7 @@ fn native_hole_controls_share_verified_mcp_agent_creation_and_history() {
         String::from_utf8_lossy(&output.stderr)
     );
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(report["cases"].as_array().unwrap().len(), 6);
+    assert_eq!(report["cases"].as_array().unwrap().len(), 8);
     assert_eq!(report["model_turns"], 0);
     for key in [
         "typed_mcp_agent_parity",

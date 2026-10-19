@@ -14,7 +14,7 @@ from test_cylindrical_draft_mcp import Client, digest, canonical_digest
 
 ROOT=Path(__file__).resolve().parents[1]
 
-def exercise(binary,root,seat,bottom,write_example=None):
+def exercise(binary,root,seat,bottom,write_example=None,depth_mm=10):
     mcp,agent=Client(binary,'mcp'),Client(binary,'agent')
     doc,peer=root/'part.ocad.d',root/'peer.ocad.d'
     try:
@@ -40,14 +40,16 @@ def exercise(binary,root,seat,bottom,write_example=None):
         assert choice['bore_diameter_m']==.0066 and choice['stock_thickness_m']==.01
         create=json.loads((ROOT/'examples/agent/create_native_hole.json').read_text())['create']
         create.update(document_id=state['document_id'],revision=state['revision'],face_ref=choice['face_ref'],sketch_feature=choice['sketch_feature'],profile_ref=choice['profile_ref'])
+        if depth_mm!=10:create['depth']=f'{depth_mm} mm'
         create['seat']={'type':'none'} if seat=='none' else ({'type':'counterbore','diameter':'seat_diameter','depth':'seat_depth'} if seat=='counterbore' else {'type':'countersink','diameter':'seat_diameter','included_angle':'seat_angle'})
         for key,value in [('document_id','doc:foreign'),('revision','stale'),('target_feature','feature:entry_plane'),('face_ref','ref:face:missing'),('sketch_feature','feature:sketch_base'),('profile_ref','profile:circle:ent:seat_circle'),('depth','8'),('depth','12 mm'),('depth','seat_angle'),('cached_frame',{}),('name',' ')]:
             bad={**create,key:value}
             mcp.tool('apply_hole_create',{'path':str(doc),'create':bad},error=True)
             assert 'error' in agent.call('opencad.apply_hole_create',{'path':str(peer),'create':bad})
             assert digest(doc)==stable and canonical_digest(peer)==before
-        plan=parity('plan_hole_create',{'create':create});expected,_=oracle(seat,bottom)
+        plan=parity('plan_hole_create',{'create':create});expected,_=oracle(seat,bottom,depth_mm)
         assert plan['feature_id']=='feature:hole_1' and len(plan['patch']['operations'])==1
+        assert plan['entry_reference']['ref_id']==create['face_ref'] and plan['entry_reference']['status'] not in ['missing','ambiguous'] and plan['entry_reference'].get('resolved_kernel_id') is not None
         assert abs(plan['evidence']['volume_m3']-expected)<1e-12 and abs(plan['removed_volume_m3']-(12e-6-expected))<1e-12
         assert plan['choice']['inward_direction']==([0,0,1] if bottom else [0,0,-1])
         assert digest(doc)==stable
@@ -56,15 +58,18 @@ def exercise(binary,root,seat,bottom,write_example=None):
             result=agent.call(f'opencad.history_{operation}_document',{'path':str(doc),'history':history})['result']
             twin=agent.call(f'opencad.history_{operation}_document',{'path':str(peer),'history':history})['result']
             assert result==twin;history=result['history'];assert canonical_digest(doc)==wanted and canonical_digest(peer)==wanted
-        desired={'seat':seat,'bottom':bottom,'depth':'bore_depth'}
+        regenerated=subprocess.run([str(binary),'regen',str(doc),'--json'],capture_output=True,text=True,check=True)
+        provenance=json.loads(regenerated.stdout)['reference_provenance']
+        assert all(p['status'] not in ['missing','ambiguous'] and p.get('resolved_kernel_id') is not None for p in provenance),provenance
+        desired={'seat':seat,'bottom':bottom,'depth':create['depth'],'depth_m':depth_mm/1000}
         assert source_problems(doc,desired,baseline)==[],source_problems(doc,desired,baseline)
         stl=root/'actual.stl';mcp.tool('export_document',{'path':str(doc),'output':str(stl)});data=stl.read_bytes()
-        assert placed_problems(data,seat,bottom)==[],placed_problems(data,seat,bottom)
+        assert placed_problems(data,seat,bottom,depth_mm)==[],placed_problems(data,seat,bottom,depth_mm)
         translated=bytearray(data)
         for i,face in enumerate(triangles(data)):
             for j,p in enumerate(face):struct.pack_into('<3f',translated,84+50*i+12+12*j,p[0]+.005,p[1],p[2])
         assert abs(volume(triangles(data))-volume(triangles(translated)))<1e-11
-        assert placed_problems(translated,seat,bottom)
+        assert placed_problems(translated,seat,bottom,depth_mm)
         wrong=root/'wrong.ocad.d';shutil.copytree(doc,wrong)
         for mutation in ['axis','entry','standard','seat','stock','axis_source','unrelated_axis','parameter','nonfinite']:
             candidate=copy.deepcopy(graph_source(doc));nodes=candidate['features']['feature_nodes'];hole=next(n for n in nodes if n['id']=='feature:hole_1')['definition']
@@ -82,12 +87,13 @@ def exercise(binary,root,seat,bottom,write_example=None):
         saved=digest(doc)
         mcp.tool('apply_hole_create',{'path':str(doc),'create':create,'history':history},error=True);assert digest(doc)==saved
         assert parity('inspect_hole_creation',{})['choices']==[]
-        if seat=='counterbore' and not bottom and write_example is None:
-            task=next(t for t in json.loads(mcp_eval.TASKS.read_text())['tasks'] if t['id']=='create_native_standard_hole')
+        if not bottom and write_example is None and (seat=='counterbore' or depth_mm==8):
+            task_id='create_native_blind_hole' if depth_mm==8 else 'create_native_standard_hole'
+            task=next(t for t in json.loads(mcp_eval.TASKS.read_text())['tasks'] if t['id']==task_id)
             regen=subprocess.run([str(binary),'regen',str(doc)],capture_output=True,text=True,check=True)
             assert mcp_eval.check(task,doc,regen.stdout,binary,root)==(True,[])
             assert not mcp_eval.check(task,doc,regen.stdout)[0]
-        return {'seat':seat,'bottom':bottom,'mcp_requests':mcp.count,'agent_requests':agent.count,'triangles':len(triangles(data))}
+        return {'seat':seat,'bottom':bottom,'depth_mm':depth_mm,'mcp_requests':mcp.count,'agent_requests':agent.count,'triangles':len(triangles(data))}
     finally:mcp.close();agent.close()
 
 def main():
@@ -99,6 +105,8 @@ def main():
                 root=Path(folder)/f'{seat}-{bottom}';root.mkdir()
                 write=args.write_example if not cases else None
                 cases.append(exercise(args.musubicad.resolve(),root,seat,bottom,write))
+        for bottom in [False,True]:
+            root=Path(folder)/f'blind-{bottom}';root.mkdir();cases.append(exercise(args.musubicad.resolve(),root,'none',bottom,depth_mm=8))
         print(json.dumps({'cases':cases,'model_turns':0,'typed_mcp_agent_parity':True,'readonly_atomic_refusal_history':True,'independent_source_contacts_physics_and_adversaries':True}))
 
 if __name__=='__main__':main()

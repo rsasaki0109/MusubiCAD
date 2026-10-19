@@ -61,9 +61,9 @@ def source_problems(document, desired, baseline):
             'standard':{'type':'iso273','size':'M6','fit':'normal'},
         }
         if seat=='none':
-            definition.update(depth={'type':'distance','length':{'value_si':.01}},depth_expr=depth)
+            definition.update(depth={'type':'distance','length':{'value_si':desired.get('depth_m',.01)}},depth_expr=depth)
         else:
-            definition.update(bore_depth={'value_si':.01},bore_depth_expr=depth)
+            definition.update(bore_depth={'value_si':desired.get('depth_m',.01)},bore_depth_expr=depth)
             definition['seat']={'type':seat,'diameter':{'value_si':.011},'diameter_expr':'seat_diameter'}
             if seat=='counterbore':
                 definition['seat'].update(depth={'value_si':.004},depth_expr='seat_depth')

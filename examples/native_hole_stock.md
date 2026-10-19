@@ -37,8 +37,11 @@ python tools/test_native_hole_mcp.py --musubicad target/debug/musubicad
 
 The actual MCP regression authors the stock using
 `agent/create_native_hole_stock_patch.json`, then exercises all three hole forms
-from both ends, exact Agent parity, read-only review, refusal/history and fresh
-native export with independent source/contact/volume/COM grading. It makes zero
+from both ends plus both 8 mm blind bores (eight cases), exact Agent parity,
+read-only review, refusal/history and fresh native regeneration/export with
+independent source/unique-entry/contact/volume/COM grading. Plain blind floors
+belong to the hole; retained stock end refs stay unique after cold/warm
+regeneration and depth changes. It makes zero
 model calls. To regenerate a missing source example, pass
 `--write-example examples/native_hole_stock.ocad.d`; existing output refuses
 overwriting. See [API admission](../docs/api/hole-creation.md) and ADR-111.

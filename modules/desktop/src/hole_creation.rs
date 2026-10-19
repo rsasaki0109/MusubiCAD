@@ -78,6 +78,7 @@ pub struct HoleCreatePlan {
     pub create: HoleCreate,
     pub feature_id: String,
     pub choice: HoleChoice,
+    pub entry_reference: opencad_geometry::ReferenceProvenance,
     pub bore_depth_m: f64,
     pub seat_diameter_m: Option<f64>,
     pub seat_depth_m: Option<f64>,
@@ -438,12 +439,25 @@ pub fn plan_hole_create_with_kernel<K: GeometryKernel>(
     let evidence = verify_editor_document(&candidate, kernel)?;
     // Query the actual original stock and candidate, including ordinary holes.
     let mut model = candidate.clone().into_part_model();
-    model.regenerate(
+    let report = model.regenerate(
         kernel,
         &FeatureRegistry::with_defaults(),
         Some(&candidate.parameters),
         Some(&candidate.semantic_refs),
     )?;
+    let entries: Vec<_> = report
+        .reference_provenance
+        .iter()
+        .filter(|r| r.ref_id.as_str() == create.face_ref)
+        .collect();
+    if entries.len() != 1
+        || entries[0].status.is_unresolved()
+        || entries[0].resolved_kernel_id.is_none()
+    {
+        return Err(invalid(
+            "selected entry reference is missing or ambiguous on the final hole",
+        ));
+    }
     let stock = model
         .outputs
         .get(&create.target_feature)
@@ -495,6 +509,7 @@ pub fn plan_hole_create_with_kernel<K: GeometryKernel>(
         create: create.clone(),
         feature_id: state.suggested_feature_id,
         choice,
+        entry_reference: (*entries[0]).clone(),
         bore_depth_m,
         seat_diameter_m,
         seat_depth_m,

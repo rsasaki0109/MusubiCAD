@@ -8,7 +8,8 @@ or new geometry/sampling method is added.
 1. `inspect_hole_creation(path)` returns document identity/revision, a free
    feature identity and admitted stock/owned entry/existing exact-circle tuples.
 2. `plan_hole_create(path, create)` returns the generated AddFeature DesignPatch,
-   actual contact dimensions, removed volume and verified candidate evidence.
+   actual contact dimensions, removed volume, selected `entry_reference` provenance
+   and verified candidate evidence.
    Review is read-only.
 3. `apply_hole_create(path, create, history?)` replans from current source,
    atomically publishes through DesignPatch/history and returns feature tree,
@@ -50,8 +51,12 @@ derives depth `(D-d)/(2*tan(angle/2))`; it does not infer fastener head sizes.
 Removal counts bore/seat overlap once and verifies physical first moments,
 unchanged outer bounds and an actual closed oriented mesh. Seated features
 also retain their existing runtime source/physical gate. Ordinary standard-hole
-sources retain their existing executor contract; the new gateway enforces the
-advertised bounded creation and physical postconditions on every plan/apply.
+execution retains its existing geometry contract. Admitted owned holes reuse the
+seat's source-stock plane/outward-normal classifier: outer faces retain their
+stock producer and blind floors/walls belong to the hole. Every plan/apply also
+requires one resolved selected-entry provenance on the final body; missing or
+ambiguous output ownership refuses even with plausible volume. Cold/warm
+regeneration and depth edits must preserve that identity.
 
 Only the current active original right-rectangle/distance/NewBody stock, owned
 end faces and existing uniquely authored ordinary exact circle profiles are
@@ -72,7 +77,7 @@ source, tool/view, upstream edit, cancel, Escape or reload.
 See [the runnable stock and recipe](../../examples/native_hole_stock.md),
 `cargo test -p opencad-desktop --test hole_creation`, the actual stdio regression
 `python tools/test_native_hole_mcp.py --musubicad target/debug/musubicad`, and
-`create_native_standard_hole` eval. The eval checks exact preserved source plus
-a fresh native SI STL, including contact rings, bounds, oriented closure, volume
-and centroid. Equal-volume wrong-entry/axis/source changes must fail. These
+`create_native_standard_hole` / `create_native_blind_hole` evals. The eval checks exact preserved source plus
+fresh native regeneration provenance plus SI STL, including contact rings,
+bounds, oriented closure, volume and centroid. Equal-volume wrong-entry/axis/source changes must fail. These
 protocol regressions make zero model calls and do not add external-host credit.
